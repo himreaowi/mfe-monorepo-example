@@ -179,6 +179,9 @@ catalogs:
     '@playwright/test':
       specifier: 1.64.1
       version: 1.64.1
+    '@rspack/cli':
+      specifier: 2.2.9
+      version: 2.2.9
     '@rspack/core':
       specifier: 2.2.9
       version: 2.2.9
@@ -297,6 +300,822 @@ importers:
       prettier:
         specifier: 'catalog:'
         version: 3.9.10
+
+  apps/internet/announcements:
+    dependencies:
+      '@org/auth':
+        specifier: workspace:*
+        version: link:../../../packages/auth
+      '@org/design-tokens':
+        specifier: workspace:*
+        version: link:../../../packages/design-tokens
+      '@org/http-client':
+        specifier: workspace:*
+        version: link:../../../packages/http-client
+      '@org/mf-runtime':
+        specifier: workspace:*
+        version: link:../../../packages/mf-runtime
+      '@org/ui':
+        specifier: workspace:*
+        version: link:../../../packages/ui
+      react:
+        specifier: 'catalog:'
+        version: 19.3.1
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.3.1(react@19.3.1)
+      react-router:
+        specifier: 'catalog:'
+        version: 8.4.0(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+    devDependencies:
+      '@org/eslint-config':
+        specifier: workspace:*
+        version: link:../../../packages/eslint-config
+      '@org/jest-config':
+        specifier: workspace:*
+        version: link:../../../packages/jest-config
+      '@org/rspack-config':
+        specifier: workspace:*
+        version: link:../../../packages/rspack-config
+      '@org/scripts':
+        specifier: workspace:*
+        version: link:../../../tools/scripts
+      '@org/tsconfig':
+        specifier: workspace:*
+        version: link:../../../packages/tsconfig
+      '@rspack/cli':
+        specifier: 'catalog:'
+        version: 2.2.9(@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2))(@rspack/dev-server@2.2.1(@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2)))
+      '@rspack/core':
+        specifier: 'catalog:'
+        version: 2.2.9(@module-federation/runtime-tools@2.9.2)
+      '@rspack/dev-server':
+        specifier: 'catalog:'
+        version: 2.2.1(@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2))
+      '@testing-library/dom':
+        specifier: 'catalog:'
+        version: 10.4.2
+      '@testing-library/jest-dom':
+        specifier: 'catalog:'
+        version: 7.0.1(@testing-library/dom@10.4.2)
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@testing-library/user-event':
+        specifier: 'catalog:'
+        version: 14.6.8(@testing-library/dom@10.4.2)
+      '@types/jest':
+        specifier: 'catalog:'
+        version: 30.0.0
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.2
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: 'catalog:'
+        version: 19.3.0(@types/react@19.3.0)
+      eslint:
+        specifier: 'catalog:'
+        version: 10.12.0(jiti@2.4.2)(supports-color@7.2.0)
+      jest:
+        specifier: 'catalog:'
+        version: 30.5.2(@types/node@24.19.2)(babel-plugin-macros@3.1.0)(supports-color@7.2.0)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.10
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/internet/my-profile:
+    dependencies:
+      '@org/auth':
+        specifier: workspace:*
+        version: link:../../../packages/auth
+      '@org/design-tokens':
+        specifier: workspace:*
+        version: link:../../../packages/design-tokens
+      '@org/http-client':
+        specifier: workspace:*
+        version: link:../../../packages/http-client
+      '@org/mf-runtime':
+        specifier: workspace:*
+        version: link:../../../packages/mf-runtime
+      '@org/ui':
+        specifier: workspace:*
+        version: link:../../../packages/ui
+      react:
+        specifier: 'catalog:'
+        version: 19.3.1
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.3.1(react@19.3.1)
+      react-router:
+        specifier: 'catalog:'
+        version: 8.4.0(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+    devDependencies:
+      '@org/eslint-config':
+        specifier: workspace:*
+        version: link:../../../packages/eslint-config
+      '@org/jest-config':
+        specifier: workspace:*
+        version: link:../../../packages/jest-config
+      '@org/rspack-config':
+        specifier: workspace:*
+        version: link:../../../packages/rspack-config
+      '@org/scripts':
+        specifier: workspace:*
+        version: link:../../../tools/scripts
+      '@org/tsconfig':
+        specifier: workspace:*
+        version: link:../../../packages/tsconfig
+      '@rspack/cli':
+        specifier: 'catalog:'
+        version: 2.2.9(@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2))(@rspack/dev-server@2.2.1(@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2)))
+      '@rspack/core':
+        specifier: 'catalog:'
+        version: 2.2.9(@module-federation/runtime-tools@2.9.2)
+      '@rspack/dev-server':
+        specifier: 'catalog:'
+        version: 2.2.1(@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2))
+      '@testing-library/dom':
+        specifier: 'catalog:'
+        version: 10.4.2
+      '@testing-library/jest-dom':
+        specifier: 'catalog:'
+        version: 7.0.1(@testing-library/dom@10.4.2)
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@testing-library/user-event':
+        specifier: 'catalog:'
+        version: 14.6.8(@testing-library/dom@10.4.2)
+      '@types/jest':
+        specifier: 'catalog:'
+        version: 30.0.0
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.2
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: 'catalog:'
+        version: 19.3.0(@types/react@19.3.0)
+      eslint:
+        specifier: 'catalog:'
+        version: 10.12.0(jiti@2.4.2)(supports-color@7.2.0)
+      jest:
+        specifier: 'catalog:'
+        version: 30.5.2(@types/node@24.19.2)(babel-plugin-macros@3.1.0)(supports-color@7.2.0)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.10
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/internet/payments:
+    dependencies:
+      '@org/auth':
+        specifier: workspace:*
+        version: link:../../../packages/auth
+      '@org/design-tokens':
+        specifier: workspace:*
+        version: link:../../../packages/design-tokens
+      '@org/http-client':
+        specifier: workspace:*
+        version: link:../../../packages/http-client
+      '@org/mf-runtime':
+        specifier: workspace:*
+        version: link:../../../packages/mf-runtime
+      '@org/ui':
+        specifier: workspace:*
+        version: link:../../../packages/ui
+      react:
+        specifier: 'catalog:'
+        version: 19.3.1
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.3.1(react@19.3.1)
+      react-router:
+        specifier: 'catalog:'
+        version: 8.4.0(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+    devDependencies:
+      '@org/eslint-config':
+        specifier: workspace:*
+        version: link:../../../packages/eslint-config
+      '@org/jest-config':
+        specifier: workspace:*
+        version: link:../../../packages/jest-config
+      '@org/rspack-config':
+        specifier: workspace:*
+        version: link:../../../packages/rspack-config
+      '@org/scripts':
+        specifier: workspace:*
+        version: link:../../../tools/scripts
+      '@org/tsconfig':
+        specifier: workspace:*
+        version: link:../../../packages/tsconfig
+      '@rspack/cli':
+        specifier: 'catalog:'
+        version: 2.2.9(@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2))(@rspack/dev-server@2.2.1(@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2)))
+      '@rspack/core':
+        specifier: 'catalog:'
+        version: 2.2.9(@module-federation/runtime-tools@2.9.2)
+      '@rspack/dev-server':
+        specifier: 'catalog:'
+        version: 2.2.1(@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2))
+      '@testing-library/dom':
+        specifier: 'catalog:'
+        version: 10.4.2
+      '@testing-library/jest-dom':
+        specifier: 'catalog:'
+        version: 7.0.1(@testing-library/dom@10.4.2)
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@testing-library/user-event':
+        specifier: 'catalog:'
+        version: 14.6.8(@testing-library/dom@10.4.2)
+      '@types/jest':
+        specifier: 'catalog:'
+        version: 30.0.0
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.2
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: 'catalog:'
+        version: 19.3.0(@types/react@19.3.0)
+      eslint:
+        specifier: 'catalog:'
+        version: 10.12.0(jiti@2.4.2)(supports-color@7.2.0)
+      jest:
+        specifier: 'catalog:'
+        version: 30.5.2(@types/node@24.19.2)(babel-plugin-macros@3.1.0)(supports-color@7.2.0)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.10
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/internet/services:
+    dependencies:
+      '@org/auth':
+        specifier: workspace:*
+        version: link:../../../packages/auth
+      '@org/design-tokens':
+        specifier: workspace:*
+        version: link:../../../packages/design-tokens
+      '@org/http-client':
+        specifier: workspace:*
+        version: link:../../../packages/http-client
+      '@org/mf-runtime':
+        specifier: workspace:*
+        version: link:../../../packages/mf-runtime
+      '@org/ui':
+        specifier: workspace:*
+        version: link:../../../packages/ui
+      react:
+        specifier: 'catalog:'
+        version: 19.3.1
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.3.1(react@19.3.1)
+      react-router:
+        specifier: 'catalog:'
+        version: 8.4.0(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+    devDependencies:
+      '@org/eslint-config':
+        specifier: workspace:*
+        version: link:../../../packages/eslint-config
+      '@org/jest-config':
+        specifier: workspace:*
+        version: link:../../../packages/jest-config
+      '@org/rspack-config':
+        specifier: workspace:*
+        version: link:../../../packages/rspack-config
+      '@org/scripts':
+        specifier: workspace:*
+        version: link:../../../tools/scripts
+      '@org/tsconfig':
+        specifier: workspace:*
+        version: link:../../../packages/tsconfig
+      '@rspack/cli':
+        specifier: 'catalog:'
+        version: 2.2.9(@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2))(@rspack/dev-server@2.2.1(@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2)))
+      '@rspack/core':
+        specifier: 'catalog:'
+        version: 2.2.9(@module-federation/runtime-tools@2.9.2)
+      '@rspack/dev-server':
+        specifier: 'catalog:'
+        version: 2.2.1(@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2))
+      '@testing-library/dom':
+        specifier: 'catalog:'
+        version: 10.4.2
+      '@testing-library/jest-dom':
+        specifier: 'catalog:'
+        version: 7.0.1(@testing-library/dom@10.4.2)
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@testing-library/user-event':
+        specifier: 'catalog:'
+        version: 14.6.8(@testing-library/dom@10.4.2)
+      '@types/jest':
+        specifier: 'catalog:'
+        version: 30.0.0
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.2
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: 'catalog:'
+        version: 19.3.0(@types/react@19.3.0)
+      eslint:
+        specifier: 'catalog:'
+        version: 10.12.0(jiti@2.4.2)(supports-color@7.2.0)
+      jest:
+        specifier: 'catalog:'
+        version: 30.5.2(@types/node@24.19.2)(babel-plugin-macros@3.1.0)(supports-color@7.2.0)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.10
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/internet/shell-internet:
+    dependencies:
+      '@org/auth':
+        specifier: workspace:*
+        version: link:../../../packages/auth
+      '@org/design-tokens':
+        specifier: workspace:*
+        version: link:../../../packages/design-tokens
+      '@org/http-client':
+        specifier: workspace:*
+        version: link:../../../packages/http-client
+      '@org/mf-runtime':
+        specifier: workspace:*
+        version: link:../../../packages/mf-runtime
+      '@org/pwa':
+        specifier: workspace:*
+        version: link:../../../packages/pwa
+      '@org/ui':
+        specifier: workspace:*
+        version: link:../../../packages/ui
+      react:
+        specifier: 'catalog:'
+        version: 19.3.1
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.3.1(react@19.3.1)
+      react-router:
+        specifier: 'catalog:'
+        version: 8.4.0(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+    devDependencies:
+      '@axe-core/playwright':
+        specifier: 'catalog:'
+        version: 4.14.0(playwright-core@1.64.1)
+      '@org/eslint-config':
+        specifier: workspace:*
+        version: link:../../../packages/eslint-config
+      '@org/jest-config':
+        specifier: workspace:*
+        version: link:../../../packages/jest-config
+      '@org/playwright-config':
+        specifier: workspace:*
+        version: link:../../../packages/playwright-config
+      '@org/rspack-config':
+        specifier: workspace:*
+        version: link:../../../packages/rspack-config
+      '@org/scripts':
+        specifier: workspace:*
+        version: link:../../../tools/scripts
+      '@org/tsconfig':
+        specifier: workspace:*
+        version: link:../../../packages/tsconfig
+      '@playwright/test':
+        specifier: 'catalog:'
+        version: 1.64.1
+      '@rspack/cli':
+        specifier: 'catalog:'
+        version: 2.2.9(@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2))(@rspack/dev-server@2.2.1(@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2)))
+      '@rspack/core':
+        specifier: 'catalog:'
+        version: 2.2.9(@module-federation/runtime-tools@2.9.2)
+      '@rspack/dev-server':
+        specifier: 'catalog:'
+        version: 2.2.1(@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2))
+      '@testing-library/dom':
+        specifier: 'catalog:'
+        version: 10.4.2
+      '@testing-library/jest-dom':
+        specifier: 'catalog:'
+        version: 7.0.1(@testing-library/dom@10.4.2)
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@testing-library/user-event':
+        specifier: 'catalog:'
+        version: 14.6.8(@testing-library/dom@10.4.2)
+      '@types/jest':
+        specifier: 'catalog:'
+        version: 30.0.0
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.2
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: 'catalog:'
+        version: 19.3.0(@types/react@19.3.0)
+      eslint:
+        specifier: 'catalog:'
+        version: 10.12.0(jiti@2.4.2)(supports-color@7.2.0)
+      jest:
+        specifier: 'catalog:'
+        version: 30.5.2(@types/node@24.19.2)(babel-plugin-macros@3.1.0)(supports-color@7.2.0)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.10
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/intranet/it-helpdesk:
+    dependencies:
+      '@org/auth':
+        specifier: workspace:*
+        version: link:../../../packages/auth
+      '@org/design-tokens':
+        specifier: workspace:*
+        version: link:../../../packages/design-tokens
+      '@org/http-client':
+        specifier: workspace:*
+        version: link:../../../packages/http-client
+      '@org/mf-runtime':
+        specifier: workspace:*
+        version: link:../../../packages/mf-runtime
+      '@org/ui':
+        specifier: workspace:*
+        version: link:../../../packages/ui
+      react:
+        specifier: 'catalog:'
+        version: 19.3.1
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.3.1(react@19.3.1)
+      react-router:
+        specifier: 'catalog:'
+        version: 8.4.0(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+    devDependencies:
+      '@org/eslint-config':
+        specifier: workspace:*
+        version: link:../../../packages/eslint-config
+      '@org/jest-config':
+        specifier: workspace:*
+        version: link:../../../packages/jest-config
+      '@org/rspack-config':
+        specifier: workspace:*
+        version: link:../../../packages/rspack-config
+      '@org/scripts':
+        specifier: workspace:*
+        version: link:../../../tools/scripts
+      '@org/tsconfig':
+        specifier: workspace:*
+        version: link:../../../packages/tsconfig
+      '@rspack/cli':
+        specifier: 'catalog:'
+        version: 2.2.9(@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2))(@rspack/dev-server@2.2.1(@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2)))
+      '@rspack/core':
+        specifier: 'catalog:'
+        version: 2.2.9(@module-federation/runtime-tools@2.9.2)
+      '@rspack/dev-server':
+        specifier: 'catalog:'
+        version: 2.2.1(@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2))
+      '@testing-library/dom':
+        specifier: 'catalog:'
+        version: 10.4.2
+      '@testing-library/jest-dom':
+        specifier: 'catalog:'
+        version: 7.0.1(@testing-library/dom@10.4.2)
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@testing-library/user-event':
+        specifier: 'catalog:'
+        version: 14.6.8(@testing-library/dom@10.4.2)
+      '@types/jest':
+        specifier: 'catalog:'
+        version: 30.0.0
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.2
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: 'catalog:'
+        version: 19.3.0(@types/react@19.3.0)
+      eslint:
+        specifier: 'catalog:'
+        version: 10.12.0(jiti@2.4.2)(supports-color@7.2.0)
+      jest:
+        specifier: 'catalog:'
+        version: 30.5.2(@types/node@24.19.2)(babel-plugin-macros@3.1.0)(supports-color@7.2.0)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.10
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/intranet/leave-requests:
+    dependencies:
+      '@org/auth':
+        specifier: workspace:*
+        version: link:../../../packages/auth
+      '@org/design-tokens':
+        specifier: workspace:*
+        version: link:../../../packages/design-tokens
+      '@org/http-client':
+        specifier: workspace:*
+        version: link:../../../packages/http-client
+      '@org/mf-runtime':
+        specifier: workspace:*
+        version: link:../../../packages/mf-runtime
+      '@org/ui':
+        specifier: workspace:*
+        version: link:../../../packages/ui
+      react:
+        specifier: 'catalog:'
+        version: 19.3.1
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.3.1(react@19.3.1)
+      react-router:
+        specifier: 'catalog:'
+        version: 8.4.0(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+    devDependencies:
+      '@org/eslint-config':
+        specifier: workspace:*
+        version: link:../../../packages/eslint-config
+      '@org/jest-config':
+        specifier: workspace:*
+        version: link:../../../packages/jest-config
+      '@org/rspack-config':
+        specifier: workspace:*
+        version: link:../../../packages/rspack-config
+      '@org/scripts':
+        specifier: workspace:*
+        version: link:../../../tools/scripts
+      '@org/tsconfig':
+        specifier: workspace:*
+        version: link:../../../packages/tsconfig
+      '@rspack/cli':
+        specifier: 'catalog:'
+        version: 2.2.9(@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2))(@rspack/dev-server@2.2.1(@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2)))
+      '@rspack/core':
+        specifier: 'catalog:'
+        version: 2.2.9(@module-federation/runtime-tools@2.9.2)
+      '@rspack/dev-server':
+        specifier: 'catalog:'
+        version: 2.2.1(@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2))
+      '@testing-library/dom':
+        specifier: 'catalog:'
+        version: 10.4.2
+      '@testing-library/jest-dom':
+        specifier: 'catalog:'
+        version: 7.0.1(@testing-library/dom@10.4.2)
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@testing-library/user-event':
+        specifier: 'catalog:'
+        version: 14.6.8(@testing-library/dom@10.4.2)
+      '@types/jest':
+        specifier: 'catalog:'
+        version: 30.0.0
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.2
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: 'catalog:'
+        version: 19.3.0(@types/react@19.3.0)
+      eslint:
+        specifier: 'catalog:'
+        version: 10.12.0(jiti@2.4.2)(supports-color@7.2.0)
+      jest:
+        specifier: 'catalog:'
+        version: 30.5.2(@types/node@24.19.2)(babel-plugin-macros@3.1.0)(supports-color@7.2.0)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.10
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/intranet/shell-intranet:
+    dependencies:
+      '@org/auth':
+        specifier: workspace:*
+        version: link:../../../packages/auth
+      '@org/design-tokens':
+        specifier: workspace:*
+        version: link:../../../packages/design-tokens
+      '@org/http-client':
+        specifier: workspace:*
+        version: link:../../../packages/http-client
+      '@org/mf-runtime':
+        specifier: workspace:*
+        version: link:../../../packages/mf-runtime
+      '@org/pwa':
+        specifier: workspace:*
+        version: link:../../../packages/pwa
+      '@org/ui':
+        specifier: workspace:*
+        version: link:../../../packages/ui
+      react:
+        specifier: 'catalog:'
+        version: 19.3.1
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.3.1(react@19.3.1)
+      react-router:
+        specifier: 'catalog:'
+        version: 8.4.0(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+    devDependencies:
+      '@axe-core/playwright':
+        specifier: 'catalog:'
+        version: 4.14.0(playwright-core@1.64.1)
+      '@org/eslint-config':
+        specifier: workspace:*
+        version: link:../../../packages/eslint-config
+      '@org/jest-config':
+        specifier: workspace:*
+        version: link:../../../packages/jest-config
+      '@org/playwright-config':
+        specifier: workspace:*
+        version: link:../../../packages/playwright-config
+      '@org/rspack-config':
+        specifier: workspace:*
+        version: link:../../../packages/rspack-config
+      '@org/scripts':
+        specifier: workspace:*
+        version: link:../../../tools/scripts
+      '@org/tsconfig':
+        specifier: workspace:*
+        version: link:../../../packages/tsconfig
+      '@playwright/test':
+        specifier: 'catalog:'
+        version: 1.64.1
+      '@rspack/cli':
+        specifier: 'catalog:'
+        version: 2.2.9(@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2))(@rspack/dev-server@2.2.1(@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2)))
+      '@rspack/core':
+        specifier: 'catalog:'
+        version: 2.2.9(@module-federation/runtime-tools@2.9.2)
+      '@rspack/dev-server':
+        specifier: 'catalog:'
+        version: 2.2.1(@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2))
+      '@testing-library/dom':
+        specifier: 'catalog:'
+        version: 10.4.2
+      '@testing-library/jest-dom':
+        specifier: 'catalog:'
+        version: 7.0.1(@testing-library/dom@10.4.2)
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@testing-library/user-event':
+        specifier: 'catalog:'
+        version: 14.6.8(@testing-library/dom@10.4.2)
+      '@types/jest':
+        specifier: 'catalog:'
+        version: 30.0.0
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.2
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: 'catalog:'
+        version: 19.3.0(@types/react@19.3.0)
+      eslint:
+        specifier: 'catalog:'
+        version: 10.12.0(jiti@2.4.2)(supports-color@7.2.0)
+      jest:
+        specifier: 'catalog:'
+        version: 30.5.2(@types/node@24.19.2)(babel-plugin-macros@3.1.0)(supports-color@7.2.0)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.10
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/intranet/staff-directory:
+    dependencies:
+      '@org/auth':
+        specifier: workspace:*
+        version: link:../../../packages/auth
+      '@org/design-tokens':
+        specifier: workspace:*
+        version: link:../../../packages/design-tokens
+      '@org/http-client':
+        specifier: workspace:*
+        version: link:../../../packages/http-client
+      '@org/mf-runtime':
+        specifier: workspace:*
+        version: link:../../../packages/mf-runtime
+      '@org/ui':
+        specifier: workspace:*
+        version: link:../../../packages/ui
+      react:
+        specifier: 'catalog:'
+        version: 19.3.1
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.3.1(react@19.3.1)
+      react-router:
+        specifier: 'catalog:'
+        version: 8.4.0(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+    devDependencies:
+      '@org/eslint-config':
+        specifier: workspace:*
+        version: link:../../../packages/eslint-config
+      '@org/jest-config':
+        specifier: workspace:*
+        version: link:../../../packages/jest-config
+      '@org/rspack-config':
+        specifier: workspace:*
+        version: link:../../../packages/rspack-config
+      '@org/scripts':
+        specifier: workspace:*
+        version: link:../../../tools/scripts
+      '@org/tsconfig':
+        specifier: workspace:*
+        version: link:../../../packages/tsconfig
+      '@rspack/cli':
+        specifier: 'catalog:'
+        version: 2.2.9(@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2))(@rspack/dev-server@2.2.1(@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2)))
+      '@rspack/core':
+        specifier: 'catalog:'
+        version: 2.2.9(@module-federation/runtime-tools@2.9.2)
+      '@rspack/dev-server':
+        specifier: 'catalog:'
+        version: 2.2.1(@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2))
+      '@testing-library/dom':
+        specifier: 'catalog:'
+        version: 10.4.2
+      '@testing-library/jest-dom':
+        specifier: 'catalog:'
+        version: 7.0.1(@testing-library/dom@10.4.2)
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@testing-library/user-event':
+        specifier: 'catalog:'
+        version: 14.6.8(@testing-library/dom@10.4.2)
+      '@types/jest':
+        specifier: 'catalog:'
+        version: 30.0.0
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.2
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: 'catalog:'
+        version: 19.3.0(@types/react@19.3.0)
+      eslint:
+        specifier: 'catalog:'
+        version: 10.12.0(jiti@2.4.2)(supports-color@7.2.0)
+      jest:
+        specifier: 'catalog:'
+        version: 30.5.2(@types/node@24.19.2)(babel-plugin-macros@3.1.0)(supports-color@7.2.0)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.10
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
 
   packages/auth:
     dependencies:
@@ -2366,6 +3185,16 @@ packages:
 
   '@rspack/binding@2.2.9':
     resolution: {integrity: sha512-Y8wDJoRo8n0KXDGq6J3KGVekkUQcOcUHSppMHoJv8JLbNBEsyaaKiDx4ljNTGEDtTON0CRbMEWbSiLRe+bJxOQ==}
+
+  '@rspack/cli@2.2.9':
+    resolution: {integrity: sha512-oaFot9B5oensD70w2ikkVRugqpXlAOUYu034JMFsAIrwurEHnoYcUJo+nw06M3Fv4Tx48QCcO7bBh0ynDiDKtw==}
+    hasBin: true
+    peerDependencies:
+      '@rspack/core': ^2.0.0-0
+      '@rspack/dev-server': ^2.0.0-0
+    peerDependenciesMeta:
+      '@rspack/dev-server':
+        optional: true
 
   '@rspack/core@2.2.9':
     resolution: {integrity: sha512-Tp6/ZdM5UrGB3BeLfvh69l1iX03PZ46IgXjKqubVEuJVAhnOjpshooH/YAxcxR0AymcBLKA997Z4v+LV2aXzCw==}
@@ -7055,6 +7884,12 @@ snapshots:
       '@rspack/binding-win32-arm64-msvc': 2.2.9
       '@rspack/binding-win32-ia32-msvc': 2.2.9
       '@rspack/binding-win32-x64-msvc': 2.2.9
+
+  '@rspack/cli@2.2.9(@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2))(@rspack/dev-server@2.2.1(@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2)))':
+    dependencies:
+      '@rspack/core': 2.2.9(@module-federation/runtime-tools@2.9.2)
+    optionalDependencies:
+      '@rspack/dev-server': 2.2.1(@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2))
 
   '@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2)':
     dependencies:

@@ -1,0 +1,41 @@
+{
+  "$comment": "Remotes of this shell (nav + routes). Managed by `pnpm gen:remote`; edit title/path by hand if needed. URLs per environment live in mfe-manifest.json, not here.",
+  "remotes": [
+    {
+      "name": "services",
+      "title": "Services",
+      "path": "/services",
+      "federationName": "internet_services",
+      "package": "@org/internet-services",
+      "access": "public",
+      "kind": "react"
+    },
+    {
+      "name": "announcements",
+      "title": "Announcements",
+      "path": "/announcements",
+      "federationName": "internet_announcements",
+      "package": "@org/internet-announcements",
+      "access": "public",
+      "kind": "react"
+    },
+    {
+      "name": "my-profile",
+      "title": "My Profile",
+      "path": "/my-profile",
+      "federationName": "internet_my_profile",
+      "package": "@org/internet-my-profile",
+      "access": "private",
+      "kind": "react"
+    },
+    {
+      "name": "payments",
+      "title": "Payments",
+      "path": "/payments",
+      "federationName": "internet_payments",
+      "package": "@org/internet-payments",
+      "access": "public",
+      "kind": "external"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "$comment": "Remotes of this shell (nav + routes). Managed by `pnpm gen:remote`; edit title/path by hand if needed. URLs per environment live in mfe-manifest.json, not here.",
+  "remotes": [
+    {
+      "name": "staff-directory",
+      "title": "Staff Directory",
+      "path": "/staff-directory",
+      "federationName": "intranet_staff_directory",
+      "package": "@org/intranet-staff-directory",
+      "access": "public",
+      "kind": "react"
+    },
+    {
+      "name": "leave-requests",
+      "title": "Leave Requests",
+      "path": "/leave-requests",
+      "federationName": "intranet_leave_requests",
+      "package": "@org/intranet-leave-requests",
+      "access": "public",
+      "kind": "react"
+    },
+    {
+      "name": "it-helpdesk",
+      "title": "It Helpdesk",
+      "path": "/it-helpdesk",
+      "federationName": "intranet_it_helpdesk",
+      "package": "@org/intranet-it-helpdesk",
+      "access": "public",
+      "kind": "external"
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "name": "@org/intranet-leave-requests",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Leave Requests: remote of the intranet zone (public)",
+  "type": "module",
+  "scripts": {
+    "dev": "rspack dev",
+    "build": "rspack build",
+    "preview": "mfe-preview",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "jest"
+  },
+  "nx": {
+    "tags": [
+      "zone:intranet",
+      "type:remote",
+      "access:public"
+    ]
+  },
+  "mfe": {
+    "port": 3102,
+    "federationName": "intranet_leave_requests"
+  },
+  "dependencies": {
+    "@org/auth": "workspace:*",
+    "@org/design-tokens": "workspace:*",
+    "@org/http-client": "workspace:*",
+    "@org/mf-runtime": "workspace:*",
+    "@org/ui": "workspace:*",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-router": "catalog:"
+  },
+  "devDependencies": {
+    "@org/eslint-config": "workspace:*",
+    "@org/jest-config": "workspace:*",
+    "@org/rspack-config": "workspace:*",
+    "@org/scripts": "workspace:*",
+    "@org/tsconfig": "workspace:*",
+    "@rspack/cli": "catalog:",
+    "@rspack/core": "catalog:",
+    "@rspack/dev-server": "catalog:",
+    "@testing-library/dom": "catalog:",
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@testing-library/user-event": "catalog:",
+    "@types/jest": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "eslint": "catalog:",
+    "jest": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:"
+  }
+}

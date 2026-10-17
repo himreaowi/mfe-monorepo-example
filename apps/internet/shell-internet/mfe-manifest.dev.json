@@ -1,0 +1,30 @@
+{
+  "remotes": {
+    "internet_services": {
+      "entry": "http://localhost:3201/mf-manifest.json"
+    },
+    "internet_announcements": {
+      "entry": "http://localhost:3202/mf-manifest.json"
+    },
+    "internet_my_profile": {
+      "entry": "http://localhost:3203/mf-manifest.json"
+    },
+    "internet_payments": {
+      "entry": "http://localhost:3204/mf-manifest.json",
+      "props": {
+        "vendor": {
+          "url": "http://localhost:3999/mount.js",
+          "format": "esm",
+          "config": {
+            "title": "Payments (mock vendor)",
+            "amount": 1250
+          }
+        }
+      }
+    }
+  },
+  "auth": {
+    "mock": true
+  },
+  "settings": {}
+}

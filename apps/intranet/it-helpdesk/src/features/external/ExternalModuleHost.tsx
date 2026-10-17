@@ -1,0 +1,109 @@
+import { useCallback, useState } from 'react';
+import { useNavigate, useParams } from 'react-router';
+import {
+  ExternalModule,
+  type ExternalModuleReportedError,
+  type ExternalNavigateOptions,
+} from '@org/mf-runtime/external';
+import { joinBasePath, useHostProps } from '@org/mf-runtime/remote';
+import { RemoteFallback, useTheme } from '@org/ui';
+import { ModeBadge } from '@/components/ModeBadge';
+import { APP_TITLE, FEDERATION_NAME } from '@/core/constants/app';
+import { resolveVendorConfig } from './vendorConfig';
+import styles from './ExternalModuleHost.module.scss';
+
+type LogEntry = { id: number; kind: 'event' | 'error'; text: string };
+
+let nextId = 0;
+
+/**
+ * Adapter for an external (vendor) module: renders `<ExternalModule>` from
+ * @org/mf-runtime/external, which loads the vendor bundle (URL from mfe-manifest.json) and drives
+ * its `mount(el, props) → { update, unmount }` contract (docs/external-modules.md).
+ *
+ * - `path` = everything below this remote's mount (the vendor routes on it); the vendor's
+ *   `onNavigate` goes through the shell's router
+ * - theme and user come from the shell; prop changes reach the vendor via `update()`
+ * - leaving the route unmounts the vendor; failures show RemoteFallback, the shell keeps working
+ * - the "Events from the module" panel is a demo: replace it with real handling (analytics,
+ *   notifications, refreshing your own data, …)
+ */
+export function ExternalModuleHost() {
+  const { embedded, basePath, user, vendor } = useHostProps();
+  const { theme } = useTheme();
+  const path = useParams()['*'] ?? '';
+  const navigate = useNavigate();
+  const [log, setLog] = useState<LogEntry[]>([]);
+  const config = resolveVendorConfig(vendor);
+
+  const append = useCallback((kind: LogEntry['kind'], text: string) => {
+    nextId += 1;
+    setLog((entries) => [...entries.slice(-19), { id: nextId, kind, text }]);
+  }, []);
+  const onNavigate = useCallback(
+    (to: string, options?: ExternalNavigateOptions) =>
+      navigate(to.startsWith('/') ? to : joinBasePath(basePath, to), {
+        replace: options?.replace,
+      }),
+    [navigate, basePath],
+  );
+  const onEvent = useCallback(
+    (name: string, detail?: unknown) =>
+      append('event', `${name} ${JSON.stringify(detail ?? null)}`),
+    [append],
+  );
+  const onError = useCallback(
+    (error: ExternalModuleReportedError) =>
+      append('error', `${error.source}/${error.code}: ${error.message}`),
+    [append],
+  );
+
+  return (
+    <section className={styles.adapter} data-testid="external-adapter">
+      <header className={styles.header}>
+        <h1 className={styles.title}>{APP_TITLE}</h1>
+        <ModeBadge embedded={embedded} />
+      </header>
+      {config === undefined ? (
+        <RemoteFallback
+          title="Vendor module not configured"
+          reason={`Set "props.vendor" for ${FEDERATION_NAME} in mfe-manifest.json, e.g. { "url": "https://vendor.example/mount.js", "format": "esm" }.`}
+        />
+      ) : (
+        <ExternalModule
+          name={FEDERATION_NAME}
+          config={config}
+          basePath={basePath}
+          path={path}
+          theme={theme}
+          user={
+            user ? { id: user.id, name: user.name, roles: user.roles } : null
+          }
+          onNavigate={onNavigate}
+          onEvent={onEvent}
+          onError={onError}
+        />
+      )}
+      <aside
+        className={styles.events}
+        aria-labelledby="vendor-events-title"
+        data-testid="vendor-events"
+      >
+        <h2 id="vendor-events-title" className={styles.eventsTitle}>
+          Events from the module
+        </h2>
+        {log.length === 0 ? (
+          <p className={styles.muted}>None yet.</p>
+        ) : (
+          <ol className={styles.list}>
+            {log.map((entry) => (
+              <li key={entry.id} data-kind={entry.kind}>
+                {entry.text}
+              </li>
+            ))}
+          </ol>
+        )}
+      </aside>
+    </section>
+  );
+}
