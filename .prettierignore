@@ -1,5 +1,6 @@
 dist
 build
+!packages/pwa/build
 coverage
 node_modules
 playwright-report

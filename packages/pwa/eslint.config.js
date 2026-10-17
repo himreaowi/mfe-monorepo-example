@@ -1,3 +1,4 @@
 import config from '@org/eslint-config';
 
-export default config;
+// build/ is source here (the Rspack/Workbox plugin, @org/pwa/build), not build output.
+export default [...config, { ignores: ['!build/**'] }];

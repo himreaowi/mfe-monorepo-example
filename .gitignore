@@ -1,6 +1,8 @@
 node_modules/
 dist/
 build/
+# packages/pwa/build is source (the Rspack/Workbox plugin), not output
+!packages/pwa/build/
 coverage/
 *.log
 .env
