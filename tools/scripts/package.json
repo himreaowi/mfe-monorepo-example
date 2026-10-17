@@ -2,7 +2,7 @@
   "name": "@org/scripts",
   "version": "0.1.0",
   "private": true,
-  "description": "Repo guardrails (check-versions, check-apps) and the mfe-preview static server",
+  "description": "Repo guardrails (check-versions, check-apps), list-apps (CI matrix, affected apps), e2e runner and the mfe-preview static server",
   "type": "module",
   "exports": {
     ".": "./src/index.js",
@@ -12,7 +12,9 @@
   "bin": {
     "mfe-check": "./bin/check.js",
     "mfe-preview": "./bin/mfe-preview.js",
-    "mfe-e2e": "./bin/e2e.js"
+    "mfe-e2e": "./bin/e2e.js",
+    "mfe-apps": "./bin/list-apps.js",
+    "mfe-validate-manifest": "./bin/validate-manifest.js"
   },
   "scripts": {
     "lint": "eslint .",
@@ -22,7 +24,19 @@
   "nx": {
     "tags": [
       "type:tool"
-    ]
+    ],
+    "implicitDependencies": [
+      "@org/mf-runtime"
+    ],
+    "targets": {
+      "test": {
+        "inputs": [
+          "default",
+          "^production",
+          "{workspaceRoot}/deploy/**/*"
+        ]
+      }
+    }
   },
   "dependencies": {
     "yaml": "catalog:"

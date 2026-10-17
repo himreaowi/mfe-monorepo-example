@@ -1,0 +1,104 @@
+# One server config for every app (shell or remote). The nginx image's entrypoint renders this
+# template with envsubst at start-up: dollar-brace placeholders are environment variables (defaults
+# in deploy/Dockerfile).
+# nginx's own variables ($uri, $http_origin, ...) are left alone.
+#
+# Caching rule of thumb: anything that names other files (index.html, mfe-manifest.json,
+# mf-manifest.json, remoteEntry.js, service-worker.js) is revalidated on every request; files
+# with a content hash in their name never change and are cached for a year.
+
+# CORS: a remote's mf-manifest.json and chunks are loaded by shells on other origins.
+# MFE_CORS_ORIGINS_REGEX lists the shell origins, e.g. '^https://(portal|staff)\.example\.sg$'.
+# No match → no Access-Control-Allow-Origin header (never '*').
+map $http_origin $mfe_cors_origin {
+    default "";
+    "~${MFE_CORS_ORIGINS_REGEX}" $http_origin;
+}
+
+server {
+    listen ${NGINX_PORT};
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    server_tokens off;
+    charset utf-8;
+    absolute_redirect off;
+
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_types text/css application/javascript text/javascript application/json
+               application/manifest+json image/svg+xml;
+
+    # Every location below repeats `include .../security-headers.inc`: nginx drops inherited
+    # add_header directives as soon as a location has its own add_header.
+
+    location = /healthz {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
+    # Per-environment runtime config of a shell (remotes, auth/BFF URLs, settings). Written by
+    # DevOps per environment: mounted at /etc/mfe/mfe-manifest.json or MFE_MANIFEST_JSON.
+    location = /mfe-manifest.json {
+        root /etc/mfe;
+        default_type application/json;
+        try_files /mfe-manifest.json =404;
+        add_header Cache-Control "no-cache" always;
+        include /etc/nginx/conf.d/security-headers.inc;
+    }
+
+    # Module Federation entry points: always revalidate (they point at hashed chunks).
+    location ~ ^/(mf-manifest\.json|mf-stats\.json|remoteEntry\.js)$ {
+        try_files $uri =404;
+        add_header Cache-Control "no-cache" always;
+        add_header Access-Control-Allow-Origin $mfe_cors_origin always;
+        add_header Vary "Origin" always;
+        include /etc/nginx/conf.d/security-headers.inc;
+    }
+
+    # Service worker and PWA manifest: must not be cached, or users keep an old app.
+    location ~ ^/(service-worker\.js|manifest\.webmanifest)$ {
+        try_files $uri =404;
+        add_header Cache-Control "no-cache" always;
+        include /etc/nginx/conf.d/security-headers.inc;
+    }
+
+    # Source maps are not published (upload them to your error tracker instead).
+    location ~* \.map$ {
+        return 404;
+    }
+
+    # Content-hashed build output ([name].[contenthash:8].js): immutable.
+    location ~* \.[0-9a-f]{8}\.(?:js|mjs|css)$ {
+        try_files $uri =404;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        add_header Access-Control-Allow-Origin $mfe_cors_origin always;
+        add_header Vary "Origin" always;
+        include /etc/nginx/conf.d/security-headers.inc;
+    }
+
+    # Other static files without a hash (icons, images, fonts): short cache.
+    location ~* \.(?:png|jpe?g|gif|webp|avif|svg|ico|woff2?|ttf|txt|json|js|css)$ {
+        try_files $uri =404;
+        add_header Cache-Control "public, max-age=3600" always;
+        add_header Access-Control-Allow-Origin $mfe_cors_origin always;
+        add_header Vary "Origin" always;
+        include /etc/nginx/conf.d/security-headers.inc;
+    }
+
+    # SPA fallback: every other path (deep links such as /staff-directory/details) gets
+    # index.html, which is revalidated on every request.
+    location / {
+        try_files $uri /index.html;
+        add_header Cache-Control "no-cache" always;
+        include /etc/nginx/conf.d/security-headers.inc;
+    }
+
+    location = /index.html {
+        add_header Cache-Control "no-cache" always;
+        include /etc/nginx/conf.d/security-headers.inc;
+    }
+}

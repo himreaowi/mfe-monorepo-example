@@ -1,0 +1,33 @@
+{
+  "remotes": {
+    "intranet_staff_directory": {
+      "entry": "https://staff-directory.portal.example.sg/mf-manifest.json"
+    },
+    "intranet_leave_requests": {
+      "entry": "https://leave-requests.portal.example.sg/mf-manifest.json",
+      "props": { "title": "Leave" }
+    },
+    "intranet_it_helpdesk": {
+      "entry": "https://it-helpdesk.portal.example.sg/mf-manifest.json",
+      "props": {
+        "vendor": {
+          "url": "https://cdn.helpdesk-vendor.example.com/widget/2.3.1/mount.js",
+          "format": "esm",
+          "integrity": "sha384-REPLACEwithTHEhashTHEvendorPUBLISHESperRELEASE",
+          "timeoutMs": 15000,
+          "config": { "tenant": "example-prod" }
+        }
+      }
+    }
+  },
+  "auth": {
+    "sessionUrl": "/bff/session",
+    "loginUrl": "/bff/login",
+    "logoutUrl": "/bff/logout",
+    "csrfHeaderName": "X-CSRF-Token"
+  },
+  "settings": {
+    "apiBaseUrl": "/api",
+    "environment": "production"
+  }
+}

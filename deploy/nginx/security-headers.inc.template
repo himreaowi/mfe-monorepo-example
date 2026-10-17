@@ -1,0 +1,22 @@
+# Security headers, included by every location of default.conf (rendered by envsubst at start-up).
+# Values in ${...} come from the environment (defaults in deploy/Dockerfile, meaning in
+# docs/devops-handoff.md). Space-separated origin lists, e.g. CSP_REMOTE_ORIGINS='https://cdn.example.sg'.
+#
+# CSP notes:
+# - script-src/connect-src: shells load remotes' remoteEntry.js and chunks (<script>) and their
+#   mf-manifest.json (fetch) → CSP_REMOTE_ORIGINS. Same-origin remotes need nothing ('self').
+# - connect-src: the BFF (session/login/logout) and APIs → CSP_BFF_ORIGINS, CSP_API_ORIGINS.
+# - vendor modules (mount contract): exactly the origins the vendor declared → CSP_VENDOR_ORIGINS;
+#   iframes → CSP_FRAME_SRC (default 'none').
+# - style-src 'unsafe-inline': style-loader injects each app's CSS as <style> elements (CSS travels
+#   with the remote's JS). Removing it needs extracted CSS files + nonces (not set up).
+# - No 'unsafe-eval' anywhere: the manifest validator is precompiled (no Ajv eval at runtime).
+add_header Content-Security-Policy "default-src 'self'; script-src 'self' ${CSP_REMOTE_ORIGINS} ${CSP_VENDOR_ORIGINS}; style-src 'self' 'unsafe-inline' ${CSP_REMOTE_ORIGINS} ${CSP_VENDOR_ORIGINS}; img-src 'self' data: ${CSP_REMOTE_ORIGINS} ${CSP_VENDOR_ORIGINS}; font-src 'self' ${CSP_REMOTE_ORIGINS} ${CSP_VENDOR_ORIGINS}; connect-src 'self' ${CSP_REMOTE_ORIGINS} ${CSP_BFF_ORIGINS} ${CSP_API_ORIGINS} ${CSP_VENDOR_ORIGINS}; frame-src ${CSP_FRAME_SRC}; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self' ${CSP_BFF_ORIGINS}; frame-ancestors 'none'; upgrade-insecure-requests; ${CSP_EXTRA}" always;
+add_header X-Content-Type-Options "nosniff" always;
+add_header X-Frame-Options "DENY" always;
+add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+add_header Permissions-Policy "${PERMISSIONS_POLICY}" always;
+add_header Cross-Origin-Opener-Policy "same-origin" always;
+# HSTS only has an effect over HTTPS (TLS usually ends at the gateway; set it there or here).
+add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+# No Cross-Origin-Resource-Policy: shells on other origins must be able to load a remote's chunks.

@@ -11,6 +11,8 @@
   "prettier": "@org/prettier-config",
   "scripts": {
     "check": "node tools/scripts/bin/check.js",
+    "apps": "node tools/scripts/bin/list-apps.js",
+    "validate-manifest": "node tools/scripts/bin/validate-manifest.js",
     "lint": "node tools/scripts/bin/check.js && nx run-many -t lint",
     "test": "nx run-many -t test",
     "typecheck": "nx run-many -t typecheck",

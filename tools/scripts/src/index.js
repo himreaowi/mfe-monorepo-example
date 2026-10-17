@@ -5,3 +5,12 @@ export { loadWorkspace, loadApps, DEP_FIELDS } from './workspace.js';
 export { ZONES, APP_TAGS, FEDERATION_NAME } from './zones.js';
 export { TIER1 } from './tiers.js';
 export { formatReport } from './report.js';
+export {
+  listApps,
+  affectedApps,
+  affectedFromFiles,
+  changedFiles,
+  nxAffected,
+  GLOBAL_FILES,
+} from './apps.js';
+export { validateManifestFile } from './manifest.js';

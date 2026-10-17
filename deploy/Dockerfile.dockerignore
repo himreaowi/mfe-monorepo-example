@@ -1,0 +1,18 @@
+# Build context = repo root (docker build -f deploy/Dockerfile .). BuildKit uses this file
+# because it sits next to the Dockerfile.
+**/node_modules
+**/dist
+**/coverage
+**/playwright-report
+**/test-results
+**/.tmp-tests
+.git
+.nx
+.vscode
+.idea
+.specify
+.cursor
+docs
+**/*.log
+.env
+.env.*

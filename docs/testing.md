@@ -51,7 +51,7 @@ tests** that keep generated or shared artefacts honest:
 | Package                      | Covers                                                                                                                         |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | `tools/generators`           | generates both zones into a temp workspace, checks files, metadata, registry, dev manifest; `check-apps`/`check-versions` pass |
-| `tools/scripts`              | every guardrail rule with fixture workspaces                                                                                   |
+| `tools/scripts`              | every guardrail rule with fixture workspaces; `list-apps` (incl. `--affected`); the `deploy/` templates; `validate-manifest`   |
 | `packages/rspack-config`     | config shape (singletons, publicPath, HTML entry), a real build (CSS module salting, absolute script URLs)                     |
 | `packages/vendor-kit`        | `mount-contract.d.ts` is up to date with `mf-runtime`; the kit builds and zips                                                 |
 | `packages/mf-runtime` (Jest) | the generated manifest validator is up to date with `mfe-manifest.schema.json`                                                 |
@@ -153,5 +153,6 @@ CI=true pnpm e2e:<zone>       # one job per zone (or pnpm e2e for all, sequentia
   `test-results/` for traces).
 - Cache the Playwright browser folder (`~/.cache/ms-playwright` on Linux, keyed by the
   `@playwright/test` version in `pnpm-workspace.yaml`).
-- Run a zone's e2e when anything in that zone or in `packages/` changed.
+- Run a zone's e2e when anything in that zone or in `packages/` changed:
+  `pnpm -s apps --affected --base=<sha> --zone=<zone> --json` is not `[]`.
 - Unit tests and e2e must pass before merge; a11y violations fail the build like any other test.

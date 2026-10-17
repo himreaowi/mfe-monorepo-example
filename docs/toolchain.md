@@ -350,3 +350,32 @@ integrity crossorigin>` first, then `import()` of the same URL reuses the verifi
   the console fixture fails a test that calls `console.error`.
 - `@axe-core/playwright` types come from `axe-core`, which is not a direct dependency in the
   isolated layout; `@org/playwright-config` derives the result types from `AxeBuilder['analyze']`.
+
+## Gotchas found in A9 (deploy, list-apps)
+
+- **`pnpm -s <script>` still echoes the command line, on stderr.** Stdout carries only the
+  script's output, so `pnpm -s apps --json | jq` and `$(pnpm -s apps --matrix)` work; do not
+  merge stderr into the JSON.
+- `nx show projects --affected --base=<sha>` without `--head` includes uncommitted and untracked
+  files (it compares with the working tree). `list-apps` runs it with `NX_DAEMON=false` so CI
+  does not leave a daemon behind. Nx knows nothing about `deploy/`, so list-apps adds its own
+  rule: a change in `deploy/` (or root config / the lockfile) affects every app.
+- **Nx 23 keeps its task cache outside the repo** (`~/.nx/<workspace hash>/cache`; `.nx/` in the
+  repo only holds `workspace-data`). Two copies of the repo can share cache hits. CI sets
+  `NX_CACHE_DIRECTORY` to a path it can cache (verified: the override is honoured).
+- **No Docker or nginx on the authoring machine.** The Dockerfile build stage was run as plain
+  commands in a copy of a generated workspace (`pnpm fetch`, `pnpm install --frozen-lockfile
+--offline --filter "<app>..."`, `pnpm --filter <app> run build`): only the app's dependency
+  closure is installed and the build works for a shell and a remote. The nginx config itself is
+  unverified (`nginx -t` not run); `tools/scripts/test/deploy.test.js` checks it statically.
+- **The CSP template was tested in a browser** with a small Node server sending the rendered
+  security headers in front of production builds (shell :4100, remotes :4101–4103, mock vendor
+  :3999): zero violations; with the remote origins removed, Chromium blocked the
+  `mf-manifest.json` fetch and the shell showed `RemoteFallback`. `upgrade-insecure-requests`
+  was left out for that `http://localhost` test. `style-src 'unsafe-inline'` is required
+  (style-loader); `'unsafe-eval'` is not.
+- nginx `add_header` is not inherited into a `location` that has its own `add_header`: every
+  location in the template includes the security headers file again (checked by a test).
+- The official nginx image's envsubst step only replaces variables that exist in the
+  environment; an unset `${CSP_…}` would stay in the config literally. The Dockerfile gives every
+  template variable a default.

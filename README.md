@@ -1,66 +1,81 @@
 # mfe-monorepo-template
 
-Template monorepo for React microfrontends: pnpm workspaces + Nx (package-based) + Rspack +
-Module Federation 2 (`@module-federation/enhanced`).
+Template monorepo for **React microfrontends**: pnpm workspaces + Nx (package-based), Rspack +
+Module Federation 2, React 19, TypeScript. Two zones (intranet, internet), each with one shell
+that loads its remotes at runtime from a per-environment manifest. Shared UI, auth (BFF
+pattern), runtime glue, build/test configs and guardrails live in `packages/`; apps are created
+with generators.
 
-**Status: phase A8 (testing: Playwright e2e + axe per zone).** `apps/` is empty: create apps with the generators.
+`apps/` is empty in the template. Start with [docs/getting-started.md](docs/getting-started.md).
 
-## What's here
-
-| Path                          | Contents                                                                                                                              |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/`                       | Empty. `pnpm gen:shell` / `pnpm gen:remote` add `apps/<zone>/<name>`                                                                  |
-| `packages/tsconfig`           | `@org/tsconfig`: `base.json`, `react-app.json`, `library.json`                                                                        |
-| `packages/eslint-config`      | `@org/eslint-config`: shared flat config (TS, React hooks, Prettier)                                                                  |
-| `packages/prettier-config`    | `@org/prettier-config`: shared Prettier options                                                                                       |
-| `packages/jest-config`        | `@org/jest-config`: Jest 30 preset (jsdom, SWC, Testing Library)                                                                      |
-| `packages/playwright-config`  | `@org/playwright-config`: zone e2e config (desktop + 375px, zone dev servers), console-error fixture, axe WCAG 2.2 AA helper          |
-| `packages/design-tokens`      | `@org/design-tokens`: tokens.css, global.scss, theme types/constants                                                                  |
-| `packages/ui`                 | `@org/ui`: Button, ThemeToggle, RemoteFallback, ConnectionRequired, MainLayout, ThemeProvider                                         |
-| `packages/http-client`        | `@org/http-client`: fetch wrapper, runtime base URL, apiRoutes pattern                                                                |
-| `packages/pwa`                | `@org/pwa`: registerPwa, useOnlineStatus, Workbox (workbox-build) Rspack plugin                                                       |
-| `packages/auth`               | `@org/auth`: AuthProvider, useAuth, RequireAuth, UserMenu, BFF session client, dev-only mock (tier-1 singleton)                       |
-| `packages/mf-runtime`         | `@org/mf-runtime`: mfe-manifest loader + JSON schema, initRemotes, `<RemoteApp>`, remote helpers, mount contract + `<ExternalModule>` |
-| `packages/vendor-kit`         | `@org/vendor-kit`: what vendors get (contract `.d.ts`, standalone test host, examples, checklist), `pack:kit` → zip                   |
-| `packages/rspack-config`      | `@org/rspack-config`: createShellConfig / createRemoteConfig (Rspack + MF 2)                                                          |
-| `tools/generators`            | `@org/generators`: `pnpm gen:shell <zone>`, `pnpm gen:remote <zone> <name> [--private] [--external]`                                  |
-| `tools/mock-vendor`           | `@org/mock-vendor` (dev only): mock vendor module without React on :3999 (`esm`, `web-component`)                                     |
-| `tools/scripts`               | `@org/scripts`: `pnpm check` (check-versions, check-apps), `mfe-preview`                                                              |
-| `docs/toolchain.md`           | Pinned versions, the A0 spike evidence, gotchas                                                                                       |
-| `docs/adding-dependencies.md` | Dependency tiers (catalog, app-local, exceptions) with commands                                                                       |
-| `docs/guardrails.md`          | Every check and how to fix its failures                                                                                               |
-| `docs/external-modules.md`    | Vendor/other-framework integration: decision table, mount contract, security, vendor onboarding                                       |
-| `docs/auth-contract.md`       | BFF endpoints, user object, cookies, CSRF, CORS, expiry: what the backend must provide                                                |
-| `pnpm-workspace.yaml`         | Workspace globs, the default catalog (one version per core library), isolated linker                                                  |
-| `version-exceptions.json`     | Justified opt-outs from the catalog (empty)                                                                                           |
-| `nx.json`                     | Task caching and defaults for `build`, `lint`, `test`, `typecheck`                                                                    |
-
-## Getting started
+## Quick start
 
 ```sh
-nvm use            # Node 24
-corepack enable    # provides the pnpm version pinned in package.json
-pnpm install
-pnpm lint           # pnpm check (guardrails) + ESLint
-pnpm test
-pnpm typecheck
-pnpm format:check
-
+nvm use && corepack enable && pnpm install
 pnpm gen:shell intranet
 pnpm gen:remote intranet staff-directory
+pnpm gen:remote intranet leave-requests --private
 pnpm install
-pnpm dev:intranet   # shell on :3100 + every intranet remote
+pnpm dev:intranet          # http://localhost:3100
+pnpm e2e:intranet          # e2e + axe WCAG 2.2 AA (after: pnpm --filter @org/shell-intranet exec playwright install chromium)
 ```
 
-| Script                                                   | What                                                         |
-| -------------------------------------------------------- | ------------------------------------------------------------ |
-| `pnpm gen:shell <zone>`                                  | Create `apps/<zone>/shell-<zone>` (zone: intranet, internet) |
-| `pnpm gen:remote <zone> <name> [--private] [--external]` | Create a remote and register it with the zone's shell        |
-| `pnpm dev:intranet` / `pnpm dev:internet`                | Shell + remotes of the zone in parallel (Nx, by `zone:` tag) |
-| `pnpm check`                                             | Guardrails: dependency tiers, app tags/ports/boundaries      |
-| `pnpm lint` / `typecheck` / `test` / `build`             | All projects (Nx)                                            |
-| `pnpm e2e` / `pnpm e2e:<zone>`                           | Zone e2e suites (Playwright + axe), one zone at a time       |
+## Documentation
+
+| Doc                                                                                         | For                                                                 |
+| ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| [Getting started](docs/getting-started.md)                                                  | clone → install → generate → run → test → build                     |
+| [Architecture](docs/architecture.md)                                                        | decisions D1–D8, runtime (manifest → remotes), zones, auth, vendors |
+| [Adding an app](docs/adding-an-app.md)                                                      | generators, what they change, going to production                   |
+| [Adding dependencies](docs/adding-dependencies.md)                                          | dependency tiers: catalog, app-local, exceptions                    |
+| [Coding conventions](docs/coding-conventions.md)                                            | where code goes, data fetching, React/TS rules                      |
+| [UI context](docs/ui-context.md)                                                            | tokens, theming, components, a11y rules for UI work                 |
+| [Testing](docs/testing.md)                                                                  | unit, contract, e2e, accessibility; how CI runs them                |
+| [Guardrails](docs/guardrails.md)                                                            | every `pnpm check` / boundary rule and its fix                      |
+| [Auth contract](docs/auth-contract.md)                                                      | BFF endpoints, cookies, CSRF, CORS (for the backend team)           |
+| [External modules](docs/external-modules.md)                                                | vendor / other-framework integration, mount contract, vendor kit    |
+| [DevOps handoff](docs/devops-handoff.md)                                                    | Azure DevOps pipeline, affected matrix, nginx/Docker, manifest, CSP |
+| [Toolchain](docs/toolchain.md)                                                              | pinned versions, verified gotchas                                   |
+| [Project overview](docs/project-overview.md)                                                | your product (template to fill in)                                  |
+| Contracts: [theming](docs/contracts/theming.md), [WCAG 2.2 AA](docs/contracts/a11y-wcag.md) | normative UI rules                                                  |
+| [AGENTS.md](AGENTS.md), [constitution](.specify/memory/constitution.md)                     | AI agents checklist, engineering principles (Spec Kit)              |
+
+## Commands
+
+| Command                                                                  | What                                                                   |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| `pnpm gen:shell <zone>`                                                  | create `apps/<zone>/shell-<zone>` (zone: `intranet`, `internet`)       |
+| `pnpm gen:remote <zone> <name> [--private] [--external]`                 | create a remote and register it with the zone's shell                  |
+| `pnpm dev:intranet` / `pnpm dev:internet`                                | shell + every remote of the zone (+ mock vendor for external adapters) |
+| `pnpm check`                                                             | guardrails: dependency tiers, app metadata, cross-app imports          |
+| `pnpm lint` / `pnpm typecheck` / `pnpm test` / `pnpm build`              | all projects (Nx, cached)                                              |
+| `pnpm e2e` / `pnpm e2e:<zone>`                                           | zone e2e suites (Playwright + axe, light + dark, desktop + 375 px)     |
+| `pnpm -s apps [--zone=<z>] [--affected --base=<sha>] [--json\|--matrix]` | apps as data for CI matrices                                           |
+| `pnpm -s validate-manifest <file> [--zone=<z>]`                          | check a per-environment `mfe-manifest.json`                            |
+| `pnpm format` / `pnpm format:check`                                      | Prettier                                                               |
+
+## Layout
+
+| Path                                                        | Contents                                                                                                                       |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `apps/<zone>/<name>`                                        | apps, created by the generators; each shell holds its zone's e2e suite (`e2e/`)                                                |
+| [`packages/ui`](packages/ui)                                | `@org/ui`: Button, ThemeToggle, MainLayout, RemoteFallback, ConnectionRequired, ThemeProvider                                  |
+| [`packages/design-tokens`](packages/design-tokens)          | `@org/design-tokens`: CSS variables (light/dark), global styles, theme constants                                               |
+| [`packages/mf-runtime`](packages/mf-runtime)                | `@org/mf-runtime`: manifest loader + schema, `initRemotes`, `<RemoteApp>`, remote helpers, mount contract + `<ExternalModule>` |
+| [`packages/auth`](packages/auth)                            | `@org/auth`: AuthProvider, useAuth, RequireAuth, UserMenu, BFF session client, dev mock                                        |
+| [`packages/http-client`](packages/http-client)              | `@org/http-client`: fetch wrapper, runtime base URL, apiRoutes pattern                                                         |
+| [`packages/pwa`](packages/pwa)                              | `@org/pwa`: registerPwa, useOnlineStatus, Workbox build plugin                                                                 |
+| [`packages/rspack-config`](packages/rspack-config)          | `@org/rspack-config`: createShellConfig / createRemoteConfig (Rspack + MF 2, tier-1 singletons)                                |
+| [`packages/jest-config`](packages/jest-config)              | `@org/jest-config`: Jest 30 preset (jsdom, SWC, Testing Library)                                                               |
+| [`packages/playwright-config`](packages/playwright-config)  | `@org/playwright-config`: zone e2e config, console-error fixture, axe WCAG 2.2 AA helper                                       |
+| `packages/eslint-config`, `prettier-config`, `tsconfig`     | shared lint/format/TS configs (incl. Nx module boundaries)                                                                     |
+| [`packages/vendor-kit`](packages/vendor-kit)                | what vendors get: contract types, test host, examples, checklist (zip)                                                         |
+| [`tools/generators`](tools/generators)                      | `gen:shell`, `gen:remote` and their templates                                                                                  |
+| [`tools/scripts`](tools/scripts)                            | `check`, `apps`, `e2e`, `validate-manifest`, `mfe-preview`                                                                     |
+| [`tools/mock-vendor`](tools/mock-vendor)                    | dev-only mock vendor module (no React) on :3999                                                                                |
+| [`deploy/`](deploy)                                         | shared nginx template, Dockerfile (one image per app), example per-environment manifest                                        |
+| `pnpm-workspace.yaml`, `version-exceptions.json`, `nx.json` | workspaces + catalog (one version per core library), justified exceptions, Nx task defaults                                    |
+| `.specify/`, `.cursor/skills/`, `specs/`                    | Spec Kit (constitution, templates, scripts) and its agent skills; feature specs go in `specs/`                                 |
 
 Each package has its own `node_modules` (pnpm isolated layout). Add a dependency to the package
-that uses it (`pnpm --filter <pkg> add <dep>`). Packages in the catalog are written as `catalog:`.
-See `docs/adding-dependencies.md` and `docs/toolchain.md`.
+that uses it (`pnpm --filter <pkg> add <dep>`); catalog packages are written as `catalog:`.

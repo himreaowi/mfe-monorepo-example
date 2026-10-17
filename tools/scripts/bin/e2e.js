@@ -7,9 +7,10 @@
  * A zone without a shell is skipped. Exit code 1 if any zone failed.
  */
 import { spawnSync } from 'node:child_process';
+import fs from 'node:fs';
 import path from 'node:path';
 import { ZONES } from '../src/zones.js';
-import { loadApps } from '../src/workspace.js';
+import { listApps } from '../src/apps.js';
 
 const root = path.resolve(import.meta.dirname, '..', '..', '..');
 /** @type {string | undefined} */
@@ -32,22 +33,17 @@ if (zone !== undefined && !Object.hasOwn(ZONES, zone)) {
   process.exit(2);
 }
 
-const shells = loadApps(root)
-  .filter((app) => (app.pkg.nx?.tags ?? []).includes('type:shell'))
+const shells = listApps({ root, zone })
+  .filter((app) => app.type === 'shell')
   .map((app) => ({
-    name: app.name,
-    zone: /** @type {string} */ (
-      (app.pkg.nx?.tags ?? [])
-        .find((/** @type {string} */ t) => t.startsWith('zone:'))
-        ?.slice(5) ?? ''
+    name: app.package,
+    zone: app.zone,
+    hasE2e: Boolean(
+      JSON.parse(
+        fs.readFileSync(path.join(root, app.path, 'package.json'), 'utf8'),
+      ).scripts?.e2e,
     ),
-    hasE2e: Boolean(app.pkg.scripts?.e2e),
-  }))
-  .filter((s) => zone === undefined || s.zone === zone)
-  .sort(
-    (a, b) =>
-      Object.keys(ZONES).indexOf(a.zone) - Object.keys(ZONES).indexOf(b.zone),
-  );
+  }));
 
 if (shells.length === 0) {
   console.log(
