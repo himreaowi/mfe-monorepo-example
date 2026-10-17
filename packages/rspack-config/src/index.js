@@ -199,6 +199,7 @@ function createBaseConfig(options, mode) {
     define = {},
     pwa = false,
     devManifest = false,
+    htmlPublicPath = '/',
   } = options;
   if (!rootDir || !path.isAbsolute(rootDir)) {
     throw new Error(
@@ -247,6 +248,9 @@ function createBaseConfig(options, mode) {
       // Only the app entry. Without this the standalone page can also get federation chunks
       // and render blank.
       chunks: ['main'],
+      // Absolute script URLs in index.html, so a deep link or reload (/details) still loads
+      // /main.js. A remote keeps output.publicPath 'auto' for its federation chunks.
+      publicPath: htmlPublicPath,
       templateParameters: {
         manifestLink: pwa
           ? '<link rel="manifest" href="/manifest.webmanifest" />'

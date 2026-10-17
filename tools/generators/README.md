@@ -11,7 +11,7 @@ pnpm dev:<zone>
 
 | Generator    | Creates                                                                                | Package              | Federation name | Port                          |
 | ------------ | -------------------------------------------------------------------------------------- | -------------------- | --------------- | ----------------------------- |
-| `gen:shell`  | `apps/<zone>/shell-<zone>`                                                             | `@org/shell-<zone>`  | `<zone>_shell`  | first of the zone (3100/3200) |
+| `gen:shell`  | `apps/<zone>/shell-<zone>` (incl. the zone's e2e suite in `e2e/`)                      | `@org/shell-<zone>`  | `<zone>_shell`  | first of the zone (3100/3200) |
 | `gen:remote` | `apps/<zone>/<name>` + entry in the shell's `remotes.json` and `mfe-manifest.dev.json` | `@org/<zone>-<name>` | `<zone>_<name>` | lowest free in the zone       |
 
 - Non-interactive. Never overwrites: an existing folder, package name or registry entry is an
@@ -33,6 +33,11 @@ pnpm dev:<zone>
 - Metadata in the generated `package.json`: `nx.tags` (`zone:`, `type:`, `access:`, `kind:`) and
   `mfe` (`port`, `federationName`). `rspack.config.js` reads `mfe` from `package.json`.
 - Dependencies: `catalog:` for third-party packages, `workspace:*` for `@org/*`.
+- Shells get the zone's e2e suite: `playwright.config.ts` (`@org/playwright-config`) and
+  `e2e/*.spec.ts`, which iterate `remotes.json` (deep links, private guard, external adapters,
+  standalone remotes, axe WCAG 2.2 AA in light and dark). `pnpm e2e:<zone>` runs it. Remotes get no
+  e2e folder of their own: their standalone mode is covered by the zone suite. See
+  `docs/testing.md`.
 - Generated files are formatted with the repo's Prettier config.
 
 Templates live in `templates/shell`, `templates/remote` and `templates/external` (an overlay on

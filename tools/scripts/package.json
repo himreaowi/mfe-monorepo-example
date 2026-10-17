@@ -11,7 +11,8 @@
   },
   "bin": {
     "mfe-check": "./bin/check.js",
-    "mfe-preview": "./bin/mfe-preview.js"
+    "mfe-preview": "./bin/mfe-preview.js",
+    "mfe-e2e": "./bin/e2e.js"
   },
   "scripts": {
     "lint": "eslint .",

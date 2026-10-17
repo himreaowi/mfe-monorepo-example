@@ -3,7 +3,7 @@
 Template monorepo for React microfrontends: pnpm workspaces + Nx (package-based) + Rspack +
 Module Federation 2 (`@module-federation/enhanced`).
 
-**Status: phase A7 (auth + external modules).** `apps/` is empty: create apps with the generators.
+**Status: phase A8 (testing: Playwright e2e + axe per zone).** `apps/` is empty: create apps with the generators.
 
 ## What's here
 
@@ -14,6 +14,7 @@ Module Federation 2 (`@module-federation/enhanced`).
 | `packages/eslint-config`      | `@org/eslint-config`: shared flat config (TS, React hooks, Prettier)                                                                  |
 | `packages/prettier-config`    | `@org/prettier-config`: shared Prettier options                                                                                       |
 | `packages/jest-config`        | `@org/jest-config`: Jest 30 preset (jsdom, SWC, Testing Library)                                                                      |
+| `packages/playwright-config`  | `@org/playwright-config`: zone e2e config (desktop + 375px, zone dev servers), console-error fixture, axe WCAG 2.2 AA helper          |
 | `packages/design-tokens`      | `@org/design-tokens`: tokens.css, global.scss, theme types/constants                                                                  |
 | `packages/ui`                 | `@org/ui`: Button, ThemeToggle, RemoteFallback, ConnectionRequired, MainLayout, ThemeProvider                                         |
 | `packages/http-client`        | `@org/http-client`: fetch wrapper, runtime base URL, apiRoutes pattern                                                                |
@@ -58,6 +59,7 @@ pnpm dev:intranet   # shell on :3100 + every intranet remote
 | `pnpm dev:intranet` / `pnpm dev:internet`                | Shell + remotes of the zone in parallel (Nx, by `zone:` tag) |
 | `pnpm check`                                             | Guardrails: dependency tiers, app tags/ports/boundaries      |
 | `pnpm lint` / `typecheck` / `test` / `build`             | All projects (Nx)                                            |
+| `pnpm e2e` / `pnpm e2e:<zone>`                           | Zone e2e suites (Playwright + axe), one zone at a time       |
 
 Each package has its own `node_modules` (pnpm isolated layout). Add a dependency to the package
 that uses it (`pnpm --filter <pkg> add <dep>`). Packages in the catalog are written as `catalog:`.

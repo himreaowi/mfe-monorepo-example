@@ -42,6 +42,9 @@
       "cache": false,
       "continuous": true,
       "dependsOn": ["build"]
+    },
+    "e2e": {
+      "cache": false
     }
   }
 }

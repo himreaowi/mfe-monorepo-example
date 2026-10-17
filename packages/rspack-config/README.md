@@ -54,6 +54,8 @@ Shared by both:
   `singleton: true, strictVersion: true, requiredVersion: <installed version>`. The installed
   version is the catalog version (or the workspace version for `@org/ui` / `@org/auth`), so any drift fails
   loudly at load time and the shell shows `RemoteFallback`. Extra `shared` entries can be passed.
+- `index.html` script URLs are absolute (`htmlPublicPath`, default `/`), so a deep link or reload
+  of a standalone remote (`/details`) still loads its entry.
 - `lazyCompilation: false`; dev server with CORS `*`, history fallback, HMR, `public/` as static.
 - Production: `[name].[contenthash:8].js`, source maps, `public/` copied except `index.html` and
   `mfe-manifest*.json` (the real manifest is written per environment by DevOps).

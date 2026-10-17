@@ -95,6 +95,7 @@ describe('createShellConfig', () => {
   it("only injects the 'main' chunk into the HTML", () => {
     const html = pluginNamed(config, 'HtmlRspackPlugin');
     assert.deepEqual(html._args[0].chunks, ['main']);
+    assert.equal(html._args[0].publicPath, '/');
   });
 
   it('adds the Workbox plugin to production builds only', () => {
@@ -158,7 +159,8 @@ describe('real build', () => {
       .filter((f) => f.endsWith('.js'))
       .map((f) => readFileSync(join(outDir, f), 'utf8'))
       .join('\n');
-    return { js, files };
+    const html = readFileSync(join(outDir, 'index.html'), 'utf8');
+    return { js, files, html };
   }
 
   after(
@@ -179,5 +181,7 @@ describe('real build', () => {
     assert.ok(classOf(b.js), 'class name exported');
     assert.notEqual(classOf(a.js), classOf(b.js));
     assert.match(a.js, /padding:\s?4px/, 'SCSS compiled');
+    // absolute script URL: a standalone deep link (/details) still loads the entry
+    assert.match(a.html, /<script[^>]+src="\/main\.[^"]+\.js"/);
   });
 });

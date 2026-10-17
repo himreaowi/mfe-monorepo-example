@@ -28,6 +28,12 @@ export interface BaseOptions {
   publicDir?: string;
   /** HTML template. Default `public/index.html` if present, else the package template. */
   template?: string;
+  /**
+   * Prefix of the script/link URLs in the generated index.html. Default `/`, so deep links and
+   * reloads of the standalone page work. Set it if the app's index.html is served below a
+   * sub-path (e.g. `/staff/`).
+   */
+  htmlPublicPath?: string;
   /** Extra MF shared entries (e.g. an opt-in tier-2 non-singleton share). Merged after tier 1. */
   shared?: SharedConfig;
   /** Compile-time constants (JSON-stringified). Runtime config belongs in mfe-manifest.json. */

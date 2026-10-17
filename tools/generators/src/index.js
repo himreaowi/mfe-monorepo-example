@@ -71,6 +71,13 @@ const APP_DEV_DEPENDENCIES = {
   typescript: 'catalog:',
 };
 
+/** Extra tooling of a shell: the zone's e2e suite (Playwright + axe, @org/playwright-config). */
+const SHELL_DEV_DEPENDENCIES = {
+  '@axe-core/playwright': 'catalog:',
+  '@org/playwright-config': 'workspace:*',
+  '@playwright/test': 'catalog:',
+};
+
 /** Files of the `remote` layer that an `--external` adapter does not need (the vendor renders the pages). */
 const EXTERNAL_OMIT = [
   'src/features/demo/',
@@ -99,24 +106,29 @@ function sorted(obj) {
  * @param {{
  *   packageName: string, description: string, tags: string[], port: number,
  *   federationName: string, extraDependencies?: Record<string, string>,
- *   nxTargets?: Record<string, unknown>,
+ *   nxTargets?: Record<string, unknown>, shell?: boolean,
  * }} o
  */
 function appPackageJson(o) {
+  const scripts = {
+    dev: 'rspack dev',
+    build: 'rspack build',
+    preview: 'mfe-preview',
+    lint: 'eslint .',
+    typecheck: o.shell
+      ? 'tsc -p tsconfig.json && tsc -p e2e/tsconfig.json'
+      : 'tsc -p tsconfig.json',
+    test: 'jest',
+    // the zone's e2e suite lives in the shell (pnpm e2e:<zone> from the repo root)
+    ...(o.shell ? { e2e: 'playwright test' } : {}),
+  };
   return {
     name: o.packageName,
     version: '0.0.0',
     private: true,
     description: o.description,
     type: 'module',
-    scripts: {
-      dev: 'rspack dev',
-      build: 'rspack build',
-      preview: 'mfe-preview',
-      lint: 'eslint .',
-      typecheck: 'tsc -p tsconfig.json',
-      test: 'jest',
-    },
+    scripts,
     nx: o.nxTargets ? { tags: o.tags, targets: o.nxTargets } : { tags: o.tags },
     mfe: { port: o.port, federationName: o.federationName },
     dependencies: sorted({
@@ -125,6 +137,7 @@ function appPackageJson(o) {
     }),
     devDependencies: sorted({
       ...APP_DEV_DEPENDENCIES,
+      ...(o.shell ? SHELL_DEV_DEPENDENCIES : {}),
       '@org/scripts': 'workspace:*',
     }),
   };
@@ -180,6 +193,7 @@ export async function generateShell({ root, zone }) {
       port,
       federationName: names.federationName,
       extraDependencies: { '@org/pwa': 'workspace:*' },
+      shell: true,
     }),
   );
   await writeJson(path.join(dir, REGISTRY_FILE), {

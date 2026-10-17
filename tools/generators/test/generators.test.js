@@ -97,7 +97,13 @@ describe('generators', () => {
       'lint',
       'typecheck',
       'test',
+      'e2e',
     ]);
+    assert.equal(pkg.scripts.e2e, 'playwright test');
+    assert.match(pkg.scripts.typecheck, /e2e\/tsconfig\.json/);
+    assert.equal(pkg.devDependencies['@playwright/test'], 'catalog:');
+    assert.equal(pkg.devDependencies['@axe-core/playwright'], 'catalog:');
+    assert.equal(pkg.devDependencies['@org/playwright-config'], 'workspace:*');
     assert.equal(pkg.dependencies['@org/pwa'], 'workspace:*');
     for (const [dep, spec] of Object.entries({
       ...pkg.dependencies,
@@ -123,6 +129,13 @@ describe('generators', () => {
       'jest.config.js',
       'rspack.config.js',
       'tsconfig.json',
+      'playwright.config.ts',
+      'e2e/tsconfig.json',
+      'e2e/helpers.ts',
+      'e2e/shell.spec.ts',
+      'e2e/remotes.spec.ts',
+      'e2e/standalone.spec.ts',
+      'e2e/a11y.spec.ts',
       'public/index.html',
       'src/main.tsx',
       'src/bootstrap.tsx',

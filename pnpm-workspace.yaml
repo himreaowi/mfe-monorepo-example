@@ -79,6 +79,9 @@ catalog:
   identity-obj-proxy: 3.0.0
   jest: 30.5.2
   jest-environment-jsdom: 30.5.2
+  # e2e (playwright-config, generated shells)
+  '@axe-core/playwright': 4.14.0
+  '@playwright/test': 1.64.1
   # mf-runtime (manifest validator codegen, dev only)
   ajv: 8.20.0
   # tools/scripts (reads pnpm-workspace.yaml)

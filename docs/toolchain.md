@@ -6,35 +6,36 @@ those versions were chosen.
 
 ## Pinned versions
 
-| Tool                                            | Version                          | Where pinned                  | Notes                                                  |
-| ----------------------------------------------- | -------------------------------- | ----------------------------- | ------------------------------------------------------ |
-| Node.js                                         | 24 LTS (tested 24.21.0)          | `.nvmrc`, `engines.node >=24` | Corepack ships with Node 24                            |
-| pnpm                                            | 12.14.0                          | `packageManager` (Corepack)   | `corepack enable` once, or run `corepack pnpm`         |
-| react / react-dom                               | 19.3.1                           | catalog (tier 1)              | MF singleton                                           |
-| react-router                                    | 8.4.0                            | catalog (tier 1)              | MF singleton. Package is ESM-only                      |
-| @types/react / @types/react-dom                 | 19.3.0                           | catalog (tier 1)              |                                                        |
-| @rspack/core / @rspack/cli                      | 2.2.9                            | catalog                       |                                                        |
-| @rspack/dev-server                              | 2.2.1                            | catalog                       |                                                        |
-| @module-federation/enhanced                     | 2.9.2                            | catalog                       | runtime API via `@module-federation/enhanced/runtime`  |
-| nx                                              | 23.3.0                           | catalog                       | package-based mode                                     |
-| typescript                                      | **6.0.3**                        | catalog                       | NOT 7.x, see below                                     |
-| eslint                                          | 10.12.0                          | catalog                       | 10.13.0 was less than 1 day old, see minimumReleaseAge |
-| typescript-eslint                               | 8.71.2                           | catalog                       |                                                        |
-| @eslint/js                                      | 10.0.1                           | catalog                       |                                                        |
-| eslint-plugin-react-hooks                       | 7.1.1                            | catalog                       |                                                        |
-| eslint-plugin-prettier / eslint-config-prettier | 5.5.7 / 10.1.8                   | catalog                       |                                                        |
-| prettier                                        | 3.9.10                           | catalog                       |                                                        |
-| globals                                         | 17.13.0                          | catalog                       |                                                        |
-| @types/node                                     | 24.19.2                          | catalog                       | matches the Node major                                 |
-| jest / jest-environment-jsdom                   | 30.5.2                           | catalog (A2)                  | via `@org/jest-config`                                 |
-| @swc/jest / @swc/core                           | 0.2.39 / 1.16.18                 | catalog (A2)                  | ts-jest not used                                       |
-| @testing-library/react / user-event / jest-dom  | 16.3.3 / 14.6.8 / 7.0.1          | catalog (A2)                  | + @testing-library/dom 10.4.2, @types/jest 30.0.0      |
-| sass / sass-loader / css-loader / style-loader  | 1.105.1 / 17.0.1 / 7.1.5 / 4.0.0 | catalog (A2)                  | used by `@org/rspack-config`                           |
-| workbox-build                                   | 7.4.1                            | catalog (A2)                  | used by `@org/pwa/build`                               |
-| ajv                                             | 8.20.0                           | catalog (A3)                  | dev only: generates the manifest validator             |
-| @nx/eslint-plugin                               | 23.3.0                           | catalog (A5)                  | `enforce-module-boundaries`, same version as nx        |
-| yaml                                            | 2.9.1                            | catalog (A5)                  | `tools/scripts` reads `pnpm-workspace.yaml`            |
-| Playwright (planned, A8)                        | 1.64.1                           | added in A8                   |                                                        |
+| Tool                                            | Version                          | Where pinned                  | Notes                                                     |
+| ----------------------------------------------- | -------------------------------- | ----------------------------- | --------------------------------------------------------- |
+| Node.js                                         | 24 LTS (tested 24.21.0)          | `.nvmrc`, `engines.node >=24` | Corepack ships with Node 24                               |
+| pnpm                                            | 12.14.0                          | `packageManager` (Corepack)   | `corepack enable` once, or run `corepack pnpm`            |
+| react / react-dom                               | 19.3.1                           | catalog (tier 1)              | MF singleton                                              |
+| react-router                                    | 8.4.0                            | catalog (tier 1)              | MF singleton. Package is ESM-only                         |
+| @types/react / @types/react-dom                 | 19.3.0                           | catalog (tier 1)              |                                                           |
+| @rspack/core / @rspack/cli                      | 2.2.9                            | catalog                       |                                                           |
+| @rspack/dev-server                              | 2.2.1                            | catalog                       |                                                           |
+| @module-federation/enhanced                     | 2.9.2                            | catalog                       | runtime API via `@module-federation/enhanced/runtime`     |
+| nx                                              | 23.3.0                           | catalog                       | package-based mode                                        |
+| typescript                                      | **6.0.3**                        | catalog                       | NOT 7.x, see below                                        |
+| eslint                                          | 10.12.0                          | catalog                       | 10.13.0 was less than 1 day old, see minimumReleaseAge    |
+| typescript-eslint                               | 8.71.2                           | catalog                       |                                                           |
+| @eslint/js                                      | 10.0.1                           | catalog                       |                                                           |
+| eslint-plugin-react-hooks                       | 7.1.1                            | catalog                       |                                                           |
+| eslint-plugin-prettier / eslint-config-prettier | 5.5.7 / 10.1.8                   | catalog                       |                                                           |
+| prettier                                        | 3.9.10                           | catalog                       |                                                           |
+| globals                                         | 17.13.0                          | catalog                       |                                                           |
+| @types/node                                     | 24.19.2                          | catalog                       | matches the Node major                                    |
+| jest / jest-environment-jsdom                   | 30.5.2                           | catalog (A2)                  | via `@org/jest-config`                                    |
+| @swc/jest / @swc/core                           | 0.2.39 / 1.16.18                 | catalog (A2)                  | ts-jest not used                                          |
+| @testing-library/react / user-event / jest-dom  | 16.3.3 / 14.6.8 / 7.0.1          | catalog (A2)                  | + @testing-library/dom 10.4.2, @types/jest 30.0.0         |
+| sass / sass-loader / css-loader / style-loader  | 1.105.1 / 17.0.1 / 7.1.5 / 4.0.0 | catalog (A2)                  | used by `@org/rspack-config`                              |
+| workbox-build                                   | 7.4.1                            | catalog (A2)                  | used by `@org/pwa/build`                                  |
+| ajv                                             | 8.20.0                           | catalog (A3)                  | dev only: generates the manifest validator                |
+| @nx/eslint-plugin                               | 23.3.0                           | catalog (A5)                  | `enforce-module-boundaries`, same version as nx           |
+| yaml                                            | 2.9.1                            | catalog (A5)                  | `tools/scripts` reads `pnpm-workspace.yaml`               |
+| @playwright/test                                | 1.64.1                           | catalog (A8)                  | Chromium revision 1248; shells + `@org/playwright-config` |
+| @axe-core/playwright                            | 4.14.0                           | catalog (A8)                  | brings axe-core 4.14                                      |
 
 ## A0 spike: one React instance across shell and remote
 
@@ -329,3 +330,23 @@ integrity crossorigin>` first, then `import()` of the same URL reuses the verifi
   `pnpm dev:internet` start the mock vendor although it has no `zone:` tag.
 - Playwright locators (`getByTestId`, `getByRole`) pierce **open** shadow roots, so vendor UI in a
   shadow root can be tested without special selectors.
+
+## Gotchas found in A8 (testing)
+
+- **Standalone deep links were broken.** A remote has `output.publicPath: 'auto'`, so
+  HtmlRspackPlugin wrote `<script src="main.js">` (relative). Reloading
+  `http://localhost:3101/details` requested `/details/main.js`, got `index.html` from the history
+  fallback and failed with "Unexpected token '<'". `@org/rspack-config` now sets the HTML plugin's
+  `publicPath: '/'` (option `htmlPublicPath`); federation chunks still use `auto`. Found by the
+  generated `standalone.spec.ts`.
+- **Playwright config as ESM TypeScript** (`playwright.config.ts` in a `"type": "module"` app)
+  works with `import.meta.dirname`; so do the specs.
+- **Several dev servers from one `webServer`:** Playwright waits for one URL only. The shell
+  URL is the `webServer.url`; a global setup polls every remote's `mf-manifest.json` (and the mock
+  vendor) before the first test. On shutdown Nx prints "Tasks not run because their dependencies
+  failed" for the continuous tasks it stopped: noise. No server was left listening afterwards
+  (checked with `lsof` after every run).
+- `test.fail()` negative controls confirmed that `checkA11y` reports a low-contrast element and
+  the console fixture fails a test that calls `console.error`.
+- `@axe-core/playwright` types come from `axe-core`, which is not a direct dependency in the
+  isolated layout; `@org/playwright-config` derives the result types from `AxeBuilder['analyze']`.
