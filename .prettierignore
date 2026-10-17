@@ -1,0 +1,10 @@
+dist
+build
+coverage
+node_modules
+playwright-report
+test-results
+.tmp-tests
+.blob
+.nx
+pnpm-lock.yaml

@@ -1,0 +1,28 @@
+{
+  "name": "@org/tsconfig",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shared TypeScript configs: base, react-app, library",
+  "type": "module",
+  "exports": {
+    "./base.json": "./base.json",
+    "./react-app.json": "./react-app.json",
+    "./library.json": "./library.json"
+  },
+  "files": [
+    "base.json",
+    "react-app.json",
+    "library.json"
+  ],
+  "scripts": {
+    "typecheck": "tsc -p test/tsconfig.app.json && tsc -p test/tsconfig.lib.json",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@org/eslint-config": "workspace:*",
+    "@types/react": "catalog:",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:"
+  }
+}

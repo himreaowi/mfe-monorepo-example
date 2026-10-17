@@ -1,0 +1,5 @@
+{
+  "extends": "../library.json",
+  "compilerOptions": { "types": [], "noEmit": true },
+  "include": ["lib.tsx"]
+}

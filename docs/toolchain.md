@@ -1,0 +1,138 @@
+# Toolchain
+
+Pinned versions and known gotchas. Checked against the npm registry on 2026-10-17 (phase A0).
+The exact versions live in the default catalog in `pnpm-workspace.yaml`. This file explains why
+those versions were chosen.
+
+## Pinned versions
+
+| Tool                                            | Version                                | Where pinned                  | Notes                                                  |
+| ----------------------------------------------- | -------------------------------------- | ----------------------------- | ------------------------------------------------------ |
+| Node.js                                         | 24 LTS (tested 24.21.0)                | `.nvmrc`, `engines.node >=24` | Corepack ships with Node 24                            |
+| pnpm                                            | 12.14.0                                | `packageManager` (Corepack)   | `corepack enable` once, or run `corepack pnpm`         |
+| react / react-dom                               | 19.3.1                                 | catalog (tier 1)              | MF singleton                                           |
+| react-router                                    | 8.4.0                                  | catalog (tier 1)              | MF singleton. Package is ESM-only                      |
+| @types/react / @types/react-dom                 | 19.3.0                                 | catalog (tier 1)              |                                                        |
+| @rspack/core / @rspack/cli                      | 2.2.9                                  | catalog                       |                                                        |
+| @rspack/dev-server                              | 2.2.1                                  | catalog                       |                                                        |
+| @module-federation/enhanced                     | 2.9.2                                  | catalog                       | runtime API via `@module-federation/enhanced/runtime`  |
+| nx                                              | 23.3.0                                 | catalog                       | package-based mode                                     |
+| typescript                                      | **6.0.3**                              | catalog                       | NOT 7.x, see below                                     |
+| eslint                                          | 10.12.0                                | catalog                       | 10.13.0 was less than 1 day old, see minimumReleaseAge |
+| typescript-eslint                               | 8.71.2                                 | catalog                       |                                                        |
+| @eslint/js                                      | 10.0.1                                 | catalog                       |                                                        |
+| eslint-plugin-react-hooks                       | 7.1.1                                  | catalog                       |                                                        |
+| eslint-plugin-prettier / eslint-config-prettier | 5.5.7 / 10.1.8                         | catalog                       |                                                        |
+| prettier                                        | 3.9.10                                 | catalog                       |                                                        |
+| globals                                         | 17.13.0                                | catalog                       |                                                        |
+| @types/node                                     | 24.19.2                                | catalog                       | matches the Node major                                 |
+| Jest (planned, A8)                              | 30.5.2 + jest-environment-jsdom 30.5.2 | added in A8                   | verified in the spike, see below                       |
+| ts-jest / @swc/jest (planned, A8)               | 29.4.15 / 0.2.39 (+ @swc/core 1.16.18) | added in A8                   | both work                                              |
+| Playwright (planned, A8)                        | 1.64.1                                 | added in A8                   |                                                        |
+
+## A0 spike: one React instance across shell and remote
+
+The throwaway spike ran in a scratch directory outside the repo:
+
+- a pnpm 12 workspace with `nodeLinker: isolated` and a catalog
+- `spike_shell` on :3200 and `spike_remote` on :3201
+- Rspack 2.2.9 + `@module-federation/enhanced/rspack`, running `rspack dev` for both
+- `react`, `react-dom` and `react-router` shared as `singleton: true, strictVersion: true, requiredVersion: <catalog version>`
+
+How it works:
+
+- The shell sets `output.publicPath: '/'` and `remotes: {}`.
+- At startup the shell fetches `/mfe-manifest.json` (`{ remotes: { spike_remote: { entry: "http://localhost:3201/mf-manifest.json" } } }`).
+- It then calls `registerRemotes([...])` and `loadRemote('spike_remote/App')` from `@module-federation/enhanced/runtime`, rendered through `React.lazy` + `Suspense`.
+- The remote's component uses `useState`, `useContext` on a context object created by the shell, and `useLocation()` inside the shell's `<BrowserRouter>`.
+
+Headless Chromium (Playwright 1.64.1) opened `http://localhost:3200/some/deep/path` and returned:
+
+```
+sameReact: true          // window.__shellReact === window.__remoteReact (same module object)
+sameRouter: true         // react-router UNSAFE_LocationContext identical in shell and remote
+path: "/some/deep/path"  // remote's useLocation() reads the shell's router
+greeting: "Remote says: hello from shell context"   // useContext across the boundary
+button: "clicks 2"       // useState works after 2 clicks (no "Invalid hook call")
+__FEDERATION__.__INSTANCES__: [spike_shell, spike_remote]
+share scope: react@19.3.1, react-dom@19.3.1 and react-router@8.4.0 all show from=spike_shell, useIn=[spike_shell, spike_remote]
+page errors / console errors: []
+```
+
+Network requests to the remote origin were only `mf-manifest.json`, `remoteEntry.js` and
+`__federation_expose_App.js`. The remote's own React vendor chunks were never downloaded.
+Opened on its own (`http://localhost:3201/`), the remote also rendered in standalone mode.
+
+Negative control (found by accident): a shell build that did not list `react-router` in `shared`
+crashed the remote with `useLocation() may be used only in the context of a <Router>`. The two
+copies of react-router had separate contexts. So every library holding React context must be a
+tier-1 singleton.
+
+## Gotchas
+
+### TypeScript 7 is not usable yet
+
+- `typescript-eslint@8.71.2` has the peer range `typescript >=4.8.4 <6.1.0`.
+- `ts-jest@29.4.15` has the peer range `typescript >=4.3 <7`.
+- So TypeScript is pinned to 6.0.3. Re-check when typescript-eslint supports 7.
+- `@module-federation/enhanced` accepts `^7` and pulls TS 7 in as an auto-installed peer when no
+  `typescript` is declared. Packages that typecheck should declare `typescript: catalog:` themselves.
+
+### pnpm 12
+
+- **Install scripts are blocked by default and the install fails** (`ERR_PNPM_IGNORED_BUILDS`).
+  `onlyBuiltDependencies` is ignored. Use the `allowBuilds:` map in `pnpm-workspace.yaml`. `nx`
+  needs it for its postinstall. `@swc/core` worked without it because its binaries come as
+  optional dependencies, so it is not allow-listed.
+- **`catalogMode` semantics changed.** In pnpm 12.14:
+  - `manual`: `pnpm add react` writes `catalog:` when the package is in the catalog. A package
+    that is not in the catalog (e.g. `pnpm add zod`) gets a normal `^x.y.z` range in that app's
+    package.json.
+  - `prefer`: also writes `catalog:`, but **adds every new package to the default catalog**,
+    explicit version or not. `pnpm remove` does not take the entry back out.
+  - `strict`: rejects versions outside the catalog.
+
+  The plan called for `prefer` meaning "use the catalog when available, allow app-local
+  installs". In pnpm 12 that behavior is `manual`, so the template uses `catalogMode: manual`.
+  With `prefer`, every tier-3 dependency would silently become tier 2.
+
+- **`minimumReleaseAge` is on by default.** Packages published less than about a day ago are held
+  back. On install, pnpm writes a `minimumReleaseAgeExclude` entry into `pnpm-workspace.yaml` for
+  them (it did this for eslint 10.13.0). Pin versions that are a few days old instead, and delete
+  any exclude entries pnpm adds.
+- The isolated linker keeps the virtual store at `node_modules/.pnpm` in the root. The root
+  `node_modules` holds only the root package's own deps (nx, prettier, @org/prettier-config).
+  Every package has its own `node_modules` with only its declared deps (D7).
+  `hoistPattern: []` and `publicHoistPattern: []` turn off the remaining hoisting.
+- Missing peer dependencies are auto-installed. For example `@org/prettier-config` gets
+  `prettier` in its `node_modules`.
+- A `packageManager` field in a parent directory (e.g. `~/package.json`) makes the Corepack shim
+  refuse to run outside this repo. Inside the repo, our own `packageManager` wins.
+
+### Module Federation / Rspack
+
+- Use the runtime API `registerRemotes` / `loadRemote` from `@module-federation/enhanced/runtime`.
+  Combined with the plugin's `shared` config, this gives one React instance (verified above).
+- Shell: `output.publicPath: '/'`, so deep links like `/some/deep/path` load chunks from root.
+  Remote: `publicPath: 'auto'`, so chunks resolve against the remote's own origin.
+- `HtmlRspackPlugin({ chunks: ['main'] })` and `lazyCompilation: false` were used in the spike, as
+  an earlier spike recommended (without them the standalone remote reportedly renders blank).
+  They were not separately disproved here. Keep them.
+- The remote dev server needs `Access-Control-Allow-Origin: *`.
+- `rspack dev` does not reload the config file when it changes. Restart the dev server after
+  editing `rspack.config.*` or the shared config. A stale server showed exactly the two-router
+  failure above.
+- The bootstrap pattern (`index.js` → `import('./bootstrap')`) is still required so shared
+  singletons are negotiated before React is imported.
+
+### Jest (for A8)
+
+- Jest 30 + jsdom works with both `ts-jest` (TS 6) and `@swc/jest`.
+- `react-router` 8 is ESM-only and pulls in more ESM-only packages (`@remix-run/*`,
+  `cookie-es` as `.mjs`). Native require(esm) in Jest 30 did not pick them up. The fix that worked:
+  - `transformIgnorePatterns: ['/node_modules/(?!(\\.pnpm/[^/]+/node_modules/)?(react-router|@remix-run|cookie-es)/)']`
+    (the pattern has to allow pnpm's `.pnpm/<pkg>@<ver>/node_modules/` paths)
+  - transform `.js`/`.mjs` with `@swc/jest` and `module.type: 'commonjs'`
+  - `jsc.transform.optimizer.globals.vars: { 'import.meta.hot': 'undefined' }`, because
+    react-router reads `import.meta.hot`
+  - a setup file that adds `TextEncoder` / `TextDecoder` from `node:util` to jsdom

@@ -1,0 +1,4 @@
+{
+  "$comment": "Opt-outs from the default catalog (D4). Each entry: { package, version, app, reason, owner, expires (YYYY-MM-DD) }. Expired entries fail check-versions. See docs/adding-dependencies.md.",
+  "exceptions": []
+}
