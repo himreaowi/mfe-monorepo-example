@@ -35,7 +35,13 @@
       "cache": true
     },
     "dev": {
-      "cache": false
+      "cache": false,
+      "continuous": true
+    },
+    "preview": {
+      "cache": false,
+      "continuous": true,
+      "dependsOn": ["build"]
     }
   }
 }

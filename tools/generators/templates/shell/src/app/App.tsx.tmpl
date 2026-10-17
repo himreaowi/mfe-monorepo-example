@@ -1,0 +1,24 @@
+import { BrowserRouter, useRoutes } from 'react-router';
+import { MfeManifestProvider, type MfeManifest } from '@org/mf-runtime';
+import { ThemeProvider } from '@org/ui';
+import { remotes } from './registry';
+import { createRoutes } from './routes';
+
+const routes = createRoutes(remotes);
+
+function AppRoutes() {
+  return useRoutes(routes);
+}
+
+/** Providers (theme, manifest) + router. The shell owns the document theme. */
+export function App({ manifest }: { manifest: MfeManifest }) {
+  return (
+    <ThemeProvider>
+      <MfeManifestProvider manifest={manifest}>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </MfeManifestProvider>
+    </ThemeProvider>
+  );
+}

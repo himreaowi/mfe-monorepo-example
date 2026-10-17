@@ -14,6 +14,10 @@
     "test": "nx run-many -t test",
     "typecheck": "nx run-many -t typecheck",
     "build": "nx run-many -t build",
+    "dev:intranet": "nx run-many -t dev --projects=tag:zone:intranet --parallel=100 --outputStyle=stream",
+    "dev:internet": "nx run-many -t dev --projects=tag:zone:internet --parallel=100 --outputStyle=stream",
+    "gen:shell": "node tools/generators/bin/gen.js shell",
+    "gen:remote": "node tools/generators/bin/gen.js remote",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

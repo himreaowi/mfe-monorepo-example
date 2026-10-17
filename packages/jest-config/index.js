@@ -58,6 +58,9 @@ export function createJestConfig({
     roots: ['<rootDir>/src'],
     setupFilesAfterEnv: [require.resolve('./setup.cjs'), ...setupFiles],
     watchman: false,
+    // Nx runs several Jest processes in parallel; uncapped workers each (cores - 1) overload the
+    // machine and tests time out. Override with `overrides: { maxWorkers }` or --maxWorkers.
+    maxWorkers: '50%',
     testMatch: ['**/?(*.)+(spec|test).[jt]s?(x)'],
     moduleNameMapper: {
       '\\.(css|scss)$': require.resolve('identity-obj-proxy'),

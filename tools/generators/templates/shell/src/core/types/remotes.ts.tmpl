@@ -1,0 +1,17 @@
+/** One entry of remotes.json (the shell's registry, managed by `pnpm gen:remote`). */
+export type RemoteEntry = {
+  /** Folder name in apps/__ZONE__/ (kebab-case). */
+  name: string;
+  /** Nav label. */
+  title: string;
+  /** Mount path in the shell (`/staff-directory`); the remote owns `<path>/*`. */
+  path: string;
+  /** Module Federation name = key in mfe-manifest.json `remotes`. */
+  federationName: string;
+  /** Workspace package name (for tooling only; the shell never imports it). */
+  package: string;
+  /** `private` remotes require a signed-in user (enforced in A6). */
+  access: 'public' | 'private';
+  /** `external` = adapter for a vendor module (A7). */
+  kind: 'react' | 'external';
+};

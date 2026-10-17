@@ -1,0 +1,36 @@
+{
+  "name": "@org/generators",
+  "version": "0.1.0",
+  "private": true,
+  "description": "App generators: pnpm gen:shell <zone>, pnpm gen:remote <zone> <name> [--private] [--external]",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js",
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "mfe-gen": "./bin/gen.js"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "node --test --test-concurrency=2 \"test/**/*.test.js\""
+  },
+  "nx": {
+    "tags": [
+      "type:tool"
+    ]
+  },
+  "dependencies": {
+    "@org/prettier-config": "workspace:*",
+    "@org/scripts": "workspace:*",
+    "prettier": "catalog:"
+  },
+  "devDependencies": {
+    "@org/eslint-config": "workspace:*",
+    "@org/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:"
+  }
+}

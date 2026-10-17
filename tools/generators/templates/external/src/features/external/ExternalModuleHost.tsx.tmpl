@@ -1,0 +1,25 @@
+import { useHostProps } from '@org/mf-runtime/remote';
+import { ModeBadge } from '@/components/ModeBadge';
+import { APP_TITLE } from '@/core/constants/app';
+
+/**
+ * Adapter for an external (vendor) module: TODO A7.
+ *
+ * In phase A7 this renders `<ExternalModule>` from @org/mf-runtime, which loads the vendor
+ * bundle (URL from mfe-manifest.json) and drives its `mount(el, props) → { update, unmount }`
+ * contract (docs/external-modules.md). Until then it is a placeholder so the shell, registry,
+ * tags (kind:external) and routing can be wired and tested.
+ */
+export function ExternalModuleHost() {
+  const { embedded } = useHostProps();
+  return (
+    <section data-testid="external-module-placeholder">
+      <h1>{APP_TITLE}</h1>
+      <ModeBadge embedded={embedded} />
+      <p>
+        External module adapter placeholder (TODO A7: mount the vendor module
+        here).
+      </p>
+    </section>
+  );
+}

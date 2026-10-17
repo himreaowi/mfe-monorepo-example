@@ -1,0 +1,11 @@
+import { render, screen } from '@testing-library/react';
+import { ExternalModuleHost } from './ExternalModuleHost';
+
+describe('ExternalModuleHost (placeholder, TODO A7)', () => {
+  it('renders the adapter placeholder', () => {
+    render(<ExternalModuleHost />);
+    expect(
+      screen.getByTestId('external-module-placeholder'),
+    ).toHaveTextContent('TODO A7');
+  });
+});

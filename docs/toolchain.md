@@ -211,3 +211,44 @@ true })` before loading again. Verified in the browser: the remote's `mf-manifes
   default macOS file system is case-insensitive.
 - The remote fetches only `mf-manifest.json`, `remoteEntry.js`, its expose chunks and the small
   css-loader/style-loader runtime chunk. It does not fetch React or react-router chunks.
+
+## Gotchas found in A4
+
+### pnpm
+
+- **`pnpm <script>` installs first when manifests changed** (pnpm 12 checks the lockfile before
+  running a script). After `pnpm gen:remote` the next `pnpm ...` command links the new app on its
+  own; after editing a `package.json`, any `pnpm <script>` may update `pnpm-lock.yaml` before it
+  runs. CI runs `pnpm install --frozen-lockfile` first, so an unexpected lockfile change fails
+  there.
+- `pnpm gen:remote intranet x --private` passes `--private` through to the script (no `--`
+  needed).
+
+### Nx
+
+- Tags come from `package.json` `nx.tags`; `nx run-many -t dev --projects=tag:zone:intranet`
+  selects a zone. `dev` is a `continuous` target in `nx.json`; `--parallel=100` lets every dev
+  server of the zone start.
+- Nx 23 prints only a summary for failed tasks; add `--output-style=static` to see the logs.
+
+### Generated apps
+
+- `rspack.config.js` reads `mfe.port` / `mfe.federationName` from `package.json`, so the port
+  allocated by the generator is the one the dev server uses.
+- `rspack preview` is not used: `pnpm preview` runs `mfe-preview` (`@org/scripts`), a small static
+  server with CORS and SPA fallback on the app's port. A shell needs a `mfe-manifest.json`
+  (`--manifest <file>` or a copy in `dist/`), as in production.
+- Shell `bootstrap.tsx` catches a failing `/mfe-manifest.json` and renders `StartupError`
+  (connection-required message when offline) instead of a blank page.
+- Remote templates test that the exposed module's import graph never reaches
+  `@org/design-tokens/global.scss` or `registerPwa`.
+- Template placeholders are `__TOKEN__`; a token directly followed by `_` (`__ZONE___alpha`) needs
+  the non-greedy token pattern in `render.js`.
+- Prettier 3 `getFileInfo` resolves config files by default. In a temp workspace without
+  `@org/prettier-config` installed it threw; the generators pass `resolveConfig: false` and the
+  options from `@org/prettier-config` directly.
+
+### Jest
+
+- `@org/jest-config` sets `maxWorkers: '50%'`: Nx runs several Jest processes in parallel and each
+  would otherwise start (cores − 1) workers.

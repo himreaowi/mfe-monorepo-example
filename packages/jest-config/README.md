@@ -11,7 +11,8 @@ import { createJestConfig } from '@org/jest-config';
 export default createJestConfig({ rootDir: import.meta.dirname });
 ```
 
-Options: `environment` (`jsdom` | `node`), `extraEsmPackages` (more ESM-only packages to
+`maxWorkers` defaults to `50%` (Nx runs several Jest processes at once; uncapped workers overload
+the machine and tests time out). Options: `environment` (`jsdom` | `node`), `extraEsmPackages` (more ESM-only packages to
 transform), `setupFiles`, `overrides` (merged last).
 
 The consumer needs `jest` (for the binary) and, for types, `@types/jest` and

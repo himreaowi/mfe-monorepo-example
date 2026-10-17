@@ -1,0 +1,31 @@
+import { render, screen } from '@testing-library/react';
+import { MemoryRouter, Route, Routes } from 'react-router';
+import { ThemeProvider } from '@org/ui';
+import { EmbeddedApp, StandaloneApp } from './apps';
+
+describe('__APP_TITLE__ external adapter remote', () => {
+  it('embedded: renders the adapter below the shell mount', () => {
+    render(
+      <ThemeProvider>
+        <MemoryRouter initialEntries={['__ROUTE_PATH__']}>
+          <Routes>
+            <Route
+              path="__NAME__/*"
+              element={<EmbeddedApp embedded basePath="__ROUTE_PATH__" />}
+            />
+          </Routes>
+        </MemoryRouter>
+      </ThemeProvider>,
+    );
+    expect(screen.getByTestId('mode-badge')).toHaveTextContent('Embedded');
+    expect(
+      screen.getByTestId('external-module-placeholder'),
+    ).toBeInTheDocument();
+  });
+
+  it('standalone: renders with its own chrome', () => {
+    window.history.pushState({}, '', '/');
+    render(<StandaloneApp />);
+    expect(screen.getByTestId('mode-badge')).toHaveTextContent('Standalone');
+  });
+});

@@ -1,0 +1,41 @@
+import { useState } from 'react';
+import { Link } from 'react-router';
+import { useHostProps, useRemotePath } from '@org/mf-runtime/remote';
+import { Button } from '@org/ui';
+import { ModeBadge } from '@/components/ModeBadge';
+import { APP_TITLE } from '@/core/constants/app';
+import { routePaths } from '@/core/constants/routePaths';
+import styles from './Demo.module.scss';
+
+/**
+ * Sample feature (ported from starter-mfe demo/demoRemote): reads host props, keeps local state
+ * (proves the shared React works across the federation boundary) and links to a sibling page.
+ */
+export function Demo() {
+  const { embedded, title, user } = useHostProps();
+  const toPath = useRemotePath();
+  const [count, setCount] = useState(0);
+
+  return (
+    <section
+      className={styles.panel}
+      data-testid="demo-feature"
+      data-embedded={embedded ? 'true' : 'false'}
+    >
+      <h1 className={styles.title}>{APP_TITLE}</h1>
+      {typeof title === 'string' && title !== APP_TITLE ? (
+        <p className={styles.hostTitle}>{title}</p>
+      ) : null}
+      <ModeBadge embedded={embedded} />
+      <p className={styles.copy} data-testid="demo-user">
+        Signed in as {user?.name ?? user?.id ?? 'nobody'}
+      </p>
+      <div className={styles.row}>
+        <Button onClick={() => setCount((c) => c + 1)}>
+          Clicked {count} times
+        </Button>
+        <Link to={toPath(routePaths.details)}>Go to details</Link>
+      </div>
+    </section>
+  );
+}

@@ -1,0 +1,20 @@
+import { RemoteApp } from '@org/mf-runtime';
+import type { RemoteEntry } from '@/core/types/remotes';
+
+/**
+ * Mounts one remote below its splat route. Load errors show RemoteFallback (with retry) inside
+ * the layout; the shell keeps working.
+ *
+ * TODO A6: wrap `remote.access === 'private'` in RequireAuth so the remote is only downloaded
+ * after sign-in.
+ */
+export function RemotePage({ remote }: { remote: RemoteEntry }) {
+  return (
+    <div data-testid={`remote-page-${remote.name}`}>
+      <RemoteApp
+        name={remote.federationName}
+        props={{ title: remote.title }}
+      />
+    </div>
+  );
+}
