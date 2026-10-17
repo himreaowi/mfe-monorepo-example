@@ -13,8 +13,14 @@
   "scripts": {
     "lint": "eslint ."
   },
+  "nx": {
+    "tags": [
+      "type:package"
+    ]
+  },
   "dependencies": {
     "@eslint/js": "catalog:",
+    "@nx/eslint-plugin": "catalog:",
     "eslint-config-prettier": "catalog:",
     "eslint-plugin-prettier": "catalog:",
     "eslint-plugin-react-hooks": "catalog:",

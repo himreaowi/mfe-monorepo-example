@@ -15,15 +15,9 @@ import { rspack } from '@rspack/core';
 import { ModuleFederationPlugin } from '@module-federation/enhanced/rspack';
 import { PwaPlugin } from '@org/pwa/build';
 import * as sass from 'sass';
+import { TIER1_SINGLETONS } from './tier1.js';
 
 const require = createRequire(import.meta.url);
-
-/**
- * Tier-1 core singletons (D4): one version for every app, shared at runtime with
- * `singleton + strictVersion + requiredVersion`. Anything that holds React context must be here.
- * tools/scripts/check-versions (A5) keeps this list in sync with the catalog.
- */
-const TIER1_SINGLETONS = ['react', 'react-dom', 'react-router', '@org/ui'];
 
 const FEDERATION_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
 

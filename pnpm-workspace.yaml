@@ -31,6 +31,11 @@ packageExtensions:
     peerDependenciesMeta:
       '@types/react':
         optional: true
+  # @nx/eslint-plugin (enforce-module-boundaries) requires 'typescript' without declaring it.
+  # In the isolated layout it is then not found. Declaring the peer links the catalog version.
+  '@nx/eslint-plugin':
+    peerDependencies:
+      typescript: '*'
 
 # Default catalog. Tier 1 (core singletons, shared via MF) + toolchain + tier 2 (common libs).
 catalog:
@@ -42,6 +47,7 @@ catalog:
   '@types/react-dom': 19.3.0
   # toolchain
   '@eslint/js': 10.0.1
+  '@nx/eslint-plugin': 23.3.0
   '@module-federation/enhanced': 2.9.2
   '@rspack/cli': 2.2.9
   '@rspack/core': 2.2.9
@@ -75,3 +81,5 @@ catalog:
   jest-environment-jsdom: 30.5.2
   # mf-runtime (manifest validator codegen, dev only)
   ajv: 8.20.0
+  # tools/scripts (reads pnpm-workspace.yaml)
+  yaml: 2.9.1

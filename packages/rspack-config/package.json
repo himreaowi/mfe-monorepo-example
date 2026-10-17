@@ -10,6 +10,10 @@
       "types": "./src/index.d.ts",
       "default": "./src/index.js"
     },
+    "./tier1": {
+      "types": "./src/index.d.ts",
+      "default": "./src/tier1.js"
+    },
     "./client": {
       "types": "./client.d.ts"
     },
@@ -20,6 +24,11 @@
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json",
     "test": "node --test --test-timeout=120000 \"src/**/*.test.js\""
+  },
+  "nx": {
+    "tags": [
+      "type:package"
+    ]
   },
   "dependencies": {
     "@module-federation/enhanced": "catalog:",

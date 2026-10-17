@@ -31,6 +31,7 @@ Templates live in `templates/shell`, `templates/remote` and `templates/external`
 `__ROUTE_PATH__`, `__PORT__`, `__SHELL_PORT__`, `__ACCESS__`, `__DIR_NAME__`). An unknown token is
 an error.
 
-Tests (`pnpm --filter @org/generators test`) generate both zones into a temp workspace. The full proof (install, lint, typecheck, test,
+Tests (`pnpm --filter @org/generators test`) generate both zones into a temp workspace and run
+`check-apps` / `check-versions` on the result. The full proof (install, lint, typecheck, test,
 build, browser) is done in a throwaway copy of the repo; apps are never committed to the
 template.

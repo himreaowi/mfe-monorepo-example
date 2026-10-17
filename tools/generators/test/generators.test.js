@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
+import { checkApps, checkVersions } from '@org/scripts';
 import { generateRemote, generateShell } from '../src/index.js';
 
 const REPO = path.resolve(import.meta.dirname, '..', '..', '..');
@@ -17,8 +18,9 @@ after(() => {
 });
 
 /**
- * Temp workspace that looks like the template: the real pnpm-workspace.yaml,
- * version-exceptions.json, the root package.json and every package/tool package.json. Empty apps/.
+ * Temp workspace that looks like the template for the checks: the real pnpm-workspace.yaml and
+ * version-exceptions.json, the root package.json, every package/tool package.json and the
+ * tier-1 list. Empty apps/.
  */
 function tempWorkspace() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'mfe-gen-'));
@@ -31,6 +33,7 @@ function tempWorkspace() {
     'pnpm-workspace.yaml',
     'version-exceptions.json',
     'package.json',
+    'packages/rspack-config/src/tier1.js',
   ]) {
     copy(rel);
   }
@@ -353,6 +356,14 @@ describe('generators', () => {
       generateShell({ root, zone: 'extranet' }),
       /Unknown zone/,
     );
+  });
+
+  it('the generated workspace passes check-apps and check-versions', async () => {
+    const apps = await checkApps({ root });
+    assert.deepEqual(apps.errors, []);
+    assert.deepEqual(apps.warnings, []);
+    const versions = await checkVersions({ root });
+    assert.deepEqual(versions.errors, []);
   });
 
   it('CLI: generates and reports errors without a stack trace', () => {

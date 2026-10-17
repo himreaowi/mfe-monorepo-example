@@ -17,6 +17,11 @@
   "scripts": {
     "lint": "eslint ."
   },
+  "nx": {
+    "tags": [
+      "type:package"
+    ]
+  },
   "dependencies": {
     "@swc/core": "catalog:",
     "@swc/jest": "catalog:",

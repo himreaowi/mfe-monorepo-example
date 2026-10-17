@@ -17,6 +17,11 @@
     "typecheck": "tsc -p tsconfig.json",
     "test": "jest"
   },
+  "nx": {
+    "tags": [
+      "type:package"
+    ]
+  },
   "dependencies": {
     "@org/design-tokens": "workspace:*",
     "@org/pwa": "workspace:*"

@@ -10,7 +10,8 @@
   "type": "module",
   "prettier": "@org/prettier-config",
   "scripts": {
-    "lint": "nx run-many -t lint",
+    "check": "node tools/scripts/bin/check.js",
+    "lint": "node tools/scripts/bin/check.js && nx run-many -t lint",
     "test": "nx run-many -t test",
     "typecheck": "nx run-many -t typecheck",
     "build": "nx run-many -t build",

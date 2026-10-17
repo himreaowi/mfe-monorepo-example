@@ -17,6 +17,11 @@
     "test": "jest",
     "generate:validator": "node scripts/generate-validator.mjs"
   },
+  "nx": {
+    "tags": [
+      "type:package"
+    ]
+  },
   "dependencies": {
     "@module-federation/enhanced": "catalog:",
     "@org/ui": "workspace:*"

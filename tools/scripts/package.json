@@ -2,24 +2,29 @@
   "name": "@org/scripts",
   "version": "0.1.0",
   "private": true,
-  "description": "App tools shared by the workspace: zone/port data (used by the generators) and the mfe-preview static server",
+  "description": "Repo guardrails (check-versions, check-apps) and the mfe-preview static server",
   "type": "module",
   "exports": {
-    ".": "./src/zones.js",
+    ".": "./src/index.js",
     "./zones": "./src/zones.js",
     "./package.json": "./package.json"
   },
   "bin": {
+    "mfe-check": "./bin/check.js",
     "mfe-preview": "./bin/mfe-preview.js"
   },
   "scripts": {
     "lint": "eslint .",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "node --test --test-concurrency=4 \"test/**/*.test.js\""
   },
   "nx": {
     "tags": [
       "type:tool"
     ]
+  },
+  "dependencies": {
+    "yaml": "catalog:"
   },
   "devDependencies": {
     "@org/eslint-config": "workspace:*",

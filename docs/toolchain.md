@@ -32,6 +32,8 @@ those versions were chosen.
 | sass / sass-loader / css-loader / style-loader  | 1.105.1 / 17.0.1 / 7.1.5 / 4.0.0 | catalog (A2)                  | used by `@org/rspack-config`                           |
 | workbox-build                                   | 7.4.1                            | catalog (A2)                  | used by `@org/pwa/build`                               |
 | ajv                                             | 8.20.0                           | catalog (A3)                  | dev only: generates the manifest validator             |
+| @nx/eslint-plugin                               | 23.3.0                           | catalog (A5)                  | `enforce-module-boundaries`, same version as nx        |
+| yaml                                            | 2.9.1                            | catalog (A5)                  | `tools/scripts` reads `pnpm-workspace.yaml`            |
 | Playwright (planned, A8)                        | 1.64.1                           | added in A8                   |                                                        |
 
 ## A0 spike: one React instance across shell and remote
@@ -212,20 +214,36 @@ true })` before loading again. Verified in the browser: the remote's `mf-manifes
 - The remote fetches only `mf-manifest.json`, `remoteEntry.js`, its expose chunks and the small
   css-loader/style-loader runtime chunk. It does not fetch React or react-router chunks.
 
-## Gotchas found in A4
+## Gotchas found in A4/A5
 
 ### pnpm
 
 - **`pnpm <script>` installs first when manifests changed** (pnpm 12 checks the lockfile before
   running a script). After `pnpm gen:remote` the next `pnpm ...` command links the new app on its
-  own; after editing a `package.json`, any `pnpm <script>` may update `pnpm-lock.yaml` before it
-  runs. CI runs `pnpm install --frozen-lockfile` first, so an unexpected lockfile change fails
-  there.
+  own; after editing a `package.json`, `pnpm check` may update `pnpm-lock.yaml` before it runs.
+  `node tools/scripts/bin/check.js` runs the checks without that step. CI runs
+  `pnpm install --frozen-lockfile` first, so an unexpected lockfile change fails there.
+- `pnpm --filter <app> add zod` when the app already has `"zod": "^4.6.7"` keeps that range even
+  after `zod` was added to the catalog. `pnpm --filter <app> add zod@catalog:` rewrites it to
+  `catalog:` (also for tier-1 packages). The check messages and docs use the `@catalog:` form.
 - `pnpm gen:remote intranet x --private` passes `--private` through to the script (no `--`
   needed).
+- `@nx/eslint-plugin` `require`s `typescript` without declaring it. In the isolated layout the
+  rule crashed with "Cannot find module 'typescript'". Fixed with a `packageExtensions` peer
+  (`pnpm-workspace.yaml`).
 
 ### Nx
 
+- **`enforce-module-boundaries` does not see imports of apps by package name.** Nx maps an
+  import to a workspace project only when that package declares `exports` or `main`; generated
+  apps declare neither, so `import '@org/internet-services'` was not flagged even with the
+  dependency in `package.json`. Relative imports into another project are flagged. The shared
+  ESLint config therefore also bans `@org/intranet-*`, `@org/internet-*`, `@org/shell-*` with
+  `no-restricted-imports`, and `check-apps` scans app sources (incl. `import()` / `require()`)
+  and `package.json` dependencies as a backstop.
+- When the rule reports a violation it also logs `Error reading "tsconfig.base.json"` (it tries to
+  build a fix suggestion). Noise; there is deliberately no `tsconfig.base.json` (with one, `nx`
+  itself needs `typescript` resolvable from its own folder and crashed).
 - Tags come from `package.json` `nx.tags`; `nx run-many -t dev --projects=tag:zone:intranet`
   selects a zone. `dev` is a `continuous` target in `nx.json`; `--parallel=100` lets every dev
   server of the zone start.
@@ -234,7 +252,7 @@ true })` before loading again. Verified in the browser: the remote's `mf-manifes
 ### Generated apps
 
 - `rspack.config.js` reads `mfe.port` / `mfe.federationName` from `package.json`, so the port
-  allocated by the generator is the one the dev server uses.
+  allocated by the generator and checked by `check-apps` is the one the dev server uses.
 - `rspack preview` is not used: `pnpm preview` runs `mfe-preview` (`@org/scripts`), a small static
   server with CORS and SPA fallback on the app's port. A shell needs a `mfe-manifest.json`
   (`--manifest <file>` or a copy in `dist/`), as in production.
@@ -251,4 +269,5 @@ true })` before loading again. Verified in the browser: the remote's `mf-manifes
 ### Jest
 
 - `@org/jest-config` sets `maxWorkers: '50%'`: Nx runs several Jest processes in parallel and each
-  would otherwise start (cores − 1) workers.
+  would otherwise start (cores − 1) workers. `testTimeout` is 15 s: under a load average of 40-80
+  one A3 `mf-runtime` run failed once (passed on re-run).

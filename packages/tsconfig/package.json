@@ -18,6 +18,11 @@
     "typecheck": "tsc -p test/tsconfig.app.json && tsc -p test/tsconfig.lib.json",
     "lint": "eslint ."
   },
+  "nx": {
+    "tags": [
+      "type:package"
+    ]
+  },
   "devDependencies": {
     "@org/eslint-config": "workspace:*",
     "@types/react": "catalog:",

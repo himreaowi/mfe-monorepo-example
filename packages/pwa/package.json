@@ -19,6 +19,11 @@
     "typecheck": "tsc -p tsconfig.json",
     "test": "jest"
   },
+  "nx": {
+    "tags": [
+      "type:package"
+    ]
+  },
   "dependencies": {
     "workbox-build": "catalog:"
   },

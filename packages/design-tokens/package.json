@@ -19,6 +19,11 @@
     "typecheck": "tsc -p tsconfig.json",
     "test": "jest"
   },
+  "nx": {
+    "tags": [
+      "type:package"
+    ]
+  },
   "devDependencies": {
     "@org/eslint-config": "workspace:*",
     "@org/jest-config": "workspace:*",
