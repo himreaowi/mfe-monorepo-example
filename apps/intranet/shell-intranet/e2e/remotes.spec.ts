@@ -5,6 +5,7 @@ import {
   expectRemoteRendered,
   openRemote,
   remotePage,
+  settle,
   signInWithMock,
   zone,
 } from './helpers';
@@ -25,6 +26,7 @@ for (const remote of zone.remotes) {
     if (remote.kind === 'react') {
       test('links inside the remote navigate client-side', async ({ page }) => {
         await openRemote(page, remote);
+        await settle(page); // links of data-driven pages appear after their API call
         const links = remotePage(page, remote).locator(
           `a[href^="${remote.path}/"]`,
         );

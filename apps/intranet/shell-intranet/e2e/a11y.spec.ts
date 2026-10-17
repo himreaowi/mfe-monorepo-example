@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 import { checkA11y, expect, test, useTheme } from '@org/playwright-config/test';
-import { openRemote, openStandalone, zone } from './helpers';
+import { openRemote, openStandalone, settle, zone } from './helpers';
 
 /**
  * axe-core, WCAG 2.2 A + AA, on every page of the zone in the light AND the dark theme (colour
@@ -48,6 +48,7 @@ for (const theme of ['light', 'dark'] as const) {
       test(target.name, async ({ page }) => {
         await useTheme(page, theme);
         await target.open(page);
+        await settle(page); // scan the loaded content, not the loading state
         await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
         await checkA11y(page);
       });

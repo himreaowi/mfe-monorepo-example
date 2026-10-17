@@ -534,6 +534,8 @@ export function mount(element, initialProps) {
   }
 
   function render() {
+    // the host theme as a styling hook (the CSS variables already follow it)
+    host.dataset.theme = props.theme;
     const content =
       route.view === 'new'
         ? newView()

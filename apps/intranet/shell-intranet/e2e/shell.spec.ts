@@ -1,11 +1,11 @@
 import { expect, test } from '@org/playwright-config/test';
-import { escapeRegExp, expectRemoteRendered, zone } from './helpers';
+import { escapeRegExp, expectRemoteRendered, openNav, zone } from './helpers';
 
 test.describe('Staff Portal shell', () => {
   test('home page lists every remote in the nav', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByTestId('shell-welcome')).toBeVisible();
-    const nav = page.getByRole('list', { name: 'Apps' });
+    const nav = await openNav(page);
     await expect(nav.getByRole('link', { name: 'Home' })).toBeVisible();
     for (const remote of zone.remotes) {
       await expect(
@@ -23,8 +23,9 @@ test.describe('Staff Portal shell', () => {
     await page.evaluate(() => {
       (window as unknown as { __e2eSpa: boolean }).__e2eSpa = true;
     });
-    const nav = page.getByRole('list', { name: 'Apps' });
     for (const remote of zone.remotes) {
+      // the Menu (375 px) closes after each navigation
+      const nav = await openNav(page);
       await nav.getByRole('link', { name: remote.title, exact: true }).click();
       await expect(page).toHaveURL(new RegExp(`${escapeRegExp(remote.path)}$`));
       if (remote.access === 'private') {
@@ -33,7 +34,7 @@ test.describe('Staff Portal shell', () => {
         await expectRemoteRendered(page, remote);
       }
     }
-    await nav.getByRole('link', { name: 'Home' }).click();
+    await (await openNav(page)).getByRole('link', { name: 'Home' }).click();
     await expect(page.getByTestId('shell-welcome')).toBeVisible();
     expect(
       await page.evaluate(

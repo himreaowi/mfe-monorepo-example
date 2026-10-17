@@ -202,6 +202,8 @@ class BrightCheckout extends HTMLElement {
   #render() {
     const props = this.#props;
     if (!props) return;
+    // the host theme as a styling hook (the CSS variables already follow it)
+    this.dataset.theme = props.theme;
     const result = readBill(props.config);
     if (!result.ok) {
       if (!this.#fatalReported) {

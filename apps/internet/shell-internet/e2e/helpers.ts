@@ -26,6 +26,31 @@ export function remotePage(page: Page, remote: ZoneRemote): Locator {
   return page.getByTestId(`remote-page-${remote.name}`);
 }
 
+/**
+ * The header nav ("Apps" list). Below 40rem it sits behind a "Menu" disclosure: open it first,
+ * so its links are visible and clickable on every viewport.
+ */
+export async function openNav(page: Page): Promise<Locator> {
+  const menu = page.getByRole('button', { name: 'Menu' });
+  if (
+    (await menu.isVisible()) &&
+    (await menu.getAttribute('aria-expanded')) !== 'true'
+  ) {
+    await menu.click();
+  }
+  const nav = page.getByRole('list', { name: 'Apps' });
+  await expect(nav).toBeVisible();
+  return nav;
+}
+
+/** Wait until the page stopped loading data (API calls of the features have settled). */
+export async function settle(page: Page): Promise<void> {
+  await page.waitForLoadState('networkidle');
+  await expect(
+    page.locator('[role="status"]', { hasText: /^Loading/ }),
+  ).toHaveCount(0);
+}
+
 /** Sign in through the private route's prompt (dev mock: `"auth": { "mock": true }`). */
 export async function signInWithMock(page: Page): Promise<void> {
   await page

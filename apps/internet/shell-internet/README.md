@@ -65,6 +65,13 @@ Every test also fails on a console error or an uncaught exception. Run one spec 
 `pnpm --filter @org/shell-internet e2e e2e/a11y.spec.ts --project=desktop`. Details:
 `docs/testing.md` at the repo root.
 
+### Feature specs (this example)
+
+Besides the generated specs: `services.spec.ts` (search, detail, topic filter), `announcements.spec.ts` (list, detail, back), `my-profile.spec.ts` (sign in → profile → save choices with the CSRF token → sign out), `payments.spec.ts` (validation, `payment:completed` reaches the host, vendor receipt via the shell URL, theme and user via `update()`), and `a11y-features.spec.ts` (axe on detail pages, forms with
+errors and the open Menu, light + dark). `helpers.ts` adds `openNav()` (the nav is behind a
+"Menu" button below 40rem) and `settle()` (wait for the features' API calls before asserting or
+scanning). `playwright.config.ts` also waits for the mock API (`settings.apiBaseUrl` + `/health`).
+
 ## Layout
 
 ```
