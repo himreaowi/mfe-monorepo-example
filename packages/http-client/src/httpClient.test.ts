@@ -106,6 +106,22 @@ describe('createHttpClient', () => {
     const error = await http.getJson('/missing').catch((e: unknown) => e);
     expect(error).toBeInstanceOf(HttpClientError);
     expect(error).toMatchObject({ status: 404, statusText: 'Not Found' });
+    expect((error as HttpClientError).body).toBeUndefined();
+  });
+
+  it('keeps the parsed JSON body of an error response (validation errors)', async () => {
+    const fetchMock = jest.fn().mockResolvedValue(
+      response(JSON.stringify({ errors: { endDate: 'Too many days' } }), {
+        status: 422,
+        statusText: 'Unprocessable Entity',
+      }),
+    );
+    const http = createHttpClient({ baseUrl: '/api', fetch: fetchMock });
+    const error = await http.postJson('/leave', {}).catch((e: unknown) => e);
+    expect(error).toMatchObject({
+      status: 422,
+      body: { errors: { endDate: 'Too many days' } },
+    });
   });
 
   it('reports non-JSON bodies clearly', async () => {

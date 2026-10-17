@@ -1,0 +1,30 @@
+{
+  "name": "@org/example-vendors",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DEV ONLY: example vendor modules without React (Acme Service Desk ticket widget, esm; Bright Payments checkout, web component) implementing the mount contract. Served on port 3990.",
+  "type": "module",
+  "bin": {
+    "example-vendors": "./bin/serve.js"
+  },
+  "scripts": {
+    "dev": "node bin/serve.js",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "node --test \"test/**/*.test.js\""
+  },
+  "nx": {
+    "tags": [
+      "type:tool"
+    ]
+  },
+  "devDependencies": {
+    "@org/eslint-config": "workspace:*",
+    "@org/tsconfig": "workspace:*",
+    "@org/vendor-kit": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:"
+  }
+}

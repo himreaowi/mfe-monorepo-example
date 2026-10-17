@@ -1616,6 +1616,57 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
 
+  packages/use-api:
+    devDependencies:
+      '@org/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@org/jest-config':
+        specifier: workspace:*
+        version: link:../jest-config
+      '@org/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
+      '@testing-library/dom':
+        specifier: 'catalog:'
+        version: 10.4.2
+      '@testing-library/jest-dom':
+        specifier: 'catalog:'
+        version: 7.0.1(@testing-library/dom@10.4.2)
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@types/jest':
+        specifier: 'catalog:'
+        version: 30.0.0
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.2
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: 'catalog:'
+        version: 19.3.0(@types/react@19.3.0)
+      eslint:
+        specifier: 'catalog:'
+        version: 10.12.0(jiti@2.4.2)(supports-color@7.2.0)
+      jest:
+        specifier: 'catalog:'
+        version: 30.5.2(@types/node@24.19.2)(babel-plugin-macros@3.1.0)(supports-color@7.2.0)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.10
+      react:
+        specifier: 'catalog:'
+        version: 19.3.1
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.3.1(react@19.3.1)
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
   packages/vendor-kit:
     devDependencies:
       '@org/eslint-config':
@@ -1627,6 +1678,30 @@ importers:
       '@org/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.2
+      eslint:
+        specifier: 'catalog:'
+        version: 10.12.0(jiti@2.4.2)(supports-color@7.2.0)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.10
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  tools/example-vendors:
+    devDependencies:
+      '@org/eslint-config':
+        specifier: workspace:*
+        version: link:../../packages/eslint-config
+      '@org/tsconfig':
+        specifier: workspace:*
+        version: link:../../packages/tsconfig
+      '@org/vendor-kit':
+        specifier: workspace:*
+        version: link:../../packages/vendor-kit
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.2
@@ -1664,6 +1739,27 @@ importers:
       eslint:
         specifier: 'catalog:'
         version: 10.12.0(jiti@2.4.2)(supports-color@7.2.0)
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  tools/mock-api:
+    devDependencies:
+      '@org/eslint-config':
+        specifier: workspace:*
+        version: link:../../packages/eslint-config
+      '@org/tsconfig':
+        specifier: workspace:*
+        version: link:../../packages/tsconfig
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.2
+      eslint:
+        specifier: 'catalog:'
+        version: 10.12.0(jiti@2.4.2)(supports-color@7.2.0)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.10
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
