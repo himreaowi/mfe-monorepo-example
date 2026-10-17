@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Close to what the real host enforces: no inline scripts, no eval. Add your origins to
+         script-src / connect-src / img-src / font-src via the "CSP extra origins" field below
+         (it reloads the page with ?csp=...), or edit this tag. -->
+    <title>Vendor kit test host</title>
+    <link rel="stylesheet" href="./host.css" />
+    <script type="module" src="./csp.js"></script>
+    <script type="module" src="./host.js"></script>
+  </head>
+  <body>
+    <header class="bar">
+      <strong>Vendor kit test host</strong>
+      <span id="contract-version" class="muted"></span>
+    </header>
+    <main class="layout">
+      <form id="setup" class="panel" aria-labelledby="setup-title">
+        <h1 id="setup-title">Module</h1>
+        <label
+          >Bundle URL
+          <input
+            name="url"
+            type="url"
+            required
+            placeholder="http://localhost:5173/mount.js"
+        /></label>
+        <label
+          >Format
+          <select name="format">
+            <option value="esm">
+              esm (ES module exporting contractVersion + mount)
+            </option>
+            <option value="web-component">
+              web-component (custom element)
+            </option>
+            <option value="script">
+              script (classic script setting one global)
+            </option>
+          </select>
+        </label>
+        <label>Export name (esm, optional) <input name="exportName" /></label>
+        <label
+          >Global (script) <input name="global" placeholder="AcmePayments"
+        /></label>
+        <label
+          >Tag name (web-component)
+          <input name="tagName" placeholder="acme-payments"
+        /></label>
+        <label
+          >Integrity (optional SRI)
+          <input name="integrity" placeholder="sha384-..."
+        /></label>
+        <label
+          >config (JSON)
+          <textarea name="config" rows="3">{ "title": "Test host" }</textarea>
+        </label>
+        <label
+          >user (JSON or null)
+          <textarea name="user" rows="2">
+{ "id": "test-user-1", "name": "Test User", "roles": ["user"] }</textarea>
+        </label>
+        <div class="row">
+          <label
+            >Theme
+            <select name="theme">
+              <option>light</option>
+              <option>dark</option>
+            </select>
+          </label>
+          <label>Locale <input name="locale" value="en-SG" size="6" /></label>
+          <label>path <input name="path" size="10" /></label>
+        </div>
+        <label
+          >Container width
+          <select name="width">
+            <option value="100%">full</option>
+            <option value="360px">360px (mobile)</option>
+            <option value="768px">768px</option>
+          </select>
+        </label>
+        <div class="row">
+          <button type="submit" id="mount">Mount</button>
+          <button type="button" id="update" disabled>Update props</button>
+          <button type="button" id="unmount" disabled>Unmount</button>
+        </div>
+        <label
+          >CSP extra origins (space separated)
+          <input name="csp" placeholder="https://cdn.vendor.example"
+        /></label>
+      </form>
+
+      <section class="panel stage-panel" aria-labelledby="stage-title">
+        <h2 id="stage-title">Mounted module</h2>
+        <div id="stage" class="stage" data-testid="stage"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="checks-title">
+        <h2 id="checks-title">Checks</h2>
+        <ul id="checks" data-testid="checks"></ul>
+        <h2>Callbacks and lifecycle</h2>
+        <ol id="log" data-testid="log" aria-live="polite"></ol>
+      </section>
+    </main>
+  </body>
+</html>

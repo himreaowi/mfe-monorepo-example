@@ -22,8 +22,14 @@ pnpm dev:<zone>
 - Shells always render `<AuthProvider>`; the client comes from the manifest's `auth` section
   (`mfe-manifest.dev.json` gets `"auth": { "mock": true }`, the dev-only mock sign-in). See
   `docs/auth-contract.md`.
-- `--external`: tag `kind:external`, registry `"kind": "external"`, and an adapter placeholder
-  (`src/features/external`, TODO A7) instead of the demo overview page.
+- `--external`: an **adapter remote** for a vendor module (tag `kind:external`, registry
+  `"kind": "external"`). `src/features/external/ExternalModuleHost.tsx` renders
+  `<ExternalModule>` (`@org/mf-runtime/external`) configured from the remote's manifest
+  `props.vendor` (URL per environment); one splat route, so the vendor routes on `props.path`.
+  The dev manifest entry points at the mock vendor (`tools/mock-vendor`, port 3999), the adapter
+  falls back to it in development builds, and its `nx.targets.dev.dependsOn` starts it with
+  `pnpm dev:<zone>`. The demo feature and details page are not generated. See
+  `docs/external-modules.md`.
 - Metadata in the generated `package.json`: `nx.tags` (`zone:`, `type:`, `access:`, `kind:`) and
   `mfe` (`port`, `federationName`). `rspack.config.js` reads `mfe` from `package.json`.
 - Dependencies: `catalog:` for third-party packages, `workspace:*` for `@org/*`.

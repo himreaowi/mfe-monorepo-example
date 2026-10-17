@@ -124,5 +124,42 @@ createRoot(el).render(<StandaloneApp />);
   A remote may also call `useAuth()` from `@org/auth` (shared singleton) for `csrfToken`,
   `signOut()` or `refresh()` after an API 401.
 
+## External modules (`@org/mf-runtime/external`)
+
+The **mount contract** for modules built outside this repo (vendors, other frameworks, other
+React majors) and the host component that drives it. Full guide:
+[docs/external-modules.md](../../docs/external-modules.md).
+
+```tsx
+import { ExternalModule } from '@org/mf-runtime/external';
+
+<ExternalModule
+  name="internet_payments"
+  config={{
+    url: 'https://vendor.example/pay/1.4.2/mount.js',
+    format: 'esm',
+    integrity: 'sha384-…',
+  }}
+  basePath="/payments"
+  path={splat}
+  theme={theme}
+  user={user}
+  onNavigate={(to) => navigate(to.startsWith('/') ? to : `/payments/${to}`)}
+  onEvent={(name, detail) => track(name, detail)}
+  onError={(error) => report(error)}
+/>;
+```
+
+| Export                                                                                     | What                                                                                                                                                                                                 |
+| ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MOUNT_CONTRACT_VERSION`, `MountProps`, `MountedModule`, `MountFunction`, …                | The contract (`src/external/contract.ts`, no imports; shipped to vendors as `mount-contract.d.ts`)                                                                                                   |
+| `<ExternalModule>`                                                                         | Load (`esm` / `web-component` / `script` / `mf`) with timeout, version check, mount into its own div, `update()` on prop changes, `unmount()` on leave; any failure → `RemoteFallback` + "Try again" |
+| `validateExternalModuleConfig(value)`                                                      | `{ ok, config }` / `{ ok: false, issues }` for `props.vendor` from the manifest                                                                                                                      |
+| `loadExternalModule(config, opts)`, `withTimeout`, `toExternalModule`, `webComponentMount` | Framework-free loader (also compiled into the vendor kit test host)                                                                                                                                  |
+| `ExternalModuleLoadError` (`code`)                                                         | `invalid-config`, `load-failed`, `timeout`, `invalid-module`, `incompatible-contract`, `mount-failed`, …                                                                                             |
+
+`pnpm gen:remote <zone> <name> --external` generates an adapter remote that renders
+`<ExternalModule>` from its manifest `props.vendor`.
+
 `@org/mf-runtime` is not a shared singleton: the host part is only used by shells and the remote
 part keeps its context inside the remote.

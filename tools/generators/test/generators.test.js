@@ -290,13 +290,13 @@ describe('generators', () => {
       'access:public',
       'kind:external',
     ]);
-    assert.match(
-      read(
-        root,
-        'apps/internet/payments/src/features/external/ExternalModuleHost.tsx',
-      ),
-      /TODO A7/,
+    const adapter = read(
+      root,
+      'apps/internet/payments/src/features/external/ExternalModuleHost.tsx',
     );
+    assert.match(adapter, /<ExternalModule/);
+    assert.match(adapter, /@org\/mf-runtime\/external/);
+    assert.doesNotMatch(adapter, /TODO/);
     assert.match(
       read(
         root,
@@ -304,6 +304,25 @@ describe('generators', () => {
       ),
       /ExternalModuleHost/,
     );
+    // the vendor renders the pages: no demo feature / details page in an adapter
+    const files = listFiles(path.join(root, 'apps/internet/payments'));
+    assert.ok(!files.some((f) => f.startsWith('src/features/demo/')));
+    assert.ok(!files.includes('src/pages/DetailsPage/DetailsPage.tsx'));
+    assert.ok(files.includes('src/features/external/vendorConfig.ts'));
+    // dev: the mock vendor starts with the adapter and the dev manifest points at it
+    assert.deepEqual(pkg.nx.targets, {
+      dev: { dependsOn: [{ projects: ['@org/mock-vendor'], target: 'dev' }] },
+    });
+    const dev = readJson(
+      root,
+      'apps/internet/shell-internet/mfe-manifest.dev.json',
+    );
+    assert.deepEqual(dev.remotes.internet_payments.props.vendor, {
+      url: 'http://localhost:3999/mount.js',
+      format: 'esm',
+      config: { title: 'Payments (mock vendor)', amount: 1250 },
+    });
+    assert.equal(dev.remotes.internet_services.props, undefined);
   });
 
   it('reuses the lowest free port', async () => {

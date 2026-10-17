@@ -100,7 +100,7 @@ Only when an app truly cannot use the catalog version (tier 1 or tier 2), add an
 - An entry that no longer matches anything is reported as a warning: delete it.
 - **Tier 1:** a different _major_ of React (or react-router) cannot share the runtime singleton.
   Such an app is integrated as an isolated mount-contract module (`--external` adapter, see
-  docs/external-modules.md in A7), not as a plain remote. A tier-1 exception for a patch/minor
+  [external-modules.md](external-modules.md)), not as a plain remote. A tier-1 exception for a patch/minor
   difference still fails at runtime because of `strictVersion`; expect it to be refused.
 
 ### Adding a new tier-1 package

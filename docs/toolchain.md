@@ -297,3 +297,35 @@ true })` before loading again. Verified in the browser: the remote's `mf-manifes
   suffix).
 - `zsh` expands `--include=*.js` in `grep -r` before grep sees it ("no matches found"); quote it
   (`--include='*.js'`).
+
+## Gotchas found in A7 (external modules)
+
+- **Native `import()` of a runtime URL**: `import(/* webpackIgnore: true */ url)` is left alone by
+  Rspack 2 (the production adapter fetched `http://localhost:4100/mount.js` from the manifest). In
+  Jest (SWC → CommonJS) `import()` becomes `require()`, so tests inject a loader.
+- **SRI for ES modules**: `import()` has no `integrity` option. `<link rel="modulepreload"
+integrity crossorigin>` first, then `import()` of the same URL reuses the verified module map
+  entry. With a wrong hash Chromium logs "Failed to find a valid digest in the 'integrity'
+  attribute … The resource has been blocked" and the preload's `error` event fires
+  (`load-failed`).
+- **Failed module URLs may stay failed**: a dynamic import that failed (vendor down) can be cached
+  as failed for that URL, so "Try again" adds `?mfeRetry=<n>`. Verified: vendor down → fallback,
+  vendor back → "Try again" loaded `/mount.js?mfeRetry=1`.
+- **StrictMode**: effects run mount → cleanup → mount. Because loading is async and the first run
+  is cancelled before `mount()`, the vendor is mounted once (vendor console log shows one
+  `mount`).
+- **Contract `.d.ts` without a build**: `ts.transpileDeclaration` (TS ≥ 5.5, needs code that
+  satisfies `isolatedDeclarations`) turns `contract.ts` into `mount-contract.d.ts`;
+  `ts.transpileModule` turns `contract.ts`/`load.ts` into browser ES modules for the test host
+  (relative imports get `.js` appended; `import type` is erased).
+- **CSP via `<meta>` added by script** is enforced by Chromium (the test host blocked a `fetch` to a
+  non-allowed origin), but `frame-ancestors` is ignored in a meta tag (console error); it belongs
+  in the HTTP header.
+- **Zip without dependencies**: `zlib.deflateRawSync` + `zlib.crc32` (Node ≥ 22.2). External
+  attributes `0o100644 << 16` overflow a signed 32-bit int: write `(… << 16) >>> 0`. `unzip -t`
+  reports no errors.
+- **Nx continuous task dependencies across projects**: the adapter's
+  `nx.targets.dev.dependsOn: [{ projects: ['@org/mock-vendor'], target: 'dev' }]` makes
+  `pnpm dev:internet` start the mock vendor although it has no `zone:` tag.
+- Playwright locators (`getByTestId`, `getByRole`) pierce **open** shadow roots, so vendor UI in a
+  shadow root can be tested without special selectors.

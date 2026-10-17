@@ -71,6 +71,20 @@ const APP_DEV_DEPENDENCIES = {
   typescript: 'catalog:',
 };
 
+/** Files of the `remote` layer that an `--external` adapter does not need (the vendor renders the pages). */
+const EXTERNAL_OMIT = [
+  'src/features/demo/',
+  'src/pages/DetailsPage/',
+  'src/pages/NotFoundPage/',
+  'src/core/constants/routePaths.ts',
+];
+
+/** Dev-only mock vendor (tools/mock-vendor) used by `--external` adapters in development. */
+export const MOCK_VENDOR = {
+  package: '@org/mock-vendor',
+  url: 'http://localhost:3999/mount.js',
+};
+
 /**
  * @param {Record<string, string>} obj
  * @returns {Record<string, string>}
@@ -85,6 +99,7 @@ function sorted(obj) {
  * @param {{
  *   packageName: string, description: string, tags: string[], port: number,
  *   federationName: string, extraDependencies?: Record<string, string>,
+ *   nxTargets?: Record<string, unknown>,
  * }} o
  */
 function appPackageJson(o) {
@@ -102,7 +117,7 @@ function appPackageJson(o) {
       typecheck: 'tsc -p tsconfig.json',
       test: 'jest',
     },
-    nx: { tags: o.tags },
+    nx: o.nxTargets ? { tags: o.tags, targets: o.nxTargets } : { tags: o.tags },
     mfe: { port: o.port, federationName: o.federationName },
     dependencies: sorted({
       ...APP_DEPENDENCIES,
@@ -221,7 +236,7 @@ export async function generateRemote({
   const port = allocatePort(root, zone);
   const access = isPrivate ? 'private' : 'public';
 
-  const files = await renderLayers(
+  const rendered = await renderLayers(
     external ? ['remote', 'external'] : ['remote'],
     dir,
     {
@@ -236,6 +251,13 @@ export async function generateRemote({
       SHELL_PORT: ZONES[zone].first,
     },
   );
+  const files = external
+    ? new Map(
+        [...rendered].filter(
+          ([rel]) => !EXTERNAL_OMIT.some((omit) => rel.startsWith(omit)),
+        ),
+      )
+    : rendered;
   writeFiles(dir, files);
   const tags = [`zone:${zone}`, 'type:remote', `access:${access}`];
   if (external) tags.push('kind:external');
@@ -247,6 +269,14 @@ export async function generateRemote({
       tags,
       port,
       federationName: names.federationName,
+      // `nx dev <adapter>` / `pnpm dev:<zone>` also start the dev-only mock vendor
+      nxTargets: external
+        ? {
+            dev: {
+              dependsOn: [{ projects: [MOCK_VENDOR.package], target: 'dev' }],
+            },
+          }
+        : undefined,
     }),
   );
 
@@ -266,6 +296,18 @@ export async function generateRemote({
   const manifest = readDevManifest(shellDir);
   manifest.remotes[names.federationName] = {
     entry: `http://localhost:${port}/mf-manifest.json`,
+    // per-environment vendor config; dev points at the mock vendor (tools/mock-vendor)
+    ...(external
+      ? {
+          props: {
+            vendor: {
+              url: MOCK_VENDOR.url,
+              format: 'esm',
+              config: { title: `${names.title} (mock vendor)`, amount: 1250 },
+            },
+          },
+        }
+      : {}),
   };
   await writeJson(path.join(shellDir, DEV_MANIFEST_FILE), manifest);
 

@@ -119,7 +119,7 @@ export function readRegistry(shellDir) {
 
 /**
  * @param {string} shellDir
- * @returns {{ remotes: Record<string, { entry: string }> } & Record<string, unknown>}
+ * @returns {{ remotes: Record<string, { entry: string, props?: Record<string, unknown> }> } & Record<string, unknown>}
  */
 export function readDevManifest(shellDir) {
   const file = path.join(shellDir, DEV_MANIFEST_FILE);

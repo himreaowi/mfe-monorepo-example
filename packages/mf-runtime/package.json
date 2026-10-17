@@ -2,12 +2,13 @@
   "name": "@org/mf-runtime",
   "version": "0.1.0",
   "private": true,
-  "description": "Module Federation runtime glue: mfe-manifest loader + schema, initRemotes, <RemoteApp> (host) and createRemoteApp / host props (remote)",
+  "description": "Module Federation runtime glue: mfe-manifest loader + schema, initRemotes, <RemoteApp> (host), createRemoteApp / host props (remote), mount contract + <ExternalModule> (external)",
   "type": "module",
   "sideEffects": false,
   "exports": {
     ".": "./src/index.ts",
     "./remote": "./src/remote/index.ts",
+    "./external": "./src/external/index.ts",
     "./mfe-manifest.schema.json": "./src/manifest/mfe-manifest.schema.json",
     "./package.json": "./package.json"
   },
