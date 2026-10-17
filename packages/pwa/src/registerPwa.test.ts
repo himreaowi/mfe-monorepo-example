@@ -18,7 +18,7 @@ describe('registerPwa', () => {
 
   it('registers /service-worker.js once the page has loaded', async () => {
     register.mockResolvedValue({});
-    registerPwa();
+    registerPwa({ enabled: true });
     // jsdom documents are already "complete" in tests
     expect(register).toHaveBeenCalledWith('/service-worker.js', undefined);
   });
@@ -27,16 +27,21 @@ describe('registerPwa', () => {
     const error = new Error('404');
     register.mockRejectedValue(error);
     const onError = jest.fn();
-    registerPwa({ swUrl: '/sw.js', scope: '/', onError });
+    registerPwa({ enabled: true, swUrl: '/sw.js', scope: '/', onError });
     await Promise.resolve();
     await Promise.resolve();
     expect(register).toHaveBeenCalledWith('/sw.js', { scope: '/' });
     expect(onError).toHaveBeenCalledWith(error);
   });
 
+  it('is off outside production builds by default', () => {
+    registerPwa();
+    expect(register).not.toHaveBeenCalled();
+  });
+
   it('does nothing without service worker support', () => {
     // @ts-expect-error simulate unsupported browser
     delete navigator.serviceWorker;
-    expect(() => registerPwa()).not.toThrow();
+    expect(() => registerPwa({ enabled: true })).not.toThrow();
   });
 });

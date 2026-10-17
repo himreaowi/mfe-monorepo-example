@@ -185,3 +185,29 @@ tier-1 singleton.
   packages that are not transformed (e.g. `@rspack/core`). Do not unit-test Rspack config code with
   Jest; use `node --test`.
 - `new Response('', { status: 204 })` throws in Node 24. Use a `null` body.
+
+### Found during the A3 browser verification
+
+- Apps do not need `@module-federation/enhanced` as their own dependency. `@org/rspack-config`
+  brings the plugin and its runtime, and `@org/mf-runtime` imports
+  `@module-federation/enhanced/runtime`. Both re-export the single `@module-federation/runtime`
+  store entry, so `registerRemotes`/`loadRemote` act on the instance the plugin created
+  (`__FEDERATION__.__INSTANCES__` = `[shell, remote]`).
+- **Do not check "one React" with `import * as React` identity in production builds.** In dev
+  `window.__shellReact === window.__remoteReact` was true. In prod it was false, because each build
+  wraps the shared CJS module in its own ESM namespace object. `React.useState` and React's
+  internals object were identical, so there was still one React. Compare a function or the
+  internals, not the namespace object.
+- A `lazy()` component created _below_ the Suspense boundary is re-created when the boundary
+  retries, because a component that suspends before its first commit loses its hook state. So it
+  loads twice and retry counting breaks. `<RemoteApp>` creates the lazy component above Suspense.
+- After a failed load, MF keeps the failed remote. Retry calls `registerRemotes([remote], { force:
+true })` before loading again. Verified in the browser: the remote's `mf-manifest.json` was
+  blocked (2 attempts), then unblocked, and "Try again" rendered the remote.
+- `registerPwa()` in dev made the browser fetch `/service-worker.js`. The dev server's history
+  fallback answers with `index.html` ("unsupported MIME type" console error). `registerPwa` now runs
+  only in production builds by default (`enabled` option).
+- Do not create file names that differ only by case (`remoteApp.tsx` vs `RemoteApp.tsx`). The
+  default macOS file system is case-insensitive.
+- The remote fetches only `mf-manifest.json`, `remoteEntry.js`, its expose chunks and the small
+  css-loader/style-loader runtime chunk. It does not fetch React or react-router chunks.

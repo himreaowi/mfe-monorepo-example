@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.org.example/mfe-manifest.schema.json",
+  "title": "MFE runtime manifest",
+  "description": "Served by each shell at /mfe-manifest.json and written per environment by DevOps. Lists the remotes the shell may load and runtime settings. One build runs in every environment.",
+  "type": "object",
+  "required": ["remotes"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "remotes": {
+      "description": "Remotes by Module Federation name (the remote's `name` in its rspack config).",
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+      },
+      "additionalProperties": {
+        "$ref": "#/definitions/remote"
+      }
+    },
+    "auth": {
+      "description": "Auth (BFF) settings for the shell. Shape defined by @org/auth (A6).",
+      "type": "object"
+    },
+    "settings": {
+      "description": "Free-form runtime settings (e.g. apiBaseUrl). Passed to every remote as host prop `settings`.",
+      "type": "object"
+    }
+  },
+  "definitions": {
+    "remote": {
+      "type": "object",
+      "required": ["entry"],
+      "additionalProperties": false,
+      "properties": {
+        "entry": {
+          "description": "URL of the remote's mf-manifest.json (preferred) or remoteEntry.js. Absolute http(s) URL or a root-relative path.",
+          "type": "string",
+          "pattern": "^(https?://[^\\s/]+)?/[^\\s]*\\.(json|js)(\\?[^\\s]*)?$"
+        },
+        "props": {
+          "description": "Extra props passed to the remote's exposed component.",
+          "type": "object"
+        }
+      }
+    }
+  }
+}

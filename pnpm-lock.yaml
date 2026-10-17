@@ -206,6 +206,9 @@ catalogs:
     '@types/react-dom':
       specifier: 19.3.0
       version: 19.3.0
+    ajv:
+      specifier: 8.20.0
+      version: 8.20.0
     css-loader:
       specifier: 7.1.5
       version: 7.1.5
@@ -404,6 +407,76 @@ importers:
       prettier:
         specifier: 'catalog:'
         version: 3.9.10
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  packages/mf-runtime:
+    dependencies:
+      '@module-federation/enhanced':
+        specifier: 'catalog:'
+        version: 2.9.2(@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2))(typescript@6.0.3)(webpack@5.112.0(@swc/core@1.16.18)(postcss@8.5.30))
+      '@org/ui':
+        specifier: workspace:*
+        version: link:../ui
+    devDependencies:
+      '@org/design-tokens':
+        specifier: workspace:*
+        version: link:../design-tokens
+      '@org/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@org/jest-config':
+        specifier: workspace:*
+        version: link:../jest-config
+      '@org/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
+      '@testing-library/dom':
+        specifier: 'catalog:'
+        version: 10.4.2
+      '@testing-library/jest-dom':
+        specifier: 'catalog:'
+        version: 7.0.1(@testing-library/dom@10.4.2)
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@testing-library/user-event':
+        specifier: 'catalog:'
+        version: 14.6.8(@testing-library/dom@10.4.2)
+      '@types/jest':
+        specifier: 'catalog:'
+        version: 30.0.0
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.2
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: 'catalog:'
+        version: 19.3.0(@types/react@19.3.0)
+      ajv:
+        specifier: 'catalog:'
+        version: 8.20.0
+      eslint:
+        specifier: 'catalog:'
+        version: 10.12.0(jiti@2.4.2)(supports-color@7.2.0)
+      jest:
+        specifier: 'catalog:'
+        version: 30.5.2(@types/node@24.19.2)(supports-color@7.2.0)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.10
+      react:
+        specifier: 'catalog:'
+        version: 19.3.1
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.3.1(react@19.3.1)
+      react-router:
+        specifier: 'catalog:'
+        version: 8.4.0(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -2519,6 +2592,11 @@ packages:
 
   ajv-formats@2.1.1:
     resolution: {integrity: sha512-Wx0Kx52hxE7C18hkMEggYlEifqWZtYaRgouJor+WMdPnQyEK13vgEWyVNup7SoeeoLMsr4kf5h6dOW11I15MUA==}
+    peerDependencies:
+      ajv: ^8.0.0
+    peerDependenciesMeta:
+      ajv:
+        optional: true
 
   ajv-formats@3.0.1:
     resolution: {integrity: sha512-8iUql50EUR+uUcdRQ3HDqa6EVyo3docL8g5WJ3FNcWmu62IbkGUue/pEyLBW8VGKKucTPgqeks4fIU1DA4yowQ==}
@@ -6915,8 +6993,8 @@ snapshots:
 
   agent-base@7.1.4: {}
 
-  ajv-formats@2.1.1:
-    dependencies:
+  ajv-formats@2.1.1(ajv@8.20.0):
+    optionalDependencies:
       ajv: 8.20.0
 
   ajv-formats@3.0.1(ajv@8.20.0):
@@ -9013,7 +9091,7 @@ snapshots:
     dependencies:
       '@types/json-schema': 7.0.15
       ajv: 8.20.0
-      ajv-formats: 2.1.1
+      ajv-formats: 2.1.1(ajv@8.20.0)
       ajv-keywords: 5.1.0(ajv@8.20.0)
 
   schema-utils@4.5.0:

@@ -8,3 +8,4 @@ test-results
 .blob
 .nx
 pnpm-lock.yaml
+packages/mf-runtime/src/manifest/validateSchema.generated.js
