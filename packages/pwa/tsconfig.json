@@ -1,0 +1,10 @@
+{
+  "extends": "@org/tsconfig/library.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "allowJs": true,
+    "checkJs": true,
+    "types": ["jest", "node", "@testing-library/jest-dom"]
+  },
+  "include": ["src", "build"]
+}

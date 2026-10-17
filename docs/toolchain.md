@@ -6,29 +6,33 @@ those versions were chosen.
 
 ## Pinned versions
 
-| Tool                                            | Version                                | Where pinned                  | Notes                                                  |
-| ----------------------------------------------- | -------------------------------------- | ----------------------------- | ------------------------------------------------------ |
-| Node.js                                         | 24 LTS (tested 24.21.0)                | `.nvmrc`, `engines.node >=24` | Corepack ships with Node 24                            |
-| pnpm                                            | 12.14.0                                | `packageManager` (Corepack)   | `corepack enable` once, or run `corepack pnpm`         |
-| react / react-dom                               | 19.3.1                                 | catalog (tier 1)              | MF singleton                                           |
-| react-router                                    | 8.4.0                                  | catalog (tier 1)              | MF singleton. Package is ESM-only                      |
-| @types/react / @types/react-dom                 | 19.3.0                                 | catalog (tier 1)              |                                                        |
-| @rspack/core / @rspack/cli                      | 2.2.9                                  | catalog                       |                                                        |
-| @rspack/dev-server                              | 2.2.1                                  | catalog                       |                                                        |
-| @module-federation/enhanced                     | 2.9.2                                  | catalog                       | runtime API via `@module-federation/enhanced/runtime`  |
-| nx                                              | 23.3.0                                 | catalog                       | package-based mode                                     |
-| typescript                                      | **6.0.3**                              | catalog                       | NOT 7.x, see below                                     |
-| eslint                                          | 10.12.0                                | catalog                       | 10.13.0 was less than 1 day old, see minimumReleaseAge |
-| typescript-eslint                               | 8.71.2                                 | catalog                       |                                                        |
-| @eslint/js                                      | 10.0.1                                 | catalog                       |                                                        |
-| eslint-plugin-react-hooks                       | 7.1.1                                  | catalog                       |                                                        |
-| eslint-plugin-prettier / eslint-config-prettier | 5.5.7 / 10.1.8                         | catalog                       |                                                        |
-| prettier                                        | 3.9.10                                 | catalog                       |                                                        |
-| globals                                         | 17.13.0                                | catalog                       |                                                        |
-| @types/node                                     | 24.19.2                                | catalog                       | matches the Node major                                 |
-| Jest (planned, A8)                              | 30.5.2 + jest-environment-jsdom 30.5.2 | added in A8                   | verified in the spike, see below                       |
-| ts-jest / @swc/jest (planned, A8)               | 29.4.15 / 0.2.39 (+ @swc/core 1.16.18) | added in A8                   | both work                                              |
-| Playwright (planned, A8)                        | 1.64.1                                 | added in A8                   |                                                        |
+| Tool                                            | Version                          | Where pinned                  | Notes                                                  |
+| ----------------------------------------------- | -------------------------------- | ----------------------------- | ------------------------------------------------------ |
+| Node.js                                         | 24 LTS (tested 24.21.0)          | `.nvmrc`, `engines.node >=24` | Corepack ships with Node 24                            |
+| pnpm                                            | 12.14.0                          | `packageManager` (Corepack)   | `corepack enable` once, or run `corepack pnpm`         |
+| react / react-dom                               | 19.3.1                           | catalog (tier 1)              | MF singleton                                           |
+| react-router                                    | 8.4.0                            | catalog (tier 1)              | MF singleton. Package is ESM-only                      |
+| @types/react / @types/react-dom                 | 19.3.0                           | catalog (tier 1)              |                                                        |
+| @rspack/core / @rspack/cli                      | 2.2.9                            | catalog                       |                                                        |
+| @rspack/dev-server                              | 2.2.1                            | catalog                       |                                                        |
+| @module-federation/enhanced                     | 2.9.2                            | catalog                       | runtime API via `@module-federation/enhanced/runtime`  |
+| nx                                              | 23.3.0                           | catalog                       | package-based mode                                     |
+| typescript                                      | **6.0.3**                        | catalog                       | NOT 7.x, see below                                     |
+| eslint                                          | 10.12.0                          | catalog                       | 10.13.0 was less than 1 day old, see minimumReleaseAge |
+| typescript-eslint                               | 8.71.2                           | catalog                       |                                                        |
+| @eslint/js                                      | 10.0.1                           | catalog                       |                                                        |
+| eslint-plugin-react-hooks                       | 7.1.1                            | catalog                       |                                                        |
+| eslint-plugin-prettier / eslint-config-prettier | 5.5.7 / 10.1.8                   | catalog                       |                                                        |
+| prettier                                        | 3.9.10                           | catalog                       |                                                        |
+| globals                                         | 17.13.0                          | catalog                       |                                                        |
+| @types/node                                     | 24.19.2                          | catalog                       | matches the Node major                                 |
+| jest / jest-environment-jsdom                   | 30.5.2                           | catalog (A2)                  | via `@org/jest-config`                                 |
+| @swc/jest / @swc/core                           | 0.2.39 / 1.16.18                 | catalog (A2)                  | ts-jest not used                                       |
+| @testing-library/react / user-event / jest-dom  | 16.3.3 / 14.6.8 / 7.0.1          | catalog (A2)                  | + @testing-library/dom 10.4.2, @types/jest 30.0.0      |
+| sass / sass-loader / css-loader / style-loader  | 1.105.1 / 17.0.1 / 7.1.5 / 4.0.0 | catalog (A2)                  | used by `@org/rspack-config`                           |
+| workbox-build                                   | 7.4.1                            | catalog (A2)                  | used by `@org/pwa/build`                               |
+| ajv                                             | 8.20.0                           | catalog (A3)                  | dev only: generates the manifest validator             |
+| Playwright (planned, A8)                        | 1.64.1                           | added in A8                   |                                                        |
 
 ## A0 spike: one React instance across shell and remote
 
@@ -136,3 +140,48 @@ tier-1 singleton.
   - `jsc.transform.optimizer.globals.vars: { 'import.meta.hot': 'undefined' }`, because
     react-router reads `import.meta.hot`
   - a setup file that adds `TextEncoder` / `TextDecoder` from `node:util` to jsdom
+
+## Gotchas found in A2/A3
+
+### pnpm
+
+- New packages with install scripts fail the install again (`ERR_PNPM_IGNORED_BUILDS`):
+  `@swc/core`, `unrs-resolver` (from jest) and `@parcel/watcher` (from sass). All three ship
+  prebuilt binaries as optional dependencies, so they are listed as `false` in `allowBuilds`
+  (explicitly denied, which silences the error).
+- **Stray `@types/react` from outside the repo.** `react-router`'s `.d.ts` files import `react`,
+  but react-router does not declare `@types/react`. In the isolated layout TypeScript cannot find
+  it next to react-router and walks up the directory tree, past the repo root. On a machine with
+  `~/node_modules/@types/react` (v18 here) every react-router component failed with "cannot be
+  used as a JSX component". Fix: `packageExtensions` in `pnpm-workspace.yaml` gives react-router an
+  optional `@types/react` peer, so pnpm links the catalog version next to it.
+  Side effect: react-router gets one store entry per peer set. Give every package that depends on
+  react-router `@types/react` too (all TS packages/apps do), otherwise two copies exist on disk.
+  At runtime MF still shares one, but keep it clean.
+- Sass 1.105.2 was less than a day old (minimumReleaseAge). Pinned 1.105.1.
+
+### Rspack / Module Federation
+
+- `@rspack/core` 2 is **ESM-only**. Config code that imports it must be ESM. `@org/rspack-config`
+  is ESM and tested with `node --test`, not Jest (Jest cannot `require()` it, see below).
+- The Rspack CLI sets `NODE_ENV` (`build` → production, `dev`/`serve` → development) before it
+  loads the config and passes `env.RSPACK_SERVE` / `env.RSPACK_BUILD` to config functions. The
+  factories return `(env, argv) => config` and derive the mode from these.
+- Loaders (`style-loader`, `css-loader`, `sass-loader`) are passed as absolute paths
+  (`require.resolve`) from `@org/rspack-config`. Apps do not need them installed (D7).
+- Rule `type: 'javascript/auto'` is set on the SCSS/CSS rules, so Rspack's native CSS handling
+  does not process them a second time.
+- `css-loader` `modules.localIdentHashSalt = <federation name>` gives each app different hashes
+  for the same file + class (checked by a real build in the rspack-config tests).
+- sass-loader compresses CSS in production mode (`padding:4px`, not `padding: 4px`).
+- MF `dts: false`: the DTS plugin would otherwise try to generate/consume remote types (slow,
+  needs a TS server). Remote types come from the contract instead.
+
+### Jest
+
+- `@org/jest-config` resolves every tool path (`jest-environment-jsdom`, `@swc/jest`,
+  `identity-obj-proxy`, the setup file) from itself, so packages only need `jest` + types.
+- Jest 30 under Node 24 still fails with "Must use import to load ES Module" for ESM-only
+  packages that are not transformed (e.g. `@rspack/core`). Do not unit-test Rspack config code with
+  Jest; use `node --test`.
+- `new Response('', { status: 204 })` throws in Node 24. Use a `null` body.

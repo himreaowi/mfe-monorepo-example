@@ -1,0 +1,20 @@
+.fallback {
+  padding: var(--space-6);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.title {
+  margin: 0 0 var(--space-2);
+  font-size: 1.125rem;
+}
+
+.reason {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.actions {
+  margin-top: var(--space-4);
+}

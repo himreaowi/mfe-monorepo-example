@@ -16,6 +16,21 @@ catalogMode: manual
 # Dependencies allowed to run install scripts (pnpm 12 blocks all others and fails install).
 allowBuilds:
   nx: true
+  # Prebuilt binaries come as optional dependencies; their install scripts are not needed.
+  '@parcel/watcher': false
+  '@swc/core': false
+  unrs-resolver: false
+
+# react-router's .d.ts files import 'react' but it does not declare @types/react. In the isolated
+# layout TypeScript then walks up past the repo and may pick up a stray @types/react (e.g. v18 in
+# ~/node_modules). Declaring it as an optional peer links the catalog @types/react next to it.
+packageExtensions:
+  react-router:
+    peerDependencies:
+      '@types/react': '*'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
 
 # Default catalog. Tier 1 (core singletons, shared via MF) + toolchain + tier 2 (common libs).
 catalog:
@@ -41,3 +56,22 @@ catalog:
   prettier: 3.9.10
   typescript: 6.0.3
   typescript-eslint: 8.71.2
+  # build (rspack-config, pwa)
+  css-loader: 7.1.5
+  sass: 1.105.1
+  sass-loader: 17.0.1
+  style-loader: 4.0.0
+  workbox-build: 7.4.1
+  # test (jest-config)
+  '@swc/core': 1.16.18
+  '@swc/jest': 0.2.39
+  '@testing-library/dom': 10.4.2
+  '@testing-library/jest-dom': 7.0.1
+  '@testing-library/react': 16.3.3
+  '@testing-library/user-event': 14.6.8
+  '@types/jest': 30.0.0
+  identity-obj-proxy: 3.0.0
+  jest: 30.5.2
+  jest-environment-jsdom: 30.5.2
+  # mf-runtime (manifest validator codegen, dev only)
+  ajv: 8.20.0
