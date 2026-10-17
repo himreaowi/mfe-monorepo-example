@@ -1,9 +1,9 @@
-import { Demo } from '@/features/demo';
+import { StaffSearch } from '@/features/staff';
 
 export function OverviewPage() {
   return (
     <div data-testid="overview-page">
-      <Demo />
+      <StaffSearch />
     </div>
   );
 }

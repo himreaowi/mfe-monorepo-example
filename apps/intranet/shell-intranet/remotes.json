@@ -3,30 +3,33 @@
   "remotes": [
     {
       "name": "staff-directory",
-      "title": "Staff Directory",
+      "title": "Staff directory",
       "path": "/staff-directory",
       "federationName": "intranet_staff_directory",
       "package": "@org/intranet-staff-directory",
       "access": "public",
-      "kind": "react"
+      "kind": "react",
+      "description": "Find colleagues by name, team or skill, with their contact details."
     },
     {
       "name": "leave-requests",
-      "title": "Leave Requests",
+      "title": "Leave",
       "path": "/leave-requests",
       "federationName": "intranet_leave_requests",
       "package": "@org/intranet-leave-requests",
       "access": "public",
-      "kind": "react"
+      "kind": "react",
+      "description": "See your leave balance, request leave and follow your requests."
     },
     {
       "name": "it-helpdesk",
-      "title": "It Helpdesk",
+      "title": "IT helpdesk",
       "path": "/it-helpdesk",
       "federationName": "intranet_it_helpdesk",
       "package": "@org/intranet-it-helpdesk",
       "access": "public",
-      "kind": "external"
+      "kind": "external",
+      "description": "Report a problem with your laptop, software or access."
     }
   ]
 }

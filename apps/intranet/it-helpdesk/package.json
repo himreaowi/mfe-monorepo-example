@@ -24,7 +24,13 @@
         "dependsOn": [
           {
             "projects": [
-              "@org/mock-vendor"
+              "@org/mock-api"
+            ],
+            "target": "serve:intranet"
+          },
+          {
+            "projects": [
+              "@org/example-vendors"
             ],
             "target": "dev"
           }

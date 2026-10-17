@@ -11,5 +11,5 @@ export default createShellConfig({
   rootDir: import.meta.dirname,
   name: mfe.federationName,
   port: mfe.port,
-  title: 'Intranet Shell',
+  title: 'Staff Portal',
 });

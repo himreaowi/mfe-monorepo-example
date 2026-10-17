@@ -1,7 +1,7 @@
 import { expect, test } from '@org/playwright-config/test';
 import { escapeRegExp, expectRemoteRendered, zone } from './helpers';
 
-test.describe('Intranet Shell', () => {
+test.describe('Staff Portal shell', () => {
   test('home page lists every remote in the nav', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByTestId('shell-welcome')).toBeVisible();

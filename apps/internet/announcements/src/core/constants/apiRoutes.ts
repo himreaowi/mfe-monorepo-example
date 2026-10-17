@@ -2,8 +2,8 @@ import { defineApiRoutes } from '@org/http-client';
 
 /** API paths, joined with settings.apiBaseUrl by the http client. */
 export const apiRoutes = defineApiRoutes({
-  items: {
-    list: () => '/items',
-    byId: (id: number | string) => `/items/${id}`,
+  announcements: {
+    list: () => '/announcements',
+    byId: (id: string) => `/announcements/${encodeURIComponent(id)}`,
   },
 });

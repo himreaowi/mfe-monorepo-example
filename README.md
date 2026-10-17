@@ -2,7 +2,68 @@
 
 An example application built from the MFE monorepo template (pnpm workspaces + Nx + Rspack +
 Module Federation 2): a **Staff Portal** (intranet zone) and a **Citizen Portal** (internet zone).
-Everything below the example section is the template README.
+The apps were created only with the generators (commit "feat(B1): generate …"); everything after
+that commit is what a team writes by hand. The template README follows below the example
+section.
+
+## The example
+
+| Zone     | App (package)                                            | Kind                                    | Routes                                             |
+| -------- | -------------------------------------------------------- | --------------------------------------- | -------------------------------------------------- |
+| intranet | Staff Portal (`@org/shell-intranet`, :3100)              | shell                                   | `/`, 404                                           |
+| intranet | Staff directory (`@org/intranet-staff-directory`, :3101) | public remote                           | `/staff-directory`, `/staff-directory/<id>`        |
+| intranet | Leave (`@org/intranet-leave-requests`, :3102)            | public remote                           | `/leave-requests`, `/leave-requests/new`           |
+| intranet | IT helpdesk (`@org/intranet-it-helpdesk`, :3103)         | external adapter (esm vendor)           | `/it-helpdesk`, `…/new`, `…/tickets/<id>` (vendor) |
+| internet | Citizen Portal (`@org/shell-internet`, :3200)            | shell                                   | `/`, 404                                           |
+| internet | Services (`@org/internet-services`, :3201)               | public remote                           | `/services`, `/services/<slug>`                    |
+| internet | Announcements (`@org/internet-announcements`, :3202)     | public remote                           | `/announcements`, `/announcements/<id>`            |
+| internet | My profile (`@org/internet-my-profile`, :3203)           | private remote (sign-in)                | `/my-profile`                                      |
+| internet | Payments (`@org/internet-payments`, :3204)               | external adapter (web component vendor) | `/payments`, `/payments/receipt/<ref>` (vendor)    |
+
+```sh
+nvm use && corepack enable && pnpm install
+pnpm dev:intranet     # http://localhost:3100 (+ mock API :3910, example vendors :3990)
+pnpm dev:internet     # http://localhost:3200 (+ mock API :3920, example vendors :3990)
+pnpm e2e              # both zones: feature specs + generated specs + axe (light + dark)
+```
+
+"Sign in" uses the template's dev mock. Run one zone at a time (both use the vendor port 3990).
+
+### What was added by hand
+
+| Where                                            | What                                                                                                                                                                                                      |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`tools/mock-api`](tools/mock-api)               | dev-only JSON API per zone (intranet :3910, internet :3920). Apps read the base URL from `settings.apiBaseUrl` in the shell's `mfe-manifest.dev.json`; started by the remotes' `nx.targets.dev.dependsOn` |
+| [`tools/example-vendors`](tools/example-vendors) | two fictional vendor products without React on versioned URLs: Acme Service Desk (esm) and Bright Payments (web component), configured through `props.vendor` in the manifest                             |
+| [`packages/use-api`](packages/use-api)           | `useApi` / `useSubmit` hooks used by every React remote: code shared through `packages/`, never between apps. Intranet and internet share no remotes                                                      |
+| `apps/*/*/src/features/*`                        | the features (types → api → hooks → UI), pages and routes; unit tests next to the code                                                                                                                    |
+| `apps/<zone>/shell-<zone>`                       | branding, home page cards (`description` in `remotes.json`), a "Menu" disclosure for the nav below 40rem, feature e2e specs in `e2e/`                                                                     |
+
+### Dependency tier 3 (decision D4): date-fns in one remote
+
+The leave form counts working days with **date-fns**, used only by the Leave remote:
+
+```sh
+pnpm --filter @org/intranet-leave-requests add date-fns
+```
+
+`catalogMode: manual` wrote a normal range (`"date-fns": "^4.4.0"`) into
+`apps/intranet/leave-requests/package.json` only: no catalog entry, no exception, `pnpm check`
+stays green. If a second app needed date-fns, `pnpm check` would fail with
+`shared-not-in-catalog` until it moves to the catalog (tier 2,
+[docs/adding-dependencies.md](docs/adding-dependencies.md)). Display-only dates elsewhere use
+`Intl.DateTimeFormat`.
+
+### Changes to template code in this copy (template follow-ups)
+
+- `packages/http-client`: `HttpClientError.body` keeps the parsed JSON of an error response, so
+  422 field errors can reach the form.
+- `packages/ui` `MainLayout`: tighter header spacing below 40rem (with the shells' "Menu" nav the
+  header stays short at 375 px).
+
+---
+
+## Template README
 
 Template monorepo for **React microfrontends**: pnpm workspaces + Nx (package-based), Rspack +
 Module Federation 2, React 19, TypeScript. Two zones (intranet, internet), each with one shell

@@ -57,6 +57,7 @@ button[disabled] { opacity: 0.6; cursor: progress; }
 dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1rem; margin: 0; }
 dt { color: var(--color-text-muted, #475569); }
 dd { margin: 0; overflow-wrap: anywhere; }
+p[role='status']:empty { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .success { padding: 0.75rem 1rem; border-left: 4px solid var(--color-accent, #0f766e); background: var(--color-bg, #f1f5f4); font-weight: 600; }
 `;
 

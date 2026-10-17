@@ -2,7 +2,7 @@
   "name": "@org/shell-internet",
   "version": "0.0.0",
   "private": true,
-  "description": "Internet Shell: host app of the internet zone",
+  "description": "Citizen Portal: host app (shell) of the internet zone",
   "type": "module",
   "scripts": {
     "dev": "rspack dev",

@@ -12,11 +12,11 @@ jest.mock('@org/mf-runtime/external', () => ({
   },
 }));
 
-describe('It Helpdesk external adapter remote', () => {
+describe('IT Helpdesk external adapter remote', () => {
   it('embedded: mounts the vendor module below the shell mount with host props', () => {
     render(
       <ThemeProvider>
-        <MemoryRouter initialEntries={['/it-helpdesk/receipt/1']}>
+        <MemoryRouter initialEntries={['/it-helpdesk/tickets/HD-1']}>
           <Routes>
             <Route
               path="it-helpdesk/*"
@@ -33,11 +33,13 @@ describe('It Helpdesk external adapter remote', () => {
         </MemoryRouter>
       </ThemeProvider>,
     );
-    expect(screen.getByTestId('mode-badge')).toHaveTextContent('Embedded');
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'IT helpdesk' }),
+    ).toBeInTheDocument();
     expect(screen.getByTestId('external-module-stub')).toBeInTheDocument();
     expect(lastProps).toMatchObject({
       basePath: '/it-helpdesk',
-      path: 'receipt/1',
+      path: 'tickets/HD-1',
       user: { id: 'u1', name: 'Shell User' },
       config: { url: 'https://vendor.example/m.js' },
     });
@@ -46,7 +48,7 @@ describe('It Helpdesk external adapter remote', () => {
   it('standalone: renders with its own chrome and the dev mock vendor', () => {
     window.history.pushState({}, '', '/');
     render(<StandaloneApp />);
-    expect(screen.getByTestId('mode-badge')).toHaveTextContent('Standalone');
+    expect(screen.getByText('IT helpdesk (standalone)')).toBeInTheDocument();
     expect(lastProps?.config).toMatchObject({ format: 'esm' });
   });
 });

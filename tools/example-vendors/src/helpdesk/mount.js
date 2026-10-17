@@ -69,6 +69,7 @@ textarea { min-height: 6rem; }
 dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1rem; margin: 0; }
 dt { color: var(--color-text-muted, #475569); }
 dd { margin: 0; overflow-wrap: anywhere; }
+p[role='status']:empty, p[role='alert']:empty { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 @media (prefers-reduced-motion: no-preference) { button, a { transition: background-color 120ms; } }
 `;

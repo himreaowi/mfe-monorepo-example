@@ -14,7 +14,7 @@ jest.mock('@org/mf-runtime/external', () => ({
 }));
 
 function Location() {
-  return <output data-testid="location">{useLocation().pathname}</output>;
+  return <span data-testid="location">{useLocation().pathname}</span>;
 }
 
 function renderAt(url: string, vendor?: unknown) {
@@ -39,55 +39,70 @@ function renderAt(url: string, vendor?: unknown) {
   );
 }
 
-describe('ExternalModuleHost', () => {
-  const vendor = { url: 'https://vendor.example/mount.js', format: 'esm' };
+const vendor = {
+  url: 'https://pay.example/element.js',
+  format: 'web-component',
+  tagName: 'x-pay',
+};
 
-  it('passes the manifest config, sub-path, theme and a minimal user to <ExternalModule>', () => {
-    renderAt('/payments/receipt/7', vendor);
-    expect(screen.getByTestId('external-module-stub')).toHaveTextContent(
-      'receipt/7',
-    );
+describe('ExternalModuleHost (payments)', () => {
+  it('passes the manifest config, sub-path, theme and a minimal user', () => {
+    renderAt('/payments/receipt/BP-1', vendor);
     expect(lastProps).toMatchObject({
       name: 'internet_payments',
       config: vendor,
       basePath: '/payments',
-      path: 'receipt/7',
+      path: 'receipt/BP-1',
       theme: 'light',
       user: { id: 'u1', name: 'Ada' },
     });
     expect(lastProps?.user).not.toHaveProperty('email');
   });
 
-  it('routes vendor navigation through the router and lists vendor events', () => {
-    renderAt('/payments', vendor);
-    act(() => lastProps?.onNavigate?.('receipt/9'));
-    expect(screen.getByTestId('location')).toHaveTextContent(
-      '/payments/receipt/9',
-    );
-    act(() => lastProps?.onNavigate?.('/elsewhere'));
-    expect(screen.getByTestId('location')).toHaveTextContent('/elsewhere');
+  it('confirms a completed payment from the vendor event and routes vendor navigation', () => {
     renderAt('/payments', vendor);
     act(() => {
-      lastProps?.onEvent?.('payment:completed', { reference: 'R1' });
-      lastProps?.onError?.({
-        code: 'x',
-        message: 'boom',
-        source: 'module',
-        fatal: false,
+      lastProps?.onEvent?.('payment:completed', {
+        reference: 'BP-20261018-0001',
+        amount: 1500,
+        currency: 'SGD',
+        description: 'Dog licence renewal 2027',
       });
+      lastProps?.onNavigate?.('receipt/BP-20261018-0001');
     });
-    expect(screen.getAllByTestId('vendor-events').at(-1)).toHaveTextContent(
-      'payment:completed {"reference":"R1"}',
+    expect(screen.getByTestId('payment-confirmation')).toHaveTextContent(
+      'Payment received: SGD 15.00 for Dog licence renewal 2027. Reference BP-20261018-0001.',
     );
-    expect(screen.getAllByTestId('vendor-events').at(-1)).toHaveTextContent(
-      'module/x: boom',
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      '/payments/receipt/BP-20261018-0001',
     );
   });
 
-  it('falls back to the dev mock vendor when the manifest has no vendor config', () => {
+  it('ignores malformed events and shows vendor errors', () => {
+    renderAt('/payments', vendor);
+    act(() => {
+      lastProps?.onEvent?.('payment:completed', { reference: 42 });
+      lastProps?.onError?.({
+        source: 'module',
+        code: 'invalid-config',
+        message: 'config.amount must be a positive whole number of cents',
+        fatal: true,
+      });
+    });
+    expect(
+      screen.queryByTestId('payment-confirmation'),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'The payment service reported a problem: config.amount must be',
+    );
+  });
+
+  it('falls back to the dev example vendor without a manifest config', () => {
     renderAt('/payments');
     expect(lastProps?.config).toMatchObject({
-      url: 'http://localhost:3999/mount.js',
+      url: 'http://localhost:3990/payments/2.3.1/element.js',
+      format: 'web-component',
+      tagName: 'bright-checkout',
     });
   });
 });

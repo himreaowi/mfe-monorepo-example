@@ -14,7 +14,7 @@ export function StandaloneLayout({ children }: { children: ReactNode }) {
           <NavLink to="/" end>
             Overview
           </NavLink>
-          <NavLink to={`/${routePaths.details}`}>Details</NavLink>
+          <NavLink to={`/${routePaths.newRequest}`}>Request leave</NavLink>
         </>
       }
     >

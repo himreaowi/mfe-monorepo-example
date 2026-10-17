@@ -4,6 +4,8 @@ export type RemoteEntry = {
   name: string;
   /** Nav label. */
   title: string;
+  /** One sentence for the home page card (optional). */
+  description?: string;
   /** Mount path in the shell (`/staff-directory`); the remote owns `<path>/*`. */
   path: string;
   /** Module Federation name = key in mfe-manifest.json `remotes`. */

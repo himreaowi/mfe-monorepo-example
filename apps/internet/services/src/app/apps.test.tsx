@@ -1,45 +1,73 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { ThemeProvider } from '@org/ui';
+import {
+  getCategories,
+  getService,
+  listServices,
+} from '@/features/catalogue/api';
+import { dogLicence } from '@/features/catalogue/components/testData';
 import { EmbeddedApp, StandaloneApp } from './apps';
 
+jest.mock('@/features/catalogue/api');
+
+beforeEach(() => {
+  jest.mocked(getCategories).mockResolvedValue([]);
+  jest.mocked(listServices).mockResolvedValue({
+    items: [dogLicence],
+    total: 1,
+    categories: [],
+  });
+  jest.mocked(getService).mockResolvedValue(dogLicence);
+});
+
+function renderEmbedded(url: string) {
+  return render(
+    <ThemeProvider>
+      <MemoryRouter initialEntries={[url]}>
+        <Routes>
+          <Route
+            path="services/*"
+            element={<EmbeddedApp embedded basePath="/services" />}
+          />
+        </Routes>
+      </MemoryRouter>
+    </ThemeProvider>,
+  );
+}
+
 describe('Services remote', () => {
-  it('embedded: renders below the shell mount with host props', () => {
-    render(
-      <ThemeProvider>
-        <MemoryRouter initialEntries={['/services']}>
-          <Routes>
-            <Route
-              path="services/*"
-              element={
-                <EmbeddedApp
-                  embedded
-                  basePath="/services"
-                  title="From shell"
-                  user={{ id: 'u1', name: 'Shell User' }}
-                />
-              }
-            />
-          </Routes>
-        </MemoryRouter>
-      </ThemeProvider>,
-    );
-    expect(screen.getByTestId('mode-badge')).toHaveTextContent('Embedded');
-    expect(screen.getByText('From shell')).toBeInTheDocument();
-    expect(screen.getByTestId('demo-user')).toHaveTextContent('Shell User');
-    expect(screen.getByRole('link', { name: /details/i })).toHaveAttribute(
-      'href',
-      '/services/details',
-    );
+  it('embedded: catalogue below the shell mount', async () => {
+    renderEmbedded('/services');
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Services' }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole('link', { name: 'Renew a dog licence' }),
+    ).toHaveAttribute('href', '/services/renew-dog-licence');
+  });
+
+  it('embedded: a slug opens the service page; deeper paths are 404', async () => {
+    renderEmbedded('/services/renew-dog-licence');
+    expect(
+      await screen.findByRole('heading', {
+        level: 1,
+        name: 'Renew a dog licence',
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it('embedded: unknown deep paths show the remote 404 page', () => {
+    renderEmbedded('/services/a/b');
+    expect(screen.getByTestId('remote-not-found-page')).toBeInTheDocument();
   });
 
   it('standalone: renders with mock host props and its own chrome', () => {
     window.history.pushState({}, '', '/');
     render(<StandaloneApp />);
-    expect(screen.getByTestId('mode-badge')).toHaveTextContent('Standalone');
-    expect(screen.getByTestId('demo-user')).toHaveTextContent('Dev User');
     expect(
       screen.getByRole('button', { name: 'Use dark theme' }),
     ).toBeInTheDocument();
+    expect(screen.getByText('Services (standalone)')).toBeInTheDocument();
   });
 });

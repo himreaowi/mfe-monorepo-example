@@ -10,11 +10,10 @@
       "entry": "http://localhost:3103/mf-manifest.json",
       "props": {
         "vendor": {
-          "url": "http://localhost:3999/mount.js",
+          "url": "http://localhost:3990/helpdesk/1.0.0/mount.js",
           "format": "esm",
           "config": {
-            "title": "It Helpdesk (mock vendor)",
-            "amount": 1250
+            "apiBaseUrl": "http://localhost:3910/api"
           }
         }
       }
@@ -23,5 +22,7 @@
   "auth": {
     "mock": true
   },
-  "settings": {}
+  "settings": {
+    "apiBaseUrl": "http://localhost:3910/api"
+  }
 }

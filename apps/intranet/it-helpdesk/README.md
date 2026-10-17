@@ -9,6 +9,10 @@ This remote is a thin React adapter: it renders `<ExternalModule>` from
 (`mount(el, props) → { update?, unmount }`, see `docs/external-modules.md` at the repo root).
 The vendor can use any framework (or another React major); nothing is shared with the shell.
 
+## In this example
+
+IT helpdesk ticket desk by the fictional vendor **Acme Service Desk** (format `esm`, plain DOM, no React): ticket list, "Report a problem" form, ticket pages (`/it-helpdesk/new`, `/it-helpdesk/tickets/<id>`). It calls its own API at `props.vendor.config.apiBaseUrl` (the mock API's `/helpdesk/*` in development) and reports `ticket:created`, which the adapter lists under "Activity".
+
 ## Where the vendor bundle comes from
 
 From this remote's `props.vendor` in the shell's `mfe-manifest.json`, **per environment** (never
@@ -32,19 +36,19 @@ in the build):
 `format`: `esm` | `web-component` (+ `tagName`) | `script` (+ `global`) | `mf` (+ `remoteName`).
 `config` is passed to the vendor as `props.config`.
 
-In development the shell's `mfe-manifest.dev.json` points at the **mock vendor**
-(`tools/mock-vendor`, http://localhost:3999/mount.js), and `src/features/external/vendorConfig.ts`
+In development the shell's `mfe-manifest.dev.json` points at the **example vendor**
+(`tools/example-vendors`, http://localhost:3990/helpdesk/1.0.0/mount.js), and `src/features/external/vendorConfig.ts`
 falls back to it when no config is set (standalone mode). Production builds contain neither.
 
 ## Commands
 
-| Command                                         | What                                                                    |
-| ----------------------------------------------- | ----------------------------------------------------------------------- |
-| `pnpm dev:intranet` (repo root)                 | Shell + all intranet remotes + the mock vendor (Nx task dependency)     |
-| `pnpm exec nx dev @org/intranet-it-helpdesk`    | This adapter standalone on http://localhost:3103 + the mock vendor      |
-| `pnpm --filter @org/intranet-it-helpdesk dev`   | This adapter only (start `pnpm --filter @org/mock-vendor dev` yourself) |
-| `pnpm --filter @org/intranet-it-helpdesk build` | Production build in `dist/`                                             |
-| `lint` / `typecheck` / `test`                   | ESLint, `tsc`, Jest                                                     |
+| Command                                         | What                                                                        |
+| ----------------------------------------------- | --------------------------------------------------------------------------- |
+| `pnpm dev:intranet` (repo root)                 | Shell + all intranet remotes + the example vendors (Nx task dependency)     |
+| `pnpm exec nx dev @org/intranet-it-helpdesk`    | This adapter standalone on http://localhost:3103 + the example vendors      |
+| `pnpm --filter @org/intranet-it-helpdesk dev`   | This adapter only (start `pnpm --filter @org/example-vendors dev` yourself) |
+| `pnpm --filter @org/intranet-it-helpdesk build` | Production build in `dist/`                                                 |
+| `lint` / `typecheck` / `test`                   | ESLint, `tsc`, Jest                                                         |
 
 ## What the adapter passes to the vendor
 

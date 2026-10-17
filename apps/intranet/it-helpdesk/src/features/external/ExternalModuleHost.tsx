@@ -7,8 +7,8 @@ import {
 } from '@org/mf-runtime/external';
 import { joinBasePath, useHostProps } from '@org/mf-runtime/remote';
 import { RemoteFallback, useTheme } from '@org/ui';
-import { ModeBadge } from '@/components/ModeBadge';
 import { APP_TITLE, FEDERATION_NAME } from '@/core/constants/app';
+import { describeError, describeEvent } from './activity';
 import { resolveVendorConfig } from './vendorConfig';
 import styles from './ExternalModuleHost.module.scss';
 
@@ -17,19 +17,19 @@ type LogEntry = { id: number; kind: 'event' | 'error'; text: string };
 let nextId = 0;
 
 /**
- * Adapter for an external (vendor) module: renders `<ExternalModule>` from
- * @org/mf-runtime/external, which loads the vendor bundle (URL from mfe-manifest.json) and drives
- * its `mount(el, props) → { update, unmount }` contract (docs/external-modules.md).
+ * Adapter for the IT ticket desk, a vendor product (Acme Service Desk) integrated through the
+ * mount contract (docs/external-modules.md): `<ExternalModule>` loads the vendor bundle (URL
+ * and `config.apiBaseUrl` from mfe-manifest.json `props.vendor`) and drives
+ * `mount(el, props) → { update, unmount }`.
  *
- * - `path` = everything below this remote's mount (the vendor routes on it); the vendor's
- *   `onNavigate` goes through the shell's router
+ * - `path` = everything below this remote's mount (the vendor routes on it: `new`,
+ *   `tickets/<id>`); the vendor's `onNavigate` goes through the shell's router
  * - theme and user come from the shell; prop changes reach the vendor via `update()`
- * - leaving the route unmounts the vendor; failures show RemoteFallback, the shell keeps working
- * - the "Events from the module" panel is a demo: replace it with real handling (analytics,
- *   notifications, refreshing your own data, …)
+ * - vendor events (`ticket:created`) and errors are listed under "Activity"; a failure to load
+ *   shows RemoteFallback, the shell keeps working
  */
 export function ExternalModuleHost() {
-  const { embedded, basePath, user, vendor } = useHostProps();
+  const { basePath, user, vendor } = useHostProps();
   const { theme } = useTheme();
   const path = useParams()['*'] ?? '';
   const navigate = useNavigate();
@@ -38,7 +38,7 @@ export function ExternalModuleHost() {
 
   const append = useCallback((kind: LogEntry['kind'], text: string) => {
     nextId += 1;
-    setLog((entries) => [...entries.slice(-19), { id: nextId, kind, text }]);
+    setLog((entries) => [...entries.slice(-9), { id: nextId, kind, text }]);
   }, []);
   const onNavigate = useCallback(
     (to: string, options?: ExternalNavigateOptions) =>
@@ -49,12 +49,12 @@ export function ExternalModuleHost() {
   );
   const onEvent = useCallback(
     (name: string, detail?: unknown) =>
-      append('event', `${name} ${JSON.stringify(detail ?? null)}`),
+      append('event', describeEvent(name, detail)),
     [append],
   );
   const onError = useCallback(
     (error: ExternalModuleReportedError) =>
-      append('error', `${error.source}/${error.code}: ${error.message}`),
+      append('error', describeError(error)),
     [append],
   );
 
@@ -62,11 +62,14 @@ export function ExternalModuleHost() {
     <section className={styles.adapter} data-testid="external-adapter">
       <header className={styles.header}>
         <h1 className={styles.title}>{APP_TITLE}</h1>
-        <ModeBadge embedded={embedded} />
+        <p className={styles.muted}>
+          Report a problem with your laptop, software or access, and follow your
+          tickets.
+        </p>
       </header>
       {config === undefined ? (
         <RemoteFallback
-          title="Vendor module not configured"
+          title="Ticket desk not configured"
           reason={`Set "props.vendor" for ${FEDERATION_NAME} in mfe-manifest.json, e.g. { "url": "https://vendor.example/mount.js", "format": "esm" }.`}
         />
       ) : (
@@ -82,6 +85,7 @@ export function ExternalModuleHost() {
           onNavigate={onNavigate}
           onEvent={onEvent}
           onError={onError}
+          loading={<p role="status">Loading the ticket desk…</p>}
         />
       )}
       <aside
@@ -90,19 +94,21 @@ export function ExternalModuleHost() {
         data-testid="vendor-events"
       >
         <h2 id="vendor-events-title" className={styles.eventsTitle}>
-          Events from the module
+          Activity
         </h2>
-        {log.length === 0 ? (
-          <p className={styles.muted}>None yet.</p>
-        ) : (
-          <ol className={styles.list}>
-            {log.map((entry) => (
-              <li key={entry.id} data-kind={entry.kind}>
-                {entry.text}
-              </li>
-            ))}
-          </ol>
-        )}
+        <div aria-live="polite">
+          {log.length === 0 ? (
+            <p className={styles.muted}>Nothing yet in this session.</p>
+          ) : (
+            <ol className={styles.list}>
+              {log.map((entry) => (
+                <li key={entry.id} data-kind={entry.kind}>
+                  {entry.text}
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
       </aside>
     </section>
   );

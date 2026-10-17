@@ -13,11 +13,14 @@
       "entry": "http://localhost:3204/mf-manifest.json",
       "props": {
         "vendor": {
-          "url": "http://localhost:3999/mount.js",
-          "format": "esm",
+          "url": "http://localhost:3990/payments/2.3.1/element.js",
+          "format": "web-component",
+          "tagName": "bright-checkout",
           "config": {
-            "title": "Payments (mock vendor)",
-            "amount": 1250
+            "title": "Pay your dog licence",
+            "description": "Dog licence renewal 2027",
+            "amount": 1500,
+            "currency": "SGD"
           }
         }
       }
@@ -26,5 +29,7 @@
   "auth": {
     "mock": true
   },
-  "settings": {}
+  "settings": {
+    "apiBaseUrl": "http://localhost:3920/api"
+  }
 }

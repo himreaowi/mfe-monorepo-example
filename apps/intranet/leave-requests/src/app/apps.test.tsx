@@ -1,45 +1,61 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { ThemeProvider } from '@org/ui';
+import { getLeaveBalance, getLeaveRequests } from '@/features/leave/api';
+import { balances, request } from '@/features/leave/components/testData';
 import { EmbeddedApp, StandaloneApp } from './apps';
 
+jest.mock('@/features/leave/api');
+
+beforeEach(() => {
+  jest.mocked(getLeaveBalance).mockResolvedValue(balances);
+  jest.mocked(getLeaveRequests).mockResolvedValue([request]);
+});
+
+function renderEmbedded(url: string) {
+  return render(
+    <ThemeProvider>
+      <MemoryRouter initialEntries={[url]}>
+        <Routes>
+          <Route
+            path="leave-requests/*"
+            element={<EmbeddedApp embedded basePath="/leave-requests" />}
+          />
+        </Routes>
+      </MemoryRouter>
+    </ThemeProvider>,
+  );
+}
+
 describe('Leave Requests remote', () => {
-  it('embedded: renders below the shell mount with host props', () => {
-    render(
-      <ThemeProvider>
-        <MemoryRouter initialEntries={['/leave-requests']}>
-          <Routes>
-            <Route
-              path="leave-requests/*"
-              element={
-                <EmbeddedApp
-                  embedded
-                  basePath="/leave-requests"
-                  title="From shell"
-                  user={{ id: 'u1', name: 'Shell User' }}
-                />
-              }
-            />
-          </Routes>
-        </MemoryRouter>
-      </ThemeProvider>,
-    );
-    expect(screen.getByTestId('mode-badge')).toHaveTextContent('Embedded');
-    expect(screen.getByText('From shell')).toBeInTheDocument();
-    expect(screen.getByTestId('demo-user')).toHaveTextContent('Shell User');
-    expect(screen.getByRole('link', { name: /details/i })).toHaveAttribute(
+  it('embedded: overview below the shell mount, link to the form', async () => {
+    renderEmbedded('/leave-requests');
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Leave' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Request leave' })).toHaveAttribute(
       'href',
-      '/leave-requests/details',
+      '/leave-requests/new',
     );
+    expect(await screen.findByTestId('leave-request')).toBeInTheDocument();
+  });
+
+  it('embedded: /new renders the form', async () => {
+    renderEmbedded('/leave-requests/new');
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Request leave' }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole('option', { name: 'No-pay leave' }),
+    ).toBeInTheDocument();
   });
 
   it('standalone: renders with mock host props and its own chrome', () => {
     window.history.pushState({}, '', '/');
     render(<StandaloneApp />);
-    expect(screen.getByTestId('mode-badge')).toHaveTextContent('Standalone');
-    expect(screen.getByTestId('demo-user')).toHaveTextContent('Dev User');
     expect(
       screen.getByRole('button', { name: 'Use dark theme' }),
     ).toBeInTheDocument();
+    expect(screen.getByText('Leave Requests (standalone)')).toBeInTheDocument();
   });
 });

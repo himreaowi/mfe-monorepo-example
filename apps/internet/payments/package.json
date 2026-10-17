@@ -24,7 +24,7 @@
         "dependsOn": [
           {
             "projects": [
-              "@org/mock-vendor"
+              "@org/example-vendors"
             ],
             "target": "dev"
           }

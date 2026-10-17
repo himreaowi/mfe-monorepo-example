@@ -2,7 +2,7 @@
   "name": "@org/shell-intranet",
   "version": "0.0.0",
   "private": true,
-  "description": "Intranet Shell: host app of the intranet zone",
+  "description": "Staff Portal: host app (shell) of the intranet zone",
   "type": "module",
   "scripts": {
     "dev": "rspack dev",

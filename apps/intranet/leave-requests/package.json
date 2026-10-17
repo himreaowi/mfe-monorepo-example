@@ -17,7 +17,19 @@
       "zone:intranet",
       "type:remote",
       "access:public"
-    ]
+    ],
+    "targets": {
+      "dev": {
+        "dependsOn": [
+          {
+            "projects": [
+              "@org/mock-api"
+            ],
+            "target": "serve:intranet"
+          }
+        ]
+      }
+    }
   },
   "mfe": {
     "port": 3102,
@@ -29,6 +41,8 @@
     "@org/http-client": "workspace:*",
     "@org/mf-runtime": "workspace:*",
     "@org/ui": "workspace:*",
+    "@org/use-api": "workspace:*",
+    "date-fns": "^4.4.0",
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-router": "catalog:"

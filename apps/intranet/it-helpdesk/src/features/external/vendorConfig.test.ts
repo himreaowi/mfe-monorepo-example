@@ -11,9 +11,9 @@ describe('resolveVendorConfig', () => {
     expect(resolveVendorConfig(vendor)).toBe(vendor);
   });
 
-  it('falls back to the dev mock vendor outside production', () => {
+  it('falls back to the dev example vendor outside production', () => {
     expect(resolveVendorConfig(undefined)).toMatchObject({
-      url: 'http://localhost:3999/mount.js',
+      url: 'http://localhost:3990/helpdesk/1.0.0/mount.js',
       format: 'esm',
     });
   });

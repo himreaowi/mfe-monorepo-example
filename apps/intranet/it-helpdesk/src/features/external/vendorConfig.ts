@@ -3,22 +3,24 @@
  * the shell's mfe-manifest.json (per environment, written by DevOps; never baked into the
  * build). Example:
  *   "intranet_it_helpdesk": {
- *     "entry": "https://cdn.example.sg/it-helpdesk/mf-manifest.json",
- *     "props": { "vendor": { "url": "https://vendor.example/pay/1.4.2/mount.js", "format": "esm",
- *                            "integrity": "sha384-…", "config": { "merchantId": "…" } } }
+ *     "entry": "https://cdn.example.org/it-helpdesk/mf-manifest.json",
+ *     "props": { "vendor": { "url": "https://desk.acme.example/widget/1.0.0/mount.js",
+ *                            "format": "esm", "integrity": "sha384-…",
+ *                            "config": { "apiBaseUrl": "https://desk.acme.example/api" } } }
  *   }
  *
- * Development builds fall back to the local mock vendor (tools/mock-vendor, port 3999) so the
- * adapter also works standalone. Rspack replaces `process.env.NODE_ENV` in production builds and
- * drops this branch, so the mock URL is not in production bundles.
+ * Development builds fall back to the example vendor (tools/example-vendors, port 3990) and
+ * the mock API (tools/mock-api, port 3910) so the adapter also works standalone. Rspack replaces
+ * `process.env.NODE_ENV` in production builds and drops this branch, so the dev URLs are not in
+ * production bundles.
  */
 export function resolveVendorConfig(fromHost: unknown): unknown {
   if (fromHost !== undefined && fromHost !== null) return fromHost;
   if (process.env.NODE_ENV !== 'production') {
     return {
-      url: 'http://localhost:3999/mount.js',
+      url: 'http://localhost:3990/helpdesk/1.0.0/mount.js',
       format: 'esm',
-      config: { title: 'It Helpdesk (mock vendor)', amount: 1250 },
+      config: { apiBaseUrl: 'http://localhost:3910/api' },
     };
   }
   return undefined;

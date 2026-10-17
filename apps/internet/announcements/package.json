@@ -17,7 +17,19 @@
       "zone:internet",
       "type:remote",
       "access:public"
-    ]
+    ],
+    "targets": {
+      "dev": {
+        "dependsOn": [
+          {
+            "projects": [
+              "@org/mock-api"
+            ],
+            "target": "serve:internet"
+          }
+        ]
+      }
+    }
   },
   "mfe": {
     "port": 3202,
@@ -29,6 +41,7 @@
     "@org/http-client": "workspace:*",
     "@org/mf-runtime": "workspace:*",
     "@org/ui": "workspace:*",
+    "@org/use-api": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-router": "catalog:"

@@ -11,10 +11,10 @@ describe('resolveVendorConfig', () => {
     expect(resolveVendorConfig(vendor)).toBe(vendor);
   });
 
-  it('falls back to the dev mock vendor outside production', () => {
+  it('falls back to the dev example vendor outside production', () => {
     expect(resolveVendorConfig(undefined)).toMatchObject({
-      url: 'http://localhost:3999/mount.js',
-      format: 'esm',
+      url: 'http://localhost:3990/payments/2.3.1/element.js',
+      format: 'web-component',
     });
   });
 

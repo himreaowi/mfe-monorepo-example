@@ -43,32 +43,35 @@ describe('ExternalModuleHost', () => {
   const vendor = { url: 'https://vendor.example/mount.js', format: 'esm' };
 
   it('passes the manifest config, sub-path, theme and a minimal user to <ExternalModule>', () => {
-    renderAt('/it-helpdesk/receipt/7', vendor);
+    renderAt('/it-helpdesk/tickets/HD-7', vendor);
     expect(screen.getByTestId('external-module-stub')).toHaveTextContent(
-      'receipt/7',
+      'tickets/HD-7',
     );
     expect(lastProps).toMatchObject({
       name: 'intranet_it_helpdesk',
       config: vendor,
       basePath: '/it-helpdesk',
-      path: 'receipt/7',
+      path: 'tickets/HD-7',
       theme: 'light',
       user: { id: 'u1', name: 'Ada' },
     });
     expect(lastProps?.user).not.toHaveProperty('email');
   });
 
-  it('routes vendor navigation through the router and lists vendor events', () => {
+  it('routes vendor navigation through the router and lists vendor activity', () => {
     renderAt('/it-helpdesk', vendor);
-    act(() => lastProps?.onNavigate?.('receipt/9'));
+    act(() => lastProps?.onNavigate?.('tickets/HD-1043'));
     expect(screen.getByTestId('location')).toHaveTextContent(
-      '/it-helpdesk/receipt/9',
+      '/it-helpdesk/tickets/HD-1043',
     );
     act(() => lastProps?.onNavigate?.('/elsewhere'));
     expect(screen.getByTestId('location')).toHaveTextContent('/elsewhere');
     renderAt('/it-helpdesk', vendor);
     act(() => {
-      lastProps?.onEvent?.('payment:completed', { reference: 'R1' });
+      lastProps?.onEvent?.('ticket:created', {
+        id: 'HD-1043',
+        summary: 'Monitor flickers',
+      });
       lastProps?.onError?.({
         code: 'x',
         message: 'boom',
@@ -77,17 +80,18 @@ describe('ExternalModuleHost', () => {
       });
     });
     expect(screen.getAllByTestId('vendor-events').at(-1)).toHaveTextContent(
-      'payment:completed {"reference":"R1"}',
+      'Ticket HD-1043 created: Monitor flickers',
     );
     expect(screen.getAllByTestId('vendor-events').at(-1)).toHaveTextContent(
-      'module/x: boom',
+      'The ticket desk reported a problem: boom',
     );
   });
 
-  it('falls back to the dev mock vendor when the manifest has no vendor config', () => {
+  it('falls back to the dev example vendor when the manifest has no vendor config', () => {
     renderAt('/it-helpdesk');
     expect(lastProps?.config).toMatchObject({
-      url: 'http://localhost:3999/mount.js',
+      url: 'http://localhost:3990/helpdesk/1.0.0/mount.js',
+      config: { apiBaseUrl: 'http://localhost:3910/api' },
     });
   });
 });

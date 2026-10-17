@@ -1,7 +1,11 @@
+.wrapper {
+  position: relative;
+}
+
 .list {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-3);
+  gap: var(--space-2);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -16,10 +20,11 @@
 
   &:hover {
     background: var(--color-bg);
+    text-decoration: underline;
   }
 
   &:focus-visible {
-    outline: 2px solid var(--color-accent);
+    outline: 3px solid var(--color-accent);
     outline-offset: 2px;
   }
 }
@@ -27,4 +32,70 @@
 .active {
   color: var(--color-accent);
   font-weight: 600;
+  box-shadow: inset 0 -3px 0 var(--color-accent);
+}
+
+.menuButton {
+  display: none;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 2.5rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 3px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+}
+
+/* three bars, drawn with borders so they follow the text colour in both themes */
+.icon {
+  width: 1rem;
+  height: 0.75rem;
+  border-top: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  background: linear-gradient(currentColor, currentColor) center / 100% 2px
+    no-repeat;
+}
+
+@media (max-width: 40rem) {
+  .wrapper {
+    display: flex;
+    flex: 1;
+    justify-content: flex-end;
+  }
+
+  .menuButton {
+    display: inline-flex;
+  }
+
+  .list {
+    display: none;
+  }
+
+  .open {
+    position: absolute;
+    top: calc(100% + var(--space-2));
+    right: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-width: 14rem;
+    padding: var(--space-2);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    box-shadow: 0 8px 24px rgb(15 23 42 / 20%);
+
+    .link {
+      display: block;
+    }
+  }
 }

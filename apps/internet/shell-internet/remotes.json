@@ -8,7 +8,8 @@
       "federationName": "internet_services",
       "package": "@org/internet-services",
       "access": "public",
-      "kind": "react"
+      "kind": "react",
+      "description": "Find a government service and what you need to use it."
     },
     {
       "name": "announcements",
@@ -17,16 +18,18 @@
       "federationName": "internet_announcements",
       "package": "@org/internet-announcements",
       "access": "public",
-      "kind": "react"
+      "kind": "react",
+      "description": "News about services, fees and maintenance."
     },
     {
       "name": "my-profile",
-      "title": "My Profile",
+      "title": "My profile",
       "path": "/my-profile",
       "federationName": "internet_my_profile",
       "package": "@org/internet-my-profile",
       "access": "private",
-      "kind": "react"
+      "kind": "react",
+      "description": "Your contact details and notification choices."
     },
     {
       "name": "payments",
@@ -35,7 +38,8 @@
       "federationName": "internet_payments",
       "package": "@org/internet-payments",
       "access": "public",
-      "kind": "external"
+      "kind": "external",
+      "description": "Pay a bill or licence fee online."
     }
   ]
 }

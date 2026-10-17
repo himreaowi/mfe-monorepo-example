@@ -9,6 +9,10 @@ This remote is a thin React adapter: it renders `<ExternalModule>` from
 (`mount(el, props) → { update?, unmount }`, see `docs/external-modules.md` at the repo root).
 The vendor can use any framework (or another React major); nothing is shared with the shell.
 
+## In this example
+
+Checkout by the fictional vendor **Bright Payments** (format `web-component`, `<bright-checkout>`, no React). The bill comes from `props.vendor.config` (`description`, `amount` in cents). The vendor sends `payment:completed` as an `external:event` CustomEvent; the adapter validates it and shows "Payment received" with the reference, then the vendor shows its receipt at `/payments/receipt/<reference>`.
+
 ## Where the vendor bundle comes from
 
 From this remote's `props.vendor` in the shell's `mfe-manifest.json`, **per environment** (never
@@ -32,19 +36,19 @@ in the build):
 `format`: `esm` | `web-component` (+ `tagName`) | `script` (+ `global`) | `mf` (+ `remoteName`).
 `config` is passed to the vendor as `props.config`.
 
-In development the shell's `mfe-manifest.dev.json` points at the **mock vendor**
-(`tools/mock-vendor`, http://localhost:3999/mount.js), and `src/features/external/vendorConfig.ts`
+In development the shell's `mfe-manifest.dev.json` points at the **example vendor**
+(`tools/example-vendors`, http://localhost:3990/payments/2.3.1/element.js), and `src/features/external/vendorConfig.ts`
 falls back to it when no config is set (standalone mode). Production builds contain neither.
 
 ## Commands
 
-| Command                                      | What                                                                    |
-| -------------------------------------------- | ----------------------------------------------------------------------- |
-| `pnpm dev:internet` (repo root)              | Shell + all internet remotes + the mock vendor (Nx task dependency)     |
-| `pnpm exec nx dev @org/internet-payments`    | This adapter standalone on http://localhost:3204 + the mock vendor      |
-| `pnpm --filter @org/internet-payments dev`   | This adapter only (start `pnpm --filter @org/mock-vendor dev` yourself) |
-| `pnpm --filter @org/internet-payments build` | Production build in `dist/`                                             |
-| `lint` / `typecheck` / `test`                | ESLint, `tsc`, Jest                                                     |
+| Command                                      | What                                                                        |
+| -------------------------------------------- | --------------------------------------------------------------------------- |
+| `pnpm dev:internet` (repo root)              | Shell + all internet remotes + the example vendors (Nx task dependency)     |
+| `pnpm exec nx dev @org/internet-payments`    | This adapter standalone on http://localhost:3204 + the example vendors      |
+| `pnpm --filter @org/internet-payments dev`   | This adapter only (start `pnpm --filter @org/example-vendors dev` yourself) |
+| `pnpm --filter @org/internet-payments build` | Production build in `dist/`                                                 |
+| `lint` / `typecheck` / `test`                | ESLint, `tsc`, Jest                                                         |
 
 ## What the adapter passes to the vendor
 
@@ -55,7 +59,7 @@ falls back to it when no config is set (standalone mode). Production builds cont
 | `user`               | shell host prop `user`, reduced to `{ id, name, roles }`            |
 | `config`             | `props.vendor.config` from the manifest                             |
 | `onNavigate`         | shell router (relative = below `/payments`, `/x` = shell route)     |
-| `onEvent`, `onError` | demo "Events from the module" panel: replace with real handling     |
+| `onEvent`, `onError` | handled by `ExternalModuleHost` (see above)                         |
 
 Loading/mount errors, timeouts, an incompatible `contractVersion` or a fatal `onError` show
 `RemoteFallback` with "Try again"; the shell keeps working. Leaving the route calls the vendor's

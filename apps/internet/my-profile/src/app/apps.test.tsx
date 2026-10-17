@@ -1,10 +1,18 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { ThemeProvider } from '@org/ui';
+import { getProfile } from '@/features/profile/api';
+import { profile } from '@/features/profile/components/testData';
 import { EmbeddedApp, StandaloneApp } from './apps';
 
+jest.mock('@/features/profile/api');
+
+beforeEach(() => {
+  jest.mocked(getProfile).mockResolvedValue(profile);
+});
+
 describe('My Profile remote', () => {
-  it('embedded: renders below the shell mount with host props', () => {
+  it('embedded: shows the profile of the user the shell passes', async () => {
     render(
       <ThemeProvider>
         <MemoryRouter initialEntries={['/my-profile']}>
@@ -15,8 +23,7 @@ describe('My Profile remote', () => {
                 <EmbeddedApp
                   embedded
                   basePath="/my-profile"
-                  title="From shell"
-                  user={{ id: 'u1', name: 'Shell User' }}
+                  user={{ id: 'mock-user-1', name: 'Shell User' }}
                 />
               }
             />
@@ -24,22 +31,19 @@ describe('My Profile remote', () => {
         </MemoryRouter>
       </ThemeProvider>,
     );
-    expect(screen.getByTestId('mode-badge')).toHaveTextContent('Embedded');
-    expect(screen.getByText('From shell')).toBeInTheDocument();
-    expect(screen.getByTestId('demo-user')).toHaveTextContent('Shell User');
-    expect(screen.getByRole('link', { name: /details/i })).toHaveAttribute(
-      'href',
-      '/my-profile/details',
+    expect(screen.getByText('Signed in as Shell User.')).toBeInTheDocument();
+    expect(await screen.findByTestId('profile-details')).toHaveTextContent(
+      'dev.user@example.org',
     );
   });
 
-  it('standalone: renders with mock host props and its own chrome', () => {
+  it('standalone: renders with mock host props and its own chrome', async () => {
     window.history.pushState({}, '', '/');
     render(<StandaloneApp />);
-    expect(screen.getByTestId('mode-badge')).toHaveTextContent('Standalone');
-    expect(screen.getByTestId('demo-user')).toHaveTextContent('Dev User');
     expect(
       screen.getByRole('button', { name: 'Use dark theme' }),
     ).toBeInTheDocument();
+    expect(screen.getByText('My profile (standalone)')).toBeInTheDocument();
+    expect(await screen.findByTestId('profile-details')).toBeInTheDocument();
   });
 });

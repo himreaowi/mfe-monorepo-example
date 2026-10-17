@@ -16,7 +16,7 @@ describe('Payments external adapter remote', () => {
   it('embedded: mounts the vendor module below the shell mount with host props', () => {
     render(
       <ThemeProvider>
-        <MemoryRouter initialEntries={['/payments/receipt/1']}>
+        <MemoryRouter initialEntries={['/payments/receipt/BP-1']}>
           <Routes>
             <Route
               path="payments/*"
@@ -33,11 +33,13 @@ describe('Payments external adapter remote', () => {
         </MemoryRouter>
       </ThemeProvider>,
     );
-    expect(screen.getByTestId('mode-badge')).toHaveTextContent('Embedded');
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Payments' }),
+    ).toBeInTheDocument();
     expect(screen.getByTestId('external-module-stub')).toBeInTheDocument();
     expect(lastProps).toMatchObject({
       basePath: '/payments',
-      path: 'receipt/1',
+      path: 'receipt/BP-1',
       user: { id: 'u1', name: 'Shell User' },
       config: { url: 'https://vendor.example/m.js' },
     });
@@ -46,7 +48,7 @@ describe('Payments external adapter remote', () => {
   it('standalone: renders with its own chrome and the dev mock vendor', () => {
     window.history.pushState({}, '', '/');
     render(<StandaloneApp />);
-    expect(screen.getByTestId('mode-badge')).toHaveTextContent('Standalone');
-    expect(lastProps?.config).toMatchObject({ format: 'esm' });
+    expect(screen.getByText('Payments (standalone)')).toBeInTheDocument();
+    expect(lastProps?.config).toMatchObject({ format: 'web-component' });
   });
 });

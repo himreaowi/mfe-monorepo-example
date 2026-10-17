@@ -1,46 +1,111 @@
 .welcome {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: 64rem;
+  margin: 0 auto;
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
   padding: var(--space-6);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
+  border-left: 6px solid var(--color-accent);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
 }
 
 .title {
-  margin: 0 0 var(--space-2);
-  font-size: 1.5rem;
+  margin: 0;
+  font-size: 2rem;
+  line-height: 1.2;
 }
 
 .copy {
-  margin: 0 0 var(--space-4);
+  margin: 0;
+  max-width: 40rem;
   color: var(--color-text-muted);
+  font-size: 1.0625rem;
+}
+
+.greeting {
+  margin: 0;
+  font-weight: 600;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 1.25rem;
 }
 
 .cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
-  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: var(--space-4);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
+/* The whole card is clickable through the heading link (stretched ::after). */
 .card {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-4);
-  background: var(--color-bg);
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
+  box-shadow: var(--shadow);
 
-  a {
-    color: var(--color-accent);
-    font-weight: 600;
+  &:hover {
+    border-color: var(--color-accent);
+  }
+
+  &:focus-within {
+    outline: 3px solid var(--color-accent);
+    outline-offset: 2px;
   }
 }
 
-.badge {
-  font-size: 0.8125rem;
+.cardTitle {
+  margin: 0;
+  font-size: 1.125rem;
+
+  a {
+    color: var(--color-accent);
+    text-decoration: none;
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+    }
+
+    &:focus {
+      outline: none;
+    }
+  }
+}
+
+.card:hover .cardTitle a {
+  text-decoration: underline;
+}
+
+.cardText {
+  margin: 0;
   color: var(--color-text-muted);
+}
+
+.badge {
+  align-self: flex-start;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  font-size: 0.875rem;
+  color: var(--color-text);
 }
