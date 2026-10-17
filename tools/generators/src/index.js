@@ -37,6 +37,8 @@ export * from './workspace.js';
 
 /** Runtime dependencies of every app. */
 const APP_DEPENDENCIES = {
+  // tier-1 singleton (session context); installed everywhere so it is always shared
+  '@org/auth': 'workspace:*',
   '@org/design-tokens': 'workspace:*',
   '@org/http-client': 'workspace:*',
   '@org/mf-runtime': 'workspace:*',
@@ -172,6 +174,8 @@ export async function generateShell({ root, zone }) {
   });
   await writeJson(path.join(dir, DEV_MANIFEST_FILE), {
     remotes: {},
+    // dev-only mock sign-in (@org/auth); production manifests list the BFF URLs instead
+    auth: { mock: true },
     settings: {},
   });
   return {

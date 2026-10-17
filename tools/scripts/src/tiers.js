@@ -5,4 +5,10 @@
  * @org/rspack-config (check-versions verifies). Anything holding cross-app React context or
  * state (router, query cache, i18n, global store) belongs here.
  */
-export const TIER1 = ['react', 'react-dom', 'react-router', '@org/ui'];
+export const TIER1 = [
+  'react',
+  'react-dom',
+  'react-router',
+  '@org/ui',
+  '@org/auth',
+];

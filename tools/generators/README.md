@@ -16,8 +16,12 @@ pnpm dev:<zone>
 
 - Non-interactive. Never overwrites: an existing folder, package name or registry entry is an
   error. `gen:remote` needs the zone's shell (`pnpm gen:shell <zone>` first).
-- `--private`: tag `access:private` and `"access": "private"` in the shell registry (the shell
-  will wrap it in a sign-in guard in A6).
+- `--private`: tag `access:private` and `"access": "private"` in the shell registry. The shell
+  wraps its route in `<RequireAuth>` (`@org/auth`): signed-out users get a sign-in prompt and the
+  remote is not downloaded before sign-in. Every remote receives host prop `user`.
+- Shells always render `<AuthProvider>`; the client comes from the manifest's `auth` section
+  (`mfe-manifest.dev.json` gets `"auth": { "mock": true }`, the dev-only mock sign-in). See
+  `docs/auth-contract.md`.
 - `--external`: tag `kind:external`, registry `"kind": "external"`, and an adapter placeholder
   (`src/features/external`, TODO A7) instead of the demo overview page.
 - Metadata in the generated `package.json`: `nx.tags` (`zone:`, `type:`, `access:`, `kind:`) and

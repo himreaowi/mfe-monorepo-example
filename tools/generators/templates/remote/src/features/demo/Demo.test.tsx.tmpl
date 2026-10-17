@@ -20,6 +20,8 @@ describe('Demo', () => {
       'href',
       '/details',
     );
+    // no AuthProvider around it (standalone): useAuth() is disabled, not an error
+    expect(screen.getByTestId('demo-session')).toHaveTextContent('disabled');
   });
 
   it('embedded: shows host title and user, links below the mount', () => {

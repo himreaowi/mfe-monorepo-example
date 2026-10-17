@@ -3,11 +3,11 @@
 Every app and package has its own `package.json` and its own `node_modules` (pnpm isolated
 layout). Where a dependency's version lives depends on its **tier** (decision D4):
 
-| Tier              | Examples                                        | Version lives in                                    | Shared at runtime                                              | Different version needs      |
-| ----------------- | ----------------------------------------------- | --------------------------------------------------- | -------------------------------------------------------------- | ---------------------------- |
-| 1 Core singletons | `react`, `react-dom`, `react-router`, `@org/ui` | default catalog (`pnpm-workspace.yaml`) / workspace | Module Federation `singleton` + `strictVersion` (one instance) | exception (rarely granted)   |
-| 2 Common libs     | `date-fns`, `zod` (used by 2+ apps/packages)    | default catalog                                     | no, each app bundles its copy                                  | exception                    |
-| 3 App-local       | a chart library used by one remote              | that app's `package.json`, normal semver range      | no                                                             | nothing, it is the app's own |
+| Tier              | Examples                                                     | Version lives in                                    | Shared at runtime                                              | Different version needs      |
+| ----------------- | ------------------------------------------------------------ | --------------------------------------------------- | -------------------------------------------------------------- | ---------------------------- |
+| 1 Core singletons | `react`, `react-dom`, `react-router`, `@org/ui`, `@org/auth` | default catalog (`pnpm-workspace.yaml`) / workspace | Module Federation `singleton` + `strictVersion` (one instance) | exception (rarely granted)   |
+| 2 Common libs     | `date-fns`, `zod` (used by 2+ apps/packages)                 | default catalog                                     | no, each app bundles its copy                                  | exception                    |
+| 3 App-local       | a chart library used by one remote                           | that app's `package.json`, normal semver range      | no                                                             | nothing, it is the app's own |
 
 `pnpm check` (also run by `pnpm lint` and CI) enforces the tiers. See
 [guardrails.md](guardrails.md) for every message and its fix.
@@ -64,13 +64,13 @@ the negative control in [toolchain.md](toolchain.md)).
 
 ## Tier 1: core singletons
 
-`react`, `react-dom`, `react-router` and `@org/ui` are listed in `TIER1` in
+`react`, `react-dom`, `react-router`, `@org/ui` and `@org/auth` are listed in `TIER1` in
 `tools/scripts/src/tiers.js` and in `TIER1_SINGLETONS` in `packages/rspack-config/src/tier1.js`
 (check-versions fails if the two lists differ). `@org/rspack-config` shares them with
 `singleton: true, strictVersion: true, requiredVersion: <catalog version>`: an app built against
 another version fails loudly when the shell loads it, and the shell shows `RemoteFallback`.
 
-Apps always reference them as `catalog:` (`workspace:*` for `@org/ui`). The generators do this.
+Apps always reference them as `catalog:` (`workspace:*` for `@org/ui` and `@org/auth`). The generators do this.
 
 ### Requesting an exception
 

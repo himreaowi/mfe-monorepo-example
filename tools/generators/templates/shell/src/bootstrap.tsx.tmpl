@@ -1,6 +1,7 @@
 import '@org/design-tokens/global.scss';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { loadAuthClient } from '@org/auth';
 import { initRemotes, loadMfeManifest } from '@org/mf-runtime';
 import { registerPwa } from '@org/pwa';
 import { ThemeProvider } from '@org/ui';
@@ -18,9 +19,12 @@ async function start() {
   try {
     const manifest = await loadMfeManifest();
     initRemotes(manifest);
+    // BFF session client from manifest "auth"; { "mock": true } = dev-only mock (dropped from
+    // production builds); no "auth" = sign-in disabled, private routes stay closed.
+    const authClient = await loadAuthClient(manifest.auth);
     root.render(
       <StrictMode>
-        <App manifest={manifest} />
+        <App manifest={manifest} authClient={authClient} />
       </StrictMode>,
     );
   } catch (error) {

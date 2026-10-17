@@ -22,7 +22,13 @@ const valid = {
     intranet_leave: { entry: '/remotes/leave/mf-manifest.json?v=2' },
     legacy_remote: { entry: 'https://cdn.example.com/legacy/remoteEntry.js' },
   },
-  auth: { loginUrl: '/bff/login' },
+  auth: {
+    sessionUrl: '/bff/session',
+    loginUrl: 'https://bff.example.com/login',
+    logoutUrl: '/bff/logout',
+    csrfHeaderName: 'X-CSRF-Token',
+    timeoutMs: 8000,
+  },
   settings: { apiBaseUrl: 'https://api.example.com' },
 };
 
@@ -92,6 +98,41 @@ describe('validateMfeManifest', () => {
       'remotes.a: unknown property "prop"',
       'remotes.b: must be object',
       'auth: must be object',
+    ]);
+  });
+});
+
+describe('auth section', () => {
+  it('accepts { mock: true } alone (development)', () => {
+    expect(validateMfeManifest({ remotes: {}, auth: { mock: true } }).ok).toBe(
+      true,
+    );
+  });
+
+  it('requires the three BFF URLs unless mock', () => {
+    expect(issuesOf({ remotes: {}, auth: { loginUrl: '/l' } })).toEqual([
+      'auth: missing required property "sessionUrl"',
+      'auth: missing required property "logoutUrl"',
+    ]);
+    expect(issuesOf({ remotes: {}, auth: { mock: false } })).toHaveLength(3);
+  });
+
+  it('rejects bad URLs, header names and unknown keys', () => {
+    expect(
+      issuesOf({
+        remotes: {},
+        auth: {
+          sessionUrl: 'bff/session',
+          loginUrl: '/l',
+          logoutUrl: '/o',
+          csrfHeaderName: 'X CSRF',
+          clientSecret: 'never in the browser',
+        },
+      }),
+    ).toEqual([
+      'auth: unknown property "clientSecret"',
+      'auth.sessionUrl: must match ^(https?://[^\\s/]+)?/[^\\s]*$',
+      'auth.csrfHeaderName: must match ^[A-Za-z0-9-]+$',
     ]);
   });
 });

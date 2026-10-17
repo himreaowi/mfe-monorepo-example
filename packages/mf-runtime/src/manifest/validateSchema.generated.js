@@ -4,10 +4,14 @@
 "use strict";
 export const validate = validate10;
 export default validate10;
-const schema11 = {"$schema":"http://json-schema.org/draft-07/schema#","$id":"https://schemas.org.example/mfe-manifest.schema.json","title":"MFE runtime manifest","description":"Served by each shell at /mfe-manifest.json and written per environment by DevOps. Lists the remotes the shell may load and runtime settings. One build runs in every environment.","type":"object","required":["remotes"],"additionalProperties":false,"properties":{"$schema":{"type":"string"},"remotes":{"description":"Remotes by Module Federation name (the remote's `name` in its rspack config).","type":"object","propertyNames":{"pattern":"^[A-Za-z_][A-Za-z0-9_]*$"},"additionalProperties":{"$ref":"#/definitions/remote"}},"auth":{"description":"Auth (BFF) settings for the shell. Shape defined by @org/auth (A6).","type":"object"},"settings":{"description":"Free-form runtime settings (e.g. apiBaseUrl). Passed to every remote as host prop `settings`.","type":"object"}},"definitions":{"remote":{"type":"object","required":["entry"],"additionalProperties":false,"properties":{"entry":{"description":"URL of the remote's mf-manifest.json (preferred) or remoteEntry.js. Absolute http(s) URL or a root-relative path.","type":"string","pattern":"^(https?://[^\\s/]+)?/[^\\s]*\\.(json|js)(\\?[^\\s]*)?$"},"props":{"description":"Extra props passed to the remote's exposed component.","type":"object"}}}}};
+const schema11 = {"$schema":"http://json-schema.org/draft-07/schema#","$id":"https://schemas.org.example/mfe-manifest.schema.json","title":"MFE runtime manifest","description":"Served by each shell at /mfe-manifest.json and written per environment by DevOps. Lists the remotes the shell may load and runtime settings. One build runs in every environment.","type":"object","required":["remotes"],"additionalProperties":false,"properties":{"$schema":{"type":"string"},"remotes":{"description":"Remotes by Module Federation name (the remote's `name` in its rspack config).","type":"object","propertyNames":{"pattern":"^[A-Za-z_][A-Za-z0-9_]*$"},"additionalProperties":{"$ref":"#/definitions/remote"}},"auth":{"description":"Auth settings for the shell (@org/auth, backend session / BFF pattern, docs/auth-contract.md). Either the BFF endpoints, or { \"mock\": true } for local development (ignored by production builds). Omit to disable sign-in (private routes then stay closed).","type":"object","additionalProperties":false,"properties":{"mock":{"description":"Development builds only: use the in-browser mock auth client instead of a BFF.","type":"boolean"},"sessionUrl":{"description":"GET: 200 { user, csrfToken?, expiresAt? } when signed in, 401 when not. Called with credentials: 'include'.","$ref":"#/definitions/url"},"loginUrl":{"description":"Browser navigation target that starts sign-in (Singpass / SSO, backend-owned). Gets ?returnTo=<absolute URL>.","$ref":"#/definitions/url"},"logoutUrl":{"description":"POST with the CSRF header: ends the session. 204, or 200 { redirectUrl? }.","$ref":"#/definitions/url"},"csrfHeaderName":{"description":"Header carrying the session's csrfToken on state-changing requests. Default X-CSRF-Token.","type":"string","pattern":"^[A-Za-z0-9-]+$"},"returnToParam":{"description":"Query parameter for the return URL on loginUrl. Default returnTo.","type":"string","pattern":"^[A-Za-z0-9_.-]+$"},"timeoutMs":{"description":"Session request timeout. Default 10000.","type":"integer","minimum":1000,"maximum":60000}},"if":{"properties":{"mock":{"const":true}},"required":["mock"]},"then":{},"else":{"properties":{"sessionUrl":{},"loginUrl":{},"logoutUrl":{}},"required":["sessionUrl","loginUrl","logoutUrl"]}},"settings":{"description":"Free-form runtime settings (e.g. apiBaseUrl). Passed to every remote as host prop `settings`.","type":"object"}},"definitions":{"remote":{"type":"object","required":["entry"],"additionalProperties":false,"properties":{"entry":{"description":"URL of the remote's mf-manifest.json (preferred) or remoteEntry.js. Absolute http(s) URL or a root-relative path.","type":"string","pattern":"^(https?://[^\\s/]+)?/[^\\s]*\\.(json|js)(\\?[^\\s]*)?$"},"props":{"description":"Extra props passed to the remote's exposed component.","type":"object"}}},"url":{"description":"Absolute http(s) URL or root-relative path.","type":"string","pattern":"^(https?://[^\\s/]+)?/[^\\s]*$"}}};
 const schema12 = {"type":"object","required":["entry"],"additionalProperties":false,"properties":{"entry":{"description":"URL of the remote's mf-manifest.json (preferred) or remoteEntry.js. Absolute http(s) URL or a root-relative path.","type":"string","pattern":"^(https?://[^\\s/]+)?/[^\\s]*\\.(json|js)(\\?[^\\s]*)?$"},"props":{"description":"Extra props passed to the remote's exposed component.","type":"object"}}};
+const schema13 = {"description":"Absolute http(s) URL or root-relative path.","type":"string","pattern":"^(https?://[^\\s/]+)?/[^\\s]*$"};
 const pattern0 = new RegExp("^[A-Za-z_][A-Za-z0-9_]*$", "u");
 const pattern1 = new RegExp("^(https?://[^\\s/]+)?/[^\\s]*\\.(json|js)(\\?[^\\s]*)?$", "u");
+const pattern2 = new RegExp("^(https?://[^\\s/]+)?/[^\\s]*$", "u");
+const pattern5 = new RegExp("^[A-Za-z0-9-]+$", "u");
+const pattern6 = new RegExp("^[A-Za-z0-9_.-]+$", "u");
 
 function validate10(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
 /*# sourceURL="https://schemas.org.example/mfe-manifest.schema.json" */;
@@ -166,8 +170,13 @@ errors++;
 }
 if(data.auth !== undefined){
 let data5 = data.auth;
-if(!(data5 && typeof data5 == "object" && !Array.isArray(data5))){
-const err12 = {instancePath:instancePath+"/auth",schemaPath:"#/properties/auth/type",keyword:"type",params:{type: "object"},message:"must be object"};
+const _errs18 = errors;
+let valid5 = true;
+const _errs19 = errors;
+if(data5 && typeof data5 == "object" && !Array.isArray(data5)){
+let missing0;
+if((data5.mock === undefined) && (missing0 = "mock")){
+const err12 = {};
 if(vErrors === null){
 vErrors = [err12];
 }
@@ -176,11 +185,10 @@ vErrors.push(err12);
 }
 errors++;
 }
-}
-if(data.settings !== undefined){
-let data6 = data.settings;
-if(!(data6 && typeof data6 == "object" && !Array.isArray(data6))){
-const err13 = {instancePath:instancePath+"/settings",schemaPath:"#/properties/settings/type",keyword:"type",params:{type: "object"},message:"must be object"};
+else {
+if(data5.mock !== undefined){
+if(true !== data5.mock){
+const err13 = {};
 if(vErrors === null){
 vErrors = [err13];
 }
@@ -191,13 +199,282 @@ errors++;
 }
 }
 }
+}
+var _valid0 = _errs19 === errors;
+errors = _errs18;
+if(vErrors !== null){
+if(_errs18){
+vErrors.length = _errs18;
+}
 else {
-const err14 = {instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"};
+vErrors = null;
+}
+}
+if(!_valid0){
+const _errs21 = errors;
+if(data5 && typeof data5 == "object" && !Array.isArray(data5)){
+if(data5.sessionUrl === undefined){
+const err14 = {instancePath:instancePath+"/auth",schemaPath:"#/properties/auth/else/required",keyword:"required",params:{missingProperty: "sessionUrl"},message:"must have required property '"+"sessionUrl"+"'"};
 if(vErrors === null){
 vErrors = [err14];
 }
 else {
 vErrors.push(err14);
+}
+errors++;
+}
+if(data5.loginUrl === undefined){
+const err15 = {instancePath:instancePath+"/auth",schemaPath:"#/properties/auth/else/required",keyword:"required",params:{missingProperty: "loginUrl"},message:"must have required property '"+"loginUrl"+"'"};
+if(vErrors === null){
+vErrors = [err15];
+}
+else {
+vErrors.push(err15);
+}
+errors++;
+}
+if(data5.logoutUrl === undefined){
+const err16 = {instancePath:instancePath+"/auth",schemaPath:"#/properties/auth/else/required",keyword:"required",params:{missingProperty: "logoutUrl"},message:"must have required property '"+"logoutUrl"+"'"};
+if(vErrors === null){
+vErrors = [err16];
+}
+else {
+vErrors.push(err16);
+}
+errors++;
+}
+}
+var _valid0 = _errs21 === errors;
+valid5 = _valid0;
+}
+if(!valid5){
+const err17 = {instancePath:instancePath+"/auth",schemaPath:"#/properties/auth/if",keyword:"if",params:{failingKeyword: "else"},message:"must match \"else\" schema"};
+if(vErrors === null){
+vErrors = [err17];
+}
+else {
+vErrors.push(err17);
+}
+errors++;
+}
+if(data5 && typeof data5 == "object" && !Array.isArray(data5)){
+for(const key4 in data5){
+if(!(((((((key4 === "mock") || (key4 === "sessionUrl")) || (key4 === "loginUrl")) || (key4 === "logoutUrl")) || (key4 === "csrfHeaderName")) || (key4 === "returnToParam")) || (key4 === "timeoutMs"))){
+const err18 = {instancePath:instancePath+"/auth",schemaPath:"#/properties/auth/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key4},message:"must NOT have additional properties"};
+if(vErrors === null){
+vErrors = [err18];
+}
+else {
+vErrors.push(err18);
+}
+errors++;
+}
+}
+if(data5.mock !== undefined){
+if(typeof data5.mock !== "boolean"){
+const err19 = {instancePath:instancePath+"/auth/mock",schemaPath:"#/properties/auth/properties/mock/type",keyword:"type",params:{type: "boolean"},message:"must be boolean"};
+if(vErrors === null){
+vErrors = [err19];
+}
+else {
+vErrors.push(err19);
+}
+errors++;
+}
+}
+if(data5.sessionUrl !== undefined){
+let data8 = data5.sessionUrl;
+if(typeof data8 === "string"){
+if(!pattern2.test(data8)){
+const err20 = {instancePath:instancePath+"/auth/sessionUrl",schemaPath:"#/definitions/url/pattern",keyword:"pattern",params:{pattern: "^(https?://[^\\s/]+)?/[^\\s]*$"},message:"must match pattern \""+"^(https?://[^\\s/]+)?/[^\\s]*$"+"\""};
+if(vErrors === null){
+vErrors = [err20];
+}
+else {
+vErrors.push(err20);
+}
+errors++;
+}
+}
+else {
+const err21 = {instancePath:instancePath+"/auth/sessionUrl",schemaPath:"#/definitions/url/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err21];
+}
+else {
+vErrors.push(err21);
+}
+errors++;
+}
+}
+if(data5.loginUrl !== undefined){
+let data9 = data5.loginUrl;
+if(typeof data9 === "string"){
+if(!pattern2.test(data9)){
+const err22 = {instancePath:instancePath+"/auth/loginUrl",schemaPath:"#/definitions/url/pattern",keyword:"pattern",params:{pattern: "^(https?://[^\\s/]+)?/[^\\s]*$"},message:"must match pattern \""+"^(https?://[^\\s/]+)?/[^\\s]*$"+"\""};
+if(vErrors === null){
+vErrors = [err22];
+}
+else {
+vErrors.push(err22);
+}
+errors++;
+}
+}
+else {
+const err23 = {instancePath:instancePath+"/auth/loginUrl",schemaPath:"#/definitions/url/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err23];
+}
+else {
+vErrors.push(err23);
+}
+errors++;
+}
+}
+if(data5.logoutUrl !== undefined){
+let data10 = data5.logoutUrl;
+if(typeof data10 === "string"){
+if(!pattern2.test(data10)){
+const err24 = {instancePath:instancePath+"/auth/logoutUrl",schemaPath:"#/definitions/url/pattern",keyword:"pattern",params:{pattern: "^(https?://[^\\s/]+)?/[^\\s]*$"},message:"must match pattern \""+"^(https?://[^\\s/]+)?/[^\\s]*$"+"\""};
+if(vErrors === null){
+vErrors = [err24];
+}
+else {
+vErrors.push(err24);
+}
+errors++;
+}
+}
+else {
+const err25 = {instancePath:instancePath+"/auth/logoutUrl",schemaPath:"#/definitions/url/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err25];
+}
+else {
+vErrors.push(err25);
+}
+errors++;
+}
+}
+if(data5.csrfHeaderName !== undefined){
+let data11 = data5.csrfHeaderName;
+if(typeof data11 === "string"){
+if(!pattern5.test(data11)){
+const err26 = {instancePath:instancePath+"/auth/csrfHeaderName",schemaPath:"#/properties/auth/properties/csrfHeaderName/pattern",keyword:"pattern",params:{pattern: "^[A-Za-z0-9-]+$"},message:"must match pattern \""+"^[A-Za-z0-9-]+$"+"\""};
+if(vErrors === null){
+vErrors = [err26];
+}
+else {
+vErrors.push(err26);
+}
+errors++;
+}
+}
+else {
+const err27 = {instancePath:instancePath+"/auth/csrfHeaderName",schemaPath:"#/properties/auth/properties/csrfHeaderName/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err27];
+}
+else {
+vErrors.push(err27);
+}
+errors++;
+}
+}
+if(data5.returnToParam !== undefined){
+let data12 = data5.returnToParam;
+if(typeof data12 === "string"){
+if(!pattern6.test(data12)){
+const err28 = {instancePath:instancePath+"/auth/returnToParam",schemaPath:"#/properties/auth/properties/returnToParam/pattern",keyword:"pattern",params:{pattern: "^[A-Za-z0-9_.-]+$"},message:"must match pattern \""+"^[A-Za-z0-9_.-]+$"+"\""};
+if(vErrors === null){
+vErrors = [err28];
+}
+else {
+vErrors.push(err28);
+}
+errors++;
+}
+}
+else {
+const err29 = {instancePath:instancePath+"/auth/returnToParam",schemaPath:"#/properties/auth/properties/returnToParam/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err29];
+}
+else {
+vErrors.push(err29);
+}
+errors++;
+}
+}
+if(data5.timeoutMs !== undefined){
+let data13 = data5.timeoutMs;
+if(!(((typeof data13 == "number") && (!(data13 % 1) && !isNaN(data13))) && (isFinite(data13)))){
+const err30 = {instancePath:instancePath+"/auth/timeoutMs",schemaPath:"#/properties/auth/properties/timeoutMs/type",keyword:"type",params:{type: "integer"},message:"must be integer"};
+if(vErrors === null){
+vErrors = [err30];
+}
+else {
+vErrors.push(err30);
+}
+errors++;
+}
+if((typeof data13 == "number") && (isFinite(data13))){
+if(data13 > 60000 || isNaN(data13)){
+const err31 = {instancePath:instancePath+"/auth/timeoutMs",schemaPath:"#/properties/auth/properties/timeoutMs/maximum",keyword:"maximum",params:{comparison: "<=", limit: 60000},message:"must be <= 60000"};
+if(vErrors === null){
+vErrors = [err31];
+}
+else {
+vErrors.push(err31);
+}
+errors++;
+}
+if(data13 < 1000 || isNaN(data13)){
+const err32 = {instancePath:instancePath+"/auth/timeoutMs",schemaPath:"#/properties/auth/properties/timeoutMs/minimum",keyword:"minimum",params:{comparison: ">=", limit: 1000},message:"must be >= 1000"};
+if(vErrors === null){
+vErrors = [err32];
+}
+else {
+vErrors.push(err32);
+}
+errors++;
+}
+}
+}
+}
+else {
+const err33 = {instancePath:instancePath+"/auth",schemaPath:"#/properties/auth/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err33];
+}
+else {
+vErrors.push(err33);
+}
+errors++;
+}
+}
+if(data.settings !== undefined){
+let data14 = data.settings;
+if(!(data14 && typeof data14 == "object" && !Array.isArray(data14))){
+const err34 = {instancePath:instancePath+"/settings",schemaPath:"#/properties/settings/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err34];
+}
+else {
+vErrors.push(err34);
+}
+errors++;
+}
+}
+}
+else {
+const err35 = {instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err35];
+}
+else {
+vErrors.push(err35);
 }
 errors++;
 }

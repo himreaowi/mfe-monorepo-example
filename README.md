@@ -3,7 +3,7 @@
 Template monorepo for React microfrontends: pnpm workspaces + Nx (package-based) + Rspack +
 Module Federation 2 (`@module-federation/enhanced`).
 
-**Status: phase A5 (generators + guardrails).** `apps/` is empty: create apps with the generators.
+**Status: phase A6 (auth).** `apps/` is empty: create apps with the generators.
 
 ## What's here
 
@@ -18,6 +18,7 @@ Module Federation 2 (`@module-federation/enhanced`).
 | `packages/ui`                 | `@org/ui`: Button, ThemeToggle, RemoteFallback, ConnectionRequired, MainLayout, ThemeProvider                                |
 | `packages/http-client`        | `@org/http-client`: fetch wrapper, runtime base URL, apiRoutes pattern                                                       |
 | `packages/pwa`                | `@org/pwa`: registerPwa, useOnlineStatus, Workbox (workbox-build) Rspack plugin                                              |
+| `packages/auth`               | `@org/auth`: AuthProvider, useAuth, RequireAuth, UserMenu, BFF session client, dev-only mock (tier-1 singleton)              |
 | `packages/mf-runtime`         | `@org/mf-runtime`: mfe-manifest loader + JSON schema, initRemotes, `<RemoteApp>`, remote-side `createRemoteApp` / host props |
 | `packages/rspack-config`      | `@org/rspack-config`: createShellConfig / createRemoteConfig (Rspack + MF 2)                                                 |
 | `tools/generators`            | `@org/generators`: `pnpm gen:shell <zone>`, `pnpm gen:remote <zone> <name> [--private] [--external]`                         |
@@ -25,6 +26,7 @@ Module Federation 2 (`@module-federation/enhanced`).
 | `docs/toolchain.md`           | Pinned versions, the A0 spike evidence, gotchas                                                                              |
 | `docs/adding-dependencies.md` | Dependency tiers (catalog, app-local, exceptions) with commands                                                              |
 | `docs/guardrails.md`          | Every check and how to fix its failures                                                                                      |
+| `docs/auth-contract.md`       | BFF endpoints, user object, cookies, CSRF, CORS, expiry: what the backend must provide                                       |
 | `pnpm-workspace.yaml`         | Workspace globs, the default catalog (one version per core library), isolated linker                                         |
 | `version-exceptions.json`     | Justified opt-outs from the catalog (empty)                                                                                  |
 | `nx.json`                     | Task caching and defaults for `build`, `lint`, `test`, `typecheck`                                                           |

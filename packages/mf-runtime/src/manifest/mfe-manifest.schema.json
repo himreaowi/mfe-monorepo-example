@@ -21,8 +21,60 @@
       }
     },
     "auth": {
-      "description": "Auth (BFF) settings for the shell. Shape defined by @org/auth (A6).",
-      "type": "object"
+      "description": "Auth settings for the shell (@org/auth, backend session / BFF pattern, docs/auth-contract.md). Either the BFF endpoints, or { \"mock\": true } for local development (ignored by production builds). Omit to disable sign-in (private routes then stay closed).",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mock": {
+          "description": "Development builds only: use the in-browser mock auth client instead of a BFF.",
+          "type": "boolean"
+        },
+        "sessionUrl": {
+          "description": "GET: 200 { user, csrfToken?, expiresAt? } when signed in, 401 when not. Called with credentials: 'include'.",
+          "$ref": "#/definitions/url"
+        },
+        "loginUrl": {
+          "description": "Browser navigation target that starts sign-in (Singpass / SSO, backend-owned). Gets ?returnTo=<absolute URL>.",
+          "$ref": "#/definitions/url"
+        },
+        "logoutUrl": {
+          "description": "POST with the CSRF header: ends the session. 204, or 200 { redirectUrl? }.",
+          "$ref": "#/definitions/url"
+        },
+        "csrfHeaderName": {
+          "description": "Header carrying the session's csrfToken on state-changing requests. Default X-CSRF-Token.",
+          "type": "string",
+          "pattern": "^[A-Za-z0-9-]+$"
+        },
+        "returnToParam": {
+          "description": "Query parameter for the return URL on loginUrl. Default returnTo.",
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]+$"
+        },
+        "timeoutMs": {
+          "description": "Session request timeout. Default 10000.",
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 60000
+        }
+      },
+      "if": {
+        "properties": {
+          "mock": {
+            "const": true
+          }
+        },
+        "required": ["mock"]
+      },
+      "then": {},
+      "else": {
+        "properties": {
+          "sessionUrl": {},
+          "loginUrl": {},
+          "logoutUrl": {}
+        },
+        "required": ["sessionUrl", "loginUrl", "logoutUrl"]
+      }
     },
     "settings": {
       "description": "Free-form runtime settings (e.g. apiBaseUrl). Passed to every remote as host prop `settings`.",
@@ -45,6 +97,11 @@
           "type": "object"
         }
       }
+    },
+    "url": {
+      "description": "Absolute http(s) URL or root-relative path.",
+      "type": "string",
+      "pattern": "^(https?://[^\\s/]+)?/[^\\s]*$"
     }
   }
 }

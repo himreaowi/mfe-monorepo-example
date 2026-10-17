@@ -4,10 +4,14 @@
  * Additive optional props = minor change; removing or renaming one = breaking.
  */
 
-/** Signed-in user as seen by remotes. Refined by @org/auth (A6). */
+/**
+ * Signed-in user as seen by remotes: the shell passes `AuthUser` from @org/auth (opaque `id`,
+ * display `name`, coarse `roles`; PDPA-minimal, see docs/auth-contract.md).
+ */
 export type HostUser = {
   id: string;
   name?: string;
+  roles?: string[];
   [key: string]: unknown;
 };
 

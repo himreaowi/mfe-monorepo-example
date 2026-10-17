@@ -10,8 +10,8 @@ export type RemoteEntry = {
   federationName: string;
   /** Workspace package name (for tooling only; the shell never imports it). */
   package: string;
-  /** `private` remotes require a signed-in user (enforced in A6). */
+  /** `private` remotes are wrapped in `<RequireAuth>` (not downloaded before sign-in). */
   access: 'public' | 'private';
-  /** `external` = adapter for a vendor module (A7). */
+  /** `external` = adapter remote that mounts a vendor module (docs/external-modules.md). */
   kind: 'react' | 'external';
 };

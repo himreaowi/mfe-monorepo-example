@@ -53,10 +53,18 @@ splat: `/apps/staff/route-1` under `apps/staff/*` gives `/apps/staff`.
     },
     "intranet_leave": { "entry": "/remotes/leave/mf-manifest.json" }
   },
-  "auth": {},
+  "auth": {
+    "sessionUrl": "/bff/session",
+    "loginUrl": "/bff/login",
+    "logoutUrl": "/bff/logout"
+  },
   "settings": { "apiBaseUrl": "https://api.example.com" }
 }
 ```
+
+`auth` is read by `@org/auth` `loadAuthClient` (BFF endpoints, or `{ "mock": true }` in
+development; see [docs/auth-contract.md](../../docs/auth-contract.md)). Without `auth` the shell
+disables sign-in.
 
 Remote names must be the federation names (JS identifiers). `entry` must be an http(s) URL or a
 root-relative path ending in `.json` (mf-manifest) or `.js` (remoteEntry). Unknown properties are
@@ -111,6 +119,10 @@ createRoot(el).render(<StandaloneApp />);
   `/route-2` standalone). Use it for links between remote pages: relative links inside a splat
   route are easy to get wrong.
 - `HostProps`, `HostUser`, `normalizeBasePath`, `joinBasePath`.
+- `user` (`HostUser`: `{ id, name?, roles? }`) is set by the generated shell from `@org/auth`:
+  the user when signed in, `null` when signed out, `undefined` when the environment has no auth.
+  A remote may also call `useAuth()` from `@org/auth` (shared singleton) for `csrfToken`,
+  `signOut()` or `refresh()` after an API 401.
 
 `@org/mf-runtime` is not a shared singleton: the host part is only used by shells and the remote
 part keeps its context inside the remote.

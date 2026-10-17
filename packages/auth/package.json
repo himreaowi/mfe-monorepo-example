@@ -1,0 +1,54 @@
+{
+  "name": "@org/auth",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Provider-agnostic auth for shells and remotes (backend session / BFF): AuthProvider, useAuth, RequireAuth, UserMenu, BFF session client, dev-only mock client. Tier-1 Module Federation singleton.",
+  "type": "module",
+  "sideEffects": [
+    "*.css",
+    "*.scss"
+  ],
+  "exports": {
+    ".": "./src/index.ts",
+    "./mock": "./src/mock.ts",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "jest"
+  },
+  "nx": {
+    "tags": [
+      "type:package"
+    ]
+  },
+  "dependencies": {
+    "@org/ui": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@org/design-tokens": "workspace:*",
+    "@org/eslint-config": "workspace:*",
+    "@org/jest-config": "workspace:*",
+    "@org/tsconfig": "workspace:*",
+    "@testing-library/dom": "catalog:",
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@testing-library/user-event": "catalog:",
+    "@types/jest": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "eslint": "catalog:",
+    "jest": "catalog:",
+    "prettier": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-router": "catalog:",
+    "typescript": "catalog:"
+  }
+}

@@ -20,6 +20,8 @@ const run = (ws, o = {}) =>
   checkVersions({
     root: makeWorkspace(ws),
     today: TODAY,
+    // the fixture's own tier-1 list (the real one is checked against the repo below)
+    tier1: TIER1,
     tier1Singletons: TIER1,
     ...o,
   });

@@ -112,8 +112,10 @@ describe('generators', () => {
     assert.deepEqual(readJson(root, `${dir}/remotes.json`).remotes, []);
     assert.deepEqual(readJson(root, `${dir}/mfe-manifest.dev.json`), {
       remotes: {},
+      auth: { mock: true },
       settings: {},
     });
+    assert.equal(pkg.dependencies['@org/auth'], 'workspace:*');
     const files = listFiles(path.join(root, dir));
     for (const f of [
       'README.md',
@@ -140,6 +142,15 @@ describe('generators', () => {
     assert.match(read(root, `${dir}/rspack.config.js`), /createShellConfig/);
     assert.match(read(root, `${dir}/src/bootstrap.tsx`), /registerPwa\(\)/);
     assert.match(read(root, `${dir}/src/bootstrap.tsx`), /loadMfeManifest/);
+    assert.match(
+      read(root, `${dir}/src/bootstrap.tsx`),
+      /loadAuthClient\(manifest\.auth\)/,
+    );
+    assert.match(read(root, `${dir}/src/app/App.tsx`), /<AuthProvider/);
+    const page = read(root, `${dir}/src/pages/RemotePage/RemotePage.tsx`);
+    assert.match(page, /<RequireAuth/);
+    assert.match(page, /remote\.access === 'private'/);
+    assert.doesNotMatch(page, /TODO/);
   });
 
   it('refuses to generate the same shell twice', async () => {

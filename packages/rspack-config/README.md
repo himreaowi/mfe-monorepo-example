@@ -50,9 +50,9 @@ Shared by both:
 - SCSS/CSS via sass-loader + css-loader + style-loader (styles travel with the exposed JS).
   CSS Modules: `[name]__[local]__[hash]` in dev, `[hash]` in prod, **hash salted with the
   federation name** so two apps never produce the same class name.
-- **Tier-1 singletons** (`TIER1_SINGLETONS`: react, react-dom, react-router, @org/ui) shared with
+- **Tier-1 singletons** (`TIER1_SINGLETONS`: react, react-dom, react-router, @org/ui, @org/auth) shared with
   `singleton: true, strictVersion: true, requiredVersion: <installed version>`. The installed
-  version is the catalog version (or the workspace version for `@org/ui`), so any drift fails
+  version is the catalog version (or the workspace version for `@org/ui` / `@org/auth`), so any drift fails
   loudly at load time and the shell shows `RemoteFallback`. Extra `shared` entries can be passed.
 - `lazyCompilation: false`; dev server with CORS `*`, history fallback, HMR, `public/` as static.
 - Production: `[name].[contenthash:8].js`, source maps, `public/` copied except `index.html` and

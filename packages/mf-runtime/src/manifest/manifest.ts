@@ -10,13 +10,27 @@ export type MfeRemoteConfig = {
   props?: Record<string, unknown>;
 };
 
+/**
+ * `auth` section: the BFF endpoints, or `{ mock: true }` (development builds only). Same shape
+ * as `ManifestAuthConfig` in @org/auth.
+ */
+export type MfeAuthConfig = {
+  mock?: boolean;
+  sessionUrl?: string;
+  loginUrl?: string;
+  logoutUrl?: string;
+  csrfHeaderName?: string;
+  returnToParam?: string;
+  timeoutMs?: number;
+};
+
 /** `/mfe-manifest.json`, validated against `mfe-manifest.schema.json`. */
 export type MfeManifest = {
   $schema?: string;
   /** Keyed by Module Federation name. */
   remotes: Record<string, MfeRemoteConfig>;
-  /** Auth (BFF) settings, defined by @org/auth (A6). */
-  auth?: Record<string, unknown>;
+  /** Auth (BFF) settings for @org/auth `loadAuthClient` (docs/auth-contract.md). */
+  auth?: MfeAuthConfig;
   /** Runtime settings passed to every remote as host prop `settings`. */
   settings?: Record<string, unknown>;
 };
@@ -83,6 +97,8 @@ export function validateMfeManifest(value: unknown): MfeManifestValidation {
   const errors = validateSchema.errors ?? [];
   // `propertyNames` reports a nested `pattern` error too; keep the clearer one.
   const issues = errors
+    // `if`/`then`/`else` adds a generic 'must match "else" schema'; the nested error says more
+    .filter((e) => e.keyword !== 'if')
     .filter(
       (e) =>
         !(

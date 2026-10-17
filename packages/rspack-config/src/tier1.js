@@ -10,4 +10,6 @@ export const TIER1_SINGLETONS = [
   'react-dom',
   'react-router',
   '@org/ui',
+  // holds the session React context: a remote calling useAuth() must read the shell's provider
+  '@org/auth',
 ];

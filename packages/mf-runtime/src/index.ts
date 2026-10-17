@@ -7,6 +7,7 @@ export {
   resolveRemoteEntry,
   validateMfeManifest,
   type LoadMfeManifestOptions,
+  type MfeAuthConfig,
   type MfeManifest,
   type MfeManifestValidation,
   type MfeRemoteConfig,

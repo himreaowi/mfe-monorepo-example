@@ -271,3 +271,29 @@ true })` before loading again. Verified in the browser: the remote's `mf-manifes
 - `@org/jest-config` sets `maxWorkers: '50%'`: Nx runs several Jest processes in parallel and each
   would otherwise start (cores − 1) workers. `testTimeout` is 15 s: under a load average of 40-80
   one A3 `mf-runtime` run failed once (passed on re-run).
+
+## Gotchas found in A6 (auth)
+
+- **Dev-only code out of production bundles.** `loadAuthClient` does
+  `if (process.env.NODE_ENV !== 'production') { await import('./mock') }`. Rspack defines
+  `process.env.NODE_ENV` from the mode (`optimization.nodeEnv`), folds the condition and drops the
+  dynamic import, so no chunk is emitted. Checked: the production shell, both remotes: 0 files
+  contain the mock marker; a `--mode development` build of the same shell emits
+  `packages_auth_src_mock_ts.js`. This also works inside a shared (MF singleton) package, because
+  the shell's build compiles the copy that is used.
+- **`@org/auth` is a tier-1 singleton.** In production the share scope showed `@org/auth@0.1.0`
+  `from: internet_shell`, `useIn: [internet_shell, internet_my_profile]`, and the remote's
+  `useAuth()` read the shell's provider (`signedIn`). Every generated app depends on `@org/auth`
+  (otherwise `createSharedConfig` warns that a tier-1 package is not shared).
+- **Ajv `strict` + `if/then/else`:** a `required` inside `else` must also list the properties in
+  that subschema (`strictRequired`), even if they are defined at the top level:
+  `"else": { "properties": { "sessionUrl": {} }, "required": ["sessionUrl"] }`. The `if` keyword
+  adds a generic 'must match "else" schema' error; `validateMfeManifest` drops it and keeps the
+  specific `required` messages.
+- **Secure cookies on `http://localhost`**: Chromium accepts `Secure` cookies from
+  `http://localhost`, and `localhost:3200` → `localhost:4000` is same-site, so a fake BFF on another
+  port exercises the real `HttpOnly; Secure; SameSite=Lax` + credentialed CORS setup. Production
+  domains need the same-site check described in docs/auth-contract.md (`gov.sg` is a public
+  suffix).
+- `zsh` expands `--include=*.js` in `grep -r` before grep sees it ("no matches found"); quote it
+  (`--include='*.js'`).
