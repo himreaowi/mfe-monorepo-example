@@ -1,4 +1,8 @@
-# mfe-monorepo-template
+# MFE monorepo example
+
+An example application built from the MFE monorepo template (pnpm workspaces + Nx + Rspack +
+Module Federation 2): a **Staff Portal** (intranet zone) and a **Citizen Portal** (internet zone).
+Everything below the example section is the template README.
 
 Template monorepo for **React microfrontends**: pnpm workspaces + Nx (package-based), Rspack +
 Module Federation 2, React 19, TypeScript. Two zones (intranet, internet), each with one shell

@@ -1,8 +1,8 @@
 {
-  "name": "@org/mfe-monorepo-template",
+  "name": "@org/mfe-monorepo-example",
   "version": "0.0.0",
   "private": true,
-  "description": "React microfrontend monorepo template (pnpm workspaces + Nx + Rspack + Module Federation 2)",
+  "description": "MFE monorepo example: Staff Portal (intranet) and Citizen Portal (internet), built from the React microfrontend monorepo template",
   "packageManager": "pnpm@12.14.0",
   "engines": {
     "node": ">=24"
