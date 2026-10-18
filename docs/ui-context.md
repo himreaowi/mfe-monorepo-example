@@ -106,6 +106,9 @@ Target WCAG 2.2 AA: [contracts/a11y-wcag.md](contracts/a11y-wcag.md). UI rules:
   indicator; target size at least 24×24 CSS px.
 - Icon-only buttons have an accessible name; form fields have labels; errors are announced
   (`role="alert"` or `aria-live`) and linked to the field.
+- Forms validate on submit and then show an error summary (links to the fields) plus an error
+  next to each field (`aria-describedby`, `aria-invalid`); submit is only disabled while
+  sending. Details: [coding-conventions.md](coding-conventions.md#input-validation-and-forms).
 - Loading and status messages use `role="status"`; failures use `role="alert"`.
 - Do not convey information by colour alone.
 

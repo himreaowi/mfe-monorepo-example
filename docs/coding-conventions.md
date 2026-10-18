@@ -118,11 +118,26 @@ New capability: `features/<name>/` (types → api → hooks → UI) → thin `pa
 - Never swallow errors silently. Prefer specific messages (operation + status).
 - Render crashes: error boundaries (`<RemoteApp>` already wraps every remote).
 
-## Input validation
+## Input validation and forms
 
-- Validate user input before submit or side effects: required (reject blank/whitespace),
-  formats (email, phone, date, id), numbers (no NaN, decimals, ranges), lengths.
-- Disable submit while invalid; still treat server responses as the authority.
+- Validate user input before side effects: required (reject blank/whitespace), formats (email,
+  phone, date, id), numbers (no NaN, decimals, ranges), lengths.
+- **Validate on submit**, not while the user types: the submit button stays enabled so pressing
+  it always explains what is wrong. After a failed submit, re-validating a field on change or
+  blur is fine (errors disappear as they are fixed).
+- On a failed submit (client validation or a server `422`):
+  - show an **error summary** above the form: a container with `role="alert"` (or focus moved to
+    it with `tabIndex={-1}`), a heading such as "There is a problem", and one link per error
+    pointing at the field (`href="#<field id>"`);
+  - show the **field error** next to each field, referenced by the field's
+    `aria-describedby`, and set `aria-invalid="true"` on the field;
+  - move focus to the summary (or to the first invalid field when there is only one).
+- Only **disable submit while sending** (`aria-busy` / "Saving…" text), to prevent double
+  submits; re-enable it when the request finishes, whatever the result.
+- Treat the server as the authority: map `HttpClientError.body.errors` (`{ "<field>": "<message>" }`
+  from a 422) onto the same field errors and summary; show other failures as a form-level error
+  with a retry.
+- The generated remote's `features/demo` "Add item" form shows this pattern.
 
 ## Imports and naming
 
