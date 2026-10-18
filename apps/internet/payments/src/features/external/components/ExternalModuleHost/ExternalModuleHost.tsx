@@ -13,8 +13,8 @@ import {
   formatAmount,
   readCompletedPayment,
   type CompletedPayment,
-} from './payment';
-import { resolveVendorConfig } from './vendorConfig';
+} from '../../utils/payment';
+import { resolveVendorConfig } from '../../utils/vendorConfig';
 import styles from './ExternalModuleHost.module.scss';
 
 /**

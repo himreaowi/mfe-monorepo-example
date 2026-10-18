@@ -8,8 +8,8 @@ import {
 import { joinBasePath, useHostProps } from '@org/mf-runtime/remote';
 import { RemoteFallback, useTheme } from '@org/ui';
 import { APP_TITLE, FEDERATION_NAME } from '@/core/constants/app';
-import { describeError, describeEvent } from './activity';
-import { resolveVendorConfig } from './vendorConfig';
+import { describeError, describeEvent } from '../../utils/activity';
+import { resolveVendorConfig } from '../../utils/vendorConfig';
 import styles from './ExternalModuleHost.module.scss';
 
 type LogEntry = { id: number; kind: 'event' | 'error'; text: string };

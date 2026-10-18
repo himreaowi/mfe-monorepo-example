@@ -1,1 +1,1 @@
-export { ExternalModuleHost } from './ExternalModuleHost';
+export { ExternalModuleHost } from './components/ExternalModuleHost';
