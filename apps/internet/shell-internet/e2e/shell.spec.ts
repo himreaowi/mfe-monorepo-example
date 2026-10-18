@@ -172,6 +172,16 @@ test.describe('Citizen Portal', () => {
       const nav = page.getByRole('list', { name: 'Apps' });
       for (const width of HEADER_WIDTHS) {
         await page.setViewportSize({ width, height: 800 });
+        // wait until the page has the new width and laid out two frames: MainLayout's
+        // ResizeObserver may switch the layout after setViewportSize returns, and a stale
+        // data-layout read here made this test flaky under load
+        await page.waitForFunction((w) => window.innerWidth === w, width);
+        await page.evaluate(
+          () =>
+            new Promise((resolve) =>
+              requestAnimationFrame(() => requestAnimationFrame(resolve)),
+            ),
+        );
         // MainLayout measures the row: wide when brand, nav and actions fit, else compact
         await expect(header).toHaveAttribute('data-layout', /^(wide|compact)$/);
         const maxHeight = width < 640 ? 64 : 80;
