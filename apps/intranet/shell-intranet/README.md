@@ -67,6 +67,7 @@ viewport. The specs read `remotes.json`, so a new remote is covered without edit
 | `a11y.spec.ts`       | axe WCAG 2.2 A/AA on every page above, light and dark theme                                                                                                                                                                                                                                 |
 
 `e2e/helpers.ts`: `openNav(page)` / `openHeaderMenu(page)` (open the Menu panel when the header is compact),
+`resizeHeader(page, width)` (resize, then wait until the header layout settled),
 `settle(page)` (network idle and no loading indicator, before link checks and axe scans),
 `openRemote`, `openStandalone`, `signInWithMock`, `signOut`.
 

@@ -4,6 +4,7 @@ import {
   expectRemoteRendered,
   openHeaderMenu,
   openNav,
+  resizeHeader,
   zone,
 } from './helpers';
 
@@ -171,19 +172,9 @@ test.describe('Staff Portal', () => {
       const menu = page.getByRole('button', { name: 'Menu' });
       const nav = page.getByRole('list', { name: 'Apps' });
       for (const width of HEADER_WIDTHS) {
-        await page.setViewportSize({ width, height: 800 });
-        // wait until the page has the new width and laid out two frames: MainLayout's
-        // ResizeObserver may switch the layout after setViewportSize returns, and a stale
-        // data-layout read here made this test flaky under load
-        await page.waitForFunction((w) => window.innerWidth === w, width);
-        await page.evaluate(
-          () =>
-            new Promise((resolve) =>
-              requestAnimationFrame(() => requestAnimationFrame(resolve)),
-            ),
-        );
-        // MainLayout measures the row: wide when brand, nav and actions fit, else compact
-        await expect(header).toHaveAttribute('data-layout', /^(wide|compact)$/);
+        // MainLayout measures the row: wide when brand, nav and actions fit, else compact;
+        // resizeHeader waits until the layout settled at the new width
+        const layout = await resizeHeader(page, width);
         const maxHeight = width < 640 ? 64 : 80;
         await expect
           .poll(
@@ -193,7 +184,7 @@ test.describe('Staff Portal', () => {
             },
           )
           .toBeLessThanOrEqual(maxHeight);
-        if ((await header.getAttribute('data-layout')) === 'wide') {
+        if (layout === 'wide') {
           await expect(menu).toBeHidden();
           await expect(nav).toBeVisible();
         } else {
