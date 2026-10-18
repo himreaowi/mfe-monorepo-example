@@ -47,8 +47,9 @@ and the nav, the theme toggle and `headerActions` (e.g. `UserMenu`) move into a 
 How it decides (`useHeaderLayout`, internal):
 
 - it **measures** instead of using a fixed breakpoint: the width of one unwrapped row of brand +
-  nav + actions (`data-layout="measure"`, set and removed in the same task, never painted)
-  against the header's width. Any number of nav items, any label length, signed in or out;
+  nav + actions (`data-layout="measure"`, set and removed in the same task, never painted; the
+  brand counted at most 30ch, see "Long brand names") against the header's width. Any number
+  of nav items, any label length, signed in or out;
 - before the first paint (`useLayoutEffect`), then whenever the available width changes
   (`ResizeObserver` on a zero-height strip, so the header's own height change cannot loop),
   the header's content changes (`MutationObserver`: sign-in, nav items) or web fonts load.
@@ -60,6 +61,36 @@ How it decides (`useHeaderLayout`, internal):
 - the current layout is on the header: `data-layout="wide|compact"` (`data-testid="main-header"`).
   Without ResizeObserver (and before hydration) the attribute is absent and a CSS breakpoint
   (40rem) decides.
+
+### Long brand names
+
+The brand is always **one line**. A name longer than the space left is truncated with an
+ellipsis on screen (`white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+min-width: 0`); it is the flex item that shrinks first, so the Menu button, nav and actions
+always stay fully visible.
+
+- **Fit rule.** The measurement counts the brand at its full width, but at most
+  `--header-brand-min-width` (CSS custom property, default `30ch` of the brand font; set it on
+  `:root` to change it). So the header is wide when brand + nav + actions fit with the brand
+  at full width (or, for a longer name, at least 30ch). Names up to that width never truncate
+  in the wide layout; a longer name cannot keep the header compact at every width: in the wide
+  layout it then shrinks, never below 30ch. The compact layout truncates the brand to whatever
+  is left beside the Menu button (no minimum: the Menu button always wins).
+- **No oscillation.** The measured width depends neither on the current layout nor on how much
+  the brand is currently truncated (the measuring layout resets both), and truncation does not
+  change the DOM, so it cannot re-trigger the `MutationObserver`; the 24 px hysteresis still
+  applies.
+- **Screen readers** get the full name: CSS clips only the painting, the DOM text (and so the
+  accessible name of a brand link) stays whole. Do not add a visually hidden copy (it would be
+  read twice).
+- **No `title` tooltip** (decided): it would only help mouse users (truncation happens mostly on
+  touch screens, and tooltips cannot be reached by keyboard), some screen readers announce a
+  `title` as an extra description (the name twice), and it would need its own resize
+  measurement. Instead apps must show the full name elsewhere: the generated shell has it as
+  the home page `<h1>` and the document `<title>` (see `docs/ui-context.md`).
+- Pass text or inline content (e.g. a home `<Link>`) as `brand`; a single block child truncates
+  too. A padding/negative-margin pair keeps a focused brand link's focus ring inside the
+  clipped box.
 
 Why not a "More" menu (priority+)? `nav` is any React node (the shell passes a list), so
 `MainLayout` cannot move individual items; and the theme toggle and user menu need a place

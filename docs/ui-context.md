@@ -88,7 +88,13 @@ From `@org/auth`: `UserMenu`, `RequireAuth` / `SignInPrompt`.
 - Phone width (375 px) first for primary flows: no horizontal page scrolling. The header is
   always one row: when brand, nav, theme toggle and user menu do not fit (measured, so it also
   happens on wide screens with many remotes) `MainLayout` collapses them behind a "Menu" button
-  (≤ 64 px at 375 px, ≤ 80 px wide); do not build per-app menus. Keep nav labels short.
+  (≤ 64 px at 320–375 px, ≤ 80 px wide); do not build per-app menus. Keep nav labels short.
+- The header brand (shell title) is always one line: a long name **may be truncated with an
+  ellipsis** on narrow screens (and, beyond about 30 characters, between the wide and compact
+  layouts). Screen readers still get the full name (the text is only clipped by CSS), but
+  sighted users must see it too: the full name must appear as the home page `<h1>` (the
+  generated `Welcome` does) and in the document `<title>`. Prefer short shell titles; never put
+  information only in the brand.
 - _TODO: max content width, grid/breakpoints, density._
 
 ## Typography & iconography
