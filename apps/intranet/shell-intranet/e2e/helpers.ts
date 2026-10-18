@@ -97,6 +97,51 @@ export async function resizeHeader(
   return settled ?? 'wide';
 }
 
+/**
+ * The header brand is one line (a long name truncates with an ellipsis instead of wrapping) and,
+ * when the header is compact, the Menu button is fully on screen, beside the brand and clickable.
+ */
+export async function expectHeaderBrandOneLine(page: Page): Promise<void> {
+  const brand = page.getByTestId('header-brand');
+  const lines = await brand.evaluate((element) => {
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    const tops = [...range.getClientRects()]
+      .filter((rect) => rect.width > 0)
+      .map((rect) => rect.top);
+    const fontSize = parseFloat(getComputedStyle(element).fontSize);
+    // rects on one line share a top (within a font size: nested inline elements may differ)
+    return tops.length === 0
+      ? 1
+      : Math.max(...tops) - Math.min(...tops) < fontSize
+        ? 1
+        : 2;
+  });
+  expect(lines, 'header brand on one line').toBe(1);
+  const menu = page.getByRole('button', { name: 'Menu' });
+  if (!(await menu.isVisible())) return;
+  const viewport = await page.evaluate(
+    () => document.documentElement.clientWidth,
+  );
+  const menuBox = await menu.boundingBox();
+  const brandBox = await brand.boundingBox();
+  expect(menuBox, 'Menu button box').not.toBeNull();
+  if (!menuBox || !brandBox) return;
+  expect(menuBox.x, 'Menu button starts on screen').toBeGreaterThanOrEqual(0);
+  expect(
+    menuBox.x + menuBox.width,
+    'Menu button ends on screen',
+  ).toBeLessThanOrEqual(viewport + 0.5);
+  expect(menuBox.width, 'Menu button target size').toBeGreaterThanOrEqual(24);
+  // the brand (its padding included) ends before the Menu button: it truncates, never overlaps
+  expect(
+    brandBox.x + brandBox.width,
+    'brand ends before the Menu button',
+  ).toBeLessThanOrEqual(menuBox.x + 6.5);
+  // not covered by anything: Playwright's actionability checks without clicking
+  await menu.click({ trial: true });
+}
+
 /** The shell's nav ("Apps" list), opened first on phones. It closes again after a navigation. */
 export async function openNav(page: Page): Promise<Locator> {
   const panel = await openHeaderMenu(page);
