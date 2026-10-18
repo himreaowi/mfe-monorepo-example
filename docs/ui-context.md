@@ -70,14 +70,14 @@ _TODO: product-specific theme UX (e.g. high-contrast theme), if any._
 
 ### Shared primitives (`@org/ui`)
 
-| Component                   | Role                                                                  |
-| --------------------------- | --------------------------------------------------------------------- |
-| `Button`                    | `primary` / `secondary` / `ghost`                                     |
-| `ThemeToggle`               | Light / Dark / Use system theme                                       |
-| `MainLayout`                | header (brand, nav, theme toggle, actions), offline banner, `<main>`  |
-| `RemoteFallback`            | `role="alert"` panel for failed remotes/modules, optional "Try again" |
-| `ConnectionRequired`        | offline banner                                                        |
-| `ThemeProvider`, `useTheme` | theme state and ownership                                             |
+| Component                   | Role                                                                                          |
+| --------------------------- | --------------------------------------------------------------------------------------------- |
+| `Button`                    | `primary` / `secondary` / `ghost`                                                             |
+| `ThemeToggle`               | Light / Dark / Use system theme                                                               |
+| `MainLayout`                | header (brand, nav, theme toggle, actions; collapsible below 40rem), offline banner, `<main>` |
+| `RemoteFallback`            | `role="alert"` panel for failed remotes/modules, optional "Try again"                         |
+| `ConnectionRequired`        | offline banner                                                                                |
+| `ThemeProvider`, `useTheme` | theme state and ownership                                                                     |
 
 From `@org/auth`: `UserMenu`, `RequireAuth` / `SignInPrompt`.
 
@@ -85,7 +85,9 @@ From `@org/auth`: `UserMenu`, `RequireAuth` / `SignInPrompt`.
 
 - The shell's `ShellLayout` (MainLayout + remote nav + user menu) is the chrome; remotes render
   page content only (one `<h1>` per page, then `h2`…).
-- Phone width (375 px) first for primary flows: no horizontal page scrolling; the header wraps.
+- Phone width (375 px) first for primary flows: no horizontal page scrolling. Below 40rem
+  `MainLayout` collapses nav, theme toggle and user menu behind a "Menu" button (header one row,
+  ≤ 64 px); do not build per-app menus.
 - _TODO: max content width, grid/breakpoints, density._
 
 ## Typography & iconography
