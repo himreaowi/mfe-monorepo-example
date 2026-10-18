@@ -7,6 +7,9 @@ import {
   zone,
 } from './helpers';
 
+/** Widths the header must stay one row at (phone, tablet, small and common laptop). */
+const HEADER_WIDTHS = [375, 800, 1024, 1280];
+
 test.describe('__APP_TITLE__', () => {
   test('home page lists every remote in the nav', async ({ page }) => {
     await page.goto('/');
@@ -80,22 +83,19 @@ test.describe('__APP_TITLE__', () => {
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
   });
 
-  test('header: one compact row on phones, Menu disclosure; full row on desktop', async ({
+  test('header: one compact row on phones with a Menu disclosure', async ({
     page,
   }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== 'mobile',
+      'phone disclosure; desktop widths: next test',
+    );
     await page.goto('/');
     await expect(page.getByTestId('shell-welcome')).toBeVisible();
     const menu = page.getByRole('button', { name: 'Menu' });
     const nav = page.getByRole('list', { name: 'Apps' });
-    if (testInfo.project.name !== 'mobile') {
-      await expect(menu).toBeHidden();
-      await expect(nav).toBeVisible();
-      await expect(
-        page.getByRole('button', { name: 'Use dark theme' }),
-      ).toBeVisible();
-      return;
-    }
-    const header = page.locator('header').first();
+    const header = page.getByTestId('main-header');
+    await expect(header).toHaveAttribute('data-layout', 'compact');
     const box = await header.boundingBox();
     expect(box?.height ?? 0, 'collapsed header height at 375 px').toBeLessThanOrEqual(64);
     await expect(menu).toHaveAttribute('aria-expanded', 'false');
@@ -126,6 +126,63 @@ test.describe('__APP_TITLE__', () => {
       await expect(menu).toHaveAttribute('aria-expanded', 'false');
     }
   });
+
+  for (const signedIn of [false, true]) {
+    test(`header: one row at every width (${signedIn ? 'signed in' : 'signed out'})`, async ({
+      page,
+    }, testInfo) => {
+      test.skip(
+        testInfo.project.name !== 'desktop',
+        'sets its own viewport sizes',
+      );
+      test.skip(
+        signedIn && !zone.authMock,
+        'signs in with the dev mock: needs "auth": { "mock": true }',
+      );
+      await page.goto('/');
+      await expect(page.getByTestId('shell-welcome')).toBeVisible();
+      if (signedIn) {
+        await (await openHeaderMenu(page))
+          .getByRole('button', { name: 'Sign in' })
+          .click();
+        await expect(page.getByTestId('user-name')).toBeAttached();
+        // the panel may still be open (compact header): close it
+        const menu = page.getByRole('button', { name: 'Menu' });
+        if ((await menu.getAttribute('aria-expanded')) === 'true') {
+          await page.keyboard.press('Escape');
+        }
+      }
+      const header = page.getByTestId('main-header');
+      const menu = page.getByRole('button', { name: 'Menu' });
+      const nav = page.getByRole('list', { name: 'Apps' });
+      for (const width of HEADER_WIDTHS) {
+        await page.setViewportSize({ width, height: 800 });
+        // MainLayout measures the row: wide when brand, nav and actions fit, else compact
+        await expect(header).toHaveAttribute('data-layout', /^(wide|compact)$/);
+        const maxHeight = width < 640 ? 64 : 80;
+        await expect
+          .poll(
+            async () => Math.round((await header.boundingBox())?.height ?? 0),
+            { message: `header height at ${width} px (one row ≤ ${maxHeight} px)` },
+          )
+          .toBeLessThanOrEqual(maxHeight);
+        if ((await header.getAttribute('data-layout')) === 'wide') {
+          await expect(menu).toBeHidden();
+          await expect(nav).toBeVisible();
+        } else {
+          await expect(menu).toBeVisible();
+          await expect(nav).toBeHidden();
+        }
+        // no horizontal page scrolling at any width
+        expect(
+          await page.evaluate(
+            () => document.documentElement.scrollWidth <= window.innerWidth,
+          ),
+          `no horizontal scroll at ${width} px`,
+        ).toBe(true);
+      }
+    });
+  }
 
   test('offline: shows the connection banner', async ({ page, context }) => {
     await page.goto('/');

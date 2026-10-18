@@ -24,7 +24,18 @@
   overflow-wrap: anywhere;
 }
 
-/* Wide screens: nav + actions sit in the header row; the menu button is hidden. */
+/* Zero-height strip across the header: MainLayout observes its width (= available width). */
+.sizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Wide: nav + actions sit in the header row; the menu button is hidden. */
 .panel {
   display: flex;
   flex: 1;
@@ -94,13 +105,15 @@
     no-repeat;
 }
 
-/* Phones: one header row (brand + Menu); nav, theme toggle and actions in a dropdown panel. */
-@media (max-width: 40rem) {
-  .header {
-    flex-wrap: nowrap;
-    gap: var(--space-3);
-    padding: var(--space-2) var(--space-4);
-  }
+/*
+ * Compact: one header row (brand + Menu); nav, theme toggle and actions in a dropdown panel.
+ * MainLayout sets data-layout="compact" when the row does not fit (measured); before that, and
+ * without ResizeObserver, the 40rem breakpoint applies.
+ */
+@mixin compact-header {
+  flex-wrap: nowrap;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
 
   .menuButton {
     display: inline-flex;
@@ -147,8 +160,70 @@
     padding-top: var(--space-4);
     border-top: 1px solid var(--color-border);
   }
+}
+
+.header[data-layout='compact'] {
+  @include compact-header;
+}
+
+@media (max-width: 40rem) {
+  .header:not([data-layout]) {
+    @include compact-header;
+  }
 
   .main {
     padding: var(--space-3);
+  }
+}
+
+/* Measured to fit: keep everything on the row (never wrap into a second one). */
+.header[data-layout='wide'] {
+  flex-wrap: nowrap;
+
+  .brand {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .panel,
+  .actions {
+    flex-wrap: nowrap;
+  }
+
+  .nav {
+    flex-wrap: nowrap;
+    white-space: nowrap;
+  }
+}
+
+/*
+ * Measuring (set and removed by MainLayout within one task, never painted): the width of one
+ * unwrapped row of brand, nav and actions, also while the panel is collapsed.
+ */
+.header[data-layout='measure'] {
+  width: max-content;
+  flex-wrap: nowrap;
+
+  .menuButton {
+    display: none;
+  }
+
+  .brand {
+    flex: none;
+    white-space: nowrap;
+  }
+
+  .panel {
+    position: static;
+    display: flex;
+    flex: none;
+    flex-wrap: nowrap;
+  }
+
+  .nav,
+  .actions {
+    flex: none;
+    flex-wrap: nowrap;
+    white-space: nowrap;
   }
 }

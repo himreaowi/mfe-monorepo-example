@@ -55,7 +55,7 @@ pnpm dev:<zone>
 - Dependencies: `catalog:` for third-party packages, `workspace:*` for `@org/*`.
 - Shells get the zone's e2e suite: `playwright.config.ts` (`@org/playwright-config`) and
   `e2e/*.spec.ts`, which iterate `remotes.json` (deep links, private guard, external adapters
-  with any vendor + mock-vendor extras, standalone remotes, compact header at 375 px, axe WCAG
+  with any vendor + mock-vendor extras, standalone remotes, one-row header at 375–1280 px (signed in and out) with the Menu disclosure, axe WCAG
   2.2 AA in light and dark) with the helpers `openNav`, `openHeaderMenu` and `settle`. `pnpm e2e:<zone>` runs it. Remotes get no
   e2e folder of their own: their standalone mode is covered by the zone suite. See
   `docs/testing.md`.
