@@ -1,8 +1,12 @@
 import { expect, test } from '@org/playwright-config/test';
 import {
+  SIDEBAR_MIN_WIDTH,
   escapeRegExp,
+  expectDrawer,
   expectHeaderBrandOneLine,
   expectRemoteRendered,
+  expectSidebar,
+  navPlacement,
   openHeaderMenu,
   openNav,
   resizeHeader,
@@ -12,6 +16,10 @@ import {
 /**
  * Widths the header must stay one row at: 320 (WCAG 1.4.10 reflow, = 1280 px at 400 % zoom),
  * phone, tablet, small and common laptop.
+ *
+ * The header tests follow the shell's nav placement (`navPlacement` in src/layouts/ShellLayout,
+ * read from the page): `top` = nav in the header row, `side` = sidebar from SIDEBAR_MIN_WIDTH
+ * (top bar with brand, theme toggle and user menu), drawer behind "Menu" below it.
  */
 const HEADER_WIDTHS = [320, 375, 800, 1024, 1280];
 
@@ -146,15 +154,26 @@ test.describe('Staff Portal', () => {
     await menu.click();
     await expect(menu).toHaveAttribute('aria-expanded', 'true');
     await expect(nav).toBeVisible();
+    // side placement: the panel is a drawer on the left, below the top bar
+    if ((await navPlacement(page)) === 'side') await expectDrawer(page);
+    // keyboard: the first Tab stop after the button is inside the panel
+    await page.keyboard.press('Tab');
+    expect(
+      await page
+        .getByTestId('header-panel')
+        .evaluate((panel) => panel.contains(document.activeElement)),
+      'focus moves into the open panel',
+    ).toBe(true);
     await page.keyboard.press('Escape');
     await expect(menu).toHaveAttribute('aria-expanded', 'false');
     await expect(menu).toBeFocused();
-    // a click outside the header (below the open panel) closes it
+    // a click outside the header (bottom-right: below the top panel, right of the side drawer)
+    // closes it
     await menu.click();
     const viewport = page.viewportSize() ?? { width: 375, height: 812 };
-    await page.mouse.click(8, viewport.height - 8);
+    await page.mouse.click(viewport.width - 8, viewport.height - 8);
     await expect(menu).toHaveAttribute('aria-expanded', 'false');
-    // following a link closes
+    // following a link closes; so does browser back / forward
     const first = zone.remotes[0];
     if (first) {
       await (
@@ -164,7 +183,68 @@ test.describe('Staff Portal', () => {
         .click();
       await expect(page).toHaveURL(new RegExp(`${escapeRegExp(first.path)}$`));
       await expect(menu).toHaveAttribute('aria-expanded', 'false');
+      await openHeaderMenu(page);
+      await page.goBack();
+      await expect(page.getByTestId('shell-welcome')).toBeVisible();
+      await expect(menu).toHaveAttribute('aria-expanded', 'false');
     }
+  });
+
+  test('landmarks, skip link and keyboard order', async ({
+    page,
+  }, testInfo) => {
+    await page.goto('/');
+    await expect(page.getByTestId('shell-welcome')).toBeVisible();
+    await expect(page.getByRole('banner')).toHaveCount(1);
+    await expect(page.getByRole('main')).toHaveCount(1);
+    // skip link: the first Tab stop, visible while focused, moves focus to <main>
+    await page.keyboard.press('Tab');
+    const skip = page.getByRole('link', { name: 'Skip to main content' });
+    await expect(skip).toBeFocused();
+    await expect(skip).toBeInViewport();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('main')).toBeFocused();
+    await expect(page).toHaveURL(/\/$/); // no #fragment navigation
+    // keyboard order follows the visual order: header row left to right (top), or top bar
+    // (theme toggle, user menu) before the sidebar links (side)
+    if (testInfo.project.name === 'desktop') {
+      const placement = await navPlacement(page);
+      const layout = await page
+        .getByTestId('main-header')
+        .getAttribute('data-layout');
+      await page.goto('/');
+      await expect(page.getByTestId('shell-welcome')).toBeVisible();
+      const order: string[] = [];
+      for (let i = 0; i < 30; i += 1) {
+        await page.keyboard.press('Tab');
+        const name = await page.evaluate(() => {
+          const el = document.activeElement;
+          return el?.closest('main')
+            ? 'main'
+            : (el?.getAttribute('aria-label') ?? el?.textContent?.trim() ?? '');
+        });
+        if (name === 'main') break;
+        order.push(name);
+      }
+      const home = order.indexOf('Home');
+      const theme = order.findIndex((name) => /theme/i.test(name));
+      expect(
+        home,
+        `Home link in the Tab order: ${order.join(' > ')}`,
+      ).toBeGreaterThan(0);
+      expect(
+        theme,
+        `theme toggle in the Tab order: ${order.join(' > ')}`,
+      ).toBeGreaterThan(0);
+      if (layout === 'wide') {
+        if (placement === 'side')
+          expect(theme, 'top bar before sidebar').toBeLessThan(home);
+        else expect(home, 'nav before the theme toggle').toBeLessThan(theme);
+      }
+    }
+    // one nav landmark with a name (behind "Menu" when compact)
+    await openHeaderMenu(page);
+    await expect(page.getByRole('navigation', { name: 'Main' })).toHaveCount(1);
   });
 
   for (const signedIn of [false, true]) {
@@ -201,10 +281,18 @@ test.describe('Staff Portal', () => {
       const header = page.getByTestId('main-header');
       const menu = page.getByRole('button', { name: 'Menu' });
       const nav = page.getByRole('list', { name: 'Apps' });
+      const placement = await navPlacement(page);
       for (const width of HEADER_WIDTHS) {
         // MainLayout measures the row: wide when brand, nav and actions fit, else compact;
         // resizeHeader waits until the layout settled at the new width
         const layout = await resizeHeader(page, width);
+        if (placement === 'side') {
+          // the nav is not in the top bar: sidebar from SIDEBAR_MIN_WIDTH, drawer below it
+          expect(layout, `side layout at ${width} px`).toBe(
+            width >= SIDEBAR_MIN_WIDTH ? 'wide' : 'compact',
+          );
+          if (layout === 'wide') await expectSidebar(page);
+        }
         const maxHeight = width < 640 ? 64 : 80;
         await expect
           .poll(
@@ -233,6 +321,36 @@ test.describe('Staff Portal', () => {
       }
     });
   }
+
+  test('side nav: top bar and sidebar stay in view on a long page', async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== 'desktop',
+      'sets its own viewport size',
+    );
+    await page.goto('/');
+    await expect(page.getByTestId('shell-welcome')).toBeVisible();
+    test.skip(
+      (await navPlacement(page)) !== 'side',
+      'top navigation (navPlacement="top" in src/layouts/ShellLayout)',
+    );
+    expect(await resizeHeader(page, 1280)).toBe('wide');
+    // make the page taller than the viewport, then scroll down
+    await page.getByRole('main').evaluate((main) => {
+      main.style.minHeight = '3000px';
+    });
+    await page.mouse.wheel(0, 1500);
+    await expect
+      .poll(() => page.evaluate(() => window.scrollY))
+      .toBeGreaterThan(1000);
+    const header = await page.getByTestId('main-header').boundingBox();
+    expect(header?.y, 'top bar sticks to the top').toBe(0);
+    await expect(
+      page.getByRole('link', { name: 'Home', exact: true }),
+    ).toBeInViewport();
+    await expectSidebar(page);
+  });
 
   test('offline: shows the connection banner', async ({ page, context }) => {
     await page.goto('/');

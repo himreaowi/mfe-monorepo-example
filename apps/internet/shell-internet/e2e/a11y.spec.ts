@@ -23,7 +23,8 @@ const targets: Target[] = [
     },
   },
   {
-    // on phones: the open Menu panel (nav, theme toggle, user menu) is scanned too
+    // on phones: the open Menu panel (nav, theme toggle, user menu) is scanned too; with
+    // navPlacement="side" that is the drawer (on wide screens the sidebar is always scanned)
     name: 'home, header menu open',
     open: async (page) => {
       await page.goto('/');

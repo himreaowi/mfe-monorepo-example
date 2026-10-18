@@ -10,11 +10,11 @@ section.
 
 | Zone     | App (package)                                            | Kind                                    | Routes                                             |
 | -------- | -------------------------------------------------------- | --------------------------------------- | -------------------------------------------------- |
-| intranet | Staff Portal (`@org/shell-intranet`, :3100)              | shell                                   | `/`, 404                                           |
+| intranet | Staff Portal (`@org/shell-intranet`, :3100)              | shell (blue header, sidebar nav)        | `/`, 404                                           |
 | intranet | Staff directory (`@org/intranet-staff-directory`, :3101) | public remote                           | `/staff-directory`, `/staff-directory/<id>`        |
 | intranet | Leave (`@org/intranet-leave-requests`, :3102)            | public remote                           | `/leave-requests`, `/leave-requests/new`           |
 | intranet | IT helpdesk (`@org/intranet-it-helpdesk`, :3103)         | external adapter (esm vendor)           | `/it-helpdesk`, `…/new`, `…/tickets/<id>` (vendor) |
-| internet | Citizen Portal (`@org/shell-internet`, :3200)            | shell                                   | `/`, 404                                           |
+| internet | Citizen Portal (`@org/shell-internet`, :3200)            | shell (default header, top nav)         | `/`, 404                                           |
 | internet | Services (`@org/internet-services`, :3201)               | public remote                           | `/services`, `/services/<slug>`                    |
 | internet | Announcements (`@org/internet-announcements`, :3202)     | public remote                           | `/announcements`, `/announcements/<id>`            |
 | internet | My profile (`@org/internet-my-profile`, :3203)           | private remote (sign-in)                | `/my-profile`                                      |
