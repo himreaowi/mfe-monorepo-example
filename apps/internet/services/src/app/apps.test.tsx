@@ -6,7 +6,7 @@ import {
   getService,
   listServices,
 } from '@/features/catalogue/api';
-import { dogLicence } from '@/features/catalogue/components/testData';
+import { dogLicence } from '@/features/catalogue/__fixtures__/services';
 import { EmbeddedApp, StandaloneApp } from './apps';
 
 jest.mock('@/features/catalogue/api');

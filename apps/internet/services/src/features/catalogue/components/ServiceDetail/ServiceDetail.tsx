@@ -3,8 +3,8 @@ import { useRemotePath } from '@org/mf-runtime/remote';
 import { RemoteFallback } from '@org/ui';
 import { routePaths } from '@/core/constants/routePaths';
 import { formatFee } from '@/core/utils/formatMoney';
-import { useService } from '../hooks/useCatalogue';
-import styles from './Catalogue.module.scss';
+import { useService } from '../../hooks/useCatalogue';
+import styles from './ServiceDetail.module.scss';
 
 /** One service: what it is, who can use it, what you need, the steps, fee and timing. */
 export function ServiceDetail({ slug }: { slug: string }) {

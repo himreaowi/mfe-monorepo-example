@@ -2,11 +2,11 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
-import { getCategories, listServices } from '../api';
+import { getCategories, listServices } from '../../api';
 import { Catalogue } from './Catalogue';
-import { dogLicence } from './testData';
+import { dogLicence } from '../../__fixtures__/services';
 
-jest.mock('../api');
+jest.mock('../../api');
 const listMock = jest.mocked(listServices);
 
 function renderCatalogue(url = '/services') {

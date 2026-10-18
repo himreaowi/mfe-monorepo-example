@@ -2,8 +2,8 @@ import { Link } from 'react-router';
 import { useRemotePath } from '@org/mf-runtime/remote';
 import { servicePath } from '@/core/constants/routePaths';
 import { formatFee } from '@/core/utils/formatMoney';
-import type { ServiceSummary } from '../types/service';
-import styles from './Catalogue.module.scss';
+import type { ServiceSummary } from '../../types/service';
+import styles from './ServiceCard.module.scss';
 
 export function ServiceCard({ service }: { service: ServiceSummary }) {
   const toPath = useRemotePath();
