@@ -379,3 +379,12 @@ integrity crossorigin>` first, then `import()` of the same URL reuses the verifi
 - The official nginx image's envsubst step only replaces variables that exist in the
   environment; an unset `${CSP_…}` would stay in the config literally. The Dockerfile gives every
   template variable a default.
+
+## Gotchas found in the template follow-ups (C1)
+
+- **`source-map` copies dev-only code into production `.map` files.** The minifier drops
+  `if (process.env.NODE_ENV !== 'production') { … }` branches from the bundles, but
+  `sourcesContent` holds the original source (mock vendor / mock API `http://localhost:…` URLs).
+  `@org/rspack-config` now builds `hidden-nosources-source-map` (mappings + file names, no
+  sources, no `sourceMappingURL` comment) and turns off css-loader/sass-loader maps in
+  production (they were inlined as base64 into the JS bundles).

@@ -16,7 +16,7 @@ export interface BaseOptions {
   rootDir: string;
   /** Module Federation name, a JS identifier, unique across all apps (e.g. `intranet_staff`). Also salts CSS Module class names. */
   name: string;
-  /** Dev server port (intranet 3100–3199, internet 3200–3299). */
+  /** Dev server port (intranet 3100–3189, internet 3200–3289; see tools/scripts/src/zones.js). */
   port: number;
   /** Force a mode. Default: from the Rspack CLI (`rspack dev` → development, `rspack build` → production). */
   mode?: 'development' | 'production';
@@ -40,6 +40,18 @@ export interface BaseOptions {
   define?: Record<string, unknown>;
   /** Emit service worker + web manifest in production. */
   pwa?: boolean;
+  /**
+   * `devtool` of production builds. Default `hidden-nosources-source-map`: `.map` files with
+   * mappings and file names but no `sourcesContent` (so dev-only source, e.g. localhost mock
+   * URLs, never ends up in them) and no `sourceMappingURL` comment in the bundles. `false` = no
+   * maps. Development always uses `cheap-module-source-map`.
+   */
+  productionSourceMap?:
+    | 'hidden-nosources-source-map'
+    | 'nosources-source-map'
+    | 'hidden-source-map'
+    | 'source-map'
+    | false;
 }
 
 export interface ShellOptions extends BaseOptions {

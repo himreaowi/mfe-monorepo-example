@@ -129,6 +129,8 @@ function styleLoaders({ name, isDev, modules }) {
       loader: require.resolve('css-loader'),
       options: {
         importLoaders: 1,
+        // no inline CSS source maps (with source paths) in production bundles
+        sourceMap: isDev,
         modules: modules
           ? {
               namedExport: false,
@@ -143,7 +145,7 @@ function styleLoaders({ name, isDev, modules }) {
     },
     {
       loader: require.resolve('sass-loader'),
-      options: { implementation: sass, api: 'modern' },
+      options: { implementation: sass, api: 'modern', sourceMap: isDev },
     },
   ];
 }
@@ -200,6 +202,7 @@ function createBaseConfig(options, mode) {
     pwa = false,
     devManifest = false,
     htmlPublicPath = '/',
+    productionSourceMap = 'hidden-nosources-source-map',
   } = options;
   if (!rootDir || !path.isAbsolute(rootDir)) {
     throw new Error(
@@ -302,7 +305,11 @@ function createBaseConfig(options, mode) {
     mode,
     context: rootDir,
     target: 'web',
-    devtool: isDev ? 'cheap-module-source-map' : 'source-map',
+    // Production: maps without sourcesContent and without a sourceMappingURL comment. The original
+    // sources hold dev-only branches (mock vendor / mock API localhost URLs) that the minifier
+    // drops from the bundles; `source-map` would copy them into the .map files. Mappings + file
+    // names are enough for an error tracker to resolve stack traces (docs/devops-handoff.md).
+    devtool: isDev ? 'cheap-module-source-map' : productionSourceMap,
     entry: { main: entry },
     output: {
       path: path.join(rootDir, 'dist'),

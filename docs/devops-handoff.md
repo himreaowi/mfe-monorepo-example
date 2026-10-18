@@ -108,8 +108,24 @@ e2e per zone: run `pnpm e2e:<zone>` when `pnpm -s apps --affected --base=<sha> -
 | shell    | `index.html`, `main.<hash>.js`, chunks, `service-worker.js`, `manifest.webmanifest`, icons                        | **no** `mfe-manifest.json` (written per environment) |
 | remote   | `mf-manifest.json`, `remoteEntry.js`, `__federation_expose_App.<hash>.js`, chunks, `index.html` (standalone page) | shells load `mf-manifest.json` cross-origin (CORS)   |
 
-Source maps (`*.map`) are emitted next to the files; the nginx template does not serve them.
-Upload them to the error tracker in the pipeline if you use one.
+Source maps (`*.map`) are emitted next to the files; the nginx template does not serve them
+(404). Upload them to the error tracker in the pipeline if you use one.
+
+They are **hidden, source-less maps** (`hidden-nosources-source-map`, set in
+`@org/rspack-config`): mappings and source file names only, no `sourcesContent`, and the bundles
+have no `sourceMappingURL` comment. Why: the original sources contain development-only branches
+(e.g. `if (process.env.NODE_ENV !== 'production')` fallbacks to the mock vendor / mock API on
+`http://localhost:…`) that the minifier removes from the bundles, but a classic `source-map`
+would copy them verbatim into the `.map` files. An error tracker still resolves minified stack
+traces to file and line; for source context, point it at the repository at the commit that was
+built. Check a build with:
+
+```sh
+grep -l localhost apps/*/*/dist/*.map   # expect no output
+```
+
+An app that needs full maps (e.g. private symbol server) can pass
+`productionSourceMap: 'hidden-source-map'` to its config factory; never publish those maps.
 
 One image per app:
 
