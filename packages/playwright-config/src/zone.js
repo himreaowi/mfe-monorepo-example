@@ -7,22 +7,59 @@
 import fs from 'node:fs';
 import path from 'node:path';
 /**
- * Dev ports of the zone tool servers, per zone (intranet, internet). Mirrors `toolPort()` in
- * tools/scripts/src/zones.js (packages cannot import tools; a tools/scripts test keeps the two
- * in sync).
+ * Tools port range of each zone. Mirrors `ZONES[zone].tools` in tools/scripts/src/zones.js
+ * (packages cannot import tools; a tools/scripts test keeps the two in sync).
  */
-export const TOOL_PORTS = /** @type {const} */ ({
-  mockApi: [3190, 3290],
-  mockVendor: [3191, 3291],
+export const ZONE_TOOL_RANGES = /** @type {const} */ ({
+  intranet: { first: 3190, last: 3199 },
+  internet: { first: 3290, last: 3299 },
 });
 
+/**
+ * Dev ports of the zone tool servers, `{ <tool>: [<intranet port>, <internet port>] }`, read
+ * from the same source as `toolPort()` in tools/scripts/src/zones.js: the root package.json
+ * `mfe.tools` (`{ "mockApi": { "offset": 0 }, … }`). Invalid entries are skipped here; `pnpm
+ * check` reports them.
+ * @param {string} root workspace root
+ * @returns {Record<string, number[]>}
+ */
+export function readToolPorts(root) {
+  const file = path.join(root, 'package.json');
+  const tools = fs.existsSync(file)
+    ? JSON.parse(fs.readFileSync(file, 'utf8')).mfe?.tools
+    : undefined;
+  /** @type {Record<string, number[]>} */
+  const ports = {};
+  if (typeof tools !== 'object' || tools === null) return ports;
+  for (const [name, config] of Object.entries(tools)) {
+    const offset = config?.offset;
+    if (!Number.isInteger(offset) || offset < 0 || offset > 9) continue;
+    ports[name] = Object.values(ZONE_TOOL_RANGES).map((r) => r.first + offset);
+  }
+  return ports;
+}
+
+/** @returns {string | undefined} */
+function ownWorkspaceRoot() {
+  try {
+    return findWorkspaceRoot(import.meta.dirname);
+  } catch {
+    return undefined;
+  }
+}
+
+const OWN_ROOT = ownWorkspaceRoot();
+
+/** Tool ports of this workspace (root package.json `mfe.tools`). */
+export const TOOL_PORTS = OWN_ROOT ? readToolPorts(OWN_ROOT) : {};
+
 /** Origins of the dev-only mock vendor (tools/mock-vendor), one per zone. */
-export const MOCK_VENDOR_ORIGINS = TOOL_PORTS.mockVendor.map(
+export const MOCK_VENDOR_ORIGINS = (TOOL_PORTS.mockVendor ?? []).map(
   (port) => `http://localhost:${port}`,
 );
 
 /** Origins of the dev-only mock API (tools/mock-api), one per zone. */
-export const MOCK_API_ORIGINS = TOOL_PORTS.mockApi.map(
+export const MOCK_API_ORIGINS = (TOOL_PORTS.mockApi ?? []).map(
   (port) => `http://localhost:${port}`,
 );
 

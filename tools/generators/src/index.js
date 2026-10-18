@@ -103,8 +103,11 @@ export const VENDOR_FORMATS = /** @type {const} */ ([
 /** @typedef {(typeof VENDOR_FORMATS)[number]} VendorFormat */
 
 /** `settings.apiBaseUrl` of a zone's dev manifest: the zone's mock API. */
-export function mockApiBaseUrl(/** @type {Zone} */ zone) {
-  return `http://localhost:${toolPort(zone, 'mockApi')}/api`;
+export function mockApiBaseUrl(
+  /** @type {Zone} */ zone,
+  /** @type {string | undefined} */ root = undefined,
+) {
+  return `http://localhost:${toolPort(zone, 'mockApi', root)}/api`;
 }
 
 /**
@@ -113,9 +116,10 @@ export function mockApiBaseUrl(/** @type {Zone} */ zone) {
  * @param {Zone} zone
  * @param {VendorFormat} format
  * @param {string} title
+ * @param {string} [root] workspace whose root package.json declares the tool ports (`mfe.tools`)
  */
-export function mockVendorConfig(zone, format, title) {
-  const origin = `http://localhost:${toolPort(zone, 'mockVendor')}`;
+export function mockVendorConfig(zone, format, title, root) {
+  const origin = `http://localhost:${toolPort(zone, 'mockVendor', root)}`;
   const config = { title: `${title} (mock vendor)` };
   switch (format) {
     case 'web-component':
@@ -263,7 +267,7 @@ export async function generateShell({ root, zone, title }) {
     FEDERATION_NAME: names.federationName,
     PORT: port,
     DIR_NAME: names.dirName,
-    MOCK_API_URL: mockApiBaseUrl(zone),
+    MOCK_API_URL: mockApiBaseUrl(zone, root),
   });
   writeFiles(dir, files);
   await writeJson(
@@ -290,7 +294,7 @@ export async function generateShell({ root, zone, title }) {
     // dev-only mock sign-in (@org/auth); production manifests list the BFF URLs instead
     auth: { mock: true },
     // dev-only mock API (tools/mock-api); production manifests point at the real API
-    settings: { apiBaseUrl: mockApiBaseUrl(zone) },
+    settings: { apiBaseUrl: mockApiBaseUrl(zone, root) },
   });
   return {
     dir,
@@ -347,7 +351,7 @@ export async function generateRemote({
   const port = allocatePort(root, zone);
   const access = isPrivate ? 'private' : 'public';
   const vendor = external
-    ? mockVendorConfig(zone, format, names.title)
+    ? mockVendorConfig(zone, format, names.title, root)
     : undefined;
 
   const rendered = await renderLayers(
@@ -363,8 +367,8 @@ export async function generateRemote({
       PORT: port,
       ACCESS: access,
       SHELL_PORT: ZONES[zone].first,
-      MOCK_API_URL: mockApiBaseUrl(zone),
-      MOCK_VENDOR_PORT: toolPort(zone, 'mockVendor'),
+      MOCK_API_URL: mockApiBaseUrl(zone, root),
+      MOCK_VENDOR_PORT: toolPort(zone, 'mockVendor', root),
       MOCK_VENDOR_URL: vendor?.url ?? '',
       MOCK_VENDOR_CONFIG: JSON.stringify(vendor ?? null),
       VENDOR_FORMAT: format,

@@ -45,8 +45,8 @@ pnpm dev:<zone>
 - **Dev tools per zone**: every generated app's `nx.targets.dev.dependsOn` starts the zone's
   mock API (`@org/mock-api`, target `serve:<zone>`; adapters also `@org/mock-vendor`), and the
   shell's dev manifest gets `settings.apiBaseUrl: http://localhost:<3190|3290>/api`. Tool ports
-  come from the zone's tools range (`tools/scripts/src/zones.js`), so `pnpm dev:intranet` and
-  `pnpm dev:internet` run side by side.
+  come from the zone's tools range and the root `package.json` `mfe.tools` (`toolPort()` in
+  `tools/scripts/src/zones.js`), so `pnpm dev:intranet` and `pnpm dev:internet` run side by side.
 - The remote's demo feature (`src/features/demo`) loads `/items` from that API through
   `@org/http-client` (api/ → hooks/ → components) and has an "Add item" form with the
   validate-on-submit / error-summary pattern (docs/coding-conventions.md).

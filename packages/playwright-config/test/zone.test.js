@@ -8,8 +8,12 @@ import { after, describe, it } from 'node:test';
 import { createZoneConfig, mergeZoneConfig } from '../src/index.js';
 import { formatViolations, matchesHttpAllowance } from '../src/test.js';
 import {
+  MOCK_API_ORIGINS,
+  MOCK_VENDOR_ORIGINS,
+  TOOL_PORTS,
   findWorkspaceRoot,
   isMockVendor,
+  readToolPorts,
   loadZone,
   localHealthUrl,
   waitForUrls,
@@ -317,5 +321,42 @@ describe('formatViolations', () => {
       lines[0],
       /^color-contrast \[serious\] .* → \.badge — Fix any of the following: low contrast \(https:/,
     );
+  });
+});
+
+describe('tool ports (root package.json mfe.tools)', () => {
+  it('reads every declared tool, skipping invalid offsets', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'mfe-pw-tools-'));
+    created.push(root);
+    fs.writeFileSync(
+      path.join(root, 'package.json'),
+      JSON.stringify({
+        mfe: {
+          tools: {
+            mockApi: { offset: 0 },
+            exampleVendor: { offset: 2, package: '@org/example-vendor' },
+            broken: { offset: 42 },
+          },
+        },
+      }),
+    );
+    assert.deepEqual(readToolPorts(root), {
+      mockApi: [3190, 3290],
+      exampleVendor: [3192, 3292],
+    });
+    assert.deepEqual(readToolPorts(path.join(root, 'missing')), {});
+  });
+
+  it("this repo's mock API and mock vendor", () => {
+    assert.deepEqual(TOOL_PORTS.mockApi, [3190, 3290]);
+    assert.deepEqual(TOOL_PORTS.mockVendor, [3191, 3291]);
+    assert.deepEqual(MOCK_API_ORIGINS, [
+      'http://localhost:3190',
+      'http://localhost:3290',
+    ]);
+    assert.deepEqual(MOCK_VENDOR_ORIGINS, [
+      'http://localhost:3191',
+      'http://localhost:3291',
+    ]);
   });
 });

@@ -9,6 +9,18 @@
   },
   "type": "module",
   "prettier": "@org/prettier-config",
+  "mfe": {
+    "tools": {
+      "mockApi": {
+        "offset": 0,
+        "package": "@org/mock-api"
+      },
+      "mockVendor": {
+        "offset": 1,
+        "package": "@org/mock-vendor"
+      }
+    }
+  },
   "scripts": {
     "check": "node tools/scripts/bin/check.js",
     "apps": "node tools/scripts/bin/list-apps.js",
