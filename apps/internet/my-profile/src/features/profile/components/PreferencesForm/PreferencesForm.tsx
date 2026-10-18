@@ -1,9 +1,9 @@
 import { useId, useRef, useState, type FormEvent } from 'react';
 import { HttpClientError } from '@org/http-client';
 import { Button } from '@org/ui';
-import { useSavePreferences } from '../hooks/useProfile';
-import type { Preferences } from '../types/profile';
-import styles from './Profile.module.scss';
+import { useSavePreferences } from '../../hooks/useProfile';
+import type { Preferences } from '../../types/profile';
+import styles from './PreferencesForm.module.scss';
 
 /** The `preferences` field error of a 422 (`{ errors: { preferences } }`), if there is one. */
 function preferencesError(error: Error): string | undefined {

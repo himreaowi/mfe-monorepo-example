@@ -1,9 +1,9 @@
 import { useHostProps } from '@org/mf-runtime/remote';
 import { RemoteFallback } from '@org/ui';
-import { useProfile } from '../hooks/useProfile';
-import { PreferencesForm } from './PreferencesForm';
-import { ProfileDetails } from './ProfileDetails';
-import styles from './Profile.module.scss';
+import { useProfile } from '../../hooks/useProfile';
+import { PreferencesForm } from '../PreferencesForm';
+import { ProfileDetails } from '../ProfileDetails';
+import styles from './MyProfile.module.scss';
 
 /**
  * The signed-in user's profile. Only rendered after sign-in: the shell wraps this private

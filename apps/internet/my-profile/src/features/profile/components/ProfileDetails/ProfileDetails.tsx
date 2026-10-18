@@ -1,5 +1,5 @@
-import type { Profile } from '../types/profile';
-import styles from './Profile.module.scss';
+import type { Profile } from '../../types/profile';
+import styles from './ProfileDetails.module.scss';
 
 function formatMemberSince(iso: string): string {
   const date = new Date(`${iso}T00:00:00`);

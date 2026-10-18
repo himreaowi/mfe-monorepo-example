@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { ThemeProvider } from '@org/ui';
 import { getProfile } from '@/features/profile/api';
-import { profile } from '@/features/profile/components/testData';
+import { profile } from '@/features/profile/__fixtures__/profile';
 import { EmbeddedApp, StandaloneApp } from './apps';
 
 jest.mock('@/features/profile/api');
