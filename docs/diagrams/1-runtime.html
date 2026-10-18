@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How the portal works in the browser</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root { --paper: #f1f5f4; --ink: #0f172a; --muted: #475569; }
+body { font-family: 'Geist', system-ui, sans-serif; background: var(--paper); color: var(--ink); min-height: 100vh;
+  display: flex; align-items: center; justify-content: center; padding: 3rem 1rem; }
+.frame { max-width: 1280px; width: 100%; }
+.diagram-container { width: 100%; overflow-x: auto; }
+.eyebrow { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 0.5rem; }
+h1 { font-family: 'Instrument Serif', 'Noto Serif', serif; font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2.25rem); font-weight: 400;
+  letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem; }
+.lead { color: var(--muted); max-width: 60ch; margin-bottom: 1.5rem; line-height: 1.5; }
+svg { width: 100%; min-width: 1280px; display: block; }
+@media print { .diagram-container { overflow-x: visible; } svg { min-width: 0; } }
+</style>
+</head>
+<body>
+<div class="frame">
+<p class="eyebrow">Architecture · How it runs</p>
+<h1>How the portal works in the browser</h1>
+<p class="lead">The shell is the main app. It reads a list of remotes, then loads each remote only when the user opens it.</p>
+<div class="diagram-container">
+<svg viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="runtime-title runtime-desc">
+<title id="runtime-title">How the portal works in the browser</title>
+<desc id="runtime-desc">The browser opens the portal shell, which reads the remote list and loads the Services, My profile and Payments remotes; Payments mounts an outside vendor module and the shell signs users in through the backend sign-in service.</desc>
+<defs>
+<marker id="runtime-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#475569"/></marker>
+<marker id="runtime-arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#0f766e"/></marker>
+<marker id="runtime-arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+</defs>
+<rect width="100%" height="100%" fill="#f1f5f4"/>
+<rect x="248" y="108" width="608" height="432" rx="8" fill="rgba(15,23,42,0.02)" stroke="rgba(15,23,42,0.14)" stroke-width="0.8"/><rect x="264" y="112" width="136" height="12" rx="2" fill="#f1f5f4"/><text x="332.0" y="121" fill="#556072" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.14em">ONE REPO · INTERNET ZONE</text>
+<rect x="896" y="404" width="328" height="232" rx="8" fill="rgba(15,23,42,0.02)" stroke="rgba(15,23,42,0.14)" stroke-width="0.8"/><rect x="912" y="408" width="96" height="12" rx="2" fill="#f1f5f4"/><text x="960.0" y="417" fill="#556072" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.14em">OUTSIDE THE REPO</text>
+<path d="M200,352 H278" fill="none" stroke="#0f766e" stroke-width="1.2" marker-end="url(#runtime-arrow-accent)"/>
+<rect x="212.0" y="330" width="56" height="16" rx="2" fill="#f1f5f4"/><text x="240" y="342" fill="#0f766e" font-size="12" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">OPENS</text>
+<path d="M346,316 V214" fill="none" stroke="#475569" stroke-width="1.2" marker-end="url(#runtime-arrow)"/>
+<rect x="354" y="256" width="100" height="16" rx="2" fill="#f1f5f4"/><text x="404.0" y="268" fill="#556072" font-size="12" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">READS FIRST</text>
+<path d="M480,334 H532 Q540,334 540,326 V240 Q540,232 548,232 H598" fill="none" stroke="#475569" stroke-width="1.2" marker-end="url(#runtime-arrow)"/>
+<path d="M480,352 H598" fill="none" stroke="#475569" stroke-width="1.2" marker-end="url(#runtime-arrow)"/>
+<path d="M480,370 H532 Q540,370 540,378 V464 Q540,472 548,472 H598" fill="none" stroke="#475569" stroke-width="1.2" marker-end="url(#runtime-arrow)"/>
+<path d="M820,472 H918" fill="none" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#runtime-arrow-link)"/>
+<rect x="838.0" y="450" width="64" height="16" rx="2" fill="#f1f5f4"/><text x="870" y="462" fill="#2e5aa8" font-size="12" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">MOUNTS</text>
+<path d="M413,388 V576 Q413,584 421,584 H918" fill="none" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#runtime-arrow-link)"/>
+<rect x="598.0" y="562" width="124" height="16" rx="2" fill="#f1f5f4"/><text x="660" y="574" fill="#2e5aa8" font-size="12" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">SIGN-IN COOKIE</text>
+<rect x="40" y="316" width="160" height="72" rx="6" fill="#f1f5f4"/>
+<rect x="40" y="316" width="160" height="72" rx="6" fill="rgba(71,85,105,0.10)" stroke="#556072" stroke-width="1"/>
+<rect x="48" y="324" width="32" height="12" rx="2" fill="none" stroke="#556072" stroke-opacity="0.5" stroke-width="0.8"/>
+<text x="64.0" y="333" fill="#556072" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">USER</text>
+<text x="120.0" y="360.0" fill="#0f172a" font-size="16" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Browser</text>
+<text x="120.0" y="378.0" fill="#475569" font-size="12" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">citizen or staff</text>
+<rect x="280" y="140" width="200" height="72" rx="6" fill="#f1f5f4"/>
+<rect x="280" y="140" width="200" height="72" rx="6" fill="rgba(15,23,42,0.05)" stroke="#475569" stroke-width="1"/>
+<rect x="288" y="148" width="32" height="12" rx="2" fill="none" stroke="#475569" stroke-opacity="0.5" stroke-width="0.8"/>
+<text x="304.0" y="157" fill="#475569" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">FILE</text>
+<text x="380.0" y="184.0" fill="#0f172a" font-size="16" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Remote list</text>
+<text x="380.0" y="202.0" fill="#475569" font-size="12" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">mfe-manifest.json</text>
+<rect x="280" y="316" width="200" height="72" rx="6" fill="#f1f5f4"/>
+<rect x="280" y="316" width="200" height="72" rx="6" fill="rgba(15,118,110,0.08)" stroke="#0f766e" stroke-width="1"/>
+<rect x="288" y="324" width="40" height="12" rx="2" fill="none" stroke="#0f766e" stroke-opacity="0.5" stroke-width="0.8"/>
+<text x="308.0" y="333" fill="#0f766e" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">SHELL</text>
+<text x="380.0" y="360.0" fill="#0f172a" font-size="16" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Portal shell</text>
+<text x="380.0" y="378.0" fill="#475569" font-size="12" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">header, menu, routes</text>
+<rect x="600" y="196" width="220" height="72" rx="6" fill="#f1f5f4"/>
+<rect x="600" y="196" width="220" height="72" rx="6" fill="#ffffff" stroke="#0f172a" stroke-width="1"/>
+<rect x="608" y="204" width="44" height="12" rx="2" fill="none" stroke="#0f172a" stroke-opacity="0.5" stroke-width="0.8"/>
+<text x="630.0" y="213" fill="#0f172a" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">REMOTE</text>
+<text x="710.0" y="240.0" fill="#0f172a" font-size="16" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Services</text>
+<text x="710.0" y="258.0" fill="#475569" font-size="12" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">own build + deploy</text>
+<rect x="600" y="316" width="220" height="72" rx="6" fill="#f1f5f4"/>
+<rect x="600" y="316" width="220" height="72" rx="6" fill="#ffffff" stroke="#0f172a" stroke-width="1"/>
+<rect x="608" y="324" width="48" height="12" rx="2" fill="none" stroke="#0f172a" stroke-opacity="0.5" stroke-width="0.8"/>
+<text x="632.0" y="333" fill="#0f172a" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">PRIVATE</text>
+<text x="710.0" y="360.0" fill="#0f172a" font-size="16" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">My profile</text>
+<text x="710.0" y="378.0" fill="#475569" font-size="12" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">after sign-in only</text>
+<rect x="600" y="436" width="220" height="72" rx="6" fill="#f1f5f4"/>
+<rect x="600" y="436" width="220" height="72" rx="6" fill="#ffffff" stroke="#0f172a" stroke-width="1"/>
+<rect x="608" y="444" width="48" height="12" rx="2" fill="none" stroke="#0f172a" stroke-opacity="0.5" stroke-width="0.8"/>
+<text x="632.0" y="453" fill="#0f172a" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">ADAPTER</text>
+<text x="710.0" y="480.0" fill="#0f172a" font-size="16" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Payments</text>
+<text x="710.0" y="498.0" fill="#475569" font-size="12" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">hosts vendor code</text>
+<rect x="920" y="436" width="200" height="72" rx="6" fill="#f1f5f4"/>
+<rect x="920" y="436" width="200" height="72" rx="6" fill="rgba(15,23,42,0.03)" stroke="rgba(15,23,42,0.30)" stroke-width="1"/>
+<rect x="928" y="444" width="44" height="12" rx="2" fill="none" stroke="rgba(15,23,42,0.30)" stroke-opacity="0.5" stroke-width="0.8"/>
+<text x="950.0" y="453" fill="#556072" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">VENDOR</text>
+<text x="1020.0" y="480.0" fill="#0f172a" font-size="16" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Vendor module</text>
+<text x="1020.0" y="498.0" fill="#475569" font-size="12" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">any framework</text>
+<rect x="920" y="548" width="200" height="72" rx="6" fill="#f1f5f4"/>
+<rect x="920" y="548" width="200" height="72" rx="6" fill="rgba(15,23,42,0.03)" stroke="rgba(15,23,42,0.30)" stroke-width="1"/>
+<rect x="928" y="556" width="48" height="12" rx="2" fill="none" stroke="rgba(15,23,42,0.30)" stroke-opacity="0.5" stroke-width="0.8"/>
+<text x="952.0" y="565" fill="#556072" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">BACKEND</text>
+<text x="1020.0" y="592.0" fill="#0f172a" font-size="16" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Sign-in service</text>
+<text x="1020.0" y="610.0" fill="#475569" font-size="12" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">Singpass / staff SSO</text>
+<text x="600" y="84" fill="#475569" font-size="14" font-style="italic" font-family="'Instrument Serif', 'Noto Serif', serif">Each remote is a small app, built and deployed on its own.</text>
+<line x1="40" y1="660" x2="1240" y2="660" stroke="rgba(15,23,42,0.12)" stroke-width="0.8"/>
+<text x="40" y="684" fill="#475569" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.14em">LEGEND</text>
+<rect x="140" y="672" width="32" height="16" rx="3" fill="rgba(15,118,110,0.08)" stroke="#0f766e" stroke-width="1"/>
+<text x="180" y="684" fill="#0f172a" font-size="10" font-family="'Geist', system-ui, sans-serif">Shell (main app)</text>
+<rect x="308" y="672" width="32" height="16" rx="3" fill="#ffffff" stroke="#0f172a" stroke-width="1"/>
+<text x="348" y="684" fill="#0f172a" font-size="10" font-family="'Geist', system-ui, sans-serif">Remote (one team’s app)</text>
+<rect x="518" y="672" width="32" height="16" rx="3" fill="rgba(15,23,42,0.05)" stroke="#475569" stroke-width="1"/>
+<text x="558" y="684" fill="#0f172a" font-size="10" font-family="'Geist', system-ui, sans-serif">Config file</text>
+<rect x="656" y="672" width="32" height="16" rx="3" fill="rgba(15,23,42,0.03)" stroke="rgba(15,23,42,0.30)" stroke-width="1"/>
+<text x="696" y="684" fill="#0f172a" font-size="10" font-family="'Geist', system-ui, sans-serif">Not in this repo</text>
+<line x1="824" y1="680" x2="856" y2="680" stroke="#475569" stroke-width="1.2"/>
+<text x="864" y="684" fill="#0f172a" font-size="10" font-family="'Geist', system-ui, sans-serif">Loads at runtime</text>
+<line x1="992" y1="680" x2="1024" y2="680" stroke="#2e5aa8" stroke-width="1.2"/>
+<text x="1032" y="684" fill="#0f172a" font-size="10" font-family="'Geist', system-ui, sans-serif">Calls something outside</text>
+</svg>
+</div>
+</div>
+</body>
+</html>

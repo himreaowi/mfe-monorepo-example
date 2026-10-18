@@ -10,3 +10,7 @@ test-results
 .nx
 pnpm-lock.yaml
 packages/mf-runtime/src/manifest/validateSchema.generated.js
+# generated diagrams and their generator (kept byte-identical to regenerate output)
+docs/diagrams/*.html
+docs/diagrams/*.svg
+docs/diagrams/source/

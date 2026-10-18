@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Starting a new project from the template</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root { --paper: #f1f5f4; --ink: #0f172a; --muted: #475569; }
+body { font-family: 'Geist', system-ui, sans-serif; background: var(--paper); color: var(--ink); min-height: 100vh;
+  display: flex; align-items: center; justify-content: center; padding: 3rem 1rem; }
+.frame { max-width: 1280px; width: 100%; }
+.diagram-container { width: 100%; overflow-x: auto; }
+.eyebrow { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 0.5rem; }
+h1 { font-family: 'Instrument Serif', 'Noto Serif', serif; font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2.25rem); font-weight: 400;
+  letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem; }
+.lead { color: var(--muted); max-width: 60ch; margin-bottom: 1.5rem; line-height: 1.5; }
+svg { width: 100%; min-width: 1280px; display: block; }
+@media print { .diagram-container { overflow-x: visible; } svg { min-width: 0; } }
+</style>
+</head>
+<body>
+<div class="frame">
+<p class="eyebrow">Flow · Getting started</p>
+<h1>Starting a new project from the template</h1>
+<p class="lead">Copy the template once into a new repo. From then on it is your project: add apps, run them, push. You can still pull template fixes later if you want.</p>
+<div class="diagram-container">
+<svg viewBox="0 0 1280 608" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="newproject-title newproject-desc">
+<title id="newproject-title">Starting a new project from the template</title>
+<desc id="newproject-desc">The template repo is copied once into a new project repo in its own folder; there you create apps, run and test them, and push to the Azure pipeline, with an optional path to pull later template fixes.</desc>
+<defs>
+<marker id="newproject-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#475569"/></marker>
+<marker id="newproject-arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#0f766e"/></marker>
+<marker id="newproject-arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+</defs>
+<rect width="100%" height="100%" fill="#f1f5f4"/>
+<g transform="translate(0,-112)"><rect x="24" y="248" width="252" height="352" rx="8" fill="rgba(15,23,42,0.02)" stroke="rgba(15,23,42,0.14)" stroke-width="0.8"/><rect x="40" y="252" width="84" height="12" rx="2" fill="#f1f5f4"/><text x="82.0" y="261" fill="#556072" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.14em">TEMPLATE REPO</text>
+<rect x="344" y="248" width="812" height="352" rx="8" fill="rgba(15,23,42,0.02)" stroke="rgba(15,23,42,0.14)" stroke-width="0.8"/><rect x="360" y="252" width="168" height="12" rx="2" fill="#f1f5f4"/><text x="444.0" y="261" fill="#556072" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.14em">YOUR PROJECT REPO (NEW FOLDER)</text>
+<path d="M260,320 H358" fill="none" stroke="#0f766e" stroke-width="1.2" marker-end="url(#newproject-arrow-accent)"/>
+<rect x="267.0" y="298" width="84" height="16" rx="2" fill="#f1f5f4"/><text x="309" y="310" fill="#0f766e" font-size="12" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">COPY ONCE</text>
+<path d="M580,320 H658" fill="none" stroke="#475569" stroke-width="1.2" marker-end="url(#newproject-arrow)"/>
+<path d="M860,320 H938" fill="none" stroke="#475569" stroke-width="1.2" marker-end="url(#newproject-arrow)"/>
+<path d="M1040,360 V478" fill="none" stroke="#475569" stroke-width="1.2" marker-end="url(#newproject-arrow)"/>
+<rect x="1048" y="412" width="76" height="16" rx="2" fill="#f1f5f4"/><text x="1086.0" y="424" fill="#556072" font-size="12" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">GIT PUSH</text>
+<path d="M150,360 V412 Q150,420 158,420 H462 Q470,420 470,412 V362" fill="none" stroke="#2e5aa8" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#newproject-arrow-link)"/>
+<rect x="256.0" y="428" width="108" height="16" rx="2" fill="#f1f5f4"/><text x="310" y="440" fill="#2e5aa8" font-size="12" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">PULL UPDATES</text>
+<rect x="40" y="280" width="220" height="80" rx="6" fill="#f1f5f4"/>
+<rect x="40" y="280" width="220" height="80" rx="6" fill="rgba(15,23,42,0.03)" stroke="rgba(15,23,42,0.30)" stroke-width="1"/>
+<rect x="48" y="288" width="44" height="12" rx="2" fill="none" stroke="rgba(15,23,42,0.30)" stroke-opacity="0.5" stroke-width="0.8"/>
+<text x="70.0" y="297" fill="#556072" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">GITHUB</text>
+<text x="150.0" y="328.0" fill="#0f172a" font-size="16" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">mfe-monorepo-template</text>
+<text x="150.0" y="346.0" fill="#475569" font-size="12" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">starting point</text>
+<rect x="360" y="280" width="220" height="80" rx="6" fill="#f1f5f4"/>
+<rect x="360" y="280" width="220" height="80" rx="6" fill="rgba(15,118,110,0.08)" stroke="#0f766e" stroke-width="1"/>
+<rect x="368" y="288" width="44" height="12" rx="2" fill="none" stroke="#0f766e" stroke-opacity="0.5" stroke-width="0.8"/>
+<text x="390.0" y="297" fill="#0f766e" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">STEP 1</text>
+<text x="470.0" y="328.0" fill="#0f172a" font-size="16" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">my-portal</text>
+<text x="470.0" y="346.0" fill="#475569" font-size="12" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">own folder + history</text>
+<rect x="660" y="280" width="200" height="80" rx="6" fill="#f1f5f4"/>
+<rect x="660" y="280" width="200" height="80" rx="6" fill="#ffffff" stroke="#0f172a" stroke-width="1"/>
+<rect x="668" y="288" width="44" height="12" rx="2" fill="none" stroke="#0f172a" stroke-opacity="0.5" stroke-width="0.8"/>
+<text x="690.0" y="297" fill="#0f172a" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">STEP 2</text>
+<text x="760.0" y="328.0" fill="#0f172a" font-size="16" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Create apps</text>
+<text x="760.0" y="346.0" fill="#475569" font-size="12" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">pnpm gen:shell / remote</text>
+<rect x="940" y="280" width="200" height="80" rx="6" fill="#f1f5f4"/>
+<rect x="940" y="280" width="200" height="80" rx="6" fill="#ffffff" stroke="#0f172a" stroke-width="1"/>
+<rect x="948" y="288" width="44" height="12" rx="2" fill="none" stroke="#0f172a" stroke-opacity="0.5" stroke-width="0.8"/>
+<text x="970.0" y="297" fill="#0f172a" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">STEP 3</text>
+<text x="1040.0" y="328.0" fill="#0f172a" font-size="16" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Run and test</text>
+<text x="1040.0" y="346.0" fill="#475569" font-size="12" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">pnpm dev · pnpm e2e</text>
+<rect x="940" y="480" width="200" height="80" rx="6" fill="#f1f5f4"/>
+<rect x="940" y="480" width="200" height="80" rx="6" fill="#ffffff" stroke="#0f172a" stroke-width="1"/>
+<rect x="948" y="488" width="44" height="12" rx="2" fill="none" stroke="#0f172a" stroke-opacity="0.5" stroke-width="0.8"/>
+<text x="970.0" y="497" fill="#0f172a" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">STEP 4</text>
+<text x="1040.0" y="528.0" fill="#0f172a" font-size="16" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Azure pipeline</text>
+<text x="1040.0" y="546.0" fill="#475569" font-size="12" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">builds changed apps</text>
+<text x="40" y="176" fill="#475569" font-size="14" font-style="italic" font-family="'Instrument Serif', 'Noto Serif', serif">The template and your project are two separate repos.</text>
+<text x="40" y="196" fill="#475569" font-size="14" font-style="italic" font-family="'Instrument Serif', 'Noto Serif', serif">They do not need to sit in the same folder.</text>
+<line x1="40" y1="660" x2="1240" y2="660" stroke="rgba(15,23,42,0.12)" stroke-width="0.8"/>
+<text x="40" y="684" fill="#475569" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.14em">LEGEND</text>
+<rect x="140" y="672" width="32" height="16" rx="3" fill="rgba(15,118,110,0.08)" stroke="#0f766e" stroke-width="1"/>
+<text x="180" y="684" fill="#0f172a" font-size="10" font-family="'Geist', system-ui, sans-serif">Your new project</text>
+<rect x="308" y="672" width="32" height="16" rx="3" fill="rgba(15,23,42,0.03)" stroke="rgba(15,23,42,0.30)" stroke-width="1"/>
+<text x="348" y="684" fill="#0f172a" font-size="10" font-family="'Geist', system-ui, sans-serif">The template (kept as is)</text>
+<line x1="530" y1="680" x2="562" y2="680" stroke="#475569" stroke-width="1.2"/>
+<text x="570" y="684" fill="#0f172a" font-size="10" font-family="'Geist', system-ui, sans-serif">Steps you do</text>
+<line x1="674" y1="680" x2="706" y2="680" stroke="#2e5aa8" stroke-width="1.2" stroke-dasharray="5,4"/>
+<text x="714" y="684" fill="#0f172a" font-size="10" font-family="'Geist', system-ui, sans-serif">Optional: pull template fixes later</text></g>
+</svg>
+</div>
+</div>
+</body>
+</html>

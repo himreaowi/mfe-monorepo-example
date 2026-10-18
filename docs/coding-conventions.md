@@ -43,6 +43,7 @@ Hard rules (enforced by `pnpm check` and ESLint, see [guardrails.md](guardrails.
 | `src/components/`      | UI primitives of this app, one folder per component (shared ones go to `@org/ui`)                   |
 | `src/layouts/`         | Chrome (`ShellLayout`, `StandaloneLayout`)                                                          |
 | `src/core/`            | Constants (`routePaths`, `apiRoutes`, `app`), types, small utils (no parallel `lib/`)               |
+| `src/styles/`          | Shell only: `shell.scss`, its global stylesheet (header colours `--header-*` per theme)             |
 | `src/services/`        | App-wide infra (`http` client)                                                                      |
 
 **Rule of thumb:** pages compose, features own domain data, components stay presentational,
@@ -220,7 +221,12 @@ Package names: apps `@org/<zone>-<name>` / `@org/shell-<zone>` (generated); shar
 - CSS Modules (`*.module.scss`) in the component's folder, one per component, never shared
   ([One folder per component](#one-folder-per-component)); tokens (`var(--…)`) for colours,
   spacing, radius, shadow. No hardcoded colours on themeable surfaces; both themes must pass contrast.
-- Global styles only in the shell (and a remote's standalone bootstrap).
+- Global styles only in the shell (and a remote's standalone bootstrap). The shell's own global
+  rules live in `src/styles/shell.scss` (imported after `@org/design-tokens/global.scss`); its
+  main use is the header colours ([ui-context.md](ui-context.md#header-colours-per-shell)),
+  which only the shell sets.
+- Never select another package's CSS Module class names (e.g. `MainLayout`'s `.header`): they
+  are hashed per build and per app. Use tokens or props.
 - See [ui-context.md](ui-context.md).
 
 ## Testing

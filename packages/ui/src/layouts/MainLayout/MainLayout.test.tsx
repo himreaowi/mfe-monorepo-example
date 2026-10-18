@@ -157,6 +157,60 @@ function scssRule(selector: string): string {
   return source.slice(start, source.indexOf('\n}', start));
 }
 
+describe('MainLayout: header colours (--header-* tokens)', () => {
+  it('reads every header token with a fallback to the page tokens (unset = unchanged look)', () => {
+    // whitespace-insensitive (Prettier may wrap long var() chains)
+    const host = scssRule('.host')
+      .replace(/\s+/g, ' ')
+      .replace(/\( /g, '(')
+      .replace(/ \)/g, ')');
+    for (const declaration of [
+      '--_header-bg: var(--header-bg, var(--color-surface));',
+      '--_header-text: var(--header-text, var(--color-text));',
+      '--_header-text-muted: var(--header-text-muted, var(--header-text, var(--color-text-muted)));',
+      '--_header-border: var(--header-border, var(--color-border));',
+      '--_header-accent: var(--header-accent, var(--header-text, var(--color-accent)));',
+      // text on the pressed (accent) theme button
+      '--_header-on-accent: var(--header-bg, var(--color-accent-contrast));',
+      // only valid once --header-bg is set; otherwise the page --color-bg is kept for hovers
+      '--_header-hover: color-mix(in srgb, var(--_header-text) 14%, var(--header-bg));',
+      '--_page-bg: var(--color-bg);',
+    ]) {
+      expect(host).toContain(declaration);
+    }
+  });
+
+  it('maps them onto the page token names inside the header, so header content follows', () => {
+    const header = scssRule('.header');
+    for (const [token, resolved] of [
+      ['--color-surface', '--_header-bg'],
+      ['--color-text', '--_header-text'],
+      ['--color-text-muted', '--_header-text-muted'],
+      ['--color-border', '--_header-border'],
+      ['--color-accent', '--_header-accent'],
+      ['--color-accent-contrast', '--_header-on-accent'],
+    ]) {
+      expect(header).toContain(`${token}: var(${resolved});`);
+    }
+    expect(header).toContain(
+      '--color-bg: var(--_header-hover, var(--_page-bg));',
+    );
+    expect(header).toMatch(/color: var\(--color-text\);/);
+    expect(header).toMatch(/background: var\(--color-surface\);/);
+    expect(header).toMatch(/border-bottom: 1px solid var\(--color-border\);/);
+  });
+
+  it('never hardcodes a colour (everything in the header goes through the tokens)', () => {
+    const source = readFileSync(
+      join(__dirname, 'MainLayout.module.scss'),
+      'utf8',
+    ).replace(/\/\*[\s\S]*?\*\//g, '');
+    expect(source).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+    // the only rgb() is the panel's drop shadow
+    expect(source.match(/rgb\(/g)).toHaveLength(1);
+  });
+});
+
 describe('MainLayout: long brand names', () => {
   it('truncates on screen only: one line, ellipsis, shrinks before anything else', () => {
     const brand = scssRule('.brand');

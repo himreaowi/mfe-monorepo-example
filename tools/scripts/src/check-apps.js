@@ -13,6 +13,7 @@
  * - component layout (docs/coding-conventions.md "One folder per component"): components live in
  *   `features/<feature>/components/<Name>/` or `src/components/<Name>/` with `<Name>.tsx`,
  *   `<Name>.test.tsx` and `index.ts`; a CSS module is imported only from its own folder
+ * - remotes never set the shell's header colour tokens (`--header-bg`, …)
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -429,6 +430,11 @@ export async function checkApps({ root }) {
     checkComponentLayout(root, path.join(root, info.app.dir), err);
   }
 
+  // --- header colours belong to the shell ------------------------------------------------------
+  for (const info of infos.filter((i) => i.type === 'remote')) {
+    checkHeaderTokens(root, path.join(root, info.app.dir), err);
+  }
+
   // --- dev tool servers (root package.json mfe.tools) ---------------------------------------
   checkTools(root, err);
 
@@ -546,6 +552,45 @@ function checkComponentLayout(root, appDir, err) {
         `${rel(file)} imports "${spec}" from another folder. A CSS module belongs to the component in its folder and is never shared: give this component its own ${path.basename(file).replace(/\.[jt]sx?$/, '')}.module.scss with only the rules it uses. Shared values come from tokens (var(--…)); a style two components really share becomes a small shared component or a Sass partial (_name.scss, @use). See ${LAYOUT_DOC}.`,
       );
     }
+  }
+}
+
+/**
+ * Setting a MainLayout header colour token: a declaration (`--header-bg: #1d4ed8`, also as a
+ * quoted object key) or `setProperty('--header-bg', …)`. Reading it (`var(--header-bg)`) is fine.
+ */
+const HEADER_TOKEN_DECL =
+  /(?:(?:^|[\s{;])(--header-(?:bg|text|text-muted|border|accent))\s*:|['"`](--header-(?:bg|text|text-muted|border|accent))['"`]\s*[:,])/m;
+
+/** Source and style files under src/ (styles included, unlike `sourceFiles`). */
+function styleAndSourceFiles(/** @type {string} */ dir) {
+  const src = path.join(dir, 'src');
+  if (!fs.existsSync(src)) return [];
+  return fs
+    .readdirSync(src, { recursive: true, withFileTypes: true })
+    .filter((d) => d.isFile() && /\.(?:[cm]?[jt]sx?|s?css)$/.test(d.name))
+    .map((d) => path.join(d.parentPath, d.name))
+    .filter((f) => !f.includes(`${path.sep}node_modules${path.sep}`));
+}
+
+/**
+ * The header (MainLayout) belongs to the shell: only the shell sets the `--header-*` colour
+ * tokens (its src/styles/shell.scss). A remote setting them would recolour the shell's header
+ * whenever it is loaded (and differently per remote).
+ * @param {string} root
+ * @param {string} appDir absolute
+ * @param {(rule: string, message: string) => void} err
+ */
+function checkHeaderTokens(root, appDir, err) {
+  for (const file of styleAndSourceFiles(appDir)) {
+    if (/\.test\.[cm]?[jt]sx?$/.test(file)) continue;
+    const code = fs.readFileSync(file, 'utf8');
+    const match = HEADER_TOKEN_DECL.exec(code);
+    if (!match) continue;
+    err(
+      'header-tokens',
+      `${path.relative(root, file).split(path.sep).join('/')} sets ${match[1] ?? match[2]}. The header belongs to the shell: header colours are set only in the shell's src/styles/shell.scss (docs/ui-context.md "Header colours per shell"). Remove it from the remote.`,
+    );
   }
 }
 

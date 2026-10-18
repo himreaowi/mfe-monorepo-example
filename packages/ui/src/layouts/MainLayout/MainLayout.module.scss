@@ -1,10 +1,57 @@
+/*
+ * Header colours (the shell's theming hook; docs/ui-context.md "Header colours per shell").
+ * A shell sets these on :root / [data-theme='light'] and [data-theme='dark'] in its own global
+ * stylesheet (src/styles/shell.scss); unset, the header uses the page tokens (look unchanged):
+ *
+ *   --header-bg          header + compact Menu panel background   (fallback --color-surface)
+ *   --header-text        brand, nav links, buttons, Menu button    (fallback --color-text)
+ *   --header-text-muted  "Theme" label, user name, Menu border    (fallback --header-text, then --color-text-muted)
+ *   --header-border      bottom border, panel divider, button borders (fallback --color-border)
+ *   --header-accent      active nav link, focus rings, pressed theme button, ghost buttons
+ *                        (fallback --header-text, then --color-accent)
+ *
+ * They are resolved here on .host (from the inherited page tokens) and then mapped onto the page
+ * token names inside .header, so everything rendered in the header (ThemeToggle, UserMenu, the
+ * shell's RemoteNav, any headerActions) follows them without knowing about them. A custom
+ * property cannot refer to itself, hence the private --_header-* step.
+ */
 .host {
+  --_header-bg: var(--header-bg, var(--color-surface));
+  --_header-text: var(--header-text, var(--color-text));
+  --_header-text-muted: var(
+    --header-text-muted,
+    var(--header-text, var(--color-text-muted))
+  );
+  --_header-border: var(--header-border, var(--color-border));
+  --_header-accent: var(
+    --header-accent,
+    var(--header-text, var(--color-accent))
+  );
+  /* text on an accent background (pressed theme button): the header background once it is set */
+  --_header-on-accent: var(--header-bg, var(--color-accent-contrast));
+  /* hover / expanded background: a tint of the header text over a custom header background;
+     invalid (so the page --color-bg below) while --header-bg is unset */
+  --_header-hover: color-mix(
+    in srgb,
+    var(--_header-text) 14%,
+    var(--header-bg)
+  );
+  --_page-bg: var(--color-bg);
+
   min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
 .header {
+  --color-surface: var(--_header-bg);
+  --color-text: var(--_header-text);
+  --color-text-muted: var(--_header-text-muted);
+  --color-border: var(--_header-border);
+  --color-accent: var(--_header-accent);
+  --color-accent-contrast: var(--_header-on-accent);
+  --color-bg: var(--_header-hover, var(--_page-bg));
+
   position: relative;
   display: flex;
   flex-wrap: wrap;
@@ -12,6 +59,7 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--space-4);
+  color: var(--color-text);
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
 }
