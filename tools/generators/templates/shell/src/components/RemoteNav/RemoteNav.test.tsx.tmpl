@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
+import { MainLayout, ThemeProvider } from '@org/ui';
 import type { RemoteEntry } from '@/core/types/remotes';
 import { RemoteNav } from './RemoteNav';
 
@@ -50,6 +51,55 @@ describe('RemoteNav', () => {
     expect(screen.getByRole('link', { name: 'Beta' })).toHaveAttribute(
       'data-access',
       'private',
+    );
+  });
+
+  it('marks the current page (aria-current, not by colour alone)', () => {
+    render(
+      <MemoryRouter initialEntries={['/alpha']}>
+        <RemoteNav remotes={remotes} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole('link', { name: 'Alpha' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    expect(screen.getByRole('link', { name: 'Home' })).not.toHaveAttribute(
+      'aria-current',
+    );
+  });
+
+  it.each(['top', 'side'] as const)(
+    'follows the MainLayout nav placement (%s)',
+    (placement) => {
+      render(
+        <ThemeProvider>
+          <MemoryRouter>
+            <MainLayout
+              navPlacement={placement}
+              nav={<RemoteNav remotes={remotes} />}
+            >
+              <p>content</p>
+            </MainLayout>
+          </MemoryRouter>
+        </ThemeProvider>,
+      );
+      expect(screen.getByRole('list', { name: 'Apps' })).toHaveAttribute(
+        'data-placement',
+        placement,
+      );
+    },
+  );
+
+  it('is a top nav outside MainLayout', () => {
+    render(
+      <MemoryRouter>
+        <RemoteNav remotes={remotes} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole('list', { name: 'Apps' })).toHaveAttribute(
+      'data-placement',
+      'top',
     );
   });
 });

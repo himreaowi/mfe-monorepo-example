@@ -11,7 +11,12 @@ export {
   ConnectionRequired,
   type ConnectionRequiredProps,
 } from './components/ConnectionRequired';
-export { MainLayout, type MainLayoutProps } from './layouts/MainLayout';
+export {
+  MainLayout,
+  useNavPlacement,
+  type MainLayoutProps,
+  type NavPlacement,
+} from './layouts/MainLayout';
 export {
   ThemeProvider,
   useTheme,

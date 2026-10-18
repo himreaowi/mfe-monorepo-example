@@ -2,7 +2,7 @@
 /**
  * App generators.
  *
- *   pnpm gen:shell <zone> [--title "<text>"]
+ *   pnpm gen:shell <zone> [--layout top|side] [--title "<text>"]
  *   pnpm gen:remote <zone> <name> [--private] [--external [--vendor-format <format>]] [--title "<text>"]
  *
  * Apps live in apps/<zone>/<name>. Every app gets its own package.json (deps via `catalog:` /
@@ -101,6 +101,27 @@ export const VENDOR_FORMATS = /** @type {const} */ ([
 ]);
 
 /** @typedef {(typeof VENDOR_FORMATS)[number]} VendorFormat */
+
+/**
+ * `gen:shell --layout` values: where `MainLayout` puts the remotes nav on wide screens
+ * (`navPlacement` in the generated ShellLayout). `top` (default): in the header row; `side`: a
+ * sidebar left of the content. Both collapse behind "Menu" on narrow screens.
+ */
+export const SHELL_LAYOUTS = /** @type {const} */ (['top', 'side']);
+
+/** @typedef {(typeof SHELL_LAYOUTS)[number]} ShellLayout */
+
+/**
+ * @param {unknown} layout
+ * @returns {asserts layout is ShellLayout}
+ */
+function assertShellLayout(layout) {
+  if (!SHELL_LAYOUTS.includes(/** @type {ShellLayout} */ (layout))) {
+    throw new UsageError(
+      `Unknown --layout "${String(layout)}". Use one of: ${SHELL_LAYOUTS.join(', ')}.`,
+    );
+  }
+}
 
 /** `settings.apiBaseUrl` of a zone's dev manifest: the zone's mock API. */
 export function mockApiBaseUrl(
@@ -250,11 +271,13 @@ function assertFree(root, dir, packageName) {
 
 /**
  * Generate apps/<zone>/shell-<zone>.
- * @param {{ root: string, zone: string, title?: string }} options
- * @returns {Promise<{ dir: string, port: number, packageName: string, federationName: string, title: string }>}
+ * @param {{ root: string, zone: string, title?: string, layout?: string }} options `layout`:
+ * nav placement (`top` default, `side`), written once into src/layouts/ShellLayout
+ * @returns {Promise<{ dir: string, port: number, packageName: string, federationName: string, title: string, layout: ShellLayout }>}
  */
-export async function generateShell({ root, zone, title }) {
+export async function generateShell({ root, zone, title, layout = 'top' }) {
   assertZone(zone);
+  assertShellLayout(layout);
   const names = shellNames(zone, { title });
   const dir = path.join(root, 'apps', zone, names.dirName);
   assertFree(root, dir, names.packageName);
@@ -268,6 +291,7 @@ export async function generateShell({ root, zone, title }) {
     PORT: port,
     DIR_NAME: names.dirName,
     MOCK_API_URL: mockApiBaseUrl(zone, root),
+    NAV_PLACEMENT: layout,
   });
   writeFiles(dir, files);
   await writeJson(
@@ -302,6 +326,7 @@ export async function generateShell({ root, zone, title }) {
     packageName: names.packageName,
     federationName: names.federationName,
     title: names.title,
+    layout,
   };
 }
 

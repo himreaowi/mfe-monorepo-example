@@ -2,14 +2,15 @@
 
 Shared React components ported from starter-mfe (same markup, classes and tokens).
 
-| Export                        | Notes                                                                                                                                                                                                            |
-| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Button`                      | `variant`: `primary` (default) / `secondary` / `ghost`                                                                                                                                                           |
-| `ThemeToggle`                 | Light / Dark / Use system theme (needs a `ThemeProvider` above)                                                                                                                                                  |
-| `RemoteFallback`              | `role="alert"` panel; optional `onRetry` adds a "Try again" button                                                                                                                                               |
-| `ConnectionRequired`          | Offline banner (`visible`)                                                                                                                                                                                       |
-| `MainLayout`                  | Header (brand, `nav`, theme toggle, `headerActions`) + offline banner + `<main>`; renders `children` or `<Outlet />`. Always one header row: collapses into a "Menu" panel when the row does not fit (see below) |
-| `ThemeProvider`, `useTheme()` | Light/dark/system theme, sets `data-theme` on `<html>`                                                                                                                                                           |
+| Export                        | Notes                                                                                                                                                                                                                                                                      |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Button`                      | `variant`: `primary` (default) / `secondary` / `ghost`                                                                                                                                                                                                                     |
+| `ThemeToggle`                 | Light / Dark / Use system theme (needs a `ThemeProvider` above)                                                                                                                                                                                                            |
+| `RemoteFallback`              | `role="alert"` panel; optional `onRetry` adds a "Try again" button                                                                                                                                                                                                         |
+| `ConnectionRequired`          | Offline banner (`visible`)                                                                                                                                                                                                                                                 |
+| `MainLayout`                  | Header (brand, `nav`, theme toggle, `headerActions`) + offline banner + `<main>`; renders `children` or `<Outlet />`. Always one header row: collapses into a "Menu" panel when the row does not fit (see below). `navPlacement="side"`: nav in a sidebar. Skip link first |
+| `useNavPlacement()`           | `'top' \| 'side'`: the placement of the `MainLayout` nav a component is rendered in (`top` outside one); type `NavPlacement`                                                                                                                                               |
+| `ThemeProvider`, `useTheme()` | Light/dark/system theme, sets `data-theme` on `<html>`                                                                                                                                                                                                                     |
 
 `@org/ui` is a **tier-1 singleton**: `@org/rspack-config` shares it through Module Federation
 (`singleton`, `strictVersion`, `requiredVersion` = this package's version). A remote rendered in a
@@ -63,6 +64,43 @@ How it decides (`useHeaderLayout`, internal):
 - the current layout is on the header: `data-layout="wide|compact"` (`data-testid="main-header"`).
   Without ResizeObserver (and before hydration) the attribute is absent and a CSS breakpoint
   (40rem) decides.
+
+## Nav placement: `top` or `side`
+
+`navPlacement` (default `top`, unchanged behaviour and look) moves `nav` into a sidebar:
+
+| `side`, wide    | sticky top bar (brand, theme toggle, `headerActions`); the nav a 16rem sidebar below it on the left edge, full height, its own scrolling (`overflow-y: auto`) when long; everything after the header (offline banner, `<main>`) moves right by 16rem |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `side`, compact | brand + Menu; the Menu panel is a drawer on the left, from the top bar to the bottom of the viewport, `min(20rem, 100% - 3rem)` wide (the page stays visible on the right; a tap there closes it), nav first, then theme toggle and actions          |
+
+- **Switch rule**: the same measurement as the top header (`useHeaderLayout`, hysteresis
+  included). In `data-layout="measure"` the side header leaves the nav out and counts at least
+  `16rem + 40rem` (sidebar + minimum content width), so it is wide when brand + theme toggle +
+  actions fit and the viewport is 56rem (896 px) or wider; before the first measurement (and
+  without ResizeObserver) a 56rem media query decides. Widths are SCSS constants in
+  `MainLayout.module.scss` (`$sidebar-width`, `$side-main-min-width`, `$side-drawer-width`).
+- **One nav, one panel**: the nav stays inside `<header>` in both placements (absolutely
+  positioned under the sticky header when wide: `top: 100%`, `height: 100dvh - 100%`), so
+  there is one `<nav>` landmark, one disclosure (`aria-expanded`, `aria-controls`, Escape,
+  outside click, link followed, back/forward, focus back on the button) and the `--header-*`
+  tokens colour top bar, sidebar and drawer without extra tokens.
+- **Keyboard order = visual order**: wide side layout renders theme toggle + actions before
+  the nav (top bar, then sidebar); compact (drawer) and the top placement render the nav first.
+  The two are keyed, so React moves them instead of remounting.
+- **Sticky top bar and focus (WCAG 2.4.11)**: `html:has(<side header>)` gets
+  `scroll-padding-top: 5.5rem`, so a focused element or anchor is never scrolled under it.
+- **Nav content adapts**: `useNavPlacement()` returns the placement inside the header (the
+  shell's `RemoteNav` puts it on its list as `data-placement` and stacks the links with a bar on
+  the active one, besides `aria-current="page"` and bold text). Generic nav content is stacked
+  by MainLayout itself (`nav ul` column, `nav a` block).
+- On the header: `data-nav-placement="top|side"` (e2e tests read it).
+
+## Skip link
+
+The first focusable element in both placements is "Skip to main content" (`skipLinkLabel`),
+visually hidden until focused (clipped, out of the flow: no pixel of either layout changes).
+Activating it focuses `<main>` (`tabindex="-1"`, no focus ring) without a `#fragment` URL
+change (that would be a router navigation).
 
 ### Long brand names
 

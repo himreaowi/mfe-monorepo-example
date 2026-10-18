@@ -28,3 +28,23 @@
   color: var(--color-accent);
   font-weight: 600;
 }
+
+/*
+ * MainLayout's sidebar (navPlacement="side", data-placement from useNavPlacement()): one link
+ * per row, the whole row clickable, the active link also marked by a bar on its left edge (not
+ * by colour alone; NavLink also sets aria-current="page").
+ */
+.list[data-placement='side'] {
+  flex-direction: column;
+  flex-wrap: nowrap;
+
+  .link {
+    display: block;
+    padding: var(--space-2) var(--space-3);
+    border-radius: 0 var(--radius) var(--radius) 0;
+  }
+
+  .active {
+    box-shadow: inset 4px 0 0 var(--color-accent);
+  }
+}

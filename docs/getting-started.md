@@ -45,7 +45,7 @@ Each zone (`intranet`, `internet`) has one shell and any number of remotes. Crea
 first:
 
 ```sh
-pnpm gen:shell intranet
+pnpm gen:shell intranet                                 # --layout side: sidebar nav
 pnpm gen:remote intranet staff-directory                # public remote
 pnpm gen:remote intranet leave-requests --private       # sign-in required
 pnpm gen:remote intranet it-helpdesk --external         # adapter for a vendor module
@@ -119,16 +119,16 @@ CI runs the same gates ([devops-handoff.md](devops-handoff.md)).
 
 ## Daily commands
 
-| Command                                                                            | What                                                                |
-| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| `pnpm dev:<zone>`                                                                  | shell + every remote of the zone                                    |
-| `pnpm --filter <package> dev`                                                      | one app (`pnpm -s apps` lists package names)                        |
-| `pnpm gen:shell <zone>` / `pnpm gen:remote <zone> <name> [--private] [--external]` | new apps                                                            |
-| `pnpm --filter <package> add <dep>`                                                | add a dependency ([adding-dependencies.md](adding-dependencies.md)) |
-| `pnpm lint` / `typecheck` / `test` / `build`                                       | all projects (Nx, cached)                                           |
-| `pnpm e2e` / `pnpm e2e:<zone>`                                                     | zone e2e suites                                                     |
-| `pnpm -s apps [--zone=<zone>] [--affected --base=<sha>] [--json]`                  | list apps (CI matrix)                                               |
-| `pnpm format`                                                                      | Prettier                                                            |
+| Command                                                                                                 | What                                                                |
+| ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `pnpm dev:<zone>`                                                                                       | shell + every remote of the zone                                    |
+| `pnpm --filter <package> dev`                                                                           | one app (`pnpm -s apps` lists package names)                        |
+| `pnpm gen:shell <zone> [--layout top\|side]` / `pnpm gen:remote <zone> <name> [--private] [--external]` | new apps                                                            |
+| `pnpm --filter <package> add <dep>`                                                                     | add a dependency ([adding-dependencies.md](adding-dependencies.md)) |
+| `pnpm lint` / `typecheck` / `test` / `build`                                                            | all projects (Nx, cached)                                           |
+| `pnpm e2e` / `pnpm e2e:<zone>`                                                                          | zone e2e suites                                                     |
+| `pnpm -s apps [--zone=<zone>] [--affected --base=<sha>] [--json]`                                       | list apps (CI matrix)                                               |
+| `pnpm format`                                                                                           | Prettier                                                            |
 
 ## Next
 

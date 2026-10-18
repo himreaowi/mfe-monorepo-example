@@ -61,7 +61,10 @@ _TODO: product-specific theme UX (e.g. high-contrast theme), if any._
 
 Each shell can give its header its own colours (e.g. a blue staff portal and a white citizen
 portal) with five CSS custom properties read by `MainLayout` (`@org/ui`). Unset, the header
-looks exactly as before (it falls back to the page tokens).
+looks exactly as before (it falls back to the page tokens). With `navPlacement="side"` the same
+five tokens colour the top bar, the sidebar and the drawer: they are one piece of chrome (the
+nav is inside `<header>`), so there is no separate sidebar token and one contrast check covers
+both.
 
 | Token                 | Used for                                                                                                      | Fallback when unset                        |
 | --------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
@@ -136,14 +139,14 @@ Rules:
 
 ### Shared primitives (`@org/ui`)
 
-| Component                   | Role                                                                                                          |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `Button`                    | `primary` / `secondary` / `ghost`                                                                             |
-| `ThemeToggle`               | Light / Dark / Use system theme                                                                               |
-| `MainLayout`                | header (brand, nav, theme toggle, actions; one row, collapses when it does not fit), offline banner, `<main>` |
-| `RemoteFallback`            | `role="alert"` panel for failed remotes/modules, optional "Try again"                                         |
-| `ConnectionRequired`        | offline banner                                                                                                |
-| `ThemeProvider`, `useTheme` | theme state and ownership                                                                                     |
+| Component                   | Role                                                                                                                                                                          |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Button`                    | `primary` / `secondary` / `ghost`                                                                                                                                             |
+| `ThemeToggle`               | Light / Dark / Use system theme                                                                                                                                               |
+| `MainLayout`                | header (brand, nav, theme toggle, actions; one row, collapses when it does not fit), offline banner, `<main>`; nav in the header row or a sidebar (`navPlacement`), skip link |
+| `RemoteFallback`            | `role="alert"` panel for failed remotes/modules, optional "Try again"                                                                                                         |
+| `ConnectionRequired`        | offline banner                                                                                                                                                                |
+| `ThemeProvider`, `useTheme` | theme state and ownership                                                                                                                                                     |
 
 From `@org/auth`: `UserMenu`, `RequireAuth` / `SignInPrompt`.
 
@@ -162,6 +165,37 @@ From `@org/auth`: `UserMenu`, `RequireAuth` / `SignInPrompt`.
   generated `Welcome` does) and in the document `<title>`. Prefer short shell titles; never put
   information only in the brand.
 - _TODO: max content width, grid/breakpoints, density._
+
+### Navigation placement: top or side
+
+`MainLayout` puts the shell's nav (`RemoteNav`) in one of two places (`navPlacement`):
+
+| Placement       | Wide screens                                                                                                                              | Narrow screens                                                                                         |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `top` (default) | one header row: brand, nav, theme toggle, user menu                                                                                       | brand + "Menu"; the panel drops down below the header                                                  |
+| `side`          | sticky top bar (brand, theme toggle, user menu) + a 16rem (256 px) sidebar on the left with the links stacked; content to the right of it | brand + "Menu"; the panel is a drawer on the left (at most 20rem, nav first, then theme and user menu) |
+
+Choose **top** for few areas with short names (a citizen site: content first, the full width
+for pages). Choose **side** when there are many areas or long names (staff tools, more than
+about 6–8 remotes), when users jump between areas all day, or when the header row would
+collapse behind "Menu" on laptops anyway.
+
+When it switches: measured like the top header (the same `useHeaderLayout`, not a fixed
+breakpoint): the sidebar shows when the top bar row fits **and** the viewport leaves at least
+40rem for the content next to the sidebar, so from 56rem (896 px) on; below that the drawer.
+The top variant stays as it was (collapses when its row does not fit). A tablet in portrait
+(768–800 px) gets the drawer: a 256 px sidebar would leave the page too little room.
+
+How to set or switch it: one prop. `pnpm gen:shell <zone> --layout side` writes it; in an
+existing shell change `NAV_PLACEMENT` in `src/layouts/ShellLayout/ShellLayout.tsx`
+(`'top'` ↔ `'side'`). Nothing else changes: same tokens, same `RemoteNav` (it reads the
+placement with `useNavPlacement()` and stacks its links, active link with a bar), same e2e
+suite (it reads `data-nav-placement` from the header and checks the matching layout).
+
+Both placements: one `banner` (`<header>`, holding the named `nav`), one `main`, a "Skip to
+main content" link as the first Tab stop (visible on focus). In the side layout the Tab order
+follows the visual order (top bar, then sidebar, then content) and the top bar is sticky, so
+the page reserves 5.5rem at the top when it scrolls to a focused element (WCAG 2.4.11).
 
 ## Typography & iconography
 
