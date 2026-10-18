@@ -148,8 +148,12 @@ test.describe('__APP_TITLE__', () => {
         await expect(page.getByTestId('user-name')).toBeAttached();
         // the panel may still be open (compact header): close it
         const menu = page.getByRole('button', { name: 'Menu' });
-        if ((await menu.getAttribute('aria-expanded')) === 'true') {
+        if (
+          (await menu.isVisible()) &&
+          (await menu.getAttribute('aria-expanded')) === 'true'
+        ) {
           await page.keyboard.press('Escape');
+          await expect(menu).toHaveAttribute('aria-expanded', 'false');
         }
       }
       const header = page.getByTestId('main-header');
