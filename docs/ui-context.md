@@ -116,7 +116,9 @@ Target WCAG 2.2 AA: [contracts/a11y-wcag.md](contracts/a11y-wcag.md). UI rules:
 
 ## Content & copy
 
-- Plain, short sentences; sentence case for headings and buttons.
+- Plain, short sentences; sentence case for headings, buttons and app titles. The generators
+  derive titles from app names in sentence case, keeping known acronyms in capitals
+  (`it-helpdesk` → "IT helpdesk", `staff-directory` → "Staff directory"); `--title` overrides.
 - Error messages say what happened and what to do ("Could not load your leave balance. Try
   again.").
 - Offline: "You are offline" / connection banner from `@org/ui`.

@@ -165,6 +165,10 @@ Example: [`deploy/mfe-manifest.example.json`](../deploy/mfe-manifest.example.jso
   `Cache-Control: no-cache`.
 - Remote URL, vendor version, BFF location changes = manifest change + shell container
   restart (or file update). No rebuild.
+- `settings.apiBaseUrl`: the API base URL of that environment (absolute, or a same-origin path
+  such as `/api` behind the BFF). The generated `mfe-manifest.dev.json` points it at the
+  dev-only mock API (`tools/mock-api`, `http://localhost:3190/api` / `:3290`), which is never
+  built or deployed.
 
 ## nginx and Docker: one template for every app
 
@@ -280,8 +284,9 @@ Azure Repos branch policies on `main`:
   points at the vendor release for that environment; the shell's `CSP_VENDOR_ORIGINS` (and
   `CSP_FRAME_SRC` for iframes) lists exactly the origins the vendor declared.
 - Upgrading a vendor = manifest change (`url` + `integrity`), no rebuild; rollback likewise.
-- The dev-only mock vendor (`tools/mock-vendor`) is not an app and is never built or deployed;
-  production builds do not contain its URL.
+- The dev-only mock vendor (`tools/mock-vendor`) and mock API (`tools/mock-api`) are not apps
+  and are never built or deployed; production bundles do not contain their URLs and the
+  production source maps carry no sources (see "Build outputs per app").
 - The vendor kit zip is built with `pnpm --filter @org/vendor-kit pack:kit`; publishing it to
   Azure Artifacts (Universal Package) is optional.
 
