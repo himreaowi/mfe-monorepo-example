@@ -1,0 +1,35 @@
+// Staff Portal: shell-owned global styles, imported once in src/bootstrap.tsx right after
+// @org/design-tokens/global.scss (so these rules come later and win).
+//
+// Header colours: the shell owns the header, so only this file sets the --header-* tokens
+// (remotes never do; `pnpm check` fails if they try). Unset, the header uses the page tokens
+// (white / dark surface). Set them per theme, and check every pair for WCAG 2.2 AA contrast
+// (text ≥ 4.5:1 on --header-bg; --header-accent ≥ 4.5:1 too, it is also the active link
+// colour and the text colour of the pressed theme button is --header-bg).
+// See docs/ui-context.md "Header colours per shell" at the repo root.
+//
+// Do not style the header through MainLayout's class names (e.g. `.header`): they are CSS
+// Modules class names, hashed per build and per app, so a selector on them breaks silently.
+//
+// This shell: a blue header with white text. Contrast on --header-bg (WCAG 2.2 AA, 4.5:1):
+//   light #1d4ed8: text / accent 6.7:1, muted 5.5:1, text on the hover tint 5.0:1;
+//         pressed theme button (#1d4ed8 on white) 6.7:1
+//   dark  #1e3a8a: text / accent 10.4:1, muted 7.3:1, text on the hover tint 7.0:1;
+//         pressed theme button (#1e3a8a on white) 10.4:1
+
+:root,
+[data-theme='light'] {
+  --header-bg: #1d4ed8;
+  --header-text: #ffffff;
+  --header-text-muted: #dbeafe;
+  --header-border: #60a5fa;
+  --header-accent: #ffffff;
+}
+
+[data-theme='dark'] {
+  --header-bg: #1e3a8a;
+  --header-text: #ffffff;
+  --header-text-muted: #bfdbfe;
+  --header-border: #3b82f6;
+  --header-accent: #ffffff;
+}

@@ -52,6 +52,23 @@ with many remotes) `MainLayout` folds them behind a "Menu" button; no shell code
 The shell never imports a remote's code (no dependency on remote packages). The guardrails
 (`pnpm check`, ESLint module boundaries) fail if it does.
 
+## Header colours
+
+The header belongs to the shell. Give it its own colours in `src/styles/shell.scss` (imported in
+`src/bootstrap.tsx` after `@org/design-tokens/global.scss`): uncomment the example and set
+`--header-bg`, `--header-text`, `--header-text-muted`, `--header-border` and `--header-accent`
+for `:root, [data-theme='light']` and for `[data-theme='dark']`. Unset, the header uses the page
+tokens. Keep text, muted text and accent at 4.5:1 or more on `--header-bg` in both themes
+(`a11y.spec.ts` scans the header in light and dark). Remotes never set these tokens
+(`pnpm check`).
+
+Do not style the header through `MainLayout`'s class names (`.header`, …): they are CSS Modules
+classes, renamed to a hash at build time (different per build, per app and in dev vs
+production), so such selectors silently stop matching. Details: `docs/ui-context.md` "Header
+colours per shell" at the repo root.
+
+This shell keeps the default header (white in light, the dark surface in dark); nothing is set.
+
 ## e2e (the whole internet zone)
 
 `e2e/` holds the zone's Playwright suite (`playwright.config.ts` → `@org/playwright-config`). It
@@ -64,7 +81,7 @@ viewport. The specs read `remotes.json`, so a new remote is covered without edit
 | `shell.spec.ts`      | home lists every remote, nav opens each without a reload, 404, theme persists, offline banner, header one row at 320/375/800/1024/1280 px (signed in and out; brand on one line, full name in the accessibility tree and the home `<h1>`), Menu disclosure on phones                        |
 | `remotes.spec.ts`    | per remote: deep link + reload, in-remote links (after the data loaded), private guard (nothing downloaded before sign-in, mock sign-in, sign-out), external adapter: any vendor mounts content without errors and unmounts; with the mock vendor also vendor routing + theme via the shell |
 | `standalone.spec.ts` | per remote: its own dev server renders standalone (own chrome, theme), deep link                                                                                                                                                                                                            |
-| `a11y.spec.ts`       | axe WCAG 2.2 A/AA on every page above, light and dark theme                                                                                                                                                                                                                                 |
+| `a11y.spec.ts`       | axe WCAG 2.2 A/AA on every page above (plus the signed-in header with the Menu open), light and dark theme                                                                                                                                                                                  |
 
 `e2e/helpers.ts`: `openNav(page)` / `openHeaderMenu(page)` (open the Menu panel when the header is compact),
 `resizeHeader(page, width)` (resize, then wait until the header layout settled),
@@ -92,6 +109,7 @@ e2e/                  zone e2e suite (Playwright + axe), helpers.ts reads remote
 src/
   main.tsx            import('./bootstrap') (shared singletons are negotiated first)
   bootstrap.tsx       global styles, PWA, load + validate /mfe-manifest.json, render
+  styles/shell.scss   shell-owned global styles: header colours (--header-*) per theme
   app/                App (providers + router), routes, registry typing
   components/         RemoteNav
   features/           welcome/components/Welcome/ (home page content),
