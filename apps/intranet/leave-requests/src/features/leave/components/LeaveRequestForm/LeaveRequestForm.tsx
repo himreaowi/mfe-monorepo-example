@@ -1,22 +1,23 @@
-import { useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useId, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useRemotePath } from '@org/mf-runtime/remote';
 import { Button, RemoteFallback } from '@org/ui';
 import { routePaths } from '@/core/constants/routePaths';
-import { LeaveValidationError } from '../api';
-import { useLeaveBalance } from '../hooks/useLeaveBalance';
-import { useSubmitLeaveRequest } from '../hooks/useSubmitLeaveRequest';
+import { LeaveValidationError } from '../../api';
+import { useLeaveBalance } from '../../hooks/useLeaveBalance';
+import { useSubmitLeaveRequest } from '../../hooks/useSubmitLeaveRequest';
 import type {
   LeaveBalance,
   LeaveField,
   LeaveFieldErrors,
   LeaveRequestInput,
   LeaveType,
-} from '../types/leave';
-import { countWorkingDays, formatDays, todayIso } from '../utils/dates';
-import { MAX_REASON_LENGTH, validateLeave } from '../utils/validateLeave';
-import type { LeaveOverviewState } from './LeaveOverview';
-import styles from './Leave.module.scss';
+} from '../../types/leave';
+import { countWorkingDays, formatDays, todayIso } from '../../utils/dates';
+import { MAX_REASON_LENGTH, validateLeave } from '../../utils/validateLeave';
+import type { LeaveOverviewState } from '../LeaveOverview';
+import { Field } from './Field';
+import styles from './LeaveRequestForm.module.scss';
 
 const EMPTY: LeaveRequestInput = {
   type: '',
@@ -27,40 +28,6 @@ const EMPTY: LeaveRequestInput = {
 
 /** Order of the fields, for the error summary. */
 const FIELD_ORDER: LeaveField[] = ['type', 'startDate', 'endDate', 'reason'];
-
-type FieldProps = {
-  id: string;
-  label: string;
-  hint?: string;
-  error?: string;
-  children: (describedBy: string | undefined) => ReactNode;
-};
-
-/** Label, optional hint and error message, wired to the control with aria-describedby. */
-function Field({ id, label, hint, error, children }: FieldProps) {
-  const hintId = `${id}-hint`;
-  const errorId = `${id}-error`;
-  const describedBy =
-    [hint ? hintId : '', error ? errorId : ''].filter(Boolean).join(' ') ||
-    undefined;
-  return (
-    <div className={styles.field}>
-      <label htmlFor={id}>{label}</label>
-      {hint ? (
-        <p className={styles.hint} id={hintId}>
-          {hint}
-        </p>
-      ) : null}
-      {error ? (
-        <p className={styles.error} id={errorId}>
-          <span className={styles.visuallyHidden}>Error: </span>
-          {error}
-        </p>
-      ) : null}
-      {children(describedBy)}
-    </div>
-  );
-}
 
 function balanceLabel(balance: LeaveBalance): string {
   return balance.remaining === null

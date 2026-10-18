@@ -3,13 +3,13 @@ import { Link, useLocation } from 'react-router';
 import { useRemotePath } from '@org/mf-runtime/remote';
 import { RemoteFallback } from '@org/ui';
 import { routePaths } from '@/core/constants/routePaths';
-import { useLeaveBalance } from '../hooks/useLeaveBalance';
-import { useLeaveRequests } from '../hooks/useLeaveRequests';
-import type { LeaveRequest } from '../types/leave';
-import { formatDays, formatRange } from '../utils/dates';
-import { LeaveBalanceCards } from './LeaveBalanceCards';
-import { LeaveRequestList } from './LeaveRequestList';
-import styles from './Leave.module.scss';
+import { useLeaveBalance } from '../../hooks/useLeaveBalance';
+import { useLeaveRequests } from '../../hooks/useLeaveRequests';
+import type { LeaveRequest } from '../../types/leave';
+import { formatDays, formatRange } from '../../utils/dates';
+import { LeaveBalanceCards } from '../LeaveBalanceCards';
+import { LeaveRequestList } from '../LeaveRequestList';
+import styles from './LeaveOverview.module.scss';
 
 /** Router state the form leaves behind after a successful submit. */
 export type LeaveOverviewState = { created?: LeaveRequest };

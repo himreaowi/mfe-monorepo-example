@@ -1,6 +1,6 @@
-import type { LeaveBalance } from '../types/leave';
-import { formatDays } from '../utils/dates';
-import styles from './Leave.module.scss';
+import type { LeaveBalance } from '../../types/leave';
+import { formatDays } from '../../utils/dates';
+import styles from './LeaveBalanceCards.module.scss';
 
 /** One card per leave type: days left, entitlement, taken and pending. */
 export function LeaveBalanceCards({ balances }: { balances: LeaveBalance[] }) {

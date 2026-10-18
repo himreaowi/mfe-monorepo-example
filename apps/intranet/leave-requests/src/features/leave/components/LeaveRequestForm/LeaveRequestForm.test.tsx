@@ -6,12 +6,12 @@ import {
   getLeaveBalance,
   LeaveValidationError,
   submitLeaveRequest,
-} from '../api';
+} from '../../api';
 import { LeaveRequestForm } from './LeaveRequestForm';
-import { balances, request } from './testData';
+import { balances, request } from '../../__fixtures__/leave';
 
-jest.mock('../api', () => ({
-  ...jest.requireActual('../api'),
+jest.mock('../../api', () => ({
+  ...jest.requireActual('../../api'),
   getLeaveBalance: jest.fn(),
   submitLeaveRequest: jest.fn(),
 }));

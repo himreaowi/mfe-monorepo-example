@@ -1,6 +1,10 @@
-import type { LeaveBalance, LeaveRequest, LeaveStatus } from '../types/leave';
-import { formatDate, formatDays, formatRange } from '../utils/dates';
-import styles from './Leave.module.scss';
+import type {
+  LeaveBalance,
+  LeaveRequest,
+  LeaveStatus,
+} from '../../types/leave';
+import { formatDate, formatDays, formatRange } from '../../utils/dates';
+import styles from './LeaveRequestList.module.scss';
 
 const STATUS_LABELS: Record<LeaveStatus, string> = {
   pending: 'Waiting for approval',

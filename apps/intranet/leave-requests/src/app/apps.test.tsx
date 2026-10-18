@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { ThemeProvider } from '@org/ui';
 import { getLeaveBalance, getLeaveRequests } from '@/features/leave/api';
-import { balances, request } from '@/features/leave/components/testData';
+import { balances, request } from '@/features/leave/__fixtures__/leave';
 import { EmbeddedApp, StandaloneApp } from './apps';
 
 jest.mock('@/features/leave/api');
