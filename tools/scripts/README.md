@@ -15,5 +15,10 @@ Repo guardrails and small app tools.
 | `mfe-preview` (bin, app `pnpm preview`)                                                | serves an app's `dist/` on its `mfe.port` with CORS and SPA fallback; `--manifest <file>` for shells                                                                                                                                                                                                                    |
 | `ZONES`, `toolPort(zone, tool, root?)`, `readToolConfig(root?)` (`@org/scripts/zones`) | zones and port ranges (used by the generators); dev tool ports from the root `package.json` `mfe.tools` (offset into the zone's tools range)                                                                                                                                                                            |
 
+Stopping a background `pnpm dev:<zone>` (script, CI): signal the launcher, not the `pnpm` PID
+(Corepack's wrapper does not pass the signal on):
+`pkill -TERM -f 'tools/scripts/bin/dev.js --zone=<zone>'`, or `set -m` and `kill -TERM -- -$!`
+(process group). Ctrl-C in a terminal works. See docs/testing.md.
+
 Every failure and its fix: [docs/guardrails.md](../../docs/guardrails.md). Tests:
 `pnpm --filter @org/scripts test` (fixture workspaces in a temp dir).

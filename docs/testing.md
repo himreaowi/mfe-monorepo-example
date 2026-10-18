@@ -143,6 +143,26 @@ How it runs (`@org/playwright-config`):
    zones' port ranges (tools included) do not overlap, so `pnpm dev:intranet` and
    `pnpm dev:internet` can also run at the same time.
 
+Stopping `pnpm dev:<zone>` yourself: Ctrl-C in its terminal. Started in the background (`&`, a
+script, a CI step)? Signal the launcher (`tools/scripts/bin/dev.js`) or the job's process group,
+not the PID of `pnpm`: `$!` is Corepack's `pnpm` JS wrapper, which exits on SIGTERM without
+passing it on, and every dev server keeps running.
+
+```sh
+pnpm dev:internet > dev.log 2>&1 &
+# ... use the servers ...
+pkill -TERM -f 'tools/scripts/bin/dev.js --zone=internet'   # the launcher stops every server
+while pgrep -f 'tools/scripts/bin/dev.js --zone=internet' > /dev/null; do sleep 1; done
+
+# or in a bash script: job control (set -m) gives the job its own process group
+set -m
+pnpm dev:intranet > dev.log 2>&1 &
+DEV_PGID=$!
+kill -TERM -- "-$DEV_PGID"
+```
+
+`lsof -nP -iTCP:3100-3299 -sTCP:LISTEN` then prints nothing (no dev server left).
+
 The specs read `remotes.json` and `mfe-manifest.dev.json` (`e2e/helpers.ts`), so a new remote is
 tested as soon as `pnpm gen:remote` registered it:
 
@@ -192,6 +212,10 @@ method? }`, or a RegExp tested against `"<status> <METHOD> <url>"`. `consoleErro
   header is compact (always at 375 px, on desktop too with many remotes): use `openNav(page)`
   (returns the "Apps" list) or `openHeaderMenu(page)` (returns the panel); both are no-ops when
   the header is wide. The panel closes after each navigation.
+- Tests that change the viewport: `resizeHeader(page, width)` instead of `setViewportSize`. The
+  header re-measures in a ResizeObserver callback that can run after `setViewportSize` returns
+  (late under load); it waits until `data-layout` and the Menu button agree and are stable, and
+  returns the layout (`'wide' | 'compact'`).
 - The mock API (`tools/mock-api`) keeps state in memory: tests that create data call
   `POST <api origin>/__reset` first (`await page.request.post('http://localhost:3190/__reset')`),
   or use unique names.
