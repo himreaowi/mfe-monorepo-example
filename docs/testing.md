@@ -37,10 +37,58 @@ Rules:
 - Query like a user: `getByRole`, `getByLabelText`, `getByText`; `getByTestId` for structure
   only. Interact with `@testing-library/user-event`.
 - No network in unit tests: inject `fetch` (`createHttpClient({ fetch })`,
-  `createAuthClient(config, { fetch })`) or mock the module.
+  `createAuthClient(config, { fetch })`) or mock the module (see "Testing API code" below).
 - Never load a real remote in Jest. Mock `@org/mf-runtime` (`RemoteApp`) in shell tests; render
   `EmbeddedApp` with props in remote tests.
 - `new Response('', { status: 204 })` throws in Node 24: use a `null` body.
+
+### Testing API code (jsdom has no `fetch`)
+
+jsdom implements no Fetch API: in a plain `jest-environment-jsdom`, `fetch`, `Headers`,
+`Request` and `Response` are all undefined. `@org/jest-config`'s jsdom environment adds Node's
+`Headers`, `Request` and `Response` (so `@org/http-client` works in component tests) but leaves
+**`fetch` undefined on purpose**: a test that forgets to inject one fails with
+`fetch is not defined` instead of calling a real server.
+
+Recommended split (the generated remote's `features/demo` does exactly this):
+
+| Layer                     | How to test                                                                                                                          |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `features/*/api/` (pure)  | real `@org/http-client` + a fake fetch: `createFakeFetch` from `@org/jest-config/fetch`; assert URLs, bodies, parsed results, errors |
+| `features/*/hooks/`, UI   | `jest.mock('../api')` (or pass a stubbed client): render states (loading, data, empty, error, retry) without HTTP                    |
+| `services/http.ts`        | base URL resolution (`http.url(apiRoutes…)`), no request                                                                             |
+| Real API / mock API flows | e2e (`tools/mock-api` runs with `pnpm dev:<zone>`)                                                                                   |
+
+```ts
+import { createFakeFetch } from '@org/jest-config/fetch';
+import { HttpClientError, createHttpClient } from '@org/http-client';
+import { createItem, listItems } from './itemsApi';
+
+const fetch = createFakeFetch({
+  'GET /api/items': { body: [{ id: 1, name: 'First' }] },
+  'POST /api/items': { status: 422, body: { errors: { name: 'Required' } } },
+});
+const http = createHttpClient({ baseUrl: 'http://api.test/api', fetch });
+
+it('lists items', async () => {
+  await expect(listItems(http)).resolves.toEqual([{ id: 1, name: 'First' }]);
+  expect(fetch.calls[0].url).toBe('http://api.test/api/items');
+});
+
+it('exposes 422 field errors', async () => {
+  const error = await createItem(http, { name: '' }).catch((e: unknown) => e);
+  expect(error).toBeInstanceOf(HttpClientError);
+  expect((error as HttpClientError).body).toEqual({
+    errors: { name: 'Required' },
+  });
+});
+```
+
+`createFakeFetch(routes)`: keys `"<METHOD> <pathname>"`, values `{ status?, body? }`, a `Response`
+or a function of the call (`{ url, method, pathname, query, body, init }`); unknown routes answer
+404; `fetch.calls` records every request. `jsonResponse(body, { status })` builds a single
+response (for `jest.fn().mockResolvedValue(...)`). A file that needs Node's real `fetch` (rare;
+never against a shared server) can start with the docblock `/** @jest-environment node */`.
 
 ## Node and contract tests
 
@@ -56,6 +104,7 @@ tests** that keep generated or shared artefacts honest:
 | `packages/vendor-kit`        | `mount-contract.d.ts` is up to date with `mf-runtime`; the kit builds and zips                                                 |
 | `packages/mf-runtime` (Jest) | the generated manifest validator is up to date with `mfe-manifest.schema.json`                                                 |
 | `packages/playwright-config` | zone loading, config (projects, servers, CI), URL waiting, axe report formatting                                               |
+| `packages/jest-config`       | the fake fetch helpers                                                                                                         |
 | `tools/mock-vendor`          | the mock vendor implements the mount contract                                                                                  |
 
 ## End-to-end tests (Playwright)

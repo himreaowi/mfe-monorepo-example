@@ -388,3 +388,8 @@ integrity crossorigin>` first, then `import()` of the same URL reuses the verifi
   `@org/rspack-config` now builds `hidden-nosources-source-map` (mappings + file names, no
   sources, no `sourceMappingURL` comment) and turns off css-loader/sass-loader maps in
   production (they were inlined as base64 into the JS bundles).
+- **jsdom has no Fetch API** (`fetch`, `Headers`, `Request`, `Response` undefined), so
+  `@org/http-client` threw `Headers is not defined` in component tests. `@org/jest-config` now
+  uses its own jsdom environment that copies Node's `Headers`/`Request`/`Response` in (not
+  `fetch`: tests inject `createFakeFetch` from `@org/jest-config/fetch`). Response objects come
+  from Node's realm, so `toEqual` works but `instanceof Object` on parsed JSON does not.
