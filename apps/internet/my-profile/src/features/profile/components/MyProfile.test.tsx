@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useAuth } from '@org/auth';
 import { HttpClientError } from '@org/http-client';
@@ -87,6 +87,43 @@ describe('MyProfile', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Your choices could not be saved (403 Forbidden). Try again.',
     );
+  });
+
+  it('shows a 422 from the API as a focused error summary and a field error', async () => {
+    const user = userEvent.setup();
+    jest.mocked(updatePreferences).mockRejectedValue(
+      new HttpClientError(
+        {
+          status: 422,
+          statusText: 'Unprocessable Entity',
+          url: 'https://api.test/api/profile/me/preferences',
+        } as Response,
+        { errors: { preferences: 'Choose yes or no for each option' } },
+      ),
+    );
+    renderProfile();
+    const save = await screen.findByRole('button', { name: 'Save choices' });
+    await user.click(save);
+    const summary = await screen.findByTestId('error-summary');
+    expect(summary).toHaveTextContent('There is a problem');
+    await waitFor(() => expect(summary).toHaveFocus());
+    const group = screen.getByRole('group', {
+      name: 'How should we keep you informed?',
+    });
+    expect(group).toHaveAccessibleDescription(
+      'Error: Choose yes or no for each option',
+    );
+    expect(screen.getByRole('checkbox', { name: /Email me/ })).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
+    // the only generic alert is the summary: no "could not be saved" message
+    expect(screen.queryByText(/could not be saved/)).not.toBeInTheDocument();
+    await user.click(
+      screen.getByRole('link', { name: 'Choose yes or no for each option' }),
+    );
+    expect(screen.getByRole('checkbox', { name: /Email me/ })).toHaveFocus();
+    expect(save).toBeEnabled();
   });
 
   it('asks the shell to re-check the session after a 401', async () => {
