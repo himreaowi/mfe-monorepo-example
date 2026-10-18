@@ -13,7 +13,7 @@ describe('resolveVendorConfig', () => {
 
   it('falls back to the dev example vendor outside production', () => {
     expect(resolveVendorConfig(undefined)).toMatchObject({
-      url: 'http://localhost:3990/helpdesk/1.0.0/mount.js',
+      url: 'http://localhost:3192/helpdesk/1.0.0/mount.js',
       format: 'esm',
     });
   });

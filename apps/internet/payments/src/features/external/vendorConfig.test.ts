@@ -13,7 +13,7 @@ describe('resolveVendorConfig', () => {
 
   it('falls back to the dev example vendor outside production', () => {
     expect(resolveVendorConfig(undefined)).toMatchObject({
-      url: 'http://localhost:3990/payments/2.3.1/element.js',
+      url: 'http://localhost:3292/payments/2.3.1/element.js',
       format: 'web-component',
     });
   });

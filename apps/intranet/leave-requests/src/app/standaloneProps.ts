@@ -6,10 +6,10 @@ import type { HostProps } from '@org/mf-runtime/remote';
  * shell's manifest settings.
  */
 export const standaloneProps: Partial<HostProps> = {
-  title: 'Leave Requests',
+  title: 'Leave',
   user: { id: 'dev-user', name: 'Dev User' },
   settings:
     process.env.NODE_ENV !== 'production'
-      ? { apiBaseUrl: 'http://localhost:3910/api' }
+      ? { apiBaseUrl: 'http://localhost:3190/api' }
       : {},
 };

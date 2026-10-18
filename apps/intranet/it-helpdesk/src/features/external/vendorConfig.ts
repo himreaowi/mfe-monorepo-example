@@ -9,8 +9,8 @@
  *                            "config": { "apiBaseUrl": "https://desk.acme.example/api" } } }
  *   }
  *
- * Development builds fall back to the example vendor (tools/example-vendors, port 3990) and
- * the mock API (tools/mock-api, port 3910) so the adapter also works standalone. Rspack replaces
+ * Development builds fall back to the example vendor (tools/example-vendors, port 3192) and
+ * the mock API (tools/mock-api, port 3190) so the adapter also works standalone. Rspack replaces
  * `process.env.NODE_ENV` in production builds and drops this branch, so the dev URLs are not in
  * production bundles.
  */
@@ -18,9 +18,9 @@ export function resolveVendorConfig(fromHost: unknown): unknown {
   if (fromHost !== undefined && fromHost !== null) return fromHost;
   if (process.env.NODE_ENV !== 'production') {
     return {
-      url: 'http://localhost:3990/helpdesk/1.0.0/mount.js',
+      url: 'http://localhost:3192/helpdesk/1.0.0/mount.js',
       format: 'esm',
-      config: { apiBaseUrl: 'http://localhost:3910/api' },
+      config: { apiBaseUrl: 'http://localhost:3190/api' },
     };
   }
   return undefined;

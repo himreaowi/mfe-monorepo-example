@@ -1710,6 +1710,10 @@ importers:
         version: 6.0.3
 
   tools/example-vendors:
+    dependencies:
+      '@org/scripts':
+        specifier: workspace:*
+        version: link:../scripts
     devDependencies:
       '@org/eslint-config':
         specifier: workspace:*

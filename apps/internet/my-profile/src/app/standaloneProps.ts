@@ -10,6 +10,6 @@ export const standaloneProps: Partial<HostProps> = {
   user: { id: 'mock-user-1', name: 'Dev User (mock)' },
   settings:
     process.env.NODE_ENV !== 'production'
-      ? { apiBaseUrl: 'http://localhost:3920/api' }
+      ? { apiBaseUrl: 'http://localhost:3290/api' }
       : {},
 };

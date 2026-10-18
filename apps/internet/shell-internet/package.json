@@ -18,7 +18,19 @@
       "zone:internet",
       "type:shell",
       "access:public"
-    ]
+    ],
+    "targets": {
+      "dev": {
+        "dependsOn": [
+          {
+            "projects": [
+              "@org/mock-api"
+            ],
+            "target": "serve:internet"
+          }
+        ]
+      }
+    }
   },
   "mfe": {
     "port": 3200,

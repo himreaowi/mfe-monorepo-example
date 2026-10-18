@@ -1,7 +1,12 @@
 // @ts-check
 import assert from 'node:assert/strict';
 import { after, before, describe, it } from 'node:test';
-import { VENDORS, createServer } from '../bin/serve.js';
+import {
+  VENDORS,
+  ZONE_VENDORS,
+  createServer,
+  vendorPort,
+} from '../bin/serve.js';
 import {
   apiBaseUrl,
   categoryLabel,
@@ -60,8 +65,8 @@ describe('Acme Service Desk (helpdesk) helpers', () => {
 
   it('reads the API base URL from config', () => {
     assert.equal(
-      apiBaseUrl({ apiBaseUrl: 'http://localhost:3910/api/' }),
-      'http://localhost:3910/api',
+      apiBaseUrl({ apiBaseUrl: 'http://localhost:3190/api/' }),
+      'http://localhost:3190/api',
     );
     assert.throws(() => apiBaseUrl({}), /apiBaseUrl/);
     assert.equal(categoryLabel('hardware'), 'Hardware');
@@ -98,14 +103,44 @@ describe('Bright Payments helpers', () => {
 });
 
 describe('vendor CDN (dev server)', () => {
-  const server = createServer(0);
-  let base = '';
-  before(async () => {
+  /** @param {import('node:http').Server} server */
+  async function listen(server) {
     await new Promise((resolve) => server.listen(0, () => resolve(undefined)));
     const address = server.address();
-    base = `http://localhost:${typeof address === 'object' && address ? address.port : 0}`;
+    return `http://localhost:${typeof address === 'object' && address ? address.port : 0}`;
+  }
+  const server = createServer();
+  let base = '';
+  before(async () => {
+    base = await listen(server);
   });
   after(() => server.close());
+
+  it('runs one server per zone on the zone tools range, serving only its vendor', async () => {
+    assert.equal(vendorPort('intranet'), 3192);
+    assert.equal(vendorPort('internet'), 3292);
+    assert.throws(() => vendorPort('extranet'), /unknown zone/);
+    assert.deepEqual(ZONE_VENDORS, {
+      intranet: ['helpdesk'],
+      internet: ['payments'],
+    });
+    const intranet = createServer({ vendors: ZONE_VENDORS.intranet });
+    const origin = await listen(intranet);
+    try {
+      const own = await fetch(
+        `${origin}/helpdesk/${VENDORS.helpdesk}/mount.js`,
+      );
+      assert.equal(own.status, 200);
+      await own.text();
+      const other = await fetch(
+        `${origin}/payments/${VENDORS.payments}/element.js`,
+      );
+      assert.equal(other.status, 404);
+      await other.text();
+    } finally {
+      intranet.close();
+    }
+  });
 
   it('serves each vendor on its versioned URL with CORS', async () => {
     for (const file of [

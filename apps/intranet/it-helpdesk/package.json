@@ -32,7 +32,7 @@
             "projects": [
               "@org/example-vendors"
             ],
-            "target": "dev"
+            "target": "serve:intranet"
           }
         ]
       }

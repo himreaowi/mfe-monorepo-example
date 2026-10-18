@@ -13,7 +13,7 @@
       "entry": "http://localhost:3204/mf-manifest.json",
       "props": {
         "vendor": {
-          "url": "http://localhost:3990/payments/2.3.1/element.js",
+          "url": "http://localhost:3292/payments/2.3.1/element.js",
           "format": "web-component",
           "tagName": "bright-checkout",
           "config": {
@@ -30,6 +30,6 @@
     "mock": true
   },
   "settings": {
-    "apiBaseUrl": "http://localhost:3920/api"
+    "apiBaseUrl": "http://localhost:3290/api"
   }
 }

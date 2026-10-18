@@ -12,8 +12,15 @@ export const ZONES = /** @type {const} */ ({
 
 /** @typedef {keyof typeof ZONES} Zone */
 
-/** Offset of each dev tool server inside its zone's tools range. */
-const TOOL_OFFSETS = /** @type {const} */ ({ mockApi: 0, mockVendor: 1 });
+/**
+ * Offset of each dev tool server inside its zone's tools range. Example addition:
+ * `exampleVendors` (tools/example-vendors: intranet 3192, internet 3292).
+ */
+const TOOL_OFFSETS = /** @type {const} */ ({
+  mockApi: 0,
+  mockVendor: 1,
+  exampleVendors: 2,
+});
 
 /** @typedef {keyof typeof TOOL_OFFSETS} ToolName */
 

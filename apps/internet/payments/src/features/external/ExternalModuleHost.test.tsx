@@ -100,7 +100,7 @@ describe('ExternalModuleHost (payments)', () => {
   it('falls back to the dev example vendor without a manifest config', () => {
     renderAt('/payments');
     expect(lastProps?.config).toMatchObject({
-      url: 'http://localhost:3990/payments/2.3.1/element.js',
+      url: 'http://localhost:3292/payments/2.3.1/element.js',
       format: 'web-component',
       tagName: 'bright-checkout',
     });

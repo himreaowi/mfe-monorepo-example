@@ -18,7 +18,19 @@
       "zone:intranet",
       "type:shell",
       "access:public"
-    ]
+    ],
+    "targets": {
+      "dev": {
+        "dependsOn": [
+          {
+            "projects": [
+              "@org/mock-api"
+            ],
+            "target": "serve:intranet"
+          }
+        ]
+      }
+    }
   },
   "mfe": {
     "port": 3100,

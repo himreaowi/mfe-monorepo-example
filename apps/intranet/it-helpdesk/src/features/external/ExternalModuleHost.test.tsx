@@ -90,8 +90,8 @@ describe('ExternalModuleHost', () => {
   it('falls back to the dev example vendor when the manifest has no vendor config', () => {
     renderAt('/it-helpdesk');
     expect(lastProps?.config).toMatchObject({
-      url: 'http://localhost:3990/helpdesk/1.0.0/mount.js',
-      config: { apiBaseUrl: 'http://localhost:3910/api' },
+      url: 'http://localhost:3192/helpdesk/1.0.0/mount.js',
+      config: { apiBaseUrl: 'http://localhost:3190/api' },
     });
   });
 });

@@ -37,7 +37,7 @@ in the build):
 `config` is passed to the vendor as `props.config`.
 
 In development the shell's `mfe-manifest.dev.json` points at the **example vendor**
-(`tools/example-vendors`, http://localhost:3990/payments/2.3.1/element.js), and `src/features/external/vendorConfig.ts`
+(`tools/example-vendors`, http://localhost:3292/payments/2.3.1/element.js), and `src/features/external/vendorConfig.ts`
 falls back to it when no config is set (standalone mode). Production builds contain neither.
 
 ## Commands

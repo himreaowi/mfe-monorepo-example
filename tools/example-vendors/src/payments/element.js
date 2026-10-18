@@ -1,7 +1,7 @@
 // @ts-check
 /**
  * DEV ONLY example vendor module: "Bright Payments" checkout, format "web-component".
- *   { "url": "http://localhost:3990/payments/2.3.1/element.js", "format": "web-component",
+ *   { "url": "http://localhost:3292/payments/2.3.1/element.js", "format": "web-component",
  *     "tagName": "bright-checkout", "config": { "description": "…", "amount": 1500 } }
  *
  * Plays a vendor product built without React and without access to our repo. The host
