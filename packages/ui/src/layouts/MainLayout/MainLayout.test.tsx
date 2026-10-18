@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Link, MemoryRouter, Route, Routes } from 'react-router';
@@ -139,6 +141,71 @@ describe('MainLayout', () => {
     expect(
       screen.getByRole('navigation', { name: 'Apps' }),
     ).toBeInTheDocument();
+  });
+});
+
+const LONG_BRAND = 'Citizen Services Portal of the Example Region';
+
+/** One top-level rule of MainLayout.module.scss, nested rules included. */
+function scssRule(selector: string): string {
+  const source = readFileSync(
+    join(__dirname, 'MainLayout.module.scss'),
+    'utf8',
+  );
+  const start = source.indexOf(`\n${selector} {`);
+  expect(start).toBeGreaterThanOrEqual(0);
+  return source.slice(start, source.indexOf('\n}', start));
+}
+
+describe('MainLayout: long brand names', () => {
+  it('truncates on screen only: one line, ellipsis, shrinks before anything else', () => {
+    const brand = scssRule('.brand');
+    expect(brand).toMatch(/white-space: nowrap;/);
+    expect(brand).toMatch(/overflow: hidden;/);
+    expect(brand).toMatch(/text-overflow: ellipsis;/);
+    expect(brand).toMatch(/min-width: 0;/);
+    expect(brand).toMatch(/flex: 0 1 auto;/);
+    expect(brand).not.toMatch(/overflow-wrap/);
+    // the measurement caps the brand, so a long name cannot force compact at every width
+    expect(scssRule(".header[data-layout='measure']")).toMatch(
+      /max-width: var\(--header-brand-min-width, 30ch\);/,
+    );
+  });
+
+  it('keeps the full text in the DOM and the accessibility tree, once, without a tooltip', () => {
+    render(
+      <ThemeProvider>
+        <MainLayout brand={LONG_BRAND}>
+          <p>content</p>
+        </MainLayout>
+      </ThemeProvider>,
+    );
+    const brand = screen.getByTestId('header-brand');
+    expect(brand).toHaveClass('brand');
+    expect(brand).toHaveTextContent(LONG_BRAND, { normalizeWhitespace: true });
+    expect(brand).not.toHaveAttribute('title');
+    expect(brand).not.toHaveAttribute('aria-label');
+    // no visually hidden duplicate: the banner holds the name exactly once
+    const banner = screen.getByRole('banner');
+    expect(banner.textContent?.split(LONG_BRAND)).toHaveLength(2);
+    expect(screen.getAllByText(LONG_BRAND)).toHaveLength(1);
+  });
+
+  it('a brand link keeps the full accessible name', () => {
+    render(
+      <ThemeProvider>
+        <MemoryRouter>
+          <MainLayout brand={<Link to="/">{LONG_BRAND}</Link>}>
+            <p>content</p>
+          </MainLayout>
+        </MemoryRouter>
+      </ThemeProvider>,
+    );
+    const link = screen.getByRole('link', { name: LONG_BRAND });
+    expect(screen.getByTestId('header-brand')).toContainElement(link);
+    expect(link).not.toHaveAttribute('title');
+    expect(link).toHaveAccessibleName(LONG_BRAND);
+    expect(link).not.toHaveAccessibleDescription();
   });
 });
 

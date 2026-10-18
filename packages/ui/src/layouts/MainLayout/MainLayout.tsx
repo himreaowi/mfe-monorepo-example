@@ -9,7 +9,12 @@ import { useHeaderLayout } from './useHeaderLayout';
 import type { HeaderLayout } from './useHeaderLayout';
 
 export type MainLayoutProps = {
-  /** Header brand. */
+  /**
+   * Header brand: text or inline content (e.g. a home link). Always one line: a name longer than
+   * the space left truncates with an ellipsis on screen while the DOM text (and so the
+   * accessible name) stays whole. Show the full name elsewhere too (home page `<h1>`, document
+   * title).
+   */
   brand?: ReactNode;
   /** Optional navigation rendered in the header, between brand and theme toggle. */
   nav?: ReactNode;
@@ -34,7 +39,8 @@ export type MainLayoutProps = {
  * `aria-controls`); before the first measurement and without ResizeObserver a CSS breakpoint
  * (40rem) decides. The panel closes on Escape (focus returns to the button), on a click outside
  * the header, and after a link inside it is followed (or on browser back/forward). The current
- * layout is on the header as `data-layout="wide|compact"`.
+ * layout is on the header as `data-layout="wide|compact"`. The brand never wraps: it shrinks
+ * first and truncates with an ellipsis (screen readers still get the full text).
  */
 export function MainLayout({
   brand = 'MFE Starter',
@@ -106,7 +112,10 @@ export function MainLayout({
         data-testid="main-header"
       >
         <div ref={sizerRef} className={styles.sizer} aria-hidden="true" />
-        <div className={styles.brand}>{brand}</div>
+        {/* no `title` tooltip on purpose: see README "Long brand names" */}
+        <div className={styles.brand} data-testid="header-brand">
+          {brand}
+        </div>
         <button
           ref={buttonRef}
           type="button"

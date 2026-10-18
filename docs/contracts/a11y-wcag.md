@@ -30,6 +30,8 @@ axe covers part of WCAG. For each new or changed flow check:
 - [ ] Screen reader (NVDA + Chrome or VoiceOver + Safari): headings, landmarks, names, states,
       live announcements for status/errors
 - [ ] Zoom 200 % and reflow at 320 CSS px (1.4.10) without loss of content or two-way scrolling
+      (the shell e2e checks the header at 320 px; a truncated brand is fine because its full
+      name is the home page `<h1>` and the document title)
 - [ ] Text spacing override (1.4.12) does not clip content
 - [ ] Target size ≥ 24×24 CSS px (2.5.8); dragging has a single-pointer alternative (2.5.7)
 - [ ] Forms: labels, instructions, error identification and suggestions, no redundant entry
