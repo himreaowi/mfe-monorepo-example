@@ -97,14 +97,10 @@ class BrightCheckout extends HTMLElement {
   constructor() {
     super();
     this.#root = this.attachShadow({ mode: 'open' });
-    if (
-      'adoptedStyleSheets' in this.#root &&
-      typeof CSSStyleSheet === 'function'
-    ) {
-      const sheet = new CSSStyleSheet();
-      sheet.replaceSync(CSS);
-      this.#root.adoptedStyleSheets = [sheet];
-    }
+    // Constructable stylesheet: allowed by the portal's CSP (no inline <style>, no 'unsafe-inline').
+    const sheet = new CSSStyleSheet();
+    sheet.replaceSync(CSS);
+    this.#root.adoptedStyleSheets = [sheet];
     this.#root.addEventListener('click', (event) => this.#onClick(event));
     this.#root.addEventListener('change', (event) => this.#onChange(event));
   }

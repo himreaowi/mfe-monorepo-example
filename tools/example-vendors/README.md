@@ -34,8 +34,9 @@ and "Pay". It talks back with the contract's CustomEvents instead of callbacks:
 `external:navigate` to `receipt/<reference>`, and a fatal `external:error` when the config is
 invalid.
 
-Both render in an open shadow root with a constructable stylesheet that reads the host's CSS
-custom properties (light and dark themes) and meet WCAG 2.2 AA (checked by the zone e2e axe
+Both render in an open shadow root with a constructable stylesheet (no `<style>` elements: the
+portal's CSP has no `style-src 'unsafe-inline'`) that reads the host's CSS custom properties
+(light and dark themes) and meet WCAG 2.2 AA (checked by the zone e2e axe
 scans). Started by `pnpm dev:<zone>` through the adapters' `nx.targets.dev.dependsOn`
 (`@org/example-vendors:serve:<zone>`). The zone e2e suites run the generic external-adapter
 test against them; the mock-vendor-only checks skip. Never

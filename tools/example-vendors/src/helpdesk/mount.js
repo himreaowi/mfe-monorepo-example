@@ -126,13 +126,11 @@ export function mount(element, initialProps) {
 
   const host = h('div', { 'data-vendor': 'acme-service-desk' });
   const root = host.attachShadow({ mode: 'open' });
-  if ('adoptedStyleSheets' in root && typeof CSSStyleSheet === 'function') {
-    const sheet = new CSSStyleSheet();
-    sheet.replaceSync(CSS);
-    root.adoptedStyleSheets = [sheet];
-  } else {
-    root.append(h('style', {}, [CSS]));
-  }
+  // Constructable stylesheet (all evergreen browsers): not subject to CSP style-src. No <style>
+  // fallback: the portal's CSP has no 'unsafe-inline' for styles, so it would be blocked anyway.
+  const sheet = new CSSStyleSheet();
+  sheet.replaceSync(CSS);
+  root.adoptedStyleSheets = [sheet];
   element.appendChild(host);
 
   /** @param {string} path @param {RequestInit} [init] */

@@ -1,5 +1,6 @@
 // @ts-check
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { after, before, describe, it } from 'node:test';
 import {
   VENDORS,
@@ -166,4 +167,19 @@ describe('vendor CDN (dev server)', () => {
       assert.equal((await fetch(base + file)).status, 404, file);
     }
   });
+});
+
+describe('styles under the portal CSP (no style-src unsafe-inline)', () => {
+  for (const file of [
+    '../src/helpdesk/mount.js',
+    '../src/payments/element.js',
+  ]) {
+    it(`${file}: constructable stylesheet, never a <style> element or style attribute`, () => {
+      const src = fs.readFileSync(new URL(file, import.meta.url), 'utf8');
+      assert.match(src, /new CSSStyleSheet\(\)/);
+      assert.match(src, /adoptedStyleSheets = \[sheet\]/);
+      assert.doesNotMatch(src, /h\('style'|createElement\(['"]style['"]\)/);
+      assert.doesNotMatch(src, /style="/);
+    });
+  }
 });
