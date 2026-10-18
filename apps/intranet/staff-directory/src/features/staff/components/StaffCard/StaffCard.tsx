@@ -1,8 +1,8 @@
 import { Link } from 'react-router';
 import { useRemotePath } from '@org/mf-runtime/remote';
 import { staffPath } from '@/core/constants/routePaths';
-import type { StaffSummary } from '../types/staff';
-import styles from './Staff.module.scss';
+import type { StaffSummary } from '../../types/staff';
+import styles from './StaffCard.module.scss';
 
 export function StaffCard({ member }: { member: StaffSummary }) {
   const toPath = useRemotePath();

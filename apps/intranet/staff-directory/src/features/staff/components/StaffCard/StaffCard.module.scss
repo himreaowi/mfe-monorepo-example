@@ -1,0 +1,28 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow-wrap: anywhere;
+
+  p {
+    margin: 0;
+  }
+}
+
+.name {
+  margin: 0;
+  font-size: 1.125rem;
+
+  a {
+    color: var(--color-accent);
+  }
+}
+
+.muted {
+  color: var(--color-text-muted);
+}

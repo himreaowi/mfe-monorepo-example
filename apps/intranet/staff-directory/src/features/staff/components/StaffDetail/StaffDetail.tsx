@@ -2,9 +2,9 @@ import { Link } from 'react-router';
 import { useRemotePath } from '@org/mf-runtime/remote';
 import { RemoteFallback } from '@org/ui';
 import { routePaths, staffPath } from '@/core/constants/routePaths';
-import { useStaffMember } from '../hooks/useStaffMember';
-import type { StaffLink } from '../types/staff';
-import styles from './Staff.module.scss';
+import { useStaffMember } from '../../hooks/useStaffMember';
+import type { StaffLink } from '../../types/staff';
+import styles from './StaffDetail.module.scss';
 
 function PersonLink({ person }: { person: StaffLink }) {
   const toPath = useRemotePath();

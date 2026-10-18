@@ -1,11 +1,11 @@
 import { useId } from 'react';
 import { useSearchParams } from 'react-router';
 import { RemoteFallback } from '@org/ui';
-import { useDebouncedValue } from '../hooks/useDebouncedValue';
-import { useDepartments } from '../hooks/useDepartments';
-import { useStaffSearch } from '../hooks/useStaffSearch';
-import { StaffCard } from './StaffCard';
-import styles from './Staff.module.scss';
+import { useDebouncedValue } from '../../hooks/useDebouncedValue';
+import { useDepartments } from '../../hooks/useDepartments';
+import { useStaffSearch } from '../../hooks/useStaffSearch';
+import { StaffCard } from '../StaffCard';
+import styles from './StaffSearch.module.scss';
 
 /**
  * Staff list with search and a department filter. The query lives in the URL (`?q=&department=`),

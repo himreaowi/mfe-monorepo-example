@@ -1,0 +1,1 @@
+export { StaffCard } from './StaffCard';

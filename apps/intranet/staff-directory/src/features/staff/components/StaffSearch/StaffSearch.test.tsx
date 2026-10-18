@@ -2,24 +2,14 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
-import { getDepartments, searchStaff } from '../api';
-import type { StaffSummary } from '../types/staff';
+import { getDepartments, searchStaff } from '../../api';
+import { ann } from '../../__fixtures__/staff';
 import { StaffSearch } from './StaffSearch';
 
-jest.mock('../api');
+jest.mock('../../api');
 
 const searchMock = jest.mocked(searchStaff);
 const departmentsMock = jest.mocked(getDepartments);
-
-const ann: StaffSummary = {
-  id: 's-1',
-  name: 'Ann Lee',
-  jobTitle: 'Engineer',
-  department: 'Technology',
-  location: 'Level 3',
-  email: 'ann.lee@example.org',
-  phone: '+65 6555 0001',
-};
 
 function Location() {
   return <span data-testid="location">{useLocation().search}</span>;
