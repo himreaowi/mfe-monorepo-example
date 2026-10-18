@@ -12,11 +12,11 @@ jest.mock('../api', () => ({
 }));
 const listItemsMock = jest.mocked(listItems);
 
-function renderWithApi(apiBaseUrl: string | undefined = 'http://api.test/api') {
+function renderWithApi(
+  settings: Record<string, unknown> = { apiBaseUrl: 'http://api.test/api' },
+) {
   return render(
-    <HostPropsProvider
-      value={{ embedded: true, basePath: '/x', settings: { apiBaseUrl } }}
-    >
+    <HostPropsProvider value={{ embedded: true, basePath: '/x', settings }}>
       <DemoItems />
     </HostPropsProvider>,
   );
@@ -48,7 +48,7 @@ describe('DemoItems', () => {
   });
 
   it('explains a missing settings.apiBaseUrl instead of calling the API', () => {
-    renderWithApi(undefined);
+    renderWithApi({});
     expect(screen.getByText(/No API configured/)).toBeInTheDocument();
     expect(listItemsMock).not.toHaveBeenCalled();
   });

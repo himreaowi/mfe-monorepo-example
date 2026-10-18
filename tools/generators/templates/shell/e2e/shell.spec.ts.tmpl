@@ -111,9 +111,10 @@ test.describe('__APP_TITLE__', () => {
     await page.keyboard.press('Escape');
     await expect(menu).toHaveAttribute('aria-expanded', 'false');
     await expect(menu).toBeFocused();
-    // outside click closes
+    // a click outside the header (below the open panel) closes it
     await menu.click();
-    await page.getByTestId('shell-welcome').click();
+    const viewport = page.viewportSize() ?? { width: 375, height: 812 };
+    await page.mouse.click(8, viewport.height - 8);
     await expect(menu).toHaveAttribute('aria-expanded', 'false');
     // following a link closes
     const first = zone.remotes[0];
