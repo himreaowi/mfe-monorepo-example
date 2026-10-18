@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // @ts-check
 /**
- * CLI:  gen.js shell <zone> [--title "<text>"]
+ * CLI:  gen.js shell <zone> [--layout top|side] [--title "<text>"]
  *       gen.js remote <zone> <name> [--private] [--external [--vendor-format <f>]] [--title "<text>"]
  * Root scripts: `pnpm gen:shell <zone>`, `pnpm gen:remote <zone> <name> [flags]`.
  */
@@ -10,10 +10,12 @@ import { parseArgs } from 'node:util';
 import { UsageError, generateRemote, generateShell } from '../src/index.js';
 
 const USAGE = `Usage:
-  pnpm gen:shell <zone> [--title "<text>"]               zone: intranet | internet
+  pnpm gen:shell <zone> [--layout top|side] [--title "<text>"]   zone: intranet | internet
   pnpm gen:remote <zone> <name> [--private] [--external [--vendor-format <format>]] [--title "<text>"]
 
 Options:
+  --layout top|side       gen:shell: where the nav goes on wide screens: top (default, in the
+                          header row) or side (sidebar left of the content); phones: Menu button
   --private               remote needs a signed-in user (tag access:private, marked in the shell registry)
   --external              adapter remote for an external/vendor module (tag kind:external)
   --vendor-format <f>     with --external: format of the dev mock vendor config:
@@ -33,6 +35,7 @@ async function main() {
       external: { type: 'boolean', default: false },
       'vendor-format': { type: 'string' },
       title: { type: 'string' },
+      layout: { type: 'string' },
       root: { type: 'string' },
       help: { type: 'boolean', short: 'h', default: false },
     },
@@ -54,12 +57,17 @@ async function main() {
       values['vendor-format'] !== undefined
     ) {
       throw new UsageError(
-        `gen:shell takes only a zone (and --title).\n\n${USAGE}`,
+        `gen:shell takes only a zone (and --layout, --title).\n\n${USAGE}`,
       );
     }
-    const r = await generateShell({ root, zone, title: values.title });
+    const r = await generateShell({
+      root,
+      zone,
+      title: values.title,
+      layout: values.layout,
+    });
     console.log(
-      `Created ${path.relative(root, r.dir)} (${r.packageName}, "${r.title}", federation name ${r.federationName}, port ${r.port}).`,
+      `Created ${path.relative(root, r.dir)} (${r.packageName}, "${r.title}", federation name ${r.federationName}, port ${r.port}, ${r.layout} navigation).`,
     );
     console.log(
       `\nNext:\n  pnpm install\n  pnpm gen:remote ${zone} <name>\n  pnpm dev:${zone}`,
@@ -67,6 +75,11 @@ async function main() {
     return;
   }
   if (kind === 'remote') {
+    if (values.layout !== undefined) {
+      throw new UsageError(
+        `--layout applies to gen:shell only (the shell owns the layout).\n\n${USAGE}`,
+      );
+    }
     if (extra.length > 0) {
       throw new UsageError(
         `Unexpected arguments: ${extra.join(' ')}\n\n${USAGE}`,

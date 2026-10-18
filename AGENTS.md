@@ -16,7 +16,7 @@ Instructions for AI coding agents (and humans) working in this monorepo. Details
 
 ## Must follow
 
-- Create apps only with `pnpm gen:shell <zone>` / `pnpm gen:remote <zone> <name> [--private]
+- Create apps only with `pnpm gen:shell <zone> [--layout top|side]` / `pnpm gen:remote <zone> <name> [--private]
 [--external [--vendor-format esm|web-component|script]] [--title "<text>"]`, then
   `pnpm install`. Never copy an app folder.
 - A shell never imports a remote; a remote never imports another remote or a shell; zones

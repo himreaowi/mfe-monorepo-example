@@ -16,12 +16,12 @@ Normative rules for every app and package. Implementation: `@org/design-tokens` 
 
 ## Header colours (per shell)
 
-| Rule      | Requirement                                                                                                                                                                  |
-| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Tokens    | `--header-bg`, `--header-text`, `--header-text-muted`, `--header-border`, `--header-accent` (read by `MainLayout`, fallback to the page tokens)                              |
-| Owner     | only the shell sets them, in `src/styles/shell.scss` (imported after `@org/design-tokens/global.scss`), light and dark; remotes MUST NOT (`pnpm check` rule `header-tokens`) |
-| Contrast  | text, muted text and accent ≥ 4.5:1 on `--header-bg` in both themes; text ≥ 4.5:1 on the hover tint                                                                          |
-| Selectors | apps MUST NOT select `@org/ui` CSS Module class names (hashed per build and app)                                                                                             |
+| Rule      | Requirement                                                                                                                                                                                                                               |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tokens    | `--header-bg`, `--header-text`, `--header-text-muted`, `--header-border`, `--header-accent` (read by `MainLayout`, fallback to the page tokens); with `navPlacement="side"` they also colour the sidebar and the drawer (no extra tokens) |
+| Owner     | only the shell sets them, in `src/styles/shell.scss` (imported after `@org/design-tokens/global.scss`), light and dark; remotes MUST NOT (`pnpm check` rule `header-tokens`)                                                              |
+| Contrast  | text, muted text and accent ≥ 4.5:1 on `--header-bg` in both themes; text ≥ 4.5:1 on the hover tint                                                                                                                                       |
+| Selectors | apps MUST NOT select `@org/ui` CSS Module class names (hashed per build and app)                                                                                                                                                          |
 
 Details and example: [ui-context.md](../ui-context.md#header-colours-per-shell).
 

@@ -45,7 +45,7 @@ pnpm e2e:intranet          # e2e + axe WCAG 2.2 AA (after: pnpm --filter @org/sh
 
 | Command                                                                                           | What                                                                                                                        |
 | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm gen:shell <zone> [--title "<text>"]`                                                        | create `apps/<zone>/shell-<zone>` (zone: `intranet`, `internet`)                                                            |
+| `pnpm gen:shell <zone> [--layout top\|side] [--title "<text>"]`                                   | create `apps/<zone>/shell-<zone>` (zone: `intranet`, `internet`; nav in the header row or a sidebar)                        |
 | `pnpm gen:remote <zone> <name> [--private] [--external [--vendor-format <f>]] [--title "<text>"]` | create a remote and register it with the zone's shell                                                                       |
 | `pnpm dev:intranet` / `pnpm dev:internet`                                                         | shell + every remote of the zone + its mock API (+ mock vendor); both zones can run at once; Ctrl-C stops all with one line |
 | `pnpm check`                                                                                      | guardrails: dependency tiers, app metadata, cross-app imports                                                               |

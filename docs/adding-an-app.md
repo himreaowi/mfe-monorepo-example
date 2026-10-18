@@ -4,7 +4,7 @@ Apps are only created with the generators. They write the app from templates, pi
 set the metadata the guardrails check, and register remotes with their zone's shell.
 
 ```sh
-pnpm gen:shell <zone> [--title "<text>"]                # zone: intranet | internet
+pnpm gen:shell <zone> [--layout top|side] [--title "<text>"]   # zone: intranet | internet
 pnpm gen:remote <zone> <name> [--private] [--external [--vendor-format esm|web-component|script]] [--title "<text>"]
                                                         # name: kebab-case, e.g. leave-requests
 pnpm install                                            # links the new app
@@ -16,7 +16,7 @@ The generators never overwrite: an existing folder, package name or registry ent
 
 | You need                                                       | Command                                                                              |
 | -------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| The zone's host app (once per zone)                            | `pnpm gen:shell intranet`                                                            |
+| The zone's host app (once per zone)                            | `pnpm gen:shell intranet` (`--layout side` for a sidebar nav)                        |
 | A feature area everyone can open                               | `pnpm gen:remote intranet staff-directory`                                           |
 | A feature area for signed-in users only                        | `pnpm gen:remote internet my-profile --private`                                      |
 | UI built by a vendor / another framework / another React major | `pnpm gen:remote internet payments --external` (add `--private` if it needs sign-in) |
@@ -86,7 +86,13 @@ A new app needs, per environment ([devops-handoff.md](devops-handoff.md)):
 ## Shells
 
 `pnpm gen:shell <zone>` creates `apps/<zone>/shell-<zone>` on the zone's first port (3100 / 3200) with an empty registry, a dev manifest with the mock sign-in, the PWA setup and the zone's
-e2e suite (`e2e/`, `playwright.config.ts`). There is exactly one shell per zone. Zones are
+e2e suite (`e2e/`, `playwright.config.ts`). There is exactly one shell per zone.
+
+`--layout top|side` (default `top`) picks where the remotes nav goes on wide screens: in the
+header row (`top`) or in a sidebar left of the content (`side`; many remotes, internal tools).
+On phones both put it behind the "Menu" button. It only sets `NAV_PLACEMENT` in
+`src/layouts/ShellLayout/ShellLayout.tsx`; change that constant to switch later (the e2e suite
+follows it). When to choose which: [ui-context.md](ui-context.md#navigation-placement-top-or-side). Zones are
 defined in `tools/scripts/src/zones.js`; a new zone needs a new port range there, an entry in
 the boundary rules (`@org/eslint-config`), root `dev:<zone>`/`e2e:<zone>` scripts and a
 platform team review.

@@ -5,9 +5,11 @@ import userEvent from '@testing-library/user-event';
 import { Link, MemoryRouter, Route, Routes } from 'react-router';
 import { ThemeProvider } from '../../providers/ThemeProvider';
 import { MainLayout } from './MainLayout';
+import type { NavPlacement } from './navPlacement';
+import { useNavPlacement } from './navPlacement';
 import { HEADER_HYSTERESIS_PX, decideHeaderLayout } from './useHeaderLayout';
 
-function renderLayout() {
+function renderLayout(navPlacement?: NavPlacement) {
   return render(
     <ThemeProvider>
       <MemoryRouter initialEntries={['/']}>
@@ -16,6 +18,7 @@ function renderLayout() {
             element={
               <MainLayout
                 brand="Portal"
+                navPlacement={navPlacement}
                 nav={
                   <ul aria-label="Apps">
                     <li>
@@ -411,6 +414,240 @@ describe('MainLayout: one header row at any width (measured layout)', () => {
     resizeTo(1280);
     expect(header()).toHaveAttribute('data-layout', 'compact');
     expect(screen.getByRole('button', { name: 'Menu' })).toHaveFocus();
+  });
+});
+
+describe('MainLayout: navPlacement="side" (measured)', () => {
+  const size = { available: 1280, required: 900 };
+  let rectSpy: jest.SpyInstance;
+
+  class FakeResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+
+  beforeEach(() => {
+    size.available = 1280;
+    size.required = 900;
+    (globalThis as { ResizeObserver?: unknown }).ResizeObserver =
+      FakeResizeObserver;
+    rectSpy = jest
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockImplementation(function (this: HTMLElement) {
+        const width =
+          this.getAttribute('data-layout') === 'measure'
+            ? size.required
+            : size.available;
+        return { width, height: 60, toJSON: () => ({}) } as DOMRect;
+      });
+  });
+
+  afterEach(() => {
+    rectSpy.mockRestore();
+    delete (globalThis as { ResizeObserver?: unknown }).ResizeObserver;
+  });
+
+  /** Names of the focusable header elements in DOM (= Tab) order. */
+  function tabOrder() {
+    return [
+      ...screen.getByTestId('header-panel').querySelectorAll('a, button'),
+    ].map((el) => el.textContent);
+  }
+
+  it('wide: top bar (theme toggle, actions) comes before the sidebar nav in the Tab order', () => {
+    size.required = 900; // = sidebar + minimum content width, counted by the CSS
+    renderLayout('side');
+    expect(screen.getByTestId('main-header')).toHaveAttribute(
+      'data-layout',
+      'wide',
+    );
+    const order = tabOrder();
+    expect(order.indexOf('Sign in')).toBeLessThan(order.indexOf('Home'));
+  });
+
+  it('compact: the drawer lists the nav first, then theme toggle and actions', () => {
+    size.available = 800;
+    renderLayout('side');
+    expect(screen.getByTestId('main-header')).toHaveAttribute(
+      'data-layout',
+      'compact',
+    );
+    const order = tabOrder();
+    expect(order.indexOf('Home')).toBeLessThan(order.indexOf('Sign in'));
+  });
+
+  it('top placement keeps the nav first at every width', () => {
+    renderLayout('top');
+    expect(screen.getByTestId('main-header')).toHaveAttribute(
+      'data-layout',
+      'wide',
+    );
+    const order = tabOrder();
+    expect(order.indexOf('Home')).toBeLessThan(order.indexOf('Sign in'));
+  });
+});
+
+describe('MainLayout: navPlacement', () => {
+  function Probe() {
+    return <span data-testid="probe">{useNavPlacement()}</span>;
+  }
+
+  it('defaults to top and exposes the placement on the header', () => {
+    renderLayout();
+    expect(screen.getByTestId('main-header')).toHaveAttribute(
+      'data-nav-placement',
+      'top',
+    );
+    renderLayout('side');
+    expect(screen.getAllByTestId('main-header')[1]).toHaveAttribute(
+      'data-nav-placement',
+      'side',
+    );
+  });
+
+  it.each(['top', 'side'] as const)(
+    'provides the placement to nav content and header actions (%s)',
+    (placement) => {
+      render(
+        <ThemeProvider>
+          <MainLayout navPlacement={placement} nav={<Probe />}>
+            <p>content</p>
+          </MainLayout>
+        </ThemeProvider>,
+      );
+      expect(screen.getByTestId('probe')).toHaveTextContent(placement);
+    },
+  );
+
+  it('useNavPlacement is top outside MainLayout (and in the page content)', () => {
+    render(
+      <ThemeProvider>
+        <MainLayout navPlacement="side">
+          <Probe />
+        </MainLayout>
+      </ThemeProvider>,
+    );
+    expect(screen.getByTestId('probe')).toHaveTextContent('top');
+  });
+
+  it.each(['top', 'side'] as const)(
+    'landmarks (%s): one banner holding the named nav, one main',
+    (placement) => {
+      renderLayout(placement);
+      const banner = screen.getByRole('banner');
+      expect(screen.getAllByRole('banner')).toHaveLength(1);
+      expect(screen.getAllByRole('main')).toHaveLength(1);
+      const nav = screen.getByRole('navigation', { name: 'Main' });
+      expect(banner).toContainElement(nav);
+      expect(screen.getAllByRole('navigation')).toHaveLength(1);
+      expect(screen.getByRole('main')).not.toContainElement(nav);
+    },
+  );
+
+  it.each(['top', 'side'] as const)(
+    'skip link (%s): first Tab stop, moves focus to main without a URL change',
+    async (placement) => {
+      const user = userEvent.setup();
+      renderLayout(placement);
+      await user.tab();
+      const skip = screen.getByRole('link', { name: 'Skip to main content' });
+      expect(skip).toHaveFocus();
+      const main = screen.getByRole('main');
+      expect(skip).toHaveAttribute('href', `#${main.id}`);
+      expect(main).toHaveAttribute('tabindex', '-1');
+      await user.keyboard('{Enter}');
+      expect(main).toHaveFocus();
+      expect(main).toHaveTextContent('home page'); // still on the same route
+    },
+  );
+
+  it('skipLinkLabel renames the skip link', () => {
+    render(
+      <ThemeProvider>
+        <MainLayout skipLinkLabel="Zum Inhalt">
+          <p>content</p>
+        </MainLayout>
+      </ThemeProvider>,
+    );
+    expect(
+      screen.getByRole('link', { name: 'Zum Inhalt' }),
+    ).toBeInTheDocument();
+  });
+
+  describe('side drawer (narrow screens): the same disclosure as the top panel', () => {
+    it('Menu button controls the drawer with nav, theme toggle and actions', async () => {
+      const user = userEvent.setup();
+      renderLayout('side');
+      const button = screen.getByRole('button', { name: 'Menu' });
+      const panel = screen.getByTestId('header-panel');
+      expect(button).toHaveAttribute('aria-controls', panel.id);
+      expect(button).toHaveAttribute('aria-expanded', 'false');
+      expect(panel).toContainElement(
+        screen.getByRole('navigation', { name: 'Main' }),
+      );
+      expect(panel).toContainElement(screen.getByLabelText('Use dark theme'));
+      expect(panel).toContainElement(
+        screen.getByRole('button', { name: 'Sign in' }),
+      );
+      await user.click(button);
+      expect(button).toHaveAttribute('aria-expanded', 'true');
+      expect(panel.className).toMatch(/open/);
+    });
+
+    it('Escape closes and returns focus to the Menu button', async () => {
+      const user = userEvent.setup();
+      renderLayout('side');
+      const button = screen.getByRole('button', { name: 'Menu' });
+      await user.click(button);
+      await user.tab();
+      expect(screen.getByTestId('header-panel')).toContainElement(
+        document.activeElement as HTMLElement,
+      );
+      await user.keyboard('{Escape}');
+      expect(button).toHaveAttribute('aria-expanded', 'false');
+      expect(button).toHaveFocus();
+    });
+
+    it('closes after following a link, on an outside click and on back/forward', async () => {
+      const user = userEvent.setup();
+      renderLayout('side');
+      const button = screen.getByRole('button', { name: 'Menu' });
+      await user.click(button);
+      await user.click(screen.getByRole('link', { name: 'Alpha' }));
+      expect(screen.getByRole('main')).toHaveTextContent('alpha page');
+      expect(button).toHaveAttribute('aria-expanded', 'false');
+      expect(button).toHaveFocus();
+      await user.click(button);
+      await user.click(screen.getByText('outside'));
+      expect(button).toHaveAttribute('aria-expanded', 'false');
+      await user.click(button);
+      act(() => {
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      });
+      expect(button).toHaveAttribute('aria-expanded', 'false');
+    });
+  });
+
+  it('side styles: 16rem sidebar, 40rem minimum content, drawer at most 20rem', () => {
+    const source = readFileSync(
+      join(__dirname, 'MainLayout.module.scss'),
+      'utf8',
+    );
+    expect(source).toMatch(/^\$sidebar-width: 16rem;$/m);
+    expect(source).toMatch(/^\$side-main-min-width: 40rem;$/m);
+    expect(source).toMatch(/^\$side-drawer-width: 20rem;$/m);
+    // the measurement counts the sidebar plus the minimum content width, without the nav
+    const measure = scssRule(".side[data-layout='measure']");
+    expect(measure).toMatch(
+      /min-width: \$sidebar-width \+ \$side-main-min-width;/,
+    );
+    expect(measure).toMatch(/\.nav \{\s*display: none;/);
+    // sticky top bar; the sidebar uses the (remapped) header tokens
+    expect(scssRule('.side')).toMatch(/position: sticky;/);
+    expect(source).toMatch(
+      /background: var\(--color-surface\);\n\s*border-right: 1px solid var\(--color-border\);/,
+    );
   });
 });
 

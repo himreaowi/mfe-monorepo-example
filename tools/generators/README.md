@@ -3,7 +3,7 @@
 Creates apps from templates. Run from the repo root:
 
 ```sh
-pnpm gen:shell <zone> [--title "<text>"]                # zone: intranet | internet
+pnpm gen:shell <zone> [--layout top|side] [--title "<text>"]   # zone: intranet | internet
 pnpm gen:remote <zone> <name> [--private] [--external [--vendor-format esm|web-component|script]] [--title "<text>"]
                                                         # name: kebab-case, e.g. staff-directory
 pnpm install
@@ -22,6 +22,15 @@ pnpm dev:<zone>
   overrides it (max 60 characters; no quotes, backslashes, `<>`, `{}` or `$`: use ’ for
   apostrophes). Change it later in `src/core/constants/app.ts` and the shell's `remotes.json`.
 
+- **`--layout top|side`** (`gen:shell`, default `top`): where `MainLayout` puts the remotes nav
+  on wide screens: in the header row (`top`) or a sidebar left of the content (`side`); on
+  narrow screens both fold it behind "Menu" (the side variant as a drawer). The generator writes
+  it once, as `const NAV_PLACEMENT: NavPlacement = 'top' | 'side'` in
+  `src/layouts/ShellLayout/ShellLayout.tsx` (passed as `navPlacement`), and nowhere else: change
+  that line to switch an existing shell. The generated e2e suite reads the placement from the
+  page (`data-nav-placement` on the header) and checks the matching layout. See
+  `docs/ui-context.md` "Navigation placement". `gen:remote --layout` is an error (the shell owns
+  the layout).
 - Non-interactive. Never overwrites: an existing folder, package name or registry entry is an
   error. `gen:remote` needs the zone's shell (`pnpm gen:shell <zone>` first).
 - `--private`: tag `access:private` and `"access": "private"` in the shell registry. The shell
@@ -69,14 +78,16 @@ pnpm dev:<zone>
 - Shells get the zone's e2e suite: `playwright.config.ts` (`@org/playwright-config`) and
   `e2e/*.spec.ts`, which iterate `remotes.json` (deep links, private guard, external adapters
   with any vendor + mock-vendor extras, standalone remotes, one-row header at 320–1280 px (signed in and out; long brand truncates on one line) with the Menu disclosure, axe WCAG
-  2.2 AA in light and dark) with the helpers `openNav`, `openHeaderMenu` and `settle`. `pnpm e2e:<zone>` runs it. Remotes get no
+  2.2 AA in light and dark, landmarks + skip link + keyboard order; with `navPlacement="side"`
+  also the sidebar from 896 px, the drawer below it and the sticky top bar) with the helpers
+  `openNav`, `openHeaderMenu`, `navPlacement`, `expectSidebar`, `expectDrawer` and `settle`. `pnpm e2e:<zone>` runs it. Remotes get no
   e2e folder of their own: their standalone mode is covered by the zone suite. See
   `docs/testing.md`.
 - Generated files are formatted with the repo's Prettier config.
 
 Templates live in `templates/shell`, `templates/remote` and `templates/external` (an overlay on
 `remote`). Files end in `.tmpl` (so the repo's tools ignore them) and use `__TOKEN__` placeholders
-(`__ZONE__`, `__NAME__`, `__APP_TITLE__`, `__PACKAGE_NAME__`, `__FEDERATION_NAME__`,
+(`__ZONE__`, `__NAME__`, `__APP_TITLE__`, `__NAV_PLACEMENT__`, `__PACKAGE_NAME__`, `__FEDERATION_NAME__`,
 `__ROUTE_PATH__`, `__PORT__`, `__SHELL_PORT__`, `__ACCESS__`, `__DIR_NAME__`, `__MOCK_API_URL__`,
 `__MOCK_VENDOR_PORT__`, `__MOCK_VENDOR_URL__`, `__MOCK_VENDOR_CONFIG__` (JSON),
 `__VENDOR_FORMAT__`). An unknown token is an error.

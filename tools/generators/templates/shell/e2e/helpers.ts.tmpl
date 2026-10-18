@@ -98,6 +98,83 @@ export async function resizeHeader(
 }
 
 /**
+ * Where `MainLayout` puts the nav (`navPlacement` in src/layouts/ShellLayout): `top` (header
+ * row) or `side` (sidebar on wide screens). Read from the page, so the specs follow a change.
+ */
+export async function navPlacement(page: Page): Promise<'top' | 'side'> {
+  const value = await page
+    .getByTestId('main-header')
+    .getAttribute('data-nav-placement');
+  return value === 'side' ? 'side' : 'top';
+}
+
+/**
+ * Smallest viewport width with the sidebar (`navPlacement="side"`): 16rem sidebar + 40rem
+ * content (MainLayout.module.scss). Narrower, the nav is a drawer behind "Menu".
+ */
+export const SIDEBAR_MIN_WIDTH = 56 * 16;
+
+/**
+ * Side placement, wide: the nav is a vertical sidebar on the left edge, from below the top bar
+ * to the bottom of the viewport, 240–280 px wide, links stacked; `<main>` starts right of it.
+ */
+export async function expectSidebar(page: Page): Promise<void> {
+  const header = await page.getByTestId('main-header').boundingBox();
+  const nav = await page.getByRole('navigation', { name: 'Main' }).boundingBox();
+  const main = await page.getByRole('main').boundingBox();
+  const viewport = await page.evaluate(() => ({
+    width: document.documentElement.clientWidth,
+    height: window.innerHeight,
+  }));
+  expect(header && nav && main, 'header, nav and main boxes').toBeTruthy();
+  if (!header || !nav || !main) return;
+  expect(nav.x, 'sidebar on the left edge').toBe(0);
+  expect(nav.width, 'sidebar width').toBeGreaterThanOrEqual(240);
+  expect(nav.width, 'sidebar width').toBeLessThanOrEqual(280);
+  expect(nav.y, 'sidebar below the top bar').toBeGreaterThanOrEqual(
+    header.y + header.height - 1,
+  );
+  expect(nav.y + nav.height, 'sidebar reaches the bottom of the viewport').toBeGreaterThanOrEqual(
+    viewport.height - 1,
+  );
+  expect(main.x, 'main right of the sidebar').toBeGreaterThanOrEqual(nav.x + nav.width - 1);
+  expect(main.x + main.width, 'main within the viewport').toBeLessThanOrEqual(viewport.width + 0.5);
+  // one link per row
+  const xs: number[] = [];
+  let lastY = -1;
+  for (const link of await page.getByRole('list', { name: 'Apps' }).getByRole('link').all()) {
+    const box = await link.boundingBox();
+    if (!box) continue;
+    xs.push(Math.round(box.x));
+    expect(box.y, 'links stacked vertically').toBeGreaterThan(lastY);
+    lastY = box.y;
+  }
+  expect(new Set(xs).size, 'links left-aligned in one column').toBeLessThanOrEqual(1);
+}
+
+/**
+ * Side placement, compact, Menu open: the panel is a drawer on the left, from below the top bar
+ * to the bottom of the viewport, at most 20rem and 3rem narrower than the viewport (the page
+ * stays visible on its right, a tap there closes the drawer).
+ */
+export async function expectDrawer(page: Page): Promise<void> {
+  const header = await page.getByTestId('main-header').boundingBox();
+  const panel = await page.getByTestId('header-panel').boundingBox();
+  const viewport = await page.evaluate(() => ({
+    width: document.documentElement.clientWidth,
+    height: window.innerHeight,
+  }));
+  expect(header && panel, 'header and drawer boxes').toBeTruthy();
+  if (!header || !panel) return;
+  expect(panel.x, 'drawer on the left edge').toBe(0);
+  expect(panel.width, 'drawer width').toBeLessThanOrEqual(Math.min(320, viewport.width - 48));
+  expect(panel.y, 'drawer below the top bar').toBeGreaterThanOrEqual(header.y + header.height - 1);
+  expect(panel.y + panel.height, 'drawer reaches the bottom of the viewport').toBeGreaterThanOrEqual(
+    viewport.height - 1,
+  );
+}
+
+/**
  * The header brand is one line (a long name truncates with an ellipsis instead of wrapping) and,
  * when the header is compact, the Menu button is fully on screen, beside the brand and clickable.
  */

@@ -85,6 +85,7 @@ describe('generators', () => {
   it('generates the intranet shell', async () => {
     const r = await generateShell({ root, zone: 'intranet' });
     assert.equal(r.port, 3100);
+    assert.equal(r.layout, 'top');
     assert.equal(r.federationName, 'intranet_shell');
     const dir = 'apps/intranet/shell-intranet';
     const pkg = readJson(root, `${dir}/package.json`);
@@ -171,6 +172,19 @@ describe('generators', () => {
     ]) {
       assert.ok(files.includes(f), `missing ${f}`);
     }
+    // nav placement: one named constant in ShellLayout, passed to MainLayout (default top)
+    const layout = read(root, `${dir}/src/layouts/ShellLayout/ShellLayout.tsx`);
+    assert.match(layout, /^const NAV_PLACEMENT: NavPlacement = 'top';$/m);
+    assert.match(layout, /navPlacement=\{NAV_PLACEMENT\}/);
+    assert.equal(layout.match(/NAV_PLACEMENT/g)?.length, 2); // declared once, used once
+    // RemoteNav adapts to the placement (sidebar: stacked links, active bar)
+    assert.match(
+      read(root, `${dir}/src/components/RemoteNav/RemoteNav.tsx`),
+      /data-placement=\{useNavPlacement\(\)\}/,
+    );
+    // the header e2e tests read the placement from the page (no generated copy per layout)
+    assert.match(read(root, `${dir}/e2e/helpers.ts`), /data-nav-placement/);
+    assert.match(read(root, `${dir}/e2e/shell.spec.ts`), /expectSidebar/);
     assert.match(read(root, `${dir}/rspack.config.js`), /createShellConfig/);
     assert.match(read(root, `${dir}/src/bootstrap.tsx`), /registerPwa\(\)/);
     // shell-owned global styles (header colours): imported right after the design tokens,
@@ -391,8 +405,37 @@ describe('generators', () => {
   });
 
   it('generates the internet zone and an external adapter remote', async () => {
-    const s = await generateShell({ root, zone: 'internet' });
+    const s = await generateShell({ root, zone: 'internet', layout: 'side' });
     assert.equal(s.port, 3200);
+    assert.equal(s.layout, 'side');
+    const shellLayout = read(
+      root,
+      'apps/internet/shell-internet/src/layouts/ShellLayout/ShellLayout.tsx',
+    );
+    assert.match(shellLayout, /^const NAV_PLACEMENT: NavPlacement = 'side';$/m);
+    assert.match(shellLayout, /navPlacement=\{NAV_PLACEMENT\}/);
+    // the layout is recorded only there: same e2e suite, package.json, registry and manifest
+    // as a top-nav shell
+    const intranetShell = path.join(root, 'apps/intranet/shell-intranet');
+    const internetShell = path.join(root, 'apps/internet/shell-internet');
+    for (const f of [
+      'e2e/shell.spec.ts',
+      'e2e/helpers.ts',
+      'e2e/a11y.spec.ts',
+    ]) {
+      assert.equal(
+        fs.readFileSync(path.join(internetShell, f), 'utf8'),
+        fs
+          .readFileSync(path.join(intranetShell, f), 'utf8')
+          .replaceAll('Intranet shell', 'Internet shell')
+          .replaceAll('intranet', 'internet'),
+        f,
+      );
+    }
+    assert.doesNotMatch(
+      read(root, 'apps/internet/shell-internet/package.json'),
+      /layout|side/i,
+    );
     const r = await generateRemote({
       root,
       zone: 'internet',
@@ -601,6 +644,10 @@ describe('generators', () => {
       generateShell({ root, zone: 'extranet' }),
       /Unknown zone/,
     );
+    await assert.rejects(
+      generateShell({ root, zone: 'intranet', layout: 'left' }),
+      /Unknown --layout "left"\. Use one of: top, side\./,
+    );
   });
 
   it('the generated workspace passes check-apps and check-versions', async () => {
@@ -615,12 +662,20 @@ describe('generators', () => {
     const cliRoot = tempWorkspace();
     const out = execFileSync(
       process.execPath,
-      [BIN, 'shell', 'internet', '--root', cliRoot],
+      [BIN, 'shell', 'internet', '--layout', 'side', '--root', cliRoot],
       {
         encoding: 'utf8',
       },
     );
     assert.match(out, /Created apps\/internet\/shell-internet .*port 3200/);
+    assert.match(out, /side navigation/);
+    assert.match(
+      read(
+        cliRoot,
+        'apps/internet/shell-internet/src/layouts/ShellLayout/ShellLayout.tsx',
+      ),
+      /NAV_PLACEMENT: NavPlacement = 'side'/,
+    );
     assert.match(out, /"Internet shell"/);
     const remote = execFileSync(
       process.execPath,
@@ -656,6 +711,27 @@ describe('generators', () => {
       assert.equal(/** @type {any} */ (e).status, 1);
     }
     assert.match(stderr, /^error: The intranet shell does not exist yet/);
+    for (const [args, message] of /** @type {[string[], RegExp][]} */ ([
+      [
+        ['remote', 'internet', 'x2', '--layout', 'side'],
+        /^error: --layout applies to gen:shell only/,
+      ],
+      [
+        ['shell', 'intranet', '--layout', 'left'],
+        /^error: Unknown --layout "left"/,
+      ],
+    ])) {
+      try {
+        execFileSync(process.execPath, [BIN, ...args, '--root', cliRoot], {
+          encoding: 'utf8',
+          stdio: 'pipe',
+        });
+        assert.fail('should exit non-zero');
+      } catch (e) {
+        assert.equal(/** @type {any} */ (e).status, 1);
+        assert.match(/** @type {any} */ (e).stderr, message);
+      }
+    }
     assert.doesNotMatch(stderr, /at .*\.js:\d+/);
   });
 });
