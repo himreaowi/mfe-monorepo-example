@@ -76,6 +76,9 @@ describe('deploy/nginx templates', () => {
       'main.f0dd8b37.js',
       '118.3b298b8a.js',
       '__federation_expose_App.6b3d4dc8.js',
+      // extracted CSS ([name].[contenthash:8].css from @org/rspack-config)
+      '__federation_expose_App.f1c5d0e3.css',
+      '735.dd49997c.css',
     ]) {
       assert.match(f, re);
     }
@@ -96,7 +99,7 @@ describe('deploy/nginx templates', () => {
     assert.match(location('~* \\.map$').body, /return 404;/);
   });
 
-  it('CSP: placeholders for remotes, BFF, APIs, vendors; no unsafe-eval', () => {
+  it('CSP: placeholders for remotes, BFF, APIs, vendors; no unsafe-eval, no unsafe-inline', () => {
     const csp = /Content-Security-Policy "([^"]+)"/.exec(headers)?.[1] ?? '';
     for (const directive of [
       "default-src 'self'",
@@ -118,6 +121,12 @@ describe('deploy/nginx templates', () => {
       assert.ok(csp.includes(`\${${v}}`), v);
     }
     assert.doesNotMatch(csp, /unsafe-eval/);
+    // production CSS is extracted into .css files: no inline styles allowed
+    assert.doesNotMatch(csp, /unsafe-inline/);
+    assert.match(
+      csp,
+      /style-src 'self' \$\{CSP_REMOTE_ORIGINS\} \$\{CSP_VENDOR_ORIGINS\};/,
+    );
   });
 
   it('Dockerfile: one app per build arg, pnpm filter, frozen lockfile, non-root nginx', () => {

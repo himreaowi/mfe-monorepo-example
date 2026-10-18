@@ -47,7 +47,12 @@ Shared by both:
   before React loads). `HtmlRspackPlugin` with `chunks: ['main']`; template `public/index.html` or
   the package default (`templates/index.html`).
 - TS/TSX via `builtin:swc-loader` (automatic JSX runtime).
-- SCSS/CSS via sass-loader + css-loader + style-loader (styles travel with the exposed JS).
+- SCSS/CSS via sass-loader + css-loader, then **style-loader in development** (`<style>` from JS,
+  HMR style reload) and **`CssExtractRspackPlugin` in production**: one
+  `[name].[contenthash:8].css` per chunk, loaded as `<link rel="stylesheet">` by the chunk
+  loader before the chunk runs (a remote's CSS comes from its own origin, also when a shell
+  loads it; a CSS file that fails rejects the load → `RemoteFallback`). No `<style>` elements in
+  production, so the CSP has no `style-src 'unsafe-inline'`. Why not native CSS: docs/toolchain.md.
   CSS Modules: `[name]__[local]__[hash]` in dev, `[hash]` in prod, **hash salted with the
   federation name** so two apps never produce the same class name.
 - **Tier-1 singletons** (`TIER1_SINGLETONS`: react, react-dom, react-router, @org/ui, @org/auth) shared with
@@ -57,10 +62,11 @@ Shared by both:
 - `index.html` script URLs are absolute (`htmlPublicPath`, default `/`), so a deep link or reload
   of a standalone remote (`/details`) still loads its entry.
 - `lazyCompilation: false`; dev server with CORS `*`, history fallback, HMR, `public/` as static.
-- Production: `[name].[contenthash:8].js`, **hidden source maps without sources**
+- Production: `[name].[contenthash:8].js` / `.css` (8 hex: the nginx immutable-cache rule),
+  **hidden source maps without sources**
   (`hidden-nosources-source-map`: `.map` files with mappings and file names, no
-  `sourcesContent`, no `sourceMappingURL` comment; option `productionSourceMap`), no inline CSS
-  maps, `public/` copied except `index.html` and
+  `sourcesContent`, no `sourceMappingURL` comment; option `productionSourceMap`), no CSS maps
+  (neither inline nor `.css.map`), `public/` copied except `index.html` and
   `mfe-manifest*.json` (the real manifest is written per environment by DevOps).
 - `output.uniqueName` = federation name; `__MFE_NAME__` defined.
 - Federation names must be JS identifiers (`intranet_staff_directory`); invalid names throw.

@@ -3,9 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- Close to what the real host enforces: no inline scripts, no eval. Add your origins to
-         script-src / connect-src / img-src / font-src via the "CSP extra origins" field below
-         (it reloads the page with ?csp=...), or edit this tag. -->
+    <!-- Close to what the real host enforces (csp.js): no inline scripts, no eval, no inline
+         styles. Add your origins to script-src / style-src / connect-src / img-src / font-src
+         via the "CSP extra origins" field below (it reloads the page with ?csp=...). -->
     <title>Vendor kit test host</title>
     <link rel="stylesheet" href="./host.css" />
     <script type="module" src="./csp.js"></script>

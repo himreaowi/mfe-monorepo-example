@@ -40,7 +40,7 @@ sequenceDiagram
     S->>M: fetch, validate (schema)
     S->>S: registerRemotes(manifest.remotes)
     S->>BFF: GET sessionUrl (cookie) → user | 401
-    S->>R: GET mf-manifest.json → remoteEntry.js → exposed ./App chunk
+    S->>R: GET mf-manifest.json → remoteEntry.js → exposed ./App chunk (+ its .css)
     Note over S,R: react, react-dom, react-router, @org/ui, @org/auth<br/>are shared singletons (one instance)
     R-->>S: <App> rendered at /staff-directory/* with host props
     S->>V: (external adapter) import(vendor url) → mount(el, props)
@@ -73,6 +73,14 @@ The shell owns the document: it imports the global styles, sets `data-theme` on 
 (`ThemeProvider` from `@org/ui`) and registers the service worker. Remotes inherit the CSS
 variables and use the shell's `ThemeProvider` through the shared `@org/ui`; they never import
 global styles from their exposed module.
+
+How CSS is delivered: in development style-loader injects `<style>` elements (fast HMR); in
+production every app ships extracted, content-hashed `.css` files. Loading a remote's exposed
+module (or one of its lazy chunks) makes the remote's own chunk loader add
+`<link rel="stylesheet">` for that chunk's CSS from the remote's origin and wait for it before
+the code runs; a CSS file that fails to load fails the remote like a JS chunk (fallback with
+retry). Nothing in the page needs inline styles, so the CSP has no `style-src 'unsafe-inline'`
+([devops-handoff.md](devops-handoff.md#csp); details in [toolchain.md](toolchain.md)).
 
 ## Zones
 
@@ -202,9 +210,9 @@ docs/                    this documentation (diagrams and their generator in doc
 ## Build and deploy
 
 - `pnpm build` builds every app into its own `dist/` (`pnpm -s apps --json` lists them with
-  `distDir`). A remote's `dist/` contains `mf-manifest.json`, `remoteEntry.js` and hashed chunks;
-  a shell's contains `index.html`, hashed chunks and the service worker, but **no**
-  `mfe-manifest.json`.
+  `distDir`). A remote's `dist/` contains `mf-manifest.json`, `remoteEntry.js` and hashed chunks
+  (`.js` and extracted `.css`); a shell's contains `index.html`, hashed chunks and the service
+  worker, but **no** `mfe-manifest.json`.
 - Each app is served as static files (one nginx image per app from `deploy/Dockerfile`), with
   SPA fallback, `no-cache` for entry files and long-lived caching for hashed chunks.
 - The shell's `/mfe-manifest.json` is written per environment at deploy time; changing a remote

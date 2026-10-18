@@ -9,6 +9,7 @@ import { ExternalModule, type ExternalModuleLoader } from './ExternalModule';
 
 jest.mock('@module-federation/enhanced/runtime', () => ({
   registerRemotes: jest.fn(),
+  registerPlugins: jest.fn(),
   loadRemote: jest.fn(),
 }));
 

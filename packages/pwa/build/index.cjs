@@ -24,9 +24,17 @@ const PRECACHE_IGNORES = [
   '**/service-worker.js',
 ];
 
+/**
+ * The shell's own build output, including the extracted, content-hashed `.css` files of
+ * production builds (precached like JS: the app must render styled offline). Remotes' files
+ * come from other origins and are not precached.
+ */
 const PRECACHE_PATTERNS = [
   '**/*.{js,css,html,png,svg,ico,jpg,jpeg,webp,avif,woff,woff2,webmanifest}',
 ];
+
+/** `[name].[contenthash:8].js|css` already change name with their content: no revision needed. */
+const HASHED_FILE = /\.[0-9a-f]{8}\.(?:js|mjs|css)$/;
 
 /**
  * Generate `service-worker.js` (Workbox GenerateSW) into an output directory.
@@ -50,6 +58,7 @@ async function generateServiceWorker({
     globPatterns: PRECACHE_PATTERNS,
     globIgnores: [...PRECACHE_IGNORES, ...globIgnores],
     swDest: path.join(outputDir, swDest),
+    dontCacheBustURLsMatching: HASHED_FILE,
     mode: 'production',
     sourcemap: false,
     inlineWorkboxRuntime: true,

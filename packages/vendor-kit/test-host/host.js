@@ -3,7 +3,7 @@
  * Vendor kit test host: loads a module through the SAME loader the production shells use
  * (lib/load.js, generated from @org/mf-runtime), mounts it with sample props and logs every
  * callback and lifecycle step. Also runs a few automatic checks (contract version, unmount
- * cleans up, no new globals, no styles added to <head>).
+ * cleans up, no new globals, no styles added to <head>, no CSP violations).
  *
  * Query parameters (prefill + automation): url, format, exportName, global, tagName, integrity,
  * config (JSON), user (JSON), theme, locale, path, autoMount=1, csp.
@@ -37,7 +37,7 @@ const buttons = {
 $('#contract-version').textContent =
   `host implements mount contract ${MOUNT_CONTRACT_VERSION}`;
 
-/** @type {{ handle: MountedModule | null, element: HTMLElement | null, attempt: number, globals: Set<string>, expectedGlobal?: string, headNodes: number, docSheets: number }} */
+/** @type {{ handle: MountedModule | null, element: HTMLElement | null, attempt: number, globals: Set<string>, expectedGlobal?: string, headNodes: number, docSheets: number, cspViolations: string[] }} */
 const state = {
   handle: null,
   element: null,
@@ -45,6 +45,7 @@ const state = {
   globals: new Set(),
   headNodes: 0,
   docSheets: 0,
+  cspViolations: [],
 };
 
 function setState(/** @type {string} */ value) {
@@ -73,6 +74,19 @@ function check(status, text) {
   li.textContent = text;
   checkList.append(li);
 }
+
+// The portal's CSP blocks the same things (e.g. an inline <style> in your shadow root, a
+// style="" attribute in an HTML string, a script or stylesheet from an origin you did not
+// declare): report each violation in the log and as a failed check.
+document.addEventListener('securitypolicyviolation', (event) => {
+  const what = `${event.effectiveDirective} blocked ${event.blockedURI || 'inline code'}${event.sample ? ` ("${event.sample}")` : ''}`;
+  state.cspViolations.push(what);
+  log('csp', what);
+  check(
+    'fail',
+    `CSP violation: ${what}. Use constructable stylesheets or a <link> from your declared origin for styles; declare every origin you load from.`,
+  );
+});
 
 function field(/** @type {string} */ name) {
   return /** @type {HTMLInputElement} */ (form.elements.namedItem(name));
@@ -164,6 +178,7 @@ function newGlobals() {
 async function mount() {
   if (state.handle) await unmount();
   checkList.replaceChildren();
+  state.cspViolations = [];
   applyTheme();
   let config;
   let props;
@@ -237,6 +252,9 @@ async function mount() {
         ? 'styles were added to the document (<head> or document.adoptedStyleSheets): scope them to the mount element / shadow root'
         : 'no styles added to the document',
     );
+    if (state.cspViolations.length === 0) {
+      check('pass', 'no CSP violations');
+    }
   } catch (error) {
     const code =
       error instanceof ExternalModuleLoadError ? error.code : 'mount-failed';

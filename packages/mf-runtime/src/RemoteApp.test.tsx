@@ -12,6 +12,7 @@ import type { MfeManifest } from './manifest/manifest';
 
 jest.mock('@module-federation/enhanced/runtime', () => ({
   registerRemotes: jest.fn(),
+  registerPlugins: jest.fn(),
   loadRemote: jest.fn(),
 }));
 
@@ -91,6 +92,22 @@ describe('RemoteApp', () => {
       name: 'staff',
       module: './App',
     });
+  });
+
+  it('shows RemoteFallback when a CSS file of the remote fails to load', async () => {
+    // the remote's chunk loader rejects like this when a <link rel="stylesheet"> errors
+    const cssError = Object.assign(
+      new Error(
+        'Loading CSS chunk 362 failed.\\n(https://staff.example/__federation_expose_App.0a1b2c3d.css)',
+      ),
+      { code: 'CSS_CHUNK_LOAD_FAILED' },
+    );
+    loadRemoteMock.mockRejectedValue(cssError);
+    renderShell(<RemoteApp name="staff" retries={0} />);
+    const fallback = await screen.findByTestId('remote-fallback');
+    expect(fallback).toHaveTextContent('staff: Loading CSS chunk 362 failed.');
+    expect(fallback).not.toHaveTextContent('.css');
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeEnabled();
   });
 
   it('retries automatically before giving up', async () => {

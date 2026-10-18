@@ -13,6 +13,7 @@ export {
   type MfeRemoteConfig,
 } from './manifest/manifest';
 export { initRemotes, resetRemote, type RegisteredRemote } from './initRemotes';
+export { registerRemoteCssPlugin, remoteCssPlugin } from './remoteCss';
 export { RemoteApp, type RemoteAppProps } from './RemoteApp';
 export { MfeManifestProvider, useMfeManifest } from './ManifestContext';
 export type { HostProps, HostUser } from './hostProps';

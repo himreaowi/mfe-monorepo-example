@@ -1,5 +1,6 @@
 import { registerRemotes } from '@module-federation/enhanced/runtime';
 import { resolveRemoteEntry, type MfeManifest } from './manifest/manifest';
+import { registerRemoteCssPlugin } from './remoteCss';
 
 export type RegisteredRemote = { name: string; entry: string };
 
@@ -9,7 +10,8 @@ export type RegisteredRemote = { name: string; entry: string };
  * singletons and React could load twice).
  *
  * Call once in the shell bootstrap, after the async import boundary. Remotes are downloaded only
- * when first rendered (`<RemoteApp>` → `loadRemote`).
+ * when first rendered (`<RemoteApp>` → `loadRemote`). Also registers `remoteCssPlugin`: a remote's
+ * CSS files are loaded (and awaited) by the remote's chunk loader, see `remoteCss.ts`.
  */
 export function initRemotes(
   manifest: MfeManifest,
@@ -19,6 +21,7 @@ export function initRemotes(
     name,
     entry: resolveRemoteEntry(remote.entry),
   }));
+  registerRemoteCssPlugin();
   registerRemotes(remotes, { force: options.force });
   return remotes;
 }

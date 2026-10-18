@@ -8,7 +8,7 @@ once here. How the pipeline uses them: [docs/devops-handoff.md](../docs/devops-h
 | `Dockerfile`                             | multi-stage: installs and builds one app (`--build-arg APP=<package>`), serves `dist/` with non-root nginx on 8080 |
 | `Dockerfile.dockerignore`                | build context filter (BuildKit picks it up next to the Dockerfile)                                                 |
 | `nginx/default.conf.template`            | SPA fallback, caching (no-cache for entry files, immutable for hashed chunks), CORS allow-list, `/healthz`         |
-| `nginx/security-headers.inc.template`    | CSP with placeholders (remotes, BFF, APIs, vendors, frames) + security headers                                     |
+| `nginx/security-headers.inc.template`    | CSP with placeholders (remotes, BFF, APIs, vendors, frames; no `'unsafe-inline'`) + security headers               |
 | `docker-entrypoint.d/40-mfe-manifest.sh` | writes `MFE_MANIFEST_JSON` to `/etc/mfe/mfe-manifest.json` at start-up (or mount the file there)                   |
 | `mfe-manifest.example.json`              | example per-environment manifest of the intranet shell (validated by `pnpm -s validate-manifest`)                  |
 
@@ -24,7 +24,10 @@ Environment variables and their defaults: top of `Dockerfile`; meaning: the devo
 
 Verification status: the templates are checked by `tools/scripts/test/deploy.test.js` (every
 `${VAR}` has a default, every location repeats the security headers, caching rules, CSP
-placeholders). The Dockerfile's build stage commands were run outside Docker (filtered install +
-build of a shell and a remote) and the CSP was exercised in a browser against production builds.
+placeholders, no `'unsafe-inline'`/`'unsafe-eval'`). The Dockerfile's build stage commands were
+run outside Docker (filtered install + build of a shell and a remote) and the CSP was exercised
+in a browser against production builds (zero violations without `style-src 'unsafe-inline'`:
+production CSS is extracted into hashed `.css` files, which the immutable-cache rule and the
+CORS allow-list already cover).
 **No Docker image was built and `nginx -t` was not run** (neither is installed on the template
 authors' machine): build the image once in your environment before relying on it.
