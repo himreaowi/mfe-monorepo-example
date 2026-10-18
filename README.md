@@ -28,9 +28,11 @@ pnpm e2e              # both zones, one after the other: feature specs + generat
 ```
 
 Both portals can run at the same time (two terminals): every zone has its own port range,
-dev tools included. "Sign in" uses the template's dev mock.
+dev tools included. `pnpm dev:<zone>` is the template's launcher (`tools/scripts/bin/dev.js`):
+Ctrl-C stops every dev server of the zone and frees its ports. "Sign in" uses the template's dev
+mock.
 
-| Zone     | Apps      | Dev tools (`tools/scripts/src/zones.js`, `toolPort`)                               |
+| Zone     | Apps      | Dev tools (root `package.json` `mfe.tools`, read with `toolPort`)                  |
 | -------- | --------- | ---------------------------------------------------------------------------------- |
 | intranet | 3100–3104 | 3190 mock API (`tools/mock-api`), 3192 Acme Service Desk (`tools/example-vendors`) |
 | internet | 3200–3204 | 3290 mock API, 3292 Bright Payments                                                |
@@ -43,7 +45,7 @@ dev tools included. "Sign in" uses the template's dev mock.
 | [`tools/example-vendors`](tools/example-vendors) | two fictional vendor products without React on versioned URLs, one server per zone serving only that zone's vendor: Acme Service Desk (esm, intranet) and Bright Payments (web component, internet), configured through `props.vendor` in the manifest. They replace the template's mock vendor in this example                         |
 | [`packages/use-api`](packages/use-api)           | `useApi` / `useSubmit` hooks used by every React remote: code shared through `packages/`, never between apps. Intranet and internet share no remotes                                                                                                                                                                                    |
 | `apps/*/*/src/features/*`                        | the features (types → api → hooks → UI), pages and routes; unit tests next to the code (API tests with `@org/jest-config/fetch`). Forms follow the template's pattern: validate on submit, focused error summary, field errors, server 422 mapped, submit disabled only while sending                                                   |
-| `apps/<zone>/shell-<zone>`                       | branding (`APP_TITLE`, page title), home page cards (`description` in `remotes.json`), feature e2e specs in `e2e/`. Phones get the template's collapsible `MainLayout` header; the shells add no menu code                                                                                                                              |
+| `apps/<zone>/shell-<zone>`                       | branding (`APP_TITLE`, page title), home page cards (`description` in `remotes.json`), feature e2e specs in `e2e/`. The template's `MainLayout` keeps the header one row (Menu button when it does not fit); the shells add no menu code                                                                                                |
 
 The generated e2e specs run unchanged. For the external adapters the generic vendor test
 (mounted content, no fallback, no console errors, unmount) runs against the example vendors;
@@ -70,8 +72,11 @@ stays green. If a second app needed date-fns, `pnpm check` would fail with
 This repository started from the template and keeps its history, so template fixes come in
 with a normal merge (`git remote add template <url>`, `git fetch template`,
 `git merge template/main`): shared `packages/`, `tools/` and `docs/` take the template's
-version, the example's apps and features stay. The only change to shared tool code is the
-`exampleVendors` offset in `tools/scripts/src/zones.js`.
+version, the example's apps and features stay. The example changes no shared tool code: its
+extra dev-tool server is declared in the root `package.json` (`mfe.tools.exampleVendors`,
+offset 2; [docs/architecture.md](docs/architecture.md#adding-a-dev-tool-server)). The template's
+`mockVendor` entry (offset 1) stays reserved although the example's adapters use the example
+vendors.
 
 ---
 

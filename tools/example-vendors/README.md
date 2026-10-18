@@ -10,9 +10,11 @@ pnpm --filter @org/example-vendors serve:intranet   # http://localhost:3192 (hel
 pnpm --filter @org/example-vendors serve:internet   # http://localhost:3292 (payments)
 ```
 
-One server per zone, serving only that zone's vendor, on the zone's dev-tools range
-(`toolPort(zone, 'exampleVendors')` in `tools/scripts/src/zones.js`: intranet 3190–3199,
-internet 3290–3299), so both zones run at the same time. `--port <n>` serves every vendor.
+One server per zone, serving only that zone's vendor, on the zone's dev-tools range (intranet
+3190–3199, internet 3290–3299), so both zones run at the same time. The port is declared once in
+the root `package.json` as `mfe.tools.exampleVendors` (offset 2 → 3192 / 3292) and read with
+`toolPort(zone, 'exampleVendors')` (`@org/scripts/zones`); `pnpm check` rejects a clashing
+offset. `--port <n>` serves every vendor.
 
 | Vendor (fictional)               | URL                                               | Format          | Used by                |
 | -------------------------------- | ------------------------------------------------- | --------------- | ---------------------- |
