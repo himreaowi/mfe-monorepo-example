@@ -1,5 +1,6 @@
+import { createFakeFetch } from '@org/jest-config/fetch';
 import { apiRoutes } from '@/core/constants/apiRoutes';
-import { createApiClient } from './http';
+import { apiBaseUrlFrom, createApiClient } from './http';
 
 describe('createApiClient', () => {
   it('resolves apiRoutes against settings.apiBaseUrl', () => {
@@ -7,5 +8,21 @@ describe('createApiClient', () => {
     expect(http.url(apiRoutes.items.byId(7))).toBe(
       'https://api.example.com/items/7',
     );
+  });
+
+  it('reads settings.apiBaseUrl only when it is a string', () => {
+    expect(apiBaseUrlFrom({ apiBaseUrl: '/api' })).toBe('/api');
+    expect(apiBaseUrlFrom({ apiBaseUrl: 42 })).toBe('');
+    expect(apiBaseUrlFrom(undefined)).toBe('');
+  });
+
+  it('sends the session cookie to a cross-origin API (credentials: include)', async () => {
+    const fetch = createFakeFetch({ 'GET /api/items': { body: [] } });
+    const http = createApiClient(
+      { apiBaseUrl: 'https://api.example.com/api' },
+      { fetch },
+    );
+    await http.getJson(apiRoutes.items.list());
+    expect(fetch.calls[0].init.credentials).toBe('include');
   });
 });

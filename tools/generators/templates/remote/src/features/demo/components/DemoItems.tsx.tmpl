@@ -1,0 +1,63 @@
+import { Button } from '@org/ui';
+import { useItems } from '../hooks/useItems';
+import { AddItemForm } from './AddItemForm';
+import styles from '../Demo.module.scss';
+
+/**
+ * Example of the data-fetching pattern: apiRoutes → services/http (base URL from
+ * settings.apiBaseUrl) → api/ → hooks/ → this component, which only renders states.
+ * In development the data comes from the zone's mock API (tools/mock-api).
+ */
+export function DemoItems() {
+  const { state, reload, add } = useItems();
+
+  return (
+    <section
+      className={styles.items}
+      aria-labelledby="demo-items-title"
+      data-testid="demo-items"
+    >
+      <h2 id="demo-items-title" className={styles.subtitle}>
+        Items from the API
+      </h2>
+      {state.status === 'unconfigured' ? (
+        <p className={styles.copy}>
+          No API configured: set <code>settings.apiBaseUrl</code> in the
+          manifest.
+        </p>
+      ) : null}
+      {state.status === 'loading' ? (
+        <p className={styles.copy} role="status">
+          Loading items…
+        </p>
+      ) : null}
+      {state.status === 'error' ? (
+        <div className={styles.error} role="alert">
+          <p>{state.message}</p>
+          <Button variant="secondary" onClick={reload}>
+            Try again
+          </Button>
+        </div>
+      ) : null}
+      {state.status === 'success' ? (
+        <>
+          {state.items.length === 0 ? (
+            <p className={styles.copy}>No items yet.</p>
+          ) : (
+            <ul className={styles.list} data-testid="demo-item-list">
+              {state.items.map((item) => (
+                <li key={item.id}>
+                  <strong>{item.name}</strong>
+                  {item.description ? (
+                    <span className={styles.copy}> — {item.description}</span>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          )}
+          <AddItemForm onCreated={add} />
+        </>
+      ) : null}
+    </section>
+  );
+}

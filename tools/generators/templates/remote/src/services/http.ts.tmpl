@@ -1,14 +1,36 @@
+import { useMemo } from 'react';
 import { createHttpClient, type HttpClient } from '@org/http-client';
+import { useHostProps } from '@org/mf-runtime/remote';
+
+/** `settings.apiBaseUrl` from host props, or '' when the environment has none. */
+export function apiBaseUrlFrom(
+  settings: Record<string, unknown> | undefined,
+): string {
+  return typeof settings?.apiBaseUrl === 'string' ? settings.apiBaseUrl : '';
+}
 
 /**
- * HTTP client whose base URL comes from host props `settings.apiBaseUrl` (from the shell's
- * mfe-manifest.json, or standaloneProps). Auth is a backend session (cookies), never tokens.
+ * HTTP client whose base URL comes from host props `settings.apiBaseUrl` (the shell's
+ * mfe-manifest.json, or standaloneProps; in development the zone's mock API). Auth is a backend
+ * session (cookies, `credentials: 'include'` for a cross-origin API), never tokens.
  */
 export function createApiClient(
   settings: Record<string, unknown> | undefined,
+  options: { fetch?: typeof fetch } = {},
 ): HttpClient {
   return createHttpClient({
-    baseUrl: () =>
-      typeof settings?.apiBaseUrl === 'string' ? settings.apiBaseUrl : '',
+    baseUrl: () => apiBaseUrlFrom(settings),
+    credentials: 'include',
+    fetch: options.fetch,
   });
+}
+
+/** The API client for this render, or `undefined` when no `settings.apiBaseUrl` is set. */
+export function useApiClient(): HttpClient | undefined {
+  const { settings } = useHostProps();
+  const baseUrl = apiBaseUrlFrom(settings);
+  return useMemo(
+    () => (baseUrl ? createApiClient({ apiBaseUrl: baseUrl }) : undefined),
+    [baseUrl],
+  );
 }

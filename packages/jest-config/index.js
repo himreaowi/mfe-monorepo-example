@@ -52,8 +52,9 @@ export function createJestConfig({
   return {
     rootDir,
     testEnvironment:
+      // jsdom + Node's Headers/Request/Response (jsdom has no Fetch API; fetch stays undefined)
       environment === 'jsdom'
-        ? require.resolve('jest-environment-jsdom')
+        ? require.resolve('./jsdom-environment.cjs')
         : 'node',
     roots: ['<rootDir>/src'],
     setupFilesAfterEnv: [require.resolve('./setup.cjs'), ...setupFiles],

@@ -108,8 +108,24 @@ e2e per zone: run `pnpm e2e:<zone>` when `pnpm -s apps --affected --base=<sha> -
 | shell    | `index.html`, `main.<hash>.js`, chunks, `service-worker.js`, `manifest.webmanifest`, icons                        | **no** `mfe-manifest.json` (written per environment) |
 | remote   | `mf-manifest.json`, `remoteEntry.js`, `__federation_expose_App.<hash>.js`, chunks, `index.html` (standalone page) | shells load `mf-manifest.json` cross-origin (CORS)   |
 
-Source maps (`*.map`) are emitted next to the files; the nginx template does not serve them.
-Upload them to the error tracker in the pipeline if you use one.
+Source maps (`*.map`) are emitted next to the files; the nginx template does not serve them
+(404). Upload them to the error tracker in the pipeline if you use one.
+
+They are **hidden, source-less maps** (`hidden-nosources-source-map`, set in
+`@org/rspack-config`): mappings and source file names only, no `sourcesContent`, and the bundles
+have no `sourceMappingURL` comment. Why: the original sources contain development-only branches
+(e.g. `if (process.env.NODE_ENV !== 'production')` fallbacks to the mock vendor / mock API on
+`http://localhost:…`) that the minifier removes from the bundles, but a classic `source-map`
+would copy them verbatim into the `.map` files. An error tracker still resolves minified stack
+traces to file and line; for source context, point it at the repository at the commit that was
+built. Check a build with:
+
+```sh
+grep -l localhost apps/*/*/dist/*.map   # expect no output
+```
+
+An app that needs full maps (e.g. private symbol server) can pass
+`productionSourceMap: 'hidden-source-map'` to its config factory; never publish those maps.
 
 One image per app:
 
@@ -149,6 +165,10 @@ Example: [`deploy/mfe-manifest.example.json`](../deploy/mfe-manifest.example.jso
   `Cache-Control: no-cache`.
 - Remote URL, vendor version, BFF location changes = manifest change + shell container
   restart (or file update). No rebuild.
+- `settings.apiBaseUrl`: the API base URL of that environment (absolute, or a same-origin path
+  such as `/api` behind the BFF). The generated `mfe-manifest.dev.json` points it at the
+  dev-only mock API (`tools/mock-api`, `http://localhost:3190/api` / `:3290`), which is never
+  built or deployed.
 
 ## nginx and Docker: one template for every app
 
@@ -264,8 +284,9 @@ Azure Repos branch policies on `main`:
   points at the vendor release for that environment; the shell's `CSP_VENDOR_ORIGINS` (and
   `CSP_FRAME_SRC` for iframes) lists exactly the origins the vendor declared.
 - Upgrading a vendor = manifest change (`url` + `integrity`), no rebuild; rollback likewise.
-- The dev-only mock vendor (`tools/mock-vendor`) is not an app and is never built or deployed;
-  production builds do not contain its URL.
+- The dev-only mock vendor (`tools/mock-vendor`) and mock API (`tools/mock-api`) are not apps
+  and are never built or deployed; production bundles do not contain their URLs and the
+  production source maps carry no sources (see "Build outputs per app").
 - The vendor kit zip is built with `pnpm --filter @org/vendor-kit pack:kit`; publishing it to
   Azure Artifacts (Universal Package) is optional.
 

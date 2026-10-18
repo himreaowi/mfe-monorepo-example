@@ -30,10 +30,12 @@ Distribution: send the zip, or publish it to Azure Artifacts as a Universal Pack
 Bump `version` in `package.json` when the kit changes; the contract version is
 `MOUNT_CONTRACT_VERSION` in mf-runtime (a MAJOR bump needs a migration plan with every vendor).
 
-Try it with our dev mock vendor (`tools/mock-vendor`, port 3999):
+Try it with our dev mock vendor (`tools/mock-vendor`, intranet port 3191):
 
 ```sh
-pnpm --filter @org/mock-vendor dev &
+pnpm --filter @org/mock-vendor serve:intranet &
 pnpm --filter @org/vendor-kit serve
-# http://localhost:3998/test-host/?url=http://localhost:3999/mount.js&format=esm&autoMount=1
+# http://localhost:3998/test-host/?url=http://localhost:3191/mount.js&format=esm&autoMount=1
 ```
+
+(The vendor-kit test host on 3998 is a standalone tool, not started by `pnpm dev:<zone>`.)

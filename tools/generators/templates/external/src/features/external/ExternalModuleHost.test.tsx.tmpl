@@ -43,15 +43,15 @@ describe('ExternalModuleHost', () => {
   const vendor = { url: 'https://vendor.example/mount.js', format: 'esm' };
 
   it('passes the manifest config, sub-path, theme and a minimal user to <ExternalModule>', () => {
-    renderAt('__ROUTE_PATH__/receipt/7', vendor);
+    renderAt('__ROUTE_PATH__/details/7', vendor);
     expect(screen.getByTestId('external-module-stub')).toHaveTextContent(
-      'receipt/7',
+      'details/7',
     );
     expect(lastProps).toMatchObject({
       name: '__FEDERATION_NAME__',
       config: vendor,
       basePath: '__ROUTE_PATH__',
-      path: 'receipt/7',
+      path: 'details/7',
       theme: 'light',
       user: { id: 'u1', name: 'Ada' },
     });
@@ -60,15 +60,15 @@ describe('ExternalModuleHost', () => {
 
   it('routes vendor navigation through the router and lists vendor events', () => {
     renderAt('__ROUTE_PATH__', vendor);
-    act(() => lastProps?.onNavigate?.('receipt/9'));
+    act(() => lastProps?.onNavigate?.('details/9'));
     expect(screen.getByTestId('location')).toHaveTextContent(
-      '__ROUTE_PATH__/receipt/9',
+      '__ROUTE_PATH__/details/9',
     );
     act(() => lastProps?.onNavigate?.('/elsewhere'));
     expect(screen.getByTestId('location')).toHaveTextContent('/elsewhere');
     renderAt('__ROUTE_PATH__', vendor);
     act(() => {
-      lastProps?.onEvent?.('payment:completed', { reference: 'R1' });
+      lastProps?.onEvent?.('demo:action', { count: 1 });
       lastProps?.onError?.({
         code: 'x',
         message: 'boom',
@@ -77,7 +77,7 @@ describe('ExternalModuleHost', () => {
       });
     });
     expect(screen.getAllByTestId('vendor-events').at(-1)).toHaveTextContent(
-      'payment:completed {"reference":"R1"}',
+      'demo:action {"count":1}',
     );
     expect(screen.getAllByTestId('vendor-events').at(-1)).toHaveTextContent(
       'module/x: boom',
@@ -87,7 +87,7 @@ describe('ExternalModuleHost', () => {
   it('falls back to the dev mock vendor when the manifest has no vendor config', () => {
     renderAt('__ROUTE_PATH__');
     expect(lastProps?.config).toMatchObject({
-      url: 'http://localhost:3999/mount.js',
+      url: '__MOCK_VENDOR_URL__',
     });
   });
 });

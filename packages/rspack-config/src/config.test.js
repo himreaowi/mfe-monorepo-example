@@ -134,8 +134,11 @@ describe('createRemoteConfig', () => {
 });
 
 describe('real build', () => {
-  /** @param {string} name */
-  async function build(name) {
+  /**
+   * @param {string} name
+   * @param {{ production?: boolean }} [opts] production: keep the default devtool + minifier
+   */
+  async function build(name, opts = {}) {
     const config = createRemoteConfig({
       rootDir: fixture,
       name,
@@ -144,8 +147,10 @@ describe('real build', () => {
     })({ RSPACK_BUILD: true }, {});
     const outDir = join(fixture, 'dist', name);
     config.output = { ...config.output, path: outDir };
-    config.devtool = false;
-    config.optimization = { minimize: false };
+    if (!opts.production) {
+      config.devtool = false;
+      config.optimization = { minimize: false };
+    }
     await new Promise((resolve, reject) => {
       rspack(config).run((err, stats) => {
         if (err) return reject(err);
@@ -160,7 +165,10 @@ describe('real build', () => {
       .map((f) => readFileSync(join(outDir, f), 'utf8'))
       .join('\n');
     const html = readFileSync(join(outDir, 'index.html'), 'utf8');
-    return { js, files, html };
+    const maps = files
+      .filter((f) => f.endsWith('.map'))
+      .map((f) => readFileSync(join(outDir, f), 'utf8'));
+    return { js, files, html, maps };
   }
 
   after(
@@ -183,5 +191,26 @@ describe('real build', () => {
     assert.match(a.js, /padding:\s?4px/, 'SCSS compiled');
     // absolute script URL: a standalone deep link (/details) still loads the entry
     assert.match(a.html, /<script[^>]+src="\/main\.[^"]+\.js"/);
+  });
+
+  it('production: hidden source maps without sourcesContent, no dev-only code anywhere', async () => {
+    const prod = await build('app_prod', { production: true });
+    assert.ok(prod.maps.length > 0, '.map files emitted');
+    assert.doesNotMatch(
+      prod.js,
+      /^\/\/# sourceMappingURL=/m,
+      'no map reference',
+    );
+    assert.doesNotMatch(prod.js, /webpack:\/\/\.\/src/, 'no inline CSS maps');
+    assert.doesNotMatch(prod.js, /dev-only-marker/, 'bundle has no dev branch');
+    for (const map of prod.maps) {
+      const json = JSON.parse(map);
+      assert.ok(json.mappings, 'mappings kept');
+      assert.ok(
+        !json.sourcesContent?.some(Boolean),
+        'no sourcesContent in the map',
+      );
+      assert.doesNotMatch(map, /localhost/);
+    }
   });
 });

@@ -15,7 +15,7 @@
  */
 import { json, notFound } from './server.js';
 
-/** @typedef {import('./server.js').ZoneApi} ZoneApi */
+/** @typedef {import('./server.js').MockResource} ZoneApi */
 
 export const MOCK_CSRF_TOKEN = 'mock-csrf-token';
 

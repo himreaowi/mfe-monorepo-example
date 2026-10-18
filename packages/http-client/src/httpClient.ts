@@ -21,8 +21,8 @@ export class HttpClientError extends Error {
   statusText: string;
   url: string;
   /**
-   * Parsed JSON body of the error response (e.g. `{ errors: { field: message } }` of a 422),
-   * `undefined` when there is none or it is not JSON.
+   * Parsed JSON body of the error response, e.g. `{ message, errors: { field: message } }` of a
+   * 422 validation error. `undefined` when the body is empty or not JSON.
    */
   body: unknown;
 
@@ -94,10 +94,11 @@ export function joinUrl(base: string, path: string): string {
   return `${trimmedBase.replace(/\/+$/, '')}${normalizedPath}`;
 }
 
+/** The error response's body as JSON, or `undefined` (empty, not JSON, or unreadable). */
 async function readErrorBody(response: Response): Promise<unknown> {
   try {
     const raw = await response.text();
-    return raw ? JSON.parse(raw) : undefined;
+    return raw ? (JSON.parse(raw) as unknown) : undefined;
   } catch {
     return undefined;
   }

@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import type { MouseEvent, ReactNode } from 'react';
 import { Outlet } from 'react-router';
 import { useOnlineStatus } from '@org/pwa';
 import { ThemeToggle } from '../../components/ThemeToggle';
@@ -10,33 +11,112 @@ export type MainLayoutProps = {
   brand?: ReactNode;
   /** Optional navigation rendered in the header, between brand and theme toggle. */
   nav?: ReactNode;
+  /** Accessible name of the `<nav>` landmark. Default `Main`. */
+  navLabel?: string;
   /** Extra header content after the theme toggle (e.g. user menu). */
   headerActions?: ReactNode;
+  /** Text of the narrow-screen menu button. Default `Menu`. */
+  menuLabel?: string;
   /** Page content. Default: `<Outlet />` (use MainLayout as a route element). */
   children?: ReactNode;
   /** Override online detection (default: `useOnlineStatus()`). */
   online?: boolean;
 };
 
-/** App chrome: header (brand, nav, theme toggle), offline banner, main. */
+/**
+ * App chrome: header (brand, nav, theme toggle, actions), offline banner, main.
+ *
+ * Below 40rem the nav, theme toggle and actions fold into a panel behind a "Menu" disclosure
+ * button (`aria-expanded`, `aria-controls`), so the header is one row (about 60 px) on phones.
+ * The panel closes on Escape (focus returns to the button), on a click outside the header, and
+ * after a link inside it is followed (or on browser back/forward). From 40rem up the button is
+ * hidden and everything sits in the header row.
+ */
 export function MainLayout({
   brand = 'MFE Starter',
   nav,
+  navLabel = 'Main',
   headerActions,
+  menuLabel = 'Menu',
   children,
   online,
 }: MainLayoutProps) {
   const detectedOnline = useOnlineStatus();
   const isOnline = online ?? detectedOnline;
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
+  const headerRef = useRef<HTMLElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  /** Close; if focus was inside the panel (about to be hidden), move it to the button. */
+  const close = useCallback((restoreFocus: boolean) => {
+    const panel = panelRef.current;
+    const focusInside =
+      panel !== null && panel.contains(document.activeElement);
+    setOpen(false);
+    if (restoreFocus || focusInside) buttonRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') close(true);
+    };
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (target && headerRef.current?.contains(target)) return;
+      close(false);
+    };
+    const onPopState = () => close(false);
+    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('popstate', onPopState);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('popstate', onPopState);
+    };
+  }, [open, close]);
+
+  // a followed link (client-side navigation) closes the panel
+  const onPanelClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (open && (event.target as Element).closest('a[href]')) close(false);
+  };
 
   return (
     <div className={styles.host}>
-      <header className={styles.header}>
+      <header ref={headerRef} className={styles.header}>
         <div className={styles.brand}>{brand}</div>
-        {nav ? <nav className={styles.nav}>{nav}</nav> : null}
-        <div className={styles.actions}>
-          <ThemeToggle />
-          {headerActions}
+        <button
+          ref={buttonRef}
+          type="button"
+          className={styles.menuButton}
+          aria-expanded={open}
+          aria-controls={panelId}
+          onClick={() => setOpen((value) => !value)}
+          data-testid="header-menu-button"
+        >
+          <span aria-hidden="true" className={styles.menuIcon} />
+          {menuLabel}
+        </button>
+        {/* click delegation only: links inside handle keyboard activation themselves */}
+        <div
+          ref={panelRef}
+          id={panelId}
+          className={open ? `${styles.panel} ${styles.open}` : styles.panel}
+          onClick={onPanelClick}
+          data-testid="header-panel"
+        >
+          {nav ? (
+            <nav className={styles.nav} aria-label={navLabel}>
+              {nav}
+            </nav>
+          ) : null}
+          <div className={styles.actions}>
+            <ThemeToggle />
+            {headerActions}
+          </div>
         </div>
       </header>
       <ConnectionRequired visible={!isOnline} />

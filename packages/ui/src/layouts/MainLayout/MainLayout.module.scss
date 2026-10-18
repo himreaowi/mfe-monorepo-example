@@ -5,6 +5,7 @@
 }
 
 .header {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-4);
@@ -16,9 +17,22 @@
 }
 
 .brand {
+  min-width: 0;
   font-weight: 700;
   font-size: 1.125rem;
   letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+/* Wide screens: nav + actions sit in the header row; the menu button is hidden. */
+.panel {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
 }
 
 .main {
@@ -41,15 +55,97 @@
   align-items: center;
 }
 
-/* Phones: tighter header so brand, nav and actions take fewer rows at 375 px. */
-@media (max-width: 40rem) {
-  .header {
-    padding: var(--space-3);
-    gap: var(--space-2) var(--space-3);
+.menuButton {
+  display: none;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 2.75rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-text-muted);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--color-bg);
   }
 
-  .actions {
-    gap: var(--space-2);
+  &:focus-visible {
+    outline: 3px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  &[aria-expanded='true'] {
+    background: var(--color-bg);
+  }
+}
+
+/* three bars drawn with borders, so they follow the text colour in both themes */
+.menuIcon {
+  width: 1rem;
+  height: 0.75rem;
+  border-top: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  background: linear-gradient(currentColor, currentColor) center / 100% 2px
+    no-repeat;
+}
+
+/* Phones: one header row (brand + Menu); nav, theme toggle and actions in a dropdown panel. */
+@media (max-width: 40rem) {
+  .header {
+    flex-wrap: nowrap;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-4);
+  }
+
+  .menuButton {
+    display: inline-flex;
+  }
+
+  .panel {
+    display: none;
+  }
+
+  .panel.open {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: var(--space-4);
+    max-height: calc(100vh - 4rem);
+    overflow-y: auto;
+    padding: var(--space-4);
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 25%);
+  }
+
+  /* stack the links (also a list passed as `nav`, e.g. the shell's RemoteNav) */
+  .open .nav,
+  .open .nav ul {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: var(--space-1);
+  }
+
+  .open .nav a {
+    display: block;
+  }
+
+  .open .actions {
+    gap: var(--space-3);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--color-border);
   }
 
   .main {

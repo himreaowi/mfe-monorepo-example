@@ -6,7 +6,12 @@ import os from 'node:os';
 import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
 import { checkApps, checkVersions } from '@org/scripts';
-import { generateRemote, generateShell } from '../src/index.js';
+import {
+  generateRemote,
+  generateShell,
+  mockVendorConfig,
+  titleFromName,
+} from '../src/index.js';
 
 const REPO = path.resolve(import.meta.dirname, '..', '..', '..');
 const BIN = path.join(REPO, 'tools', 'generators', 'bin', 'gen.js');
@@ -119,8 +124,19 @@ describe('generators', () => {
     assert.deepEqual(readJson(root, `${dir}/mfe-manifest.dev.json`), {
       remotes: {},
       auth: { mock: true },
-      settings: {},
+      // the zone's dev-only mock API (tools/mock-api, intranet tools port)
+      settings: { apiBaseUrl: 'http://localhost:3190/api' },
     });
+    // `pnpm dev:intranet` / `nx dev` start the zone's mock API with the shell
+    assert.deepEqual(pkg.nx.targets, {
+      dev: {
+        dependsOn: [{ projects: ['@org/mock-api'], target: 'serve:intranet' }],
+      },
+    });
+    assert.match(
+      read(root, `${dir}/src/core/constants/app.ts`),
+      /APP_TITLE = 'Intranet shell'/,
+    );
     assert.equal(pkg.dependencies['@org/auth'], 'workspace:*');
     const files = listFiles(path.join(root, dir));
     for (const f of [
@@ -207,7 +223,7 @@ describe('generators', () => {
     assert.deepEqual(readJson(root, `${shell}/remotes.json`).remotes, [
       {
         name: 'staff-directory',
-        title: 'Staff Directory',
+        title: 'Staff directory',
         path: '/staff-directory',
         federationName: 'intranet_staff_directory',
         package: '@org/intranet-staff-directory',
@@ -216,7 +232,7 @@ describe('generators', () => {
       },
       {
         name: 'leave-requests',
-        title: 'Leave Requests',
+        title: 'Leave requests',
         path: '/leave-requests',
         federationName: 'intranet_leave_requests',
         package: '@org/intranet-leave-requests',
@@ -232,6 +248,49 @@ describe('generators', () => {
         entry: 'http://localhost:3102/mf-manifest.json',
       },
     });
+    assert.deepEqual(pkgA.nx.targets, {
+      dev: {
+        dependsOn: [{ projects: ['@org/mock-api'], target: 'serve:intranet' }],
+      },
+    });
+    // standalone: the mock API in development only (dropped from production bundles)
+    assert.match(
+      read(root, 'apps/intranet/staff-directory/src/app/standaloneProps.ts'),
+      /process\.env\.NODE_ENV !== 'production'\s*\?\s*\{ apiBaseUrl: 'http:\/\/localhost:3190\/api' \}/,
+    );
+  });
+
+  it('titles: sentence case with known acronyms, --title override', async () => {
+    assert.equal(titleFromName('staff-directory'), 'Staff directory');
+    assert.equal(titleFromName('it-helpdesk'), 'IT helpdesk');
+    assert.equal(titleFromName('hr-faq'), 'HR FAQ');
+    assert.equal(titleFromName('my-api-keys'), 'My API keys');
+    const r = await generateRemote({
+      root,
+      zone: 'intranet',
+      name: 'it-helpdesk',
+      external: true,
+    });
+    assert.equal(r.entry.title, 'IT helpdesk');
+    const t = await generateRemote({
+      root,
+      zone: 'intranet',
+      name: 'hr-forms',
+      title: '  Forms   for HR ',
+    });
+    assert.equal(t.entry.title, 'Forms for HR');
+    assert.match(
+      read(root, 'apps/intranet/hr-forms/src/core/constants/app.ts'),
+      /APP_TITLE = 'Forms for HR'/,
+    );
+    for (const title of ["Bob's", 'a "b"', '<x>', '', 'x'.repeat(61)]) {
+      await assert.rejects(
+        generateRemote({ root, zone: 'intranet', name: 'bad-title', title }),
+        /--title/,
+        title,
+      );
+    }
+    assert.ok(!fs.existsSync(path.join(root, 'apps/intranet/bad-title')));
   });
 
   it('remote layout: exposed module never imports global styles', () => {
@@ -245,6 +304,12 @@ describe('generators', () => {
       'src/components/ModeBadge/ModeBadge.tsx',
       'src/features/demo/Demo.tsx',
       'src/features/demo/Demo.test.tsx',
+      'src/features/demo/api/itemsApi.ts',
+      'src/features/demo/api/itemsApi.test.ts',
+      'src/features/demo/hooks/useItems.ts',
+      'src/features/demo/components/DemoItems.tsx',
+      'src/features/demo/components/AddItemForm.tsx',
+      'src/features/demo/components/AddItemForm.test.tsx',
       'src/layouts/StandaloneLayout/StandaloneLayout.tsx',
       'src/pages/OverviewPage/OverviewPage.tsx',
       'src/pages/DetailsPage/DetailsPage.tsx',
@@ -266,7 +331,12 @@ describe('generators', () => {
   });
 
   it('substitutes every template token', () => {
-    for (const app of ['shell-intranet', 'staff-directory', 'leave-requests']) {
+    for (const app of [
+      'shell-intranet',
+      'staff-directory',
+      'leave-requests',
+      'it-helpdesk',
+    ]) {
       const dir = path.join(root, 'apps', 'intranet', app);
       for (const f of listFiles(dir)) {
         assert.doesNotMatch(
@@ -322,20 +392,102 @@ describe('generators', () => {
     assert.ok(!files.some((f) => f.startsWith('src/features/demo/')));
     assert.ok(!files.includes('src/pages/DetailsPage/DetailsPage.tsx'));
     assert.ok(files.includes('src/features/external/vendorConfig.ts'));
-    // dev: the mock vendor starts with the adapter and the dev manifest points at it
+    // dev: the zone's mock API + mock vendor start with the adapter; the dev manifest points
+    // at the internet mock vendor (tools range 3290-3299), generic config
     assert.deepEqual(pkg.nx.targets, {
-      dev: { dependsOn: [{ projects: ['@org/mock-vendor'], target: 'dev' }] },
+      dev: {
+        dependsOn: [
+          { projects: ['@org/mock-api'], target: 'serve:internet' },
+          { projects: ['@org/mock-vendor'], target: 'serve:internet' },
+        ],
+      },
     });
     const dev = readJson(
       root,
       'apps/internet/shell-internet/mfe-manifest.dev.json',
     );
     assert.deepEqual(dev.remotes.internet_payments.props.vendor, {
-      url: 'http://localhost:3999/mount.js',
+      url: 'http://localhost:3291/mount.js',
       format: 'esm',
-      config: { title: 'Payments (mock vendor)', amount: 1250 },
+      config: { title: 'Payments (mock vendor)' },
     });
     assert.equal(dev.remotes.internet_services.props, undefined);
+    assert.equal(dev.settings.apiBaseUrl, 'http://localhost:3290/api');
+    const fallback = read(
+      root,
+      'apps/internet/payments/src/features/external/vendorConfig.ts',
+    );
+    assert.match(fallback, /http:\/\/localhost:3291\/mount\.js/);
+    assert.doesNotMatch(fallback, /amount|merchant/i);
+  });
+
+  it('--vendor-format: web-component and script mock configs; mf and misuse refused', async () => {
+    const wc = await generateRemote({
+      root,
+      zone: 'internet',
+      name: 'widgets',
+      external: true,
+      vendorFormat: 'web-component',
+    });
+    const dev = readJson(
+      root,
+      'apps/internet/shell-internet/mfe-manifest.dev.json',
+    );
+    assert.deepEqual(dev.remotes[wc.federationName].props.vendor, {
+      url: 'http://localhost:3291/element.js',
+      format: 'web-component',
+      tagName: 'mock-vendor-widget',
+      config: { title: 'Widgets (mock vendor)' },
+    });
+    assert.match(
+      read(root, 'apps/internet/widgets/src/features/external/vendorConfig.ts'),
+      /tagName: 'mock-vendor-widget'/,
+    );
+    assert.deepEqual(mockVendorConfig('intranet', 'script', 'X'), {
+      url: 'http://localhost:3191/script.js',
+      format: 'script',
+      global: 'MockVendor',
+      config: { title: 'X (mock vendor)' },
+    });
+    await assert.rejects(
+      generateRemote({
+        root,
+        zone: 'internet',
+        name: 'fed',
+        external: true,
+        vendorFormat: 'mf',
+      }),
+      /cannot serve a Module Federation remote/,
+    );
+    await assert.rejects(
+      generateRemote({
+        root,
+        zone: 'internet',
+        name: 'fed',
+        vendorFormat: 'esm',
+      }),
+      /only applies to --external/,
+    );
+    await assert.rejects(
+      generateRemote({
+        root,
+        zone: 'internet',
+        name: 'fed',
+        external: true,
+        vendorFormat: 'iframe',
+      }),
+      /Unknown --vendor-format/,
+    );
+    fs.rmSync(path.join(root, 'apps/internet/widgets'), { recursive: true });
+    const regFile = path.join(
+      root,
+      'apps/internet/shell-internet/remotes.json',
+    );
+    const reg = JSON.parse(fs.readFileSync(regFile, 'utf8'));
+    reg.remotes = reg.remotes.filter(
+      (/** @type {any} */ e) => e.name !== 'widgets',
+    );
+    fs.writeFileSync(regFile, JSON.stringify(reg));
   });
 
   it('reuses the lowest free port', async () => {
@@ -419,11 +571,23 @@ describe('generators', () => {
       },
     );
     assert.match(out, /Created apps\/internet\/shell-internet .*port 3200/);
+    assert.match(out, /"Internet shell"/);
     const remote = execFileSync(
       process.execPath,
-      [BIN, 'remote', 'internet', 'my-profile', '--private', '--root', cliRoot],
+      [
+        BIN,
+        'remote',
+        'internet',
+        'my-profile',
+        '--private',
+        '--title',
+        'Your profile',
+        '--root',
+        cliRoot,
+      ],
       { encoding: 'utf8' },
     );
+    assert.match(remote, /"Your profile"/);
     assert.match(remote, /port 3201, private/);
     assert.match(remote, /route \/my-profile\/\*/);
     let stderr = '';

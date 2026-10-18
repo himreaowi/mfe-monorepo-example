@@ -162,6 +162,11 @@ export async function checkApps({ root }) {
         'app-port',
         `${where}: missing "mfe": { "port": <number> } (${zone} range ${range.first}-${range.last}).`,
       );
+    } else if (port >= range.tools.first && port <= range.tools.last) {
+      err(
+        'app-port',
+        `${where}: port ${port} is reserved for the ${zone} dev tools (${range.tools.first}-${range.tools.last}: mock API, mock vendor). Apps use ${range.first}-${range.last}.`,
+      );
     } else if (port < range.first || port > range.last) {
       err(
         'app-port',

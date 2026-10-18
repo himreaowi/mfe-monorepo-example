@@ -16,14 +16,14 @@ in the build):
 
 ```json
 "__FEDERATION_NAME__": {
-  "entry": "https://cdn.example.sg/__NAME__/mf-manifest.json",
+  "entry": "https://cdn.example.org/__NAME__/mf-manifest.json",
   "props": {
     "vendor": {
       "url": "https://vendor.example/__NAME__/1.4.2/mount.js",
       "format": "esm",
       "integrity": "sha384-…",
       "timeoutMs": 15000,
-      "config": { "merchantId": "…" }
+      "config": { "<vendor setting>": "…" }
     }
   }
 }
@@ -32,17 +32,22 @@ in the build):
 `format`: `esm` | `web-component` (+ `tagName`) | `script` (+ `global`) | `mf` (+ `remoteName`).
 `config` is passed to the vendor as `props.config`.
 
-In development the shell's `mfe-manifest.dev.json` points at the **mock vendor**
-(`tools/mock-vendor`, http://localhost:3999/mount.js), and `src/features/external/vendorConfig.ts`
-falls back to it when no config is set (standalone mode). Production builds contain neither.
+In development the shell's `mfe-manifest.dev.json` points at the zone's **mock vendor**
+(`tools/mock-vendor`, `__MOCK_VENDOR_URL__`, format `__VENDOR_FORMAT__`: a neutral demo widget),
+and `src/features/external/vendorConfig.ts` falls back to it when no config is set (standalone
+mode). Production builds contain neither. Generated with another format:
+`pnpm gen:remote __ZONE__ <name> --external --vendor-format esm|web-component|script`.
+When the real vendor delivers, replace `props.vendor` (URL, format, `config`) in the dev
+manifest and per environment; the generic e2e checks keep working, the mock-vendor-only check
+skips itself.
 
 ## Commands
 
 | Command                                  | What                                                                     |
 | ---------------------------------------- | ------------------------------------------------------------------------ |
-| `pnpm dev:__ZONE__` (repo root)          | Shell + all __ZONE__ remotes + the mock vendor (Nx task dependency)      |
-| `pnpm exec nx dev __PACKAGE_NAME__`      | This adapter standalone on http://localhost:__PORT__ + the mock vendor   |
-| `pnpm --filter __PACKAGE_NAME__ dev`     | This adapter only (start `pnpm --filter @org/mock-vendor dev` yourself)  |
+| `pnpm dev:__ZONE__` (repo root)          | Shell + all __ZONE__ remotes + the zone's mock API and mock vendor (Nx task dependencies) |
+| `pnpm exec nx dev __PACKAGE_NAME__`      | This adapter standalone on http://localhost:__PORT__ + mock API + mock vendor |
+| `pnpm --filter __PACKAGE_NAME__ dev`     | This adapter only (start `pnpm --filter @org/mock-vendor serve:__ZONE__` yourself) |
 | `pnpm --filter __PACKAGE_NAME__ build`   | Production build in `dist/`                                              |
 | `lint` / `typecheck` / `test`            | ESLint, `tsc`, Jest                                                      |
 

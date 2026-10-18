@@ -47,9 +47,21 @@ describe('check-apps', () => {
       'intranet/staff': app('staff', { port: 3290 }),
     });
     assert.deepEqual(rules(r.errors), ['app-port']);
-    assert.match(r.errors[0].message, /outside the intranet range 3100-3199/);
+    assert.match(r.errors[0].message, /outside the intranet range 3100-3189/);
     r = await run({ ...validApps(), 'intranet/staff': app('staff', {}) });
     assert.deepEqual(rules(r.errors), ['app-port']);
+  });
+
+  it('fails on a port in the zone range reserved for dev tools', async () => {
+    const r = await run({
+      ...validApps(),
+      'intranet/staff': app('staff', { port: 3191 }),
+    });
+    assert.deepEqual(rules(r.errors), ['app-port']);
+    assert.match(
+      r.errors[0].message,
+      /port 3191 is reserved for the intranet dev tools \(3190-3199/,
+    );
   });
 
   it('fails on missing or wrong tags', async () => {

@@ -106,22 +106,37 @@ describe('createHttpClient', () => {
     const error = await http.getJson('/missing').catch((e: unknown) => e);
     expect(error).toBeInstanceOf(HttpClientError);
     expect(error).toMatchObject({ status: 404, statusText: 'Not Found' });
+    // "nope" is not JSON
     expect((error as HttpClientError).body).toBeUndefined();
   });
 
   it('keeps the parsed JSON body of an error response (validation errors)', async () => {
-    const fetchMock = jest.fn().mockResolvedValue(
-      response(JSON.stringify({ errors: { endDate: 'Too many days' } }), {
-        status: 422,
-        statusText: 'Unprocessable Entity',
-      }),
-    );
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValue(
+        response(
+          JSON.stringify({ message: 'Invalid', errors: { name: 'Required' } }),
+          { status: 422, statusText: 'Unprocessable Entity' },
+        ),
+      );
     const http = createHttpClient({ baseUrl: '/api', fetch: fetchMock });
-    const error = await http.postJson('/leave', {}).catch((e: unknown) => e);
+    const error = await http
+      .postJson('/items', { name: '' })
+      .catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(HttpClientError);
     expect(error).toMatchObject({
       status: 422,
-      body: { errors: { endDate: 'Too many days' } },
+      body: { message: 'Invalid', errors: { name: 'Required' } },
     });
+  });
+
+  it('leaves body undefined for an empty error response', async () => {
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValue(response(null, { status: 500 }));
+    const http = createHttpClient({ baseUrl: '/api', fetch: fetchMock });
+    const error = await http.post('/x').catch((e: unknown) => e);
+    expect(error).toMatchObject({ status: 500, body: undefined });
   });
 
   it('reports non-JSON bodies clearly', async () => {

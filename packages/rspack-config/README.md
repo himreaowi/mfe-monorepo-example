@@ -57,7 +57,10 @@ Shared by both:
 - `index.html` script URLs are absolute (`htmlPublicPath`, default `/`), so a deep link or reload
   of a standalone remote (`/details`) still loads its entry.
 - `lazyCompilation: false`; dev server with CORS `*`, history fallback, HMR, `public/` as static.
-- Production: `[name].[contenthash:8].js`, source maps, `public/` copied except `index.html` and
+- Production: `[name].[contenthash:8].js`, **hidden source maps without sources**
+  (`hidden-nosources-source-map`: `.map` files with mappings and file names, no
+  `sourcesContent`, no `sourceMappingURL` comment; option `productionSourceMap`), no inline CSS
+  maps, `public/` copied except `index.html` and
   `mfe-manifest*.json` (the real manifest is written per environment by DevOps).
 - `output.uniqueName` = federation name; `__MFE_NAME__` defined.
 - Federation names must be JS identifiers (`intranet_staff_directory`); invalid names throw.

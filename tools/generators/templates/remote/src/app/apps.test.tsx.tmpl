@@ -1,7 +1,14 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { ThemeProvider } from '@org/ui';
+import { listItems } from '@/features/demo/api';
 import { EmbeddedApp, StandaloneApp } from './apps';
+
+// the demo feature loads items from the API: no HTTP in unit tests
+jest.mock('@/features/demo/api', () => ({
+  ...jest.requireActual('@/features/demo/api'),
+  listItems: jest.fn().mockResolvedValue([]),
+}));
 
 describe('__APP_TITLE__ remote', () => {
   it('embedded: renders below the shell mount with host props', () => {
@@ -33,7 +40,7 @@ describe('__APP_TITLE__ remote', () => {
     );
   });
 
-  it('standalone: renders with mock host props and its own chrome', () => {
+  it('standalone: renders with mock host props and its own chrome', async () => {
     window.history.pushState({}, '', '/');
     render(<StandaloneApp />);
     expect(screen.getByTestId('mode-badge')).toHaveTextContent('Standalone');
@@ -41,5 +48,8 @@ describe('__APP_TITLE__ remote', () => {
     expect(
       screen.getByRole('button', { name: 'Use dark theme' }),
     ).toBeInTheDocument();
+    // standaloneProps point the demo at the mock API in development
+    expect(await screen.findByText('No items yet.')).toBeInTheDocument();
+    expect(jest.mocked(listItems)).toHaveBeenCalled();
   });
 });

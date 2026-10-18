@@ -70,14 +70,14 @@ _TODO: product-specific theme UX (e.g. high-contrast theme), if any._
 
 ### Shared primitives (`@org/ui`)
 
-| Component                   | Role                                                                  |
-| --------------------------- | --------------------------------------------------------------------- |
-| `Button`                    | `primary` / `secondary` / `ghost`                                     |
-| `ThemeToggle`               | Light / Dark / Use system theme                                       |
-| `MainLayout`                | header (brand, nav, theme toggle, actions), offline banner, `<main>`  |
-| `RemoteFallback`            | `role="alert"` panel for failed remotes/modules, optional "Try again" |
-| `ConnectionRequired`        | offline banner                                                        |
-| `ThemeProvider`, `useTheme` | theme state and ownership                                             |
+| Component                   | Role                                                                                          |
+| --------------------------- | --------------------------------------------------------------------------------------------- |
+| `Button`                    | `primary` / `secondary` / `ghost`                                                             |
+| `ThemeToggle`               | Light / Dark / Use system theme                                                               |
+| `MainLayout`                | header (brand, nav, theme toggle, actions; collapsible below 40rem), offline banner, `<main>` |
+| `RemoteFallback`            | `role="alert"` panel for failed remotes/modules, optional "Try again"                         |
+| `ConnectionRequired`        | offline banner                                                                                |
+| `ThemeProvider`, `useTheme` | theme state and ownership                                                                     |
 
 From `@org/auth`: `UserMenu`, `RequireAuth` / `SignInPrompt`.
 
@@ -85,7 +85,9 @@ From `@org/auth`: `UserMenu`, `RequireAuth` / `SignInPrompt`.
 
 - The shell's `ShellLayout` (MainLayout + remote nav + user menu) is the chrome; remotes render
   page content only (one `<h1>` per page, then `h2`…).
-- Phone width (375 px) first for primary flows: no horizontal page scrolling; the header wraps.
+- Phone width (375 px) first for primary flows: no horizontal page scrolling. Below 40rem
+  `MainLayout` collapses nav, theme toggle and user menu behind a "Menu" button (header one row,
+  ≤ 64 px); do not build per-app menus.
 - _TODO: max content width, grid/breakpoints, density._
 
 ## Typography & iconography
@@ -106,12 +108,17 @@ Target WCAG 2.2 AA: [contracts/a11y-wcag.md](contracts/a11y-wcag.md). UI rules:
   indicator; target size at least 24×24 CSS px.
 - Icon-only buttons have an accessible name; form fields have labels; errors are announced
   (`role="alert"` or `aria-live`) and linked to the field.
+- Forms validate on submit and then show an error summary (links to the fields) plus an error
+  next to each field (`aria-describedby`, `aria-invalid`); submit is only disabled while
+  sending. Details: [coding-conventions.md](coding-conventions.md#input-validation-and-forms).
 - Loading and status messages use `role="status"`; failures use `role="alert"`.
 - Do not convey information by colour alone.
 
 ## Content & copy
 
-- Plain, short sentences; sentence case for headings and buttons.
+- Plain, short sentences; sentence case for headings, buttons and app titles. The generators
+  derive titles from app names in sentence case, keeping known acronyms in capitals
+  (`it-helpdesk` → "IT helpdesk", `staff-directory` → "Staff directory"); `--title` overrides.
 - Error messages say what happened and what to do ("Could not load your leave balance. Try
   again.").
 - Offline: "You are offline" / connection banner from `@org/ui`.

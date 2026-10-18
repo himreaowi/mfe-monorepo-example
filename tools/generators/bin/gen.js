@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // @ts-check
 /**
- * CLI:  gen.js shell <zone>
- *       gen.js remote <zone> <name> [--private] [--external]
+ * CLI:  gen.js shell <zone> [--title "<text>"]
+ *       gen.js remote <zone> <name> [--private] [--external [--vendor-format <f>]] [--title "<text>"]
  * Root scripts: `pnpm gen:shell <zone>`, `pnpm gen:remote <zone> <name> [flags]`.
  */
 import path from 'node:path';
@@ -10,14 +10,18 @@ import { parseArgs } from 'node:util';
 import { UsageError, generateRemote, generateShell } from '../src/index.js';
 
 const USAGE = `Usage:
-  pnpm gen:shell <zone>                                  zone: intranet | internet
-  pnpm gen:remote <zone> <name> [--private] [--external]
+  pnpm gen:shell <zone> [--title "<text>"]               zone: intranet | internet
+  pnpm gen:remote <zone> <name> [--private] [--external [--vendor-format <format>]] [--title "<text>"]
 
 Options:
-  --private    remote needs a signed-in user (tag access:private, marked in the shell registry)
-  --external   adapter remote for an external/vendor module (tag kind:external)
-  --root <dir> workspace root (default: the repo this tool lives in)
-  -h, --help   show this help`;
+  --private               remote needs a signed-in user (tag access:private, marked in the shell registry)
+  --external              adapter remote for an external/vendor module (tag kind:external)
+  --vendor-format <f>     with --external: format of the dev mock vendor config:
+                          esm (default) | web-component | script
+  --title "<text>"        display title (nav, headings); default from the name in sentence case
+                          ("it-helpdesk" → "IT helpdesk", shell: "Intranet shell")
+  --root <dir>            workspace root (default: the repo this tool lives in)
+  -h, --help              show this help`;
 
 const ROOT = path.resolve(import.meta.dirname, '..', '..', '..');
 
@@ -27,6 +31,8 @@ async function main() {
     options: {
       private: { type: 'boolean', default: false },
       external: { type: 'boolean', default: false },
+      'vendor-format': { type: 'string' },
+      title: { type: 'string' },
       root: { type: 'string' },
       help: { type: 'boolean', short: 'h', default: false },
     },
@@ -41,12 +47,19 @@ async function main() {
   const [kind, zone, name, ...extra] = args;
 
   if (kind === 'shell') {
-    if (name !== undefined || values.private || values.external) {
-      throw new UsageError(`gen:shell takes only a zone.\n\n${USAGE}`);
+    if (
+      name !== undefined ||
+      values.private ||
+      values.external ||
+      values['vendor-format'] !== undefined
+    ) {
+      throw new UsageError(
+        `gen:shell takes only a zone (and --title).\n\n${USAGE}`,
+      );
     }
-    const r = await generateShell({ root, zone });
+    const r = await generateShell({ root, zone, title: values.title });
     console.log(
-      `Created ${path.relative(root, r.dir)} (${r.packageName}, federation name ${r.federationName}, port ${r.port}).`,
+      `Created ${path.relative(root, r.dir)} (${r.packageName}, "${r.title}", federation name ${r.federationName}, port ${r.port}).`,
     );
     console.log(
       `\nNext:\n  pnpm install\n  pnpm gen:remote ${zone} <name>\n  pnpm dev:${zone}`,
@@ -65,9 +78,11 @@ async function main() {
       name,
       private: values.private,
       external: values.external,
+      vendorFormat: values['vendor-format'],
+      title: values.title,
     });
     console.log(
-      `Created ${path.relative(root, r.dir)} (${r.packageName}, federation name ${r.federationName}, port ${r.port}, ${r.entry.access}${r.entry.kind === 'external' ? ', external' : ''}).`,
+      `Created ${path.relative(root, r.dir)} (${r.packageName}, "${r.entry.title}", federation name ${r.federationName}, port ${r.port}, ${r.entry.access}${r.entry.kind === 'external' ? ', external' : ''}).`,
     );
     console.log(
       `Registered with the ${zone} shell: route ${r.entry.path}/*, dev manifest entry http://localhost:${r.port}/mf-manifest.json.`,

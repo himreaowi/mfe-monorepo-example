@@ -1762,6 +1762,10 @@ importers:
         version: 6.0.3
 
   tools/mock-api:
+    dependencies:
+      '@org/scripts':
+        specifier: workspace:*
+        version: link:../scripts
     devDependencies:
       '@org/eslint-config':
         specifier: workspace:*
@@ -1783,6 +1787,10 @@ importers:
         version: 6.0.3
 
   tools/mock-vendor:
+    dependencies:
+      '@org/scripts':
+        specifier: workspace:*
+        version: link:../scripts
     devDependencies:
       '@org/eslint-config':
         specifier: workspace:*

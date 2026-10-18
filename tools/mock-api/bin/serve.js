@@ -3,12 +3,13 @@
 /**
  * DEV ONLY: serves the mock API of one zone.
  *   mock-api --zone intranet|internet [--port <n>] [--delay <ms>]
- * Defaults: intranet :3910, internet :3920 (each shell's mfe-manifest.dev.json points
- * settings.apiBaseUrl at http://localhost:<port>/api). MOCK_API_DELAY=<ms> adds latency.
- * Started by `pnpm dev:<zone>` through the remotes' nx dev dependsOn.
+ * Default port: the zone's mock API port (intranet 3190, internet 3290); each shell's
+ * mfe-manifest.dev.json points settings.apiBaseUrl at http://localhost:<port>/api.
+ * MOCK_API_DELAY=<ms> adds latency, MOCK_API_LOG=1 logs requests.
+ * Started by `pnpm dev:<zone>` through the apps' Nx task dependency (target `serve:<zone>`).
  */
 import { parseArgs } from 'node:util';
-import { createMockApi, DEFAULT_PORTS } from '../src/index.js';
+import { createMockApi, mockApiPort } from '../src/index.js';
 
 const { values } = parseArgs({
   options: {
@@ -18,16 +19,13 @@ const { values } = parseArgs({
   },
 });
 const zone = values.zone ?? '';
-if (!Object.hasOwn(DEFAULT_PORTS, zone)) {
-  console.error(
-    `mock-api: --zone must be one of ${Object.keys(DEFAULT_PORTS).join(', ')}`,
-  );
+let port;
+try {
+  port = Number(values.port ?? mockApiPort(zone));
+} catch (error) {
+  console.error(/** @type {Error} */ (error).message);
   process.exit(2);
 }
-const port = Number(
-  values.port ??
-    DEFAULT_PORTS[/** @type {keyof typeof DEFAULT_PORTS} */ (zone)],
-);
 const delayMs = Number(values.delay ?? process.env.MOCK_API_DELAY ?? 0);
 
 createMockApi(zone, { delayMs, log: process.env.MOCK_API_LOG === '1' }).listen(

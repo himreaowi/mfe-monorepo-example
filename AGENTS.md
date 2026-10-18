@@ -17,7 +17,8 @@ Instructions for AI coding agents (and humans) working in this monorepo. Details
 ## Must follow
 
 - Create apps only with `pnpm gen:shell <zone>` / `pnpm gen:remote <zone> <name> [--private]
-[--external]`, then `pnpm install`. Never copy an app folder.
+[--external [--vendor-format esm|web-component|script]] [--title "<text>"]`, then
+  `pnpm install`. Never copy an app folder.
 - A shell never imports a remote; a remote never imports another remote or a shell; zones
   (intranet, internet) share only `packages/*`. Shared code → a package in `packages/`.
 - Dependencies: add to the package that uses it (`pnpm --filter <pkg> add <dep>`). Catalog
@@ -32,7 +33,11 @@ Instructions for AI coding agents (and humans) working in this monorepo. Details
 - No hardcoded API or app paths in components (`apiRoutes`, `routePaths`); no API calls in
   component `useEffect` (use `features/*/api` + `features/*/hooks`).
 - Tokens (`var(--…)`) over hardcoded colours/spacing; WCAG 2.2 AA in light and dark; works at
-  375 px.
+  375 px (`MainLayout` already collapses the header; no per-app menus).
+- Forms validate on submit with an error summary + field errors; submit is disabled only while
+  sending ([docs/coding-conventions.md](docs/coding-conventions.md)).
+- Dev ports: apps 3100–3189 / 3200–3289; 3190–3199 / 3290–3299 are the zones' dev tools (mock
+  API, mock vendor). Mock endpoints go into `tools/mock-api`.
 - Tests with the change: unit tests next to the code; flows in the zone's
   `apps/<zone>/shell-<zone>/e2e/`. Import `test`/`expect` from `@org/playwright-config/test`.
 - Done means green: `pnpm check && pnpm lint && pnpm typecheck && pnpm test` (+ `pnpm build`
@@ -51,6 +56,7 @@ Instructions for AI coding agents (and humans) working in this monorepo. Details
 | Host props (remote side)      | `@org/mf-runtime/remote` (`useHostProps`, `useRemotePath`, `createRemoteApp`)    |
 | Auth                          | `@org/auth`, [docs/auth-contract.md](docs/auth-contract.md)                      |
 | Vendor modules                | `@org/mf-runtime/external`, [docs/external-modules.md](docs/external-modules.md) |
+| Dev mocks (per zone)          | `tools/mock-api` (`settings.apiBaseUrl`), `tools/mock-vendor`                    |
 | Build config                  | `@org/rspack-config` (apps keep a one-line `rspack.config.js`)                   |
 | Tests                         | [docs/testing.md](docs/testing.md)                                               |
 | Versions / gotchas            | [docs/toolchain.md](docs/toolchain.md)                                           |

@@ -1,13 +1,13 @@
 // @ts-check
 /**
- * DEV ONLY: a tiny JSON API server (node:http, no dependencies) shared by the zone mocks.
+ * DEV ONLY: a tiny JSON API server (node:http, no dependencies).
  *
- * - every route lives below `/api` (the apps' `settings.apiBaseUrl` is `http://localhost:<port>/api`)
+ * - routes live below `/api` (the apps' `settings.apiBaseUrl` is `http://localhost:<port>/api`)
  * - CORS like a real API on another origin with cookie sessions: the request's Origin is echoed
- *   (only http://localhost:* origins), `Access-Control-Allow-Credentials: true`, preflight for
- *   `Content-Type` and `X-CSRF-Token`
- * - `GET /api/health`, `POST /api/__reset` (restore the seed data, for tests)
- * - optional latency (`delayMs`) to see loading states
+ *   for `http://localhost:*` / `http://127.0.0.1:*` only, with
+ *   `Access-Control-Allow-Credentials: true`; preflight allows `Content-Type` and `X-CSRF-Token`
+ * - `GET /api/health`; `POST /__reset` (also `/api/__reset`) restores the seed data (tests)
+ * - optional latency (`delayMs`) to look at loading states
  */
 import http from 'node:http';
 
@@ -20,11 +20,11 @@ import http from 'node:http';
  *   headers: http.IncomingHttpHeaders,
  * }} ApiRequest
  * @typedef {{
- *   method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+ *   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
  *   path: string,
  *   handler: (req: ApiRequest) => ApiResult,
  * }} Route
- * @typedef {{ routes: Route[], reset: () => void }} ZoneApi
+ * @typedef {{ routes: Route[], reset: () => void }} MockResource
  */
 
 export const API_PREFIX = '/api';
@@ -36,13 +36,26 @@ export function json(status, body) {
   return { status, body };
 }
 
-/** @param {string} message @returns {ApiResult} */
+/** @param {string} [message] @returns {ApiResult} */
 export function notFound(message = 'Not found') {
   return json(404, { message });
 }
 
 /**
- * Match `/staff/:id` against `/staff/42`.
+ * 422 with field errors, the shape the apps map onto their forms
+ * (`HttpClientError.body.errors`).
+ * @param {Record<string, string>} errors
+ * @returns {ApiResult}
+ */
+export function validationError(errors) {
+  return json(422, {
+    message: 'Please correct the highlighted fields.',
+    errors,
+  });
+}
+
+/**
+ * Match `/items/:id` against `/items/42`.
  * @param {string} pattern
  * @param {string} pathname
  * @returns {Record<string, string> | null}
@@ -83,9 +96,12 @@ async function readBody(req) {
 }
 
 /**
- * @param {{ zone: string, api: ZoneApi, delayMs?: number, log?: boolean }} options
+ * @param {{ zone: string, resources: MockResource[], delayMs?: number, log?: boolean }} options
  */
-export function createApiServer({ zone, api, delayMs = 0, log = false }) {
+export function createApiServer({ zone, resources, delayMs = 0, log = false }) {
+  const routes = resources.flatMap((r) => r.routes);
+  const reset = () => resources.forEach((r) => r.reset());
+
   return http.createServer(async (req, res) => {
     const origin = req.headers.origin;
     if (origin && LOCAL_ORIGIN.test(origin)) {
@@ -96,7 +112,7 @@ export function createApiServer({ zone, api, delayMs = 0, log = false }) {
     res.setHeader('Cache-Control', 'no-store');
     if (req.method === 'OPTIONS') {
       res.writeHead(204, {
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE',
         'Access-Control-Allow-Headers': 'Accept, Content-Type, X-CSRF-Token',
         'Access-Control-Max-Age': '600',
       });
@@ -106,10 +122,11 @@ export function createApiServer({ zone, api, delayMs = 0, log = false }) {
 
     /** @param {ApiResult} result */
     const send = (result) => {
-      if (log)
+      if (log) {
         console.log(
           `[mock-api ${zone}] ${req.method} ${req.url} → ${result.status}`,
         );
+      }
       if (result.body === undefined) {
         res.writeHead(result.status).end();
         return;
@@ -122,6 +139,14 @@ export function createApiServer({ zone, api, delayMs = 0, log = false }) {
     };
 
     const url = new URL(req.url ?? '/', 'http://localhost');
+    if (
+      req.method === 'POST' &&
+      (url.pathname === '/__reset' || url.pathname === `${API_PREFIX}/__reset`)
+    ) {
+      reset();
+      send(json(204));
+      return;
+    }
     if (!url.pathname.startsWith(`${API_PREFIX}/`)) {
       send(notFound(`Mock ${zone} API: routes live below ${API_PREFIX}/`));
       return;
@@ -129,11 +154,6 @@ export function createApiServer({ zone, api, delayMs = 0, log = false }) {
     const pathname = url.pathname.slice(API_PREFIX.length);
     if (req.method === 'GET' && pathname === '/health') {
       send(json(200, { ok: true, zone }));
-      return;
-    }
-    if (req.method === 'POST' && pathname === '/__reset') {
-      api.reset();
-      send(json(204));
       return;
     }
 
@@ -146,11 +166,12 @@ export function createApiServer({ zone, api, delayMs = 0, log = false }) {
       send(json(status, { message }));
       return;
     }
-    if (delayMs > 0)
+    if (delayMs > 0) {
       await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
 
     let methodMismatch = false;
-    for (const route of api.routes) {
+    for (const route of routes) {
       const params = matchPath(route.path, pathname);
       if (!params) continue;
       if (route.method !== req.method) {

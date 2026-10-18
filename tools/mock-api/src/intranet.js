@@ -14,7 +14,7 @@
 import { countWorkingDays, daysAgo, isIsoDate } from './dates.js';
 import { json, notFound } from './server.js';
 
-/** @typedef {import('./server.js').ZoneApi} ZoneApi */
+/** @typedef {import('./server.js').MockResource} ZoneApi */
 
 const STAFF = [
   [

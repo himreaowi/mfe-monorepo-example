@@ -3,23 +3,20 @@
  * the shell's mfe-manifest.json (per environment, written by DevOps; never baked into the
  * build). Example:
  *   "__FEDERATION_NAME__": {
- *     "entry": "https://cdn.example.sg/__NAME__/mf-manifest.json",
- *     "props": { "vendor": { "url": "https://vendor.example/pay/1.4.2/mount.js", "format": "esm",
- *                            "integrity": "sha384-…", "config": { "merchantId": "…" } } }
+ *     "entry": "https://cdn.example.org/__NAME__/mf-manifest.json",
+ *     "props": { "vendor": { "url": "https://vendor.example/__NAME__/1.4.2/mount.js", "format": "esm",
+ *                            "integrity": "sha384-…", "config": { "<vendor setting>": "…" } } }
  *   }
  *
- * Development builds fall back to the local mock vendor (tools/mock-vendor, port 3999) so the
- * adapter also works standalone. Rspack replaces `process.env.NODE_ENV` in production builds and
- * drops this branch, so the mock URL is not in production bundles.
+ * Development builds fall back to the zone's mock vendor (tools/mock-vendor, port
+ * __MOCK_VENDOR_PORT__) so the adapter also works standalone. Rspack replaces
+ * `process.env.NODE_ENV` in production builds and drops this branch, so the mock URL is not in
+ * production bundles (and production source maps carry no sources).
  */
 export function resolveVendorConfig(fromHost: unknown): unknown {
   if (fromHost !== undefined && fromHost !== null) return fromHost;
   if (process.env.NODE_ENV !== 'production') {
-    return {
-      url: 'http://localhost:3999/mount.js',
-      format: 'esm',
-      config: { title: '__APP_TITLE__ (mock vendor)', amount: 1250 },
-    };
+    return __MOCK_VENDOR_CONFIG__;
   }
   return undefined;
 }

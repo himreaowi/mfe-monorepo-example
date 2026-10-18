@@ -1,0 +1,93 @@
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { HttpClientError } from '@org/http-client';
+import { jsonResponse } from '@org/jest-config/fetch';
+import { HostPropsProvider } from '@org/mf-runtime/remote';
+import { createItem } from '../api';
+import { AddItemForm } from './AddItemForm';
+
+jest.mock('../api', () => ({
+  ...jest.requireActual('../api'),
+  createItem: jest.fn(),
+}));
+const createItemMock = jest.mocked(createItem);
+
+function renderForm(onCreated = jest.fn()) {
+  render(
+    <HostPropsProvider
+      value={{
+        embedded: true,
+        basePath: '/x',
+        settings: { apiBaseUrl: 'http://api.test/api' },
+      }}
+    >
+      <AddItemForm onCreated={onCreated} />
+    </HostPropsProvider>,
+  );
+  return { onCreated, user: userEvent.setup() };
+}
+
+describe('AddItemForm', () => {
+  beforeEach(() => createItemMock.mockReset());
+
+  it('validates on submit: error summary (focused) + field error, nothing sent', async () => {
+    const { user } = renderForm();
+    const submit = screen.getByRole('button', { name: 'Add item' });
+    expect(submit).toBeEnabled(); // never disabled because the form is invalid
+    await user.click(submit);
+    const summary = screen.getByTestId('error-summary');
+    expect(summary).toHaveFocus();
+    expect(summary).toHaveTextContent('There is a problem');
+    const input = screen.getByLabelText('Name');
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+    expect(input).toHaveAccessibleDescription('Error: Enter a name.');
+    expect(createItemMock).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('link', { name: 'Enter a name.' }));
+    expect(input).toHaveFocus();
+  });
+
+  it('disables submit only while sending, then reports success', async () => {
+    let resolve: (value: Awaited<ReturnType<typeof createItem>>) => void =
+      () => undefined;
+    createItemMock.mockReturnValue(new Promise((r) => (resolve = r)));
+    const { user, onCreated } = renderForm();
+    await user.type(screen.getByLabelText('Name'), 'New item');
+    await user.click(screen.getByRole('button', { name: 'Add item' }));
+    expect(screen.getByRole('button', { name: 'Adding…' })).toBeDisabled();
+    resolve({ id: 9, name: 'New item', description: '' });
+    expect(await screen.findByText('Added “New item”.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add item' })).toBeEnabled();
+    expect(onCreated).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 9 }),
+    );
+    expect(screen.getByLabelText('Name')).toHaveValue('');
+  });
+
+  it('shows server 422 field errors in the same summary and field', async () => {
+    createItemMock.mockRejectedValue(
+      new HttpClientError(jsonResponse(null, { status: 422 }), {
+        errors: { name: 'An item with this name already exists.' },
+      }),
+    );
+    const { user } = renderForm();
+    await user.type(screen.getByLabelText('Name'), 'Getting started');
+    await user.click(screen.getByRole('button', { name: 'Add item' }));
+    expect(await screen.findByTestId('error-summary')).toHaveTextContent(
+      'An item with this name already exists.',
+    );
+    expect(screen.getByLabelText('Name')).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
+  });
+
+  it('shows other failures as a form error', async () => {
+    createItemMock.mockRejectedValue(new TypeError('Failed to fetch'));
+    const { user } = renderForm();
+    await user.type(screen.getByLabelText('Name'), 'x');
+    await user.click(screen.getByRole('button', { name: 'Add item' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /Could not add the item/,
+    );
+  });
+});

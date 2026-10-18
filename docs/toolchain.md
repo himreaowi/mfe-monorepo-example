@@ -379,3 +379,35 @@ integrity crossorigin>` first, then `import()` of the same URL reuses the verifi
 - The official nginx image's envsubst step only replaces variables that exist in the
   environment; an unset `${CSP_…}` would stay in the config literally. The Dockerfile gives every
   template variable a default.
+
+## Gotchas found in the template follow-ups (C1)
+
+- **`source-map` copies dev-only code into production `.map` files.** The minifier drops
+  `if (process.env.NODE_ENV !== 'production') { … }` branches from the bundles, but
+  `sourcesContent` holds the original source (mock vendor / mock API `http://localhost:…` URLs).
+  `@org/rspack-config` now builds `hidden-nosources-source-map` (mappings + file names, no
+  sources, no `sourceMappingURL` comment) and turns off css-loader/sass-loader maps in
+  production (they were inlined as base64 into the JS bundles).
+- **jsdom has no Fetch API** (`fetch`, `Headers`, `Request`, `Response` undefined), so
+  `@org/http-client` threw `Headers is not defined` in component tests. `@org/jest-config` now
+  uses its own jsdom environment that copies Node's `Headers`/`Request`/`Response` in (not
+  `fetch`: tests inject `createFakeFetch` from `@org/jest-config/fetch`). Response objects come
+  from Node's realm, so `toEqual` works but `instanceof Object` on parsed JSON does not.
+- **Chromium logs failed subresources without their URL.** A 4xx/5xx `fetch` shows up as
+  console error "Failed to load resource: the server responded with a status of 422" whose
+  `location().url` is not the request URL, so `allowedConsoleErrors` could not be scoped to one
+  endpoint. The `@org/playwright-config` fixture now skips that line and records failed
+  requests from `page.on('response')` (status ≥ 400) and `page.on('requestfailed')` (except
+  `net::ERR_ABORTED`) with method + URL; `allowedHttpErrors` / `consoleErrors.allowHttp()`
+  match on those.
+- **One shared mock vendor port broke running two zones at once** (`pnpm dev:intranet` and
+  `pnpm dev:internet` both started `@org/mock-vendor` on 3999). Each zone now reserves the top
+  ten ports of its range for dev tools (intranet 3190–3199, internet 3290–3299; apps end at
+  3189 / 3289); tools take Nx targets `serve:<zone>` and read their port from
+  `toolPort(zone, tool)` in `tools/scripts/src/zones.js`.
+- **Packages cannot import tools** (`@nx/enforce-module-boundaries`: `type:package` → only
+  `type:package`). `@org/playwright-config` therefore mirrors the tool ports (`TOOL_PORTS`) and a
+  `tools/scripts` test imports both and compares them.
+- **Nx continuous dependencies are deduplicated**: the shell and every remote of a zone declare
+  `dev.dependsOn: [{ projects: ['@org/mock-api'], target: 'serve:<zone>' }]`; `nx run-many -t dev`
+  starts the mock API once.

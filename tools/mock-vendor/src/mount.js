@@ -4,11 +4,12 @@
  * the role of a product built by an external vendor who only has the vendor kit
  * (@org/vendor-kit contract types), not our repo.
  *
- * It exercises the whole mount contract:
+ * A neutral demo widget that exercises the whole mount contract:
  * - renders in a shadow root inside the host's element (styles scoped, constructable stylesheet:
  *   CSP-friendly), using the host's CSS custom properties with fallbacks
- * - own routing on `props.path` + `props.onNavigate` (overview ↔ receipt/<ref>)
- * - `onEvent` (payment completed), `onError` (non-fatal warning and fatal crash)
+ * - own routing on `props.path` + `props.onNavigate` (overview ↔ details/<n>)
+ * - `onEvent` ("demo:action"), `onError` (non-fatal warning and fatal crash)
+ * - `config.title` / `config.message` from the manifest (`props.vendor.config`), both optional
  * - `update()` re-renders (theme, path, user, config); `unmount()` removes everything
  * - logs every lifecycle call to the console ("[mock-vendor] mount|update|unmount")
  */
@@ -58,7 +59,7 @@ function h(tag, attrs = {}, children = []) {
 export function mount(element, initialProps) {
   let props = initialProps;
   let updates = 0;
-  let payments = 0;
+  let actions = 0;
   console.info(
     `[${VENDOR}] mount contract=${props.contractVersion} basePath=${props.basePath} path="${props.path}" theme=${props.theme}`,
   );
@@ -79,19 +80,12 @@ export function mount(element, initialProps) {
     const target = /** @type {HTMLElement | null} */ (event.target);
     const action = target?.closest('button')?.dataset.action;
     if (!action) return;
-    if (action === 'pay') {
-      payments += 1;
-      const reference = `MOCK-${String(payments).padStart(4, '0')}`;
-      props.onEvent('payment:completed', {
-        reference,
-        amount: Number(props.config.amount ?? 1000),
-        currency: 'SGD',
-      });
-      render(`Payment ${reference} completed.`);
-    } else if (action === 'receipt') {
-      props.onNavigate(
-        `receipt/MOCK-${String(Math.max(payments, 1)).padStart(4, '0')}`,
-      );
+    if (action === 'event') {
+      actions += 1;
+      props.onEvent('demo:action', { count: actions });
+      render(`Sent event demo:action #${actions}.`);
+    } else if (action === 'details') {
+      props.onNavigate(`details/${Math.max(actions, 1)}`);
     } else if (action === 'back') {
       props.onNavigate('');
     } else if (action === 'warn') {
@@ -112,34 +106,38 @@ export function mount(element, initialProps) {
 
   /** @param {string} [status] */
   function render(status = '') {
-    const receipt = /^receipt\/(.+)$/.exec(props.path)?.[1];
+    const details = /^details\/(.+)$/.exec(props.path)?.[1];
     const title = String(props.config.title ?? 'Mock vendor');
+    const message = String(
+      props.config.message ??
+        'A demo module rendered by the mock vendor through the mount contract.',
+    );
     const who = props.user
       ? (props.user.name ?? props.user.id)
       : 'guest (signed out)';
-    const amount = (Number(props.config.amount ?? 1000) / 100).toFixed(2);
-    const body = receipt
+    const body = details
       ? [
-          h('h3', {}, [`Receipt ${receipt}`]),
-          h('p', { class: 'muted', 'data-testid': 'mock-vendor-receipt' }, [
-            `Receipt ${receipt} for ${who}. Rendered by the vendor's own router from props.path.`,
+          h('h3', {}, [`Details ${details}`]),
+          h('p', { class: 'muted', 'data-testid': 'mock-vendor-details' }, [
+            `Details page ${details} for ${who}. Rendered by the vendor's own router from props.path.`,
           ]),
           h('div', { class: 'actions' }, [
             h('button', { type: 'button', 'data-action': 'back' }, [
-              'Back to payment',
+              'Back to overview',
             ]),
           ]),
         ]
       : [
           h('p', {}, [`Hello, ${who}.`]),
+          h('p', { class: 'muted' }, [message]),
           h('div', { class: 'actions' }, [
             h(
               'button',
-              { type: 'button', class: 'primary', 'data-action': 'pay' },
-              [`Pay SGD ${amount}`],
+              { type: 'button', class: 'primary', 'data-action': 'event' },
+              ['Send demo event'],
             ),
-            h('button', { type: 'button', 'data-action': 'receipt' }, [
-              'View receipt',
+            h('button', { type: 'button', 'data-action': 'details' }, [
+              'Open details',
             ]),
             h('button', { type: 'button', 'data-action': 'warn' }, [
               'Report a warning',

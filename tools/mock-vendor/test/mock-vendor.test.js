@@ -1,13 +1,23 @@
 // @ts-check
 import assert from 'node:assert/strict';
+import vm from 'node:vm';
 import { after, before, describe, it } from 'node:test';
-import { createServer } from '../bin/serve.js';
+import { SCRIPT_GLOBAL, classicScript, createServer } from '../bin/serve.js';
 import * as vendor from '../src/mount.js';
 
 describe('mock vendor', () => {
   it('implements the contract shape (contract 1.x)', () => {
     assert.match(vendor.contractVersion, /^1\.\d+\.\d+$/);
     assert.equal(typeof vendor.mount, 'function');
+  });
+
+  it('format "script": a classic script that sets one global with the same exports', () => {
+    const sandbox = /** @type {Record<string, any>} */ ({});
+    sandbox.window = sandbox;
+    vm.runInNewContext(classicScript(), sandbox);
+    const mod = sandbox[SCRIPT_GLOBAL];
+    assert.equal(mod.contractVersion, vendor.contractVersion);
+    assert.equal(typeof mod.mount, 'function');
   });
 
   describe('server', () => {
@@ -22,7 +32,7 @@ describe('mock vendor', () => {
     after(() => server.close());
 
     it('serves the modules with CORS and a JavaScript MIME type', async () => {
-      for (const file of ['/mount.js', '/element.js']) {
+      for (const file of ['/mount.js', '/element.js', '/script.js']) {
         const res = await fetch(base + file);
         assert.equal(res.status, 200, file);
         assert.equal(res.headers.get('access-control-allow-origin'), '*');
@@ -36,6 +46,7 @@ describe('mock vendor', () => {
     it('can simulate a vendor outage', async () => {
       await fetch(`${base}/__down`);
       assert.equal((await fetch(`${base}/mount.js`)).status, 503);
+      assert.equal((await fetch(`${base}/script.js`)).status, 503);
       await fetch(`${base}/__down?value=0`);
       assert.equal((await fetch(`${base}/mount.js`)).status, 200);
     });
