@@ -22,22 +22,33 @@ section.
 
 ```sh
 nvm use && corepack enable && pnpm install
-pnpm dev:intranet     # http://localhost:3100 (+ mock API :3910, example vendors :3990)
-pnpm dev:internet     # http://localhost:3200 (+ mock API :3920, example vendors :3990)
-pnpm e2e              # both zones: feature specs + generated specs + axe (light + dark)
+pnpm dev:intranet     # Staff Portal  http://localhost:3100 (+ mock API :3190, example vendor :3192)
+pnpm dev:internet     # Citizen Portal http://localhost:3200 (+ mock API :3290, example vendor :3292)
+pnpm e2e              # both zones, one after the other: feature specs + generated specs + axe (light + dark)
 ```
 
-"Sign in" uses the template's dev mock. Run one zone at a time (both use the vendor port 3990).
+Both portals can run at the same time (two terminals): every zone has its own port range,
+dev tools included. "Sign in" uses the template's dev mock.
+
+| Zone     | Apps      | Dev tools (`tools/scripts/src/zones.js`, `toolPort`)                               |
+| -------- | --------- | ---------------------------------------------------------------------------------- |
+| intranet | 3100–3104 | 3190 mock API (`tools/mock-api`), 3192 Acme Service Desk (`tools/example-vendors`) |
+| internet | 3200–3204 | 3290 mock API, 3292 Bright Payments                                                |
 
 ### What was added by hand
 
-| Where                                            | What                                                                                                                                                                                                      |
-| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`tools/mock-api`](tools/mock-api)               | dev-only JSON API per zone (intranet :3910, internet :3920). Apps read the base URL from `settings.apiBaseUrl` in the shell's `mfe-manifest.dev.json`; started by the remotes' `nx.targets.dev.dependsOn` |
-| [`tools/example-vendors`](tools/example-vendors) | two fictional vendor products without React on versioned URLs: Acme Service Desk (esm) and Bright Payments (web component), configured through `props.vendor` in the manifest                             |
-| [`packages/use-api`](packages/use-api)           | `useApi` / `useSubmit` hooks used by every React remote: code shared through `packages/`, never between apps. Intranet and internet share no remotes                                                      |
-| `apps/*/*/src/features/*`                        | the features (types → api → hooks → UI), pages and routes; unit tests next to the code                                                                                                                    |
-| `apps/<zone>/shell-<zone>`                       | branding, home page cards (`description` in `remotes.json`), a "Menu" disclosure for the nav below 40rem, feature e2e specs in `e2e/`                                                                     |
+| Where                                            | What                                                                                                                                                                                                                                                                                                                                    |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`tools/mock-api`](tools/mock-api)               | the template's per-zone mock API, extended with the example's domain endpoints (`src/intranet.js`: staff, leave, helpdesk; `src/internet.js`: services, announcements, profile). Apps read its URL from `settings.apiBaseUrl` in the shell's `mfe-manifest.dev.json`; every app's `nx.targets.dev.dependsOn` starts it (`serve:<zone>`) |
+| [`tools/example-vendors`](tools/example-vendors) | two fictional vendor products without React on versioned URLs, one server per zone serving only that zone's vendor: Acme Service Desk (esm, intranet) and Bright Payments (web component, internet), configured through `props.vendor` in the manifest. They replace the template's mock vendor in this example                         |
+| [`packages/use-api`](packages/use-api)           | `useApi` / `useSubmit` hooks used by every React remote: code shared through `packages/`, never between apps. Intranet and internet share no remotes                                                                                                                                                                                    |
+| `apps/*/*/src/features/*`                        | the features (types → api → hooks → UI), pages and routes; unit tests next to the code (API tests with `@org/jest-config/fetch`). Forms follow the template's pattern: validate on submit, focused error summary, field errors, server 422 mapped, submit disabled only while sending                                                   |
+| `apps/<zone>/shell-<zone>`                       | branding (`APP_TITLE`, page title), home page cards (`description` in `remotes.json`), feature e2e specs in `e2e/`. Phones get the template's collapsible `MainLayout` header; the shells add no menu code                                                                                                                              |
+
+The generated e2e specs run unchanged. For the external adapters the generic vendor test
+(mounted content, no fallback, no console errors, unmount) runs against the example vendors;
+the template's mock-vendor-only test skips with the vendor URL as the reason, and the feature
+specs (`it-helpdesk.spec.ts`, `payments.spec.ts`) cover vendor routing, events and the theme.
 
 ### Dependency tier 3 (decision D4): date-fns in one remote
 
@@ -54,12 +65,13 @@ stays green. If a second app needed date-fns, `pnpm check` would fail with
 [docs/adding-dependencies.md](docs/adding-dependencies.md)). Display-only dates elsewhere use
 `Intl.DateTimeFormat`.
 
-### Changes to template code in this copy (template follow-ups)
+### Keeping up with the template
 
-- `packages/http-client`: `HttpClientError.body` keeps the parsed JSON of an error response, so
-  422 field errors can reach the form.
-- `packages/ui` `MainLayout`: tighter header spacing below 40rem (with the shells' "Menu" nav the
-  header stays short at 375 px).
+This repository started from the template and keeps its history, so template fixes come in
+with a normal merge (`git remote add template <url>`, `git fetch template`,
+`git merge template/main`): shared `packages/`, `tools/` and `docs/` take the template's
+version, the example's apps and features stay. The only change to shared tool code is the
+`exampleVendors` offset in `tools/scripts/src/zones.js`.
 
 ---
 
