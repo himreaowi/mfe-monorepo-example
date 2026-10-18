@@ -18,8 +18,21 @@ const post = await http.getJson<Post>(apiRoutes.posts.byId(1), { signal });
 
 API: `createHttpClient({ baseUrl, credentials?, headers?, fetch? })` returns
 `{ url, request, requestJson, getJson, postJson, post }`. `HttpClientError` (`status`,
-`statusText`, `url`) for non-2xx responses. `joinUrl(base, path)`. `defineApiRoutes(obj)`
+`statusText`, `url`, `body`) for non-2xx responses; `body` is the parsed JSON of the error
+response (e.g. a 422 `{ "message", "errors": { "<field>": "<message>" } }`), `undefined` when it
+is empty or not JSON. `joinUrl(base, path)`. `defineApiRoutes(obj)`
 (typed identity helper).
 
 No bearer-token option: auth is a backend session (BFF, cookies), so the browser never handles
 tokens. Use `credentials: 'include'` for a cross-origin BFF.
+
+```ts
+try {
+  await http.postJson(apiRoutes.items.list(), draft);
+} catch (error) {
+  if (error instanceof HttpClientError && error.status === 422) {
+    const { errors } = error.body as { errors?: Record<string, string> };
+    // show errors next to the fields (docs/coding-conventions.md, forms)
+  }
+}
+```
