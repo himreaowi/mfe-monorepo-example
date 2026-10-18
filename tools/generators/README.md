@@ -45,8 +45,8 @@ pnpm dev:<zone>
 - **Dev tools per zone**: every generated app's `nx.targets.dev.dependsOn` starts the zone's
   mock API (`@org/mock-api`, target `serve:<zone>`; adapters also `@org/mock-vendor`), and the
   shell's dev manifest gets `settings.apiBaseUrl: http://localhost:<3190|3290>/api`. Tool ports
-  come from the zone's tools range (`tools/scripts/src/zones.js`), so `pnpm dev:intranet` and
-  `pnpm dev:internet` run side by side.
+  come from the zone's tools range and the root `package.json` `mfe.tools` (`toolPort()` in
+  `tools/scripts/src/zones.js`), so `pnpm dev:intranet` and `pnpm dev:internet` run side by side.
 - The remote's demo feature (`src/features/demo`) loads `/items` from that API through
   `@org/http-client` (api/ → hooks/ → components) and has an "Add item" form with the
   validate-on-submit / error-summary pattern (docs/coding-conventions.md).
@@ -55,7 +55,7 @@ pnpm dev:<zone>
 - Dependencies: `catalog:` for third-party packages, `workspace:*` for `@org/*`.
 - Shells get the zone's e2e suite: `playwright.config.ts` (`@org/playwright-config`) and
   `e2e/*.spec.ts`, which iterate `remotes.json` (deep links, private guard, external adapters
-  with any vendor + mock-vendor extras, standalone remotes, compact header at 375 px, axe WCAG
+  with any vendor + mock-vendor extras, standalone remotes, one-row header at 375–1280 px (signed in and out) with the Menu disclosure, axe WCAG
   2.2 AA in light and dark) with the helpers `openNav`, `openHeaderMenu` and `settle`. `pnpm e2e:<zone>` runs it. Remotes get no
   e2e folder of their own: their standalone mode is covered by the zone suite. See
   `docs/testing.md`.

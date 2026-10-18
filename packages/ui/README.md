@@ -2,14 +2,14 @@
 
 Shared React components ported from starter-mfe (same markup, classes and tokens).
 
-| Export                        | Notes                                                                                                                                                                   |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Button`                      | `variant`: `primary` (default) / `secondary` / `ghost`                                                                                                                  |
-| `ThemeToggle`                 | Light / Dark / Use system theme (needs a `ThemeProvider` above)                                                                                                         |
-| `RemoteFallback`              | `role="alert"` panel; optional `onRetry` adds a "Try again" button                                                                                                      |
-| `ConnectionRequired`          | Offline banner (`visible`)                                                                                                                                              |
-| `MainLayout`                  | Header (brand, `nav`, theme toggle, `headerActions`) + offline banner + `<main>`; renders `children` or `<Outlet />`. Below 40rem: collapsible "Menu" panel (see below) |
-| `ThemeProvider`, `useTheme()` | Light/dark/system theme, sets `data-theme` on `<html>`                                                                                                                  |
+| Export                        | Notes                                                                                                                                                                                                            |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Button`                      | `variant`: `primary` (default) / `secondary` / `ghost`                                                                                                                                                           |
+| `ThemeToggle`                 | Light / Dark / Use system theme (needs a `ThemeProvider` above)                                                                                                                                                  |
+| `RemoteFallback`              | `role="alert"` panel; optional `onRetry` adds a "Try again" button                                                                                                                                               |
+| `ConnectionRequired`          | Offline banner (`visible`)                                                                                                                                                                                       |
+| `MainLayout`                  | Header (brand, `nav`, theme toggle, `headerActions`) + offline banner + `<main>`; renders `children` or `<Outlet />`. Always one header row: collapses into a "Menu" panel when the row does not fit (see below) |
+| `ThemeProvider`, `useTheme()` | Light/dark/system theme, sets `data-theme` on `<html>`                                                                                                                                                           |
 
 `@org/ui` is a **tier-1 singleton**: `@org/rspack-config` shares it through Module Federation
 (`singleton`, `strictVersion`, `requiredVersion` = this package's version). A remote rendered in a
@@ -37,11 +37,35 @@ this). It looks the same as the shell because the tokens are CSS variables inher
 `mode="root"` or `mode="follower"` forces a role. `storageKey` changes the localStorage key
 (default `mfe-theme`).
 
-## MainLayout on phones
+## MainLayout header: always one row
 
-From 40rem up the header is one row: brand, `nav`, theme toggle, `headerActions`. Below 40rem
-the header shows only the brand and a **Menu** button (one row, about 60 px tall at 375 px); the
-nav, the theme toggle and `headerActions` (e.g. `UserMenu`) move into a panel below it:
+The header shows brand, `nav`, theme toggle and `headerActions` in one row **when they fit**.
+When they do not (always at 375 px; on wider screens too when a zone has many remotes or a
+signed-in user menu), it shows only the brand and a **Menu** button (one row, about 60 px tall)
+and the nav, the theme toggle and `headerActions` (e.g. `UserMenu`) move into a panel below it.
+
+How it decides (`useHeaderLayout`, internal):
+
+- it **measures** instead of using a fixed breakpoint: the width of one unwrapped row of brand +
+  nav + actions (`data-layout="measure"`, set and removed in the same task, never painted)
+  against the header's width. Any number of nav items, any label length, signed in or out;
+- before the first paint (`useLayoutEffect`), then whenever the available width changes
+  (`ResizeObserver` on a zero-height strip, so the header's own height change cannot loop),
+  the header's content changes (`MutationObserver`: sign-in, nav items) or web fonts load.
+  Updates are committed with `flushSync`, so a wrong layout is never painted;
+- hysteresis: compact as soon as the row does not fit, wide again only with 24 px to spare
+  (`HEADER_HYSTERESIS_PX`; avoids flip-flopping when the page scrollbar comes and goes);
+- an open panel is not re-laid out; it is measured again when it closes. Becoming wide closes
+  the panel; collapsing while focus is in the nav moves focus to the Menu button;
+- the current layout is on the header: `data-layout="wide|compact"` (`data-testid="main-header"`).
+  Without ResizeObserver (and before hydration) the attribute is absent and a CSS breakpoint
+  (40rem) decides.
+
+Why not a "More" menu (priority+)? `nav` is any React node (the shell passes a list), so
+`MainLayout` cannot move individual items; and the theme toggle and user menu need a place
+too. One panel for everything keeps the API (`nav`, `headerActions`) unchanged.
+
+The disclosure:
 
 - the button has `aria-expanded` and `aria-controls` (the panel's id); the panel is
   `display: none` while closed, so it is out of the tab order and the accessibility tree;
@@ -51,4 +75,5 @@ nav, the theme toggle and `headerActions` (e.g. `UserMenu`) move into a panel be
 - props: `navLabel` (name of the `<nav>` landmark, default `Main`), `menuLabel` (default `Menu`).
 
 Apps pass plain links or a list as `nav` and need no menu code of their own. In e2e tests open
-the panel first at 375 px (the generated `e2e/helpers.ts` has `openNav(page)`).
+the panel first when the header is compact (the generated `e2e/helpers.ts` has `openNav(page)`
+and `openHeaderMenu(page)`, no-ops when it is wide).

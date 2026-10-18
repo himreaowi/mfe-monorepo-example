@@ -8,11 +8,19 @@
  * - no app's package.json depends on another app (cross-zone deps reported as such)
  * - no app's source imports another app (by package name or by a relative path)
  * - each shell's remotes.json / mfe-manifest.dev.json match the remotes of its zone
+ * - the dev tool servers declared in the root package.json (`mfe.tools`) have unique offsets
+ *   inside the zones' tools range and name existing workspace packages
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { APP_TAGS, FEDERATION_NAME, ZONES } from './zones.js';
-import { loadApps, readJson } from './workspace.js';
+import {
+  APP_TAGS,
+  FEDERATION_NAME,
+  TOOL_NAME,
+  TOOL_SLOTS,
+  ZONES,
+} from './zones.js';
+import { loadApps, loadWorkspace, readJson } from './workspace.js';
 
 /** @typedef {import('./check-versions.js').Issue} Issue */
 /** @typedef {import('./workspace.js').WorkspacePackage} WorkspacePackage */
@@ -165,7 +173,7 @@ export async function checkApps({ root }) {
     } else if (port >= range.tools.first && port <= range.tools.last) {
       err(
         'app-port',
-        `${where}: port ${port} is reserved for the ${zone} dev tools (${range.tools.first}-${range.tools.last}: mock API, mock vendor). Apps use ${range.first}-${range.last}.`,
+        `${where}: port ${port} is reserved for the ${zone} dev tools (${range.tools.first}-${range.tools.last}: mock API, mock vendor, root package.json mfe.tools). Apps use ${range.first}-${range.last}.`,
       );
     } else if (port < range.first || port > range.last) {
       err(
@@ -413,5 +421,101 @@ export async function checkApps({ root }) {
     }
   }
 
+  // --- dev tool servers (root package.json mfe.tools) ---------------------------------------
+  checkTools(root, err);
+
   return { errors, warnings };
+}
+
+/** Ports a tool offset maps to, in every zone (e.g. "3192 / 3292"). */
+function toolPorts(/** @type {number} */ offset) {
+  return Object.values(ZONES)
+    .map((z) => z.tools.first + offset)
+    .join(' / ');
+}
+
+/**
+ * Root package.json `mfe.tools`: `{ "<name>": { "offset": 0-9, "package"?: "<workspace pkg>" } }`.
+ * @param {string} root
+ * @param {(rule: string, message: string) => void} err
+ */
+function checkTools(root, err) {
+  const file = path.join(root, 'package.json');
+  if (!fs.existsSync(file)) return;
+  const tools = readJson(file).mfe?.tools;
+  if (tools === undefined) return;
+  const ranges = Object.entries(ZONES)
+    .map(([zone, z]) => `${zone} ${z.tools.first}-${z.tools.last}`)
+    .join(', ');
+  const shape = `"mfe": { "tools": { "<name>": { "offset": <0-${TOOL_SLOTS - 1}>, "package": "<workspace package>" } } }`;
+  if (typeof tools !== 'object' || tools === null || Array.isArray(tools)) {
+    err('tool-config', `package.json "mfe.tools" must be an object: ${shape}.`);
+    return;
+  }
+  const packageNames = new Set(loadWorkspace(root).packages.map((p) => p.name));
+  /** @type {Map<number, string[]>} */
+  const byOffset = new Map();
+  for (const [name, config] of Object.entries(tools)) {
+    const where = `package.json mfe.tools.${name}`;
+    if (!TOOL_NAME.test(name)) {
+      err(
+        'tool-config',
+        `${where}: tool names are JS identifiers (camelCase, e.g. exampleVendor).`,
+      );
+    }
+    if (
+      typeof config !== 'object' ||
+      config === null ||
+      Array.isArray(config)
+    ) {
+      err('tool-config', `${where}: must be an object: ${shape}.`);
+      continue;
+    }
+    const unknown = Object.keys(config).filter(
+      (k) => !['offset', 'package', 'description'].includes(k),
+    );
+    if (unknown.length > 0) {
+      err(
+        'tool-config',
+        `${where}: unknown field(s) ${unknown.join(', ')} (allowed: offset, package, description).`,
+      );
+    }
+    const { offset } = config;
+    if (
+      typeof offset !== 'number' ||
+      !Number.isInteger(offset) ||
+      offset < 0 ||
+      offset >= TOOL_SLOTS
+    ) {
+      err(
+        'tool-port',
+        `${where}: "offset" must be an integer 0-${TOOL_SLOTS - 1}, found ${JSON.stringify(offset)}. The port is the zone's first tools port + offset (${ranges}).`,
+      );
+    } else {
+      byOffset.set(offset, [...(byOffset.get(offset) ?? []), name]);
+    }
+    if (config.package !== undefined) {
+      if (
+        typeof config.package !== 'string' ||
+        !packageNames.has(config.package)
+      ) {
+        err(
+          'tool-config',
+          `${where}: "package" ${JSON.stringify(config.package)} is not a workspace package (the tool's package.json "name").`,
+        );
+      }
+    }
+  }
+  for (const [offset, names] of byOffset) {
+    if (names.length > 1) {
+      err(
+        'tool-port-duplicate',
+        `package.json mfe.tools: ${names.join(', ')} all use offset ${offset} (port ${toolPorts(offset)}). Give each tool its own offset (free: ${
+          Array.from({ length: TOOL_SLOTS }, (_, i) => i)
+            .filter((i) => !byOffset.has(i))
+            .join(', ') || 'none'
+        }).`,
+      );
+    }
+  }
 }

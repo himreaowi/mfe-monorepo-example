@@ -5,6 +5,8 @@ import { useOnlineStatus } from '@org/pwa';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { ConnectionRequired } from '../../components/ConnectionRequired';
 import styles from './MainLayout.module.scss';
+import { useHeaderLayout } from './useHeaderLayout';
+import type { HeaderLayout } from './useHeaderLayout';
 
 export type MainLayoutProps = {
   /** Header brand. */
@@ -26,11 +28,13 @@ export type MainLayoutProps = {
 /**
  * App chrome: header (brand, nav, theme toggle, actions), offline banner, main.
  *
- * Below 40rem the nav, theme toggle and actions fold into a panel behind a "Menu" disclosure
- * button (`aria-expanded`, `aria-controls`), so the header is one row (about 60 px) on phones.
- * The panel closes on Escape (focus returns to the button), on a click outside the header, and
- * after a link inside it is followed (or on browser back/forward). From 40rem up the button is
- * hidden and everything sits in the header row.
+ * The header is always one row. When brand, nav and actions do not fit side by side (measured,
+ * see `useHeaderLayout`: any number of nav items, signed in or not, any width), the nav, theme
+ * toggle and actions fold into a panel behind a "Menu" disclosure button (`aria-expanded`,
+ * `aria-controls`); before the first measurement and without ResizeObserver a CSS breakpoint
+ * (40rem) decides. The panel closes on Escape (focus returns to the button), on a click outside
+ * the header, and after a link inside it is followed (or on browser back/forward). The current
+ * layout is on the header as `data-layout="wide|compact"`.
  */
 export function MainLayout({
   brand = 'MFE Starter',
@@ -48,6 +52,15 @@ export function MainLayout({
   const headerRef = useRef<HTMLElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const sizerRef = useRef<HTMLDivElement>(null);
+  const onLayoutChange = useCallback((next: HeaderLayout) => {
+    if (next === 'wide') setOpen(false);
+  }, []);
+  const layout = useHeaderLayout(
+    { header: headerRef, sizer: sizerRef, panel: panelRef, button: buttonRef },
+    open,
+    onLayoutChange,
+  );
 
   /** Close; if focus was inside the panel (about to be hidden), move it to the button. */
   const close = useCallback((restoreFocus: boolean) => {
@@ -86,7 +99,13 @@ export function MainLayout({
 
   return (
     <div className={styles.host}>
-      <header ref={headerRef} className={styles.header}>
+      <header
+        ref={headerRef}
+        className={styles.header}
+        data-layout={layout}
+        data-testid="main-header"
+      >
+        <div ref={sizerRef} className={styles.sizer} aria-hidden="true" />
         <div className={styles.brand}>{brand}</div>
         <button
           ref={buttonRef}

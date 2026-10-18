@@ -33,11 +33,13 @@ Instructions for AI coding agents (and humans) working in this monorepo. Details
 - No hardcoded API or app paths in components (`apiRoutes`, `routePaths`); no API calls in
   component `useEffect` (use `features/*/api` + `features/*/hooks`).
 - Tokens (`var(--…)`) over hardcoded colours/spacing; WCAG 2.2 AA in light and dark; works at
-  375 px (`MainLayout` already collapses the header; no per-app menus).
+  375 px (`MainLayout` keeps the header one row and collapses it when it does not fit; no per-app menus).
 - Forms validate on submit with an error summary + field errors; submit is disabled only while
   sending ([docs/coding-conventions.md](docs/coding-conventions.md)).
 - Dev ports: apps 3100–3189 / 3200–3289; 3190–3199 / 3290–3299 are the zones' dev tools (mock
-  API, mock vendor). Mock endpoints go into `tools/mock-api`.
+  API, mock vendor), assigned in the root `package.json` `mfe.tools` (new tool server:
+  [docs/architecture.md](docs/architecture.md#adding-a-dev-tool-server)). Mock endpoints go into
+  `tools/mock-api`.
 - Tests with the change: unit tests next to the code; flows in the zone's
   `apps/<zone>/shell-<zone>/e2e/`. Import `test`/`expect` from `@org/playwright-config/test`.
 - Done means green: `pnpm check && pnpm lint && pnpm typecheck && pnpm test` (+ `pnpm build`

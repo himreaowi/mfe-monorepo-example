@@ -81,6 +81,77 @@ global styles from their exposed module.
 Zones never share remotes, and remotes never import remotes or shells. Enforced by
 `pnpm check` (check-apps) and ESLint (Nx module boundaries); see [guardrails.md](guardrails.md).
 
+### Dev tool servers
+
+Dev-only servers (mock API, mock vendor, a vendor's demo server, a fake BFF, …) live in
+`tools/<name>` and take a port from their zone's **tools range** (the last ten ports: intranet
+3190–3199, internet 3290–3299). Which tool gets which port is declared once, in the root
+`package.json`, as an **offset** into that range:
+
+```json
+"mfe": {
+  "tools": {
+    "mockApi": { "offset": 0, "package": "@org/mock-api" },
+    "mockVendor": { "offset": 1, "package": "@org/mock-vendor" }
+  }
+}
+```
+
+Port = the zone's first tools port + offset (`mockVendor`: 3191 intranet, 3291 internet).
+Everything reads this one declaration: the servers and generators through
+`toolPort(zone, '<tool>')` (`@org/scripts/zones`), the e2e config through `TOOL_PORTS`
+(`@org/playwright-config/zone`), and `pnpm check` validates it (unique offsets 0–9, existing
+package; rules `tool-*` in [guardrails.md](guardrails.md)).
+
+#### Adding a dev-tool server
+
+Example: a vendor's demo server for the `payments` adapter in the internet zone.
+
+1. Create the package `tools/example-vendor/package.json`:
+
+   ```json
+   {
+     "name": "@org/example-vendor",
+     "private": true,
+     "type": "module",
+     "scripts": {
+       "serve:intranet": "node bin/serve.js --zone intranet",
+       "serve:internet": "node bin/serve.js --zone internet"
+     },
+     "nx": {
+       "tags": ["type:tool"],
+       "targets": {
+         "serve:intranet": { "continuous": true, "cache": false },
+         "serve:internet": { "continuous": true, "cache": false }
+       }
+     },
+     "dependencies": { "@org/scripts": "workspace:*" }
+   }
+   ```
+
+   (Only the zones it serves need a `serve:<zone>` script.)
+
+2. Pick a free offset (template: 0 and 1 are taken, 2–9 are free) and declare it in the root
+   `package.json`:
+   `"exampleVendor": { "offset": 2, "package": "@org/example-vendor" }` under `mfe.tools`.
+3. Read the port in the server, never hardcode it:
+
+   ```js
+   import { toolPort } from '@org/scripts/zones';
+   const port = toolPort(zone, 'exampleVendor'); // intranet 3192, internet 3292
+   ```
+
+4. Start it with the zone: add it to `nx.targets.dev.dependsOn` of the app that needs it (here
+   `apps/internet/payments/package.json`, next to the mock API entry):
+   `{ "projects": ["@org/example-vendor"], "target": "serve:internet" }`. `pnpm dev:internet`
+   (and the e2e `webServer`) then starts it once.
+5. Point the dev manifest at it (`mfe-manifest.dev.json`, e.g. the adapter's `props.vendor.url`
+   `http://localhost:3292/mount.js`). The e2e global setup already waits for local vendor
+   URLs; for any other endpoint pass `createZoneConfig({ extraHealthUrls: [...] })` in the
+   shell's `playwright.config.ts`.
+6. `pnpm install && pnpm check`: a duplicate or out-of-range offset, or a `package` that does not
+   exist, fails `check-apps` with the free offsets in the message.
+
 ## Access: public and private remotes
 
 A remote generated with `--private` (tag `access:private`) is wrapped in `<RequireAuth>` by the
@@ -113,8 +184,8 @@ apps/<zone>/<name>/      apps (generated); shells hold the zone's e2e suite in e
 packages/                shared code: ui, design-tokens, mf-runtime, auth, http-client, pwa,
                          rspack-config, jest-config, playwright-config, eslint/prettier/tsconfig,
                          vendor-kit
-tools/                   generators, scripts (check, apps, e2e, validate-manifest, preview),
-                         mock-vendor (dev only)
+tools/                   generators, scripts (check, apps, dev, e2e, validate-manifest, preview),
+                         mock-api, mock-vendor (dev only; ports in root package.json mfe.tools)
 deploy/                  nginx template, Dockerfile, example per-environment manifest
 docs/                    this documentation
 ```

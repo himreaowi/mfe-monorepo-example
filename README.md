@@ -119,17 +119,17 @@ pnpm e2e:intranet          # e2e + axe WCAG 2.2 AA (after: pnpm --filter @org/sh
 
 ## Commands
 
-| Command                                                                                           | What                                                                                        |
-| ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `pnpm gen:shell <zone> [--title "<text>"]`                                                        | create `apps/<zone>/shell-<zone>` (zone: `intranet`, `internet`)                            |
-| `pnpm gen:remote <zone> <name> [--private] [--external [--vendor-format <f>]] [--title "<text>"]` | create a remote and register it with the zone's shell                                       |
-| `pnpm dev:intranet` / `pnpm dev:internet`                                                         | shell + every remote of the zone + its mock API (+ mock vendor); both zones can run at once |
-| `pnpm check`                                                                                      | guardrails: dependency tiers, app metadata, cross-app imports                               |
-| `pnpm lint` / `pnpm typecheck` / `pnpm test` / `pnpm build`                                       | all projects (Nx, cached)                                                                   |
-| `pnpm e2e` / `pnpm e2e:<zone>`                                                                    | zone e2e suites (Playwright + axe, light + dark, desktop + 375 px)                          |
-| `pnpm -s apps [--zone=<z>] [--affected --base=<sha>] [--json\|--matrix]`                          | apps as data for CI matrices                                                                |
-| `pnpm -s validate-manifest <file> [--zone=<z>]`                                                   | check a per-environment `mfe-manifest.json`                                                 |
-| `pnpm format` / `pnpm format:check`                                                               | Prettier                                                                                    |
+| Command                                                                                           | What                                                                                                                        |
+| ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm gen:shell <zone> [--title "<text>"]`                                                        | create `apps/<zone>/shell-<zone>` (zone: `intranet`, `internet`)                                                            |
+| `pnpm gen:remote <zone> <name> [--private] [--external [--vendor-format <f>]] [--title "<text>"]` | create a remote and register it with the zone's shell                                                                       |
+| `pnpm dev:intranet` / `pnpm dev:internet`                                                         | shell + every remote of the zone + its mock API (+ mock vendor); both zones can run at once; Ctrl-C stops all with one line |
+| `pnpm check`                                                                                      | guardrails: dependency tiers, app metadata, cross-app imports                                                               |
+| `pnpm lint` / `pnpm typecheck` / `pnpm test` / `pnpm build`                                       | all projects (Nx, cached)                                                                                                   |
+| `pnpm e2e` / `pnpm e2e:<zone>`                                                                    | zone e2e suites (Playwright + axe, light + dark, desktop + 375 px)                                                          |
+| `pnpm -s apps [--zone=<z>] [--affected --base=<sha>] [--json\|--matrix]`                          | apps as data for CI matrices                                                                                                |
+| `pnpm -s validate-manifest <file> [--zone=<z>]`                                                   | check a per-environment `mfe-manifest.json`                                                                                 |
+| `pnpm format` / `pnpm format:check`                                                               | Prettier                                                                                                                    |
 
 ## Layout
 

@@ -14,7 +14,8 @@ pnpm --filter @org/mock-api serve:internet   # http://localhost:3290/api
 `pnpm dev:<zone>` starts the zone's mock API automatically (Nx task dependency
 `serve:<zone>` of the generated shell and remotes), and so does `pnpm exec nx dev <app>`.
 Ports come from the zone's **tools range** (`tools/scripts/src/zones.js`: intranet 3190–3199,
-internet 3290–3299), so both zones run at the same time.
+internet 3290–3299) and the offset `mfe.tools.mockApi` in the root `package.json` (0 → 3190 /
+3290), so both zones run at the same time.
 
 | Method | Path                        | What                                                      |
 | ------ | --------------------------- | --------------------------------------------------------- |

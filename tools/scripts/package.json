@@ -12,6 +12,7 @@
   "bin": {
     "mfe-check": "./bin/check.js",
     "mfe-preview": "./bin/mfe-preview.js",
+    "mfe-dev": "./bin/dev.js",
     "mfe-e2e": "./bin/e2e.js",
     "mfe-apps": "./bin/list-apps.js",
     "mfe-validate-manifest": "./bin/validate-manifest.js"

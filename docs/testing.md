@@ -135,21 +135,25 @@ How it runs (`@org/playwright-config`):
    the local API's `<settings.apiBaseUrl>/health` (the mock API) answer. More servers:
    `createZoneConfig({ shellDir, extraHealthUrls: [...] })`.
 3. Every test runs in two projects: `desktop` (1280×720) and `mobile` (375×812).
-4. Afterwards the dev servers are stopped. `pnpm e2e` runs the zones one after the other; the
+4. Afterwards the dev servers are stopped (SIGTERM). `pnpm dev:<zone>` runs through a small
+   launcher (`tools/scripts/bin/dev.js`) that ends with one line,
+   `dev:<zone>: dev servers stopped (SIGTERM, expected).`, instead of Nx's misleading "Tasks
+   not run because their dependencies failed" summary; a server that crashes on its own is
+   still reported in full. `pnpm e2e` runs the zones one after the other; the
    zones' port ranges (tools included) do not overlap, so `pnpm dev:intranet` and
    `pnpm dev:internet` can also run at the same time.
 
 The specs read `remotes.json` and `mfe-manifest.dev.json` (`e2e/helpers.ts`), so a new remote is
 tested as soon as `pnpm gen:remote` registered it:
 
-| Spec                 | For               | Checks                                                                                                                                                                                                                                                               |
-| -------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `shell.spec.ts`      | the shell         | home lists every remote; the nav opens each one without a page reload; 404 page; theme choice persists across reloads and applies to remotes; offline banner; at 375 px the header is one row (≤ 64 px) with a working Menu disclosure (Escape, outside click, link) |
-| `remotes.spec.ts`    | every remote      | renders from a deep link (`/<remote>/e2e/deep/link`) and after a reload; links inside the remote navigate client-side (counted after `settle()`, so late links are not missed)                                                                                       |
-|                      | `access: private` | signed out: sign-in prompt and **no request to the remote** before sign-in; mock sign-in renders it; sign-out shows the prompt again                                                                                                                                 |
-|                      | `kind: external`  | **any vendor**: the mount container holds vendor content, no fallback, no console errors, unmounted when leaving. **Mock vendor only** (skips with the reason otherwise): vendor routing goes through the shell URL, the theme reaches the vendor (`update()`)       |
-| `standalone.spec.ts` | every remote      | its own dev server renders it standalone (own chrome and theme), deep link                                                                                                                                                                                           |
-| `a11y.spec.ts`       | every page above  | axe WCAG 2.2 A + AA in the **light and the dark theme**; private remotes both signed out (prompt) and signed in                                                                                                                                                      |
+| Spec                 | For               | Checks                                                                                                                                                                                                                                                                                                                                                              |
+| -------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `shell.spec.ts`      | the shell         | home lists every remote; the nav opens each one without a page reload; 404 page; theme choice persists across reloads and applies to remotes; offline banner; the header is one row at 375/800/1024/1280 px signed out and in (≤ 80 px, ≤ 64 px at 375; wide or collapsed, no horizontal scroll); at 375 px a working Menu disclosure (Escape, outside click, link) |
+| `remotes.spec.ts`    | every remote      | renders from a deep link (`/<remote>/e2e/deep/link`) and after a reload; links inside the remote navigate client-side (counted after `settle()`, so late links are not missed)                                                                                                                                                                                      |
+|                      | `access: private` | signed out: sign-in prompt and **no request to the remote** before sign-in; mock sign-in renders it; sign-out shows the prompt again                                                                                                                                                                                                                                |
+|                      | `kind: external`  | **any vendor**: the mount container holds vendor content, no fallback, no console errors, unmounted when leaving. **Mock vendor only** (skips with the reason otherwise): vendor routing goes through the shell URL, the theme reaches the vendor (`update()`)                                                                                                      |
+| `standalone.spec.ts` | every remote      | its own dev server renders it standalone (own chrome and theme), deep link                                                                                                                                                                                                                                                                                          |
+| `a11y.spec.ts`       | every page above  | axe WCAG 2.2 A + AA in the **light and the dark theme**; private remotes both signed out (prompt) and signed in                                                                                                                                                                                                                                                     |
 
 Every test also **fails on a `console.error`, an uncaught exception or a failed HTTP request**
 (fixture in `@org/playwright-config/test`). Failed requests (status ≥ 400, or a network error
@@ -184,9 +188,10 @@ method? }`, or a RegExp tested against `"<status> <METHOD> <url>"`. `consoleErro
 - `settle(page)` before asserting on data-driven content, counting links or running
   `checkA11y`: it waits for network idle and for loading indicators (`role="status"` starting
   with "Loading", `aria-busy="true"`) to disappear.
-- Header controls (nav, theme toggle, user menu) are behind the "Menu" button at 375 px: use
-  `openNav(page)` (returns the "Apps" list) or `openHeaderMenu(page)` (returns the panel); both
-  are no-ops on desktop. The panel closes after each navigation.
+- Header controls (nav, theme toggle, user menu) are behind the "Menu" button whenever the
+  header is compact (always at 375 px, on desktop too with many remotes): use `openNav(page)`
+  (returns the "Apps" list) or `openHeaderMenu(page)` (returns the panel); both are no-ops when
+  the header is wide. The panel closes after each navigation.
 - The mock API (`tools/mock-api`) keeps state in memory: tests that create data call
   `POST <api origin>/__reset` first (`await page.request.post('http://localhost:3190/__reset')`),
   or use unique names.

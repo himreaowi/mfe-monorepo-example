@@ -45,11 +45,18 @@ export interface Zone {
   waitFor: string[];
 }
 
-/** Dev ports of the zone tool servers (mirrors tools/scripts/src/zones.js). */
-export declare const TOOL_PORTS: {
-  readonly mockApi: readonly number[];
-  readonly mockVendor: readonly number[];
+/** Tools port range per zone (mirrors `ZONES[zone].tools` in tools/scripts/src/zones.js). */
+export declare const ZONE_TOOL_RANGES: {
+  readonly intranet: { readonly first: 3190; readonly last: 3199 };
+  readonly internet: { readonly first: 3290; readonly last: 3299 };
 };
+/**
+ * Dev ports of the zone tool servers per tool name (`[intranet, internet]`), from the root
+ * package.json `mfe.tools` (same source as `toolPort()` in tools/scripts).
+ */
+export declare const TOOL_PORTS: Readonly<Record<string, readonly number[]>>;
+/** Tool ports declared in `<root>/package.json` `mfe.tools`. */
+export declare function readToolPorts(root: string): Record<string, number[]>;
 /** Mock vendor origins of every zone (`http://localhost:3191`, `http://localhost:3291`). */
 export declare const MOCK_VENDOR_ORIGINS: string[];
 /** Mock API origins of every zone (`http://localhost:3190`, `http://localhost:3290`). */

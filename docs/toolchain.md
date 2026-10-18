@@ -404,10 +404,20 @@ integrity crossorigin>` first, then `import()` of the same URL reuses the verifi
   `pnpm dev:internet` both started `@org/mock-vendor` on 3999). Each zone now reserves the top
   ten ports of its range for dev tools (intranet 3190–3199, internet 3290–3299; apps end at
   3189 / 3289); tools take Nx targets `serve:<zone>` and read their port from
-  `toolPort(zone, tool)` in `tools/scripts/src/zones.js`.
+  `toolPort(zone, tool)` in `tools/scripts/src/zones.js`. Which tool has which offset in that
+  range is declared in the root `package.json` (`mfe.tools`), so adding a tool server needs no
+  change to shared code (docs/architecture.md, "Adding a dev-tool server").
 - **Packages cannot import tools** (`@nx/enforce-module-boundaries`: `type:package` → only
-  `type:package`). `@org/playwright-config` therefore mirrors the tool ports (`TOOL_PORTS`) and a
-  `tools/scripts` test imports both and compares them.
+  `type:package`). `@org/playwright-config` therefore reads the same root `package.json`
+  `mfe.tools` itself (`TOOL_PORTS`) and mirrors only the zones' tools ranges
+  (`ZONE_TOOL_RANGES`); a `tools/scripts` test compares both with `zones.js`.
+- **Stopping `nx run-many` looks like a failure.** When Playwright stops the webServer (or you
+  press Ctrl-C), Nx kills its continuous tasks and prints "Tasks not run because their
+  dependencies failed or --nx-bail=true" plus "Tasks stopped before they finished"; no Nx flag
+  turns this off. `pnpm dev:<zone>` therefore runs `tools/scripts/bin/dev.js`, which passes the
+  signal on, drops the output after it and exits 0 with one "dev servers stopped" line. Nx
+  starts every task in its own process group, so the servers stop because Nx forwards the
+  signal, also when only the launcher is signalled.
 - **Nx continuous dependencies are deduplicated**: the shell and every remote of a zone declare
   `dev.dependsOn: [{ projects: ['@org/mock-api'], target: 'serve:<zone>' }]`; `nx run-many -t dev`
   starts the mock API once.

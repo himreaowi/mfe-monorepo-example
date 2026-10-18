@@ -27,9 +27,10 @@ export function remotePage(page: Page, remote: ZoneRemote): Locator {
 }
 
 /**
- * The header panel (nav, theme toggle, user menu). Below 40rem `MainLayout` folds it behind a
- * "Menu" button: open it first, so its contents are visible and clickable on every viewport.
- * No-op on desktop and when it is already open.
+ * The header panel (nav, theme toggle, user menu). `MainLayout` folds it behind a "Menu" button
+ * whenever the header row does not fit (always at 375 px; on wider screens too when the zone has
+ * many remotes): open it first, so its contents are visible and clickable on every viewport.
+ * No-op when the header is wide and when the panel is already open.
  */
 export async function openHeaderMenu(page: Page): Promise<Locator> {
   const menu = page.getByRole('button', { name: 'Menu' });

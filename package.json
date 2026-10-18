@@ -9,6 +9,23 @@
   },
   "type": "module",
   "prettier": "@org/prettier-config",
+  "mfe": {
+    "tools": {
+      "mockApi": {
+        "offset": 0,
+        "package": "@org/mock-api"
+      },
+      "mockVendor": {
+        "offset": 1,
+        "package": "@org/mock-vendor"
+      },
+      "exampleVendors": {
+        "offset": 2,
+        "package": "@org/example-vendors",
+        "description": "Example vendor demo servers (intranet: Acme Service Desk, internet: Bright Payments)"
+      }
+    }
+  },
   "scripts": {
     "check": "node tools/scripts/bin/check.js",
     "apps": "node tools/scripts/bin/list-apps.js",
@@ -20,8 +37,8 @@
     "e2e": "node tools/scripts/bin/e2e.js",
     "e2e:intranet": "node tools/scripts/bin/e2e.js --zone=intranet",
     "e2e:internet": "node tools/scripts/bin/e2e.js --zone=internet",
-    "dev:intranet": "nx run-many -t dev --projects=tag:zone:intranet --parallel=100 --outputStyle=stream",
-    "dev:internet": "nx run-many -t dev --projects=tag:zone:internet --parallel=100 --outputStyle=stream",
+    "dev:intranet": "node tools/scripts/bin/dev.js --zone=intranet",
+    "dev:internet": "node tools/scripts/bin/dev.js --zone=internet",
     "gen:shell": "node tools/generators/bin/gen.js shell",
     "gen:remote": "node tools/generators/bin/gen.js remote",
     "format": "prettier --write .",

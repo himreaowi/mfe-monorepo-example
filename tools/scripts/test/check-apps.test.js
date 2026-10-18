@@ -1,6 +1,7 @@
 // @ts-check
 import assert from 'node:assert/strict';
 import { after, describe, it } from 'node:test';
+import path from 'node:path';
 import { checkApps } from '../src/check-apps.js';
 import {
   app,
@@ -202,5 +203,92 @@ describe('check-apps', () => {
     assert.deepEqual(rules(r.errors), ['registry', 'registry', 'registry']);
     // leave not registered; internet_services missing from the intranet dev manifest
     assert.deepEqual(rules(r.warnings), ['registry', 'registry']);
+  });
+
+  describe('dev tool servers (root package.json mfe.tools)', () => {
+    /** @param {unknown} tools */
+    const withTools = (tools) =>
+      checkApps({
+        root: makeWorkspace({
+          packages: {
+            ui: { name: '@org/ui', version: '0.1.0' },
+            'mock-api': { name: '@org/mock-api', version: '1.0.0' },
+            'example-vendor': { name: '@org/example-vendor', version: '1.0.0' },
+          },
+          files: {
+            'package.json': {
+              name: '@org/root',
+              private: true,
+              mfe: { tools },
+            },
+          },
+        }),
+      });
+
+    it('accepts unique offsets in the tools range naming workspace packages', async () => {
+      const r = await withTools({
+        mockApi: { offset: 0, package: '@org/mock-api' },
+        exampleVendor: {
+          offset: 2,
+          package: '@org/example-vendor',
+          description: 'vendor demo server',
+        },
+        bare: { offset: 9 },
+      });
+      assert.deepEqual(r.errors, []);
+    });
+
+    it('fails on a duplicate offset (same port in every zone)', async () => {
+      const r = await withTools({
+        mockApi: { offset: 0, package: '@org/mock-api' },
+        exampleVendor: { offset: 0, package: '@org/example-vendor' },
+      });
+      assert.deepEqual(rules(r.errors), ['tool-port-duplicate']);
+      assert.match(
+        r.errors[0].message,
+        /mockApi, exampleVendor all use offset 0/,
+      );
+      assert.match(r.errors[0].message, /3190 \/ 3290/);
+      assert.match(r.errors[0].message, /free: 1, 2/);
+    });
+
+    it('fails on an offset outside the tools range', async () => {
+      for (const offset of [10, -1, 1.5, '2', undefined]) {
+        const r = await withTools({ exampleVendor: { offset } });
+        assert.deepEqual(rules(r.errors), ['tool-port'], String(offset));
+        assert.match(r.errors[0].message, /integer 0-9/);
+        assert.match(
+          r.errors[0].message,
+          /intranet 3190-3199, internet 3290-3299/,
+        );
+      }
+    });
+
+    it('fails on a malformed entry, a bad name or an unknown package', async () => {
+      let r = await withTools([]);
+      assert.deepEqual(rules(r.errors), ['tool-config']);
+      r = await withTools({ 'example-vendor': { offset: 2 } });
+      assert.deepEqual(rules(r.errors), ['tool-config']);
+      r = await withTools({ exampleVendor: 2 });
+      assert.deepEqual(rules(r.errors), ['tool-config']);
+      r = await withTools({ exampleVendor: { offset: 2, port: 3292 } });
+      assert.deepEqual(rules(r.errors), ['tool-config']);
+      assert.match(r.errors[0].message, /unknown field\(s\) port/);
+      r = await withTools({
+        exampleVendor: { offset: 2, package: '@org/nope' },
+      });
+      assert.deepEqual(rules(r.errors), ['tool-config']);
+      assert.match(r.errors[0].message, /not a workspace package/);
+    });
+
+    it('the repo declares the mock API and mock vendor', async () => {
+      const r = await checkApps({
+        root: path.resolve(import.meta.dirname, '../../..'),
+      });
+      assert.deepEqual(
+        r.errors.filter((e) => e.rule.startsWith('tool-')),
+        [],
+      );
+    });
   });
 });

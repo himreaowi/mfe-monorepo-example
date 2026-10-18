@@ -7,7 +7,7 @@ shows a **neutral demo widget**: nothing product-specific, so any `--external` a
 until the real vendor delivers.
 
 One server per zone, on the zone's mock-vendor port (tools range in
-`tools/scripts/src/zones.js`), so `pnpm dev:intranet` and `pnpm dev:internet` can run together:
+`tools/scripts/src/zones.js`, offset `mfe.tools.mockVendor` in the root `package.json`), so `pnpm dev:intranet` and `pnpm dev:internet` can run together:
 
 ```sh
 pnpm --filter @org/mock-vendor serve:intranet   # http://localhost:3191

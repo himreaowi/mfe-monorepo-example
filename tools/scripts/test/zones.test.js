@@ -1,9 +1,17 @@
 // @ts-check
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { describe, it } from 'node:test';
-import { ZONES, allToolPorts, toolPort } from '../src/zones.js';
+import {
+  TOOL_SLOTS,
+  ZONES,
+  allToolPorts,
+  readToolConfig,
+  toolPort,
+} from '../src/zones.js';
 
 describe('zones', () => {
   it('per-zone tool ports sit in the zone tools range, outside the app range', () => {
@@ -27,13 +35,55 @@ describe('zones', () => {
     assert.ok(a[1] < b[0] || b[1] < a[0]);
   });
 
-  it('@org/playwright-config mirrors the tool ports (packages cannot import tools)', async () => {
+  it('reads tool offsets from the root package.json of a workspace (mfe.tools)', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'mfe-zones-'));
+    try {
+      fs.writeFileSync(
+        path.join(root, 'package.json'),
+        JSON.stringify({
+          mfe: {
+            tools: {
+              exampleVendor: { offset: 2, package: '@org/example-vendor' },
+              broken: { offset: 12 },
+            },
+          },
+        }),
+      );
+      assert.equal(toolPort('intranet', 'exampleVendor', root), 3192);
+      assert.equal(toolPort('internet', 'exampleVendor', root), 3292);
+      assert.deepEqual(allToolPorts('exampleVendor', root), [3192, 3292]);
+      assert.throws(
+        () => toolPort('intranet', 'mockApi', root),
+        /Unknown dev tool "mockApi": declare it in .*package\.json under "mfe"/,
+      );
+      assert.throws(
+        () => toolPort('intranet', 'broken', root),
+        /"offset" must be an integer 0-9/,
+      );
+      assert.equal(TOOL_SLOTS, 10);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('@org/playwright-config reads the same tool ports (and mirrors the zone tool ranges)', async () => {
     const file = path.resolve(
       import.meta.dirname,
       '../../../packages/playwright-config/src/zone.js',
     );
-    const { TOOL_PORTS } = await import(pathToFileURL(file).href);
-    assert.deepEqual([...TOOL_PORTS.mockApi], allToolPorts('mockApi'));
-    assert.deepEqual([...TOOL_PORTS.mockVendor], allToolPorts('mockVendor'));
+    const { TOOL_PORTS, ZONE_TOOL_RANGES } = await import(
+      pathToFileURL(file).href
+    );
+    assert.deepEqual(
+      ZONE_TOOL_RANGES,
+      Object.fromEntries(
+        Object.entries(ZONES).map(([zone, z]) => [zone, { ...z.tools }]),
+      ),
+    );
+    const declared = Object.keys(readToolConfig());
+    assert.deepEqual(Object.keys(TOOL_PORTS).sort(), declared.sort());
+    for (const tool of declared) {
+      assert.deepEqual([...TOOL_PORTS[tool]], allToolPorts(tool));
+    }
   });
 });
