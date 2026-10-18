@@ -42,17 +42,17 @@ pnpm e2e:intranet          # e2e + axe WCAG 2.2 AA (after: pnpm --filter @org/sh
 
 ## Commands
 
-| Command                                                                  | What                                                                   |
-| ------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
-| `pnpm gen:shell <zone>`                                                  | create `apps/<zone>/shell-<zone>` (zone: `intranet`, `internet`)       |
-| `pnpm gen:remote <zone> <name> [--private] [--external]`                 | create a remote and register it with the zone's shell                  |
-| `pnpm dev:intranet` / `pnpm dev:internet`                                | shell + every remote of the zone (+ mock vendor for external adapters) |
-| `pnpm check`                                                             | guardrails: dependency tiers, app metadata, cross-app imports          |
-| `pnpm lint` / `pnpm typecheck` / `pnpm test` / `pnpm build`              | all projects (Nx, cached)                                              |
-| `pnpm e2e` / `pnpm e2e:<zone>`                                           | zone e2e suites (Playwright + axe, light + dark, desktop + 375 px)     |
-| `pnpm -s apps [--zone=<z>] [--affected --base=<sha>] [--json\|--matrix]` | apps as data for CI matrices                                           |
-| `pnpm -s validate-manifest <file> [--zone=<z>]`                          | check a per-environment `mfe-manifest.json`                            |
-| `pnpm format` / `pnpm format:check`                                      | Prettier                                                               |
+| Command                                                                                           | What                                                                                        |
+| ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `pnpm gen:shell <zone> [--title "<text>"]`                                                        | create `apps/<zone>/shell-<zone>` (zone: `intranet`, `internet`)                            |
+| `pnpm gen:remote <zone> <name> [--private] [--external [--vendor-format <f>]] [--title "<text>"]` | create a remote and register it with the zone's shell                                       |
+| `pnpm dev:intranet` / `pnpm dev:internet`                                                         | shell + every remote of the zone + its mock API (+ mock vendor); both zones can run at once |
+| `pnpm check`                                                                                      | guardrails: dependency tiers, app metadata, cross-app imports                               |
+| `pnpm lint` / `pnpm typecheck` / `pnpm test` / `pnpm build`                                       | all projects (Nx, cached)                                                                   |
+| `pnpm e2e` / `pnpm e2e:<zone>`                                                                    | zone e2e suites (Playwright + axe, light + dark, desktop + 375 px)                          |
+| `pnpm -s apps [--zone=<z>] [--affected --base=<sha>] [--json\|--matrix]`                          | apps as data for CI matrices                                                                |
+| `pnpm -s validate-manifest <file> [--zone=<z>]`                                                   | check a per-environment `mfe-manifest.json`                                                 |
+| `pnpm format` / `pnpm format:check`                                                               | Prettier                                                                                    |
 
 ## Layout
 
@@ -72,7 +72,8 @@ pnpm e2e:intranet          # e2e + axe WCAG 2.2 AA (after: pnpm --filter @org/sh
 | [`packages/vendor-kit`](packages/vendor-kit)                | what vendors get: contract types, test host, examples, checklist (zip)                                                         |
 | [`tools/generators`](tools/generators)                      | `gen:shell`, `gen:remote` and their templates                                                                                  |
 | [`tools/scripts`](tools/scripts)                            | `check`, `apps`, `e2e`, `validate-manifest`, `mfe-preview`                                                                     |
-| [`tools/mock-vendor`](tools/mock-vendor)                    | dev-only mock vendor module (no React) on :3999                                                                                |
+| [`tools/mock-vendor`](tools/mock-vendor)                    | dev-only mock vendor module (no React), one per zone (:3191 / :3291)                                                           |
+| [`tools/mock-api`](tools/mock-api)                          | dev-only mock JSON API, one per zone (:3190 / :3290), `settings.apiBaseUrl` of the dev manifests                               |
 | [`deploy/`](deploy)                                         | shared nginx template, Dockerfile (one image per app), example per-environment manifest                                        |
 | `pnpm-workspace.yaml`, `version-exceptions.json`, `nx.json` | workspaces + catalog (one version per core library), justified exceptions, Nx task defaults                                    |
 | `.specify/`, `.cursor/skills/`, `specs/`                    | Spec Kit (constitution, templates, scripts) and its agent skills; feature specs go in `specs/`                                 |

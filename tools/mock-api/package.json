@@ -1,0 +1,43 @@
+{
+  "name": "@org/mock-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DEV ONLY: small per-zone mock JSON API (node:http, in-memory, no dependencies). Port from the zone's tools range (intranet 3190, internet 3290); apps read the base URL from mfe-manifest.json settings.apiBaseUrl.",
+  "type": "module",
+  "bin": {
+    "mock-api": "./bin/serve.js"
+  },
+  "scripts": {
+    "serve:intranet": "node bin/serve.js --zone intranet",
+    "serve:internet": "node bin/serve.js --zone internet",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "node --test \"test/**/*.test.js\""
+  },
+  "nx": {
+    "tags": [
+      "type:tool"
+    ],
+    "targets": {
+      "serve:intranet": {
+        "continuous": true,
+        "cache": false
+      },
+      "serve:internet": {
+        "continuous": true,
+        "cache": false
+      }
+    }
+  },
+  "dependencies": {
+    "@org/scripts": "workspace:*"
+  },
+  "devDependencies": {
+    "@org/eslint-config": "workspace:*",
+    "@org/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:"
+  }
+}
