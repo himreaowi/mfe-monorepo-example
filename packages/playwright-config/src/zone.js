@@ -6,9 +6,25 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+/**
+ * Dev ports of the zone tool servers, per zone (intranet, internet). Mirrors `toolPort()` in
+ * tools/scripts/src/zones.js (packages cannot import tools; a tools/scripts test keeps the two
+ * in sync).
+ */
+export const TOOL_PORTS = /** @type {const} */ ({
+  mockApi: [3190, 3290],
+  mockVendor: [3191, 3291],
+});
 
-/** Origin of the dev-only mock vendor (tools/mock-vendor). */
-export const MOCK_VENDOR_ORIGIN = 'http://localhost:3999';
+/** Origins of the dev-only mock vendor (tools/mock-vendor), one per zone. */
+export const MOCK_VENDOR_ORIGINS = TOOL_PORTS.mockVendor.map(
+  (port) => `http://localhost:${port}`,
+);
+
+/** Origins of the dev-only mock API (tools/mock-api), one per zone. */
+export const MOCK_API_ORIGINS = TOOL_PORTS.mockApi.map(
+  (port) => `http://localhost:${port}`,
+);
 
 /**
  * @param {string} file
@@ -37,9 +53,22 @@ function hasUrl(vendor) {
   );
 }
 
-/** True when a vendor config points at the dev-only mock vendor. */
+/** True when a vendor config points at the dev-only mock vendor (of any zone). */
 export function isMockVendor(/** @type {unknown} */ vendor) {
-  return hasUrl(vendor) && vendor.url.startsWith(`${MOCK_VENDOR_ORIGIN}/`);
+  return (
+    hasUrl(vendor) &&
+    MOCK_VENDOR_ORIGINS.some((origin) => vendor.url.startsWith(`${origin}/`))
+  );
+}
+
+/**
+ * Health URL of a local API base URL (`http://localhost:3190/api` → `…/api/health`), or
+ * `undefined` for remote APIs (the suite does not wait for servers it does not start).
+ * @param {unknown} apiBaseUrl
+ */
+export function localHealthUrl(apiBaseUrl) {
+  if (typeof apiBaseUrl !== 'string' || !isLocal(apiBaseUrl)) return undefined;
+  return `${apiBaseUrl.replace(/\/+$/, '')}/health`;
 }
 
 /** @param {string} url */
@@ -99,6 +128,11 @@ export function loadZone(shellDir) {
     .filter(hasUrl)
     .map((v) => v.url)
     .filter(isLocal);
+  const apiBaseUrl =
+    typeof manifest.settings?.apiBaseUrl === 'string'
+      ? manifest.settings.apiBaseUrl
+      : undefined;
+  const apiHealthUrl = localHealthUrl(apiBaseUrl);
   return {
     zone,
     shellDir,
@@ -106,9 +140,20 @@ export function loadZone(shellDir) {
     port,
     shellUrl: `http://localhost:${port}`,
     authMock: manifest.auth?.mock === true,
+    apiBaseUrl,
+    mockApi:
+      apiBaseUrl !== undefined &&
+      MOCK_API_ORIGINS.some((origin) => apiBaseUrl.startsWith(`${origin}/`)),
     remotes,
-    // everything the suite needs besides the shell: remote dev servers and local vendors
-    waitFor: [...new Set([...remotes.map((r) => r.entry), ...vendorUrls])],
+    // everything the suite needs besides the shell: remote dev servers, local vendors and the
+    // local API's health URL (settings.apiBaseUrl, e.g. the mock API)
+    waitFor: [
+      ...new Set([
+        ...remotes.map((r) => r.entry),
+        ...vendorUrls,
+        ...(apiHealthUrl ? [apiHealthUrl] : []),
+      ]),
+    ],
   };
 }
 

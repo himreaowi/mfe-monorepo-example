@@ -15,9 +15,23 @@ export interface ZoneConfigOptions {
   webServerTimeout?: number;
   /** Command that starts the zone (run in the workspace root). Default `pnpm run dev:<zone>`. */
   command?: string;
-  /** Merged last (shallow). */
+  /**
+   * More URLs the global setup waits for before the first test (any status below 500), e.g.
+   * another dev tool server. The local API's `<settings.apiBaseUrl>/health` (mock API) is
+   * already included.
+   */
+  extraHealthUrls?: string[];
+  /**
+   * Merged last: `metadata` deep-merged (arrays concatenated), `use` / `expect` merged one level
+   * deep, other keys replace the defaults.
+   */
   overrides?: PlaywrightTestConfig;
 }
+
+export declare function mergeZoneConfig(
+  config: PlaywrightTestConfig,
+  overrides: PlaywrightTestConfig,
+): PlaywrightTestConfig;
 
 export declare const MOBILE_VIEWPORT: { width: number; height: number };
 export declare function createZoneConfig(

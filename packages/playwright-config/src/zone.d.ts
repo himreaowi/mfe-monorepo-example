@@ -33,13 +33,30 @@ export interface Zone {
   shellUrl: string;
   /** The dev manifest uses the mock sign-in (`"auth": { "mock": true }`). */
   authMock: boolean;
+  /** `settings.apiBaseUrl` of the dev manifest, if any. */
+  apiBaseUrl?: string;
+  /** `apiBaseUrl` points at the dev-only mock API (tools/mock-api) of a zone. */
+  mockApi: boolean;
   remotes: ZoneRemote[];
-  /** URLs the suite waits for besides the shell (remote mf-manifests, local vendor bundles). */
+  /**
+   * URLs the suite waits for besides the shell: remote mf-manifests, local vendor bundles and
+   * `<apiBaseUrl>/health` when the API is local (the mock API).
+   */
   waitFor: string[];
 }
 
-export declare const MOCK_VENDOR_ORIGIN: string;
+/** Dev ports of the zone tool servers (mirrors tools/scripts/src/zones.js). */
+export declare const TOOL_PORTS: {
+  readonly mockApi: readonly number[];
+  readonly mockVendor: readonly number[];
+};
+/** Mock vendor origins of every zone (`http://localhost:3191`, `http://localhost:3291`). */
+export declare const MOCK_VENDOR_ORIGINS: string[];
+/** Mock API origins of every zone (`http://localhost:3190`, `http://localhost:3290`). */
+export declare const MOCK_API_ORIGINS: string[];
 export declare function isMockVendor(vendor: unknown): boolean;
+/** `<apiBaseUrl>/health` for a localhost API base URL, else `undefined`. */
+export declare function localHealthUrl(apiBaseUrl: unknown): string | undefined;
 export declare function loadZone(shellDir: string): Zone;
 export declare function findWorkspaceRoot(dir: string): string;
 export declare function waitForUrls(

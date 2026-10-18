@@ -4,8 +4,10 @@
  *
  *   import { test, expect, checkA11y, useTheme } from '@org/playwright-config/test';
  *
- * - `test` fails a test when the page logged a console error or threw an uncaught exception
- *   (option `allowedConsoleErrors: RegExp[]` for known noise, per file: `test.use({ ... })`).
+ * - `test` fails a test when the page logged a console error, threw an uncaught exception or
+ *   had a failed HTTP request (4xx/5xx or network error, reported with its URL). Allow known
+ *   noise per file (`test.use({ allowedConsoleErrors, allowedHttpErrors })`) or per test
+ *   (`consoleErrors.allow(...)`, `consoleErrors.allowHttp({ url, status })`).
  * - `checkA11y(page)` runs axe-core with the WCAG 2.2 A/AA rules and fails with a readable list.
  * - `useTheme(page, 'dark')` makes every page of the test start in that theme.
  */
@@ -14,9 +16,11 @@ import AxeBuilder from '@axe-core/playwright';
 
 export { expect };
 export {
-  MOCK_VENDOR_ORIGIN,
+  MOCK_API_ORIGINS,
+  MOCK_VENDOR_ORIGINS,
   isMockVendor,
   loadZone,
+  localHealthUrl,
   waitForUrls,
 } from './zone.js';
 
@@ -33,31 +37,133 @@ export const WCAG_TAGS = [
 /** localStorage key of the theme preference (`@org/design-tokens` THEME_STORAGE_KEY). */
 export const THEME_STORAGE_KEY = 'mfe-theme';
 
+/** Chromium's console line for a failed subresource; reported with its URL from network events. */
+const FAILED_RESOURCE = /^Failed to load resource: /;
+
 /**
- * Auto fixture: collect console errors and uncaught exceptions, fail the test if there are any.
- * @param {{ page: import('@playwright/test').Page, allowedConsoleErrors: RegExp[] }} fixtures
- * @param {(errors: string[]) => Promise<void>} provide
+ * Does an HTTP failure match an allowance? A RegExp is tested against
+ * `"<status> <METHOD> <url>"` (status `failed` for network errors); an object matches when every
+ * given field matches (`url`: RegExp or substring, `status`: number or list, `method`).
+ * @param {import('./test.d.ts').HttpFailure} failure
+ * @param {import('./test.d.ts').HttpErrorAllowance} rule
  */
-async function collectConsoleErrors({ page, allowedConsoleErrors }, provide) {
-  /** @type {string[]} */
-  const errors = [];
-  const allowed = (/** @type {string} */ text) =>
-    allowedConsoleErrors.some((re) => re.test(text));
+export function matchesHttpAllowance(failure, rule) {
+  if (rule instanceof RegExp) {
+    return rule.test(`${failure.status} ${failure.method} ${failure.url}`);
+  }
+  if (rule.url !== undefined) {
+    const ok =
+      rule.url instanceof RegExp
+        ? rule.url.test(failure.url)
+        : failure.url.includes(rule.url);
+    if (!ok) return false;
+  }
+  if (rule.status !== undefined) {
+    const statuses = Array.isArray(rule.status) ? rule.status : [rule.status];
+    if (!statuses.includes(/** @type {any} */ (failure.status))) return false;
+  }
+  if (
+    rule.method !== undefined &&
+    rule.method.toUpperCase() !== failure.method
+  ) {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Auto fixture: collect console errors, uncaught exceptions and failed HTTP requests; fail the
+ * test if any is left after the allowances.
+ *
+ * - console errors / uncaught exceptions: `allowedConsoleErrors` (RegExp, tested against the
+ *   text and against "text (url)")
+ * - HTTP: every response with status >= 400 and every failed request (except aborted ones) is
+ *   recorded **with its URL** (`response` / `requestfailed` events). Chromium's own console line
+ *   "Failed to load resource: …" has no usable URL and is skipped in favour of these records.
+ *   Allow with `allowedHttpErrors` (URL-scoped, see matchesHttpAllowance)
+ * - per test: `consoleErrors.allow(/text/)`, `consoleErrors.allowHttp({ url, status })`
+ * @param {{ page: import('@playwright/test').Page, allowedConsoleErrors: RegExp[], allowedHttpErrors: import('./test.d.ts').HttpErrorAllowance[] }} fixtures
+ * @param {(tracker: import('./test.d.ts').ConsoleErrorTracker) => Promise<void>} provide
+ */
+async function collectConsoleErrors(
+  { page, allowedConsoleErrors, allowedHttpErrors },
+  provide,
+) {
+  /** @type {{ text: string, url: string, kind: 'console' | 'uncaught' }[]} */
+  const messages = [];
+  /** @type {import('./test.d.ts').HttpFailure[]} */
+  const httpFailures = [];
+  /** @type {RegExp[]} */
+  const allowedText = [...allowedConsoleErrors];
+  /** @type {import('./test.d.ts').HttpErrorAllowance[]} */
+  const allowedHttp = [...allowedHttpErrors];
+
   page.on('console', (message) => {
     if (message.type() !== 'error') return;
     const text = message.text();
-    if (allowed(text)) return;
-    const { url } = message.location();
-    errors.push(`console.error: ${text}${url ? ` (${url})` : ''}`);
+    if (FAILED_RESOURCE.test(text)) return; // recorded by the network listeners, with URL
+    messages.push({ text, url: message.location().url ?? '', kind: 'console' });
   });
   page.on('pageerror', (error) => {
-    if (allowed(error.message)) return;
-    errors.push(`uncaught: ${error.message}`);
+    messages.push({ text: error.message, url: '', kind: 'uncaught' });
   });
-  await provide(errors);
+  page.on('response', (response) => {
+    if (response.status() < 400) return;
+    httpFailures.push({
+      url: response.url(),
+      method: response.request().method(),
+      status: response.status(),
+      statusText: response.statusText(),
+    });
+  });
+  page.on('requestfailed', (request) => {
+    const errorText = request.failure()?.errorText ?? 'failed';
+    // navigation away / cancelled fetches are not errors of the page
+    if (/ERR_ABORTED|NS_BINDING_ABORTED|cancelled/i.test(errorText)) return;
+    httpFailures.push({
+      url: request.url(),
+      method: request.method(),
+      status: 'failed',
+      statusText: errorText,
+    });
+  });
+
+  /** @type {import('./test.d.ts').ConsoleErrorTracker} */
+  const tracker = {
+    messages,
+    httpFailures,
+    allow: (...patterns) => {
+      allowedText.push(...patterns);
+    },
+    allowHttp: (...rules) => {
+      allowedHttp.push(...rules);
+    },
+  };
+  await provide(tracker);
+
+  const textAllowed = (/** @type {{ text: string, url: string }} */ m) =>
+    allowedText.some(
+      (re) =>
+        re.test(m.text) || (m.url !== '' && re.test(`${m.text} (${m.url})`)),
+    );
+  const problems = [
+    ...messages
+      .filter((m) => !textAllowed(m))
+      .map((m) =>
+        m.kind === 'uncaught'
+          ? `uncaught: ${m.text}`
+          : `console.error: ${m.text}${m.url ? ` (${m.url})` : ''}`,
+      ),
+    ...httpFailures
+      .filter((f) => !allowedHttp.some((rule) => matchesHttpAllowance(f, rule)))
+      .map(
+        (f) =>
+          `http: ${f.status}${f.statusText ? ` ${f.statusText}` : ''} ${f.method} ${f.url}`,
+      ),
+  ];
   expect(
-    errors,
-    'the page logged console errors or threw uncaught exceptions',
+    problems,
+    'the page logged console errors, threw uncaught exceptions or had failed HTTP requests (allow known ones with allowedConsoleErrors / allowedHttpErrors or consoleErrors.allow / allowHttp)',
   ).toEqual([]);
 }
 
@@ -65,6 +171,7 @@ async function collectConsoleErrors({ page, allowedConsoleErrors }, provide) {
 export const test = base.extend(
   /** @type {any} */ ({
     allowedConsoleErrors: [[], { option: true }],
+    allowedHttpErrors: [[], { option: true }],
     consoleErrors: [collectConsoleErrors, { auto: true }],
   }),
 );
