@@ -1,0 +1,1 @@
+export { AnnouncementDetail } from './AnnouncementDetail';

@@ -3,8 +3,8 @@ import { useRemotePath } from '@org/mf-runtime/remote';
 import { RemoteFallback } from '@org/ui';
 import { routePaths } from '@/core/constants/routePaths';
 import { formatDate } from '@/core/utils/formatDate';
-import { useAnnouncement } from '../hooks/useAnnouncements';
-import styles from './Announcements.module.scss';
+import { useAnnouncement } from '../../hooks/useAnnouncements';
+import styles from './AnnouncementDetail.module.scss';
 
 /** One announcement. The body is plain text paragraphs (no HTML from the API is rendered). */
 export function AnnouncementDetail({ id }: { id: string }) {

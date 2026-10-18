@@ -3,8 +3,8 @@ import { useRemotePath } from '@org/mf-runtime/remote';
 import { RemoteFallback } from '@org/ui';
 import { announcementPath } from '@/core/constants/routePaths';
 import { formatDate } from '@/core/utils/formatDate';
-import { useAnnouncements } from '../hooks/useAnnouncements';
-import styles from './Announcements.module.scss';
+import { useAnnouncements } from '../../hooks/useAnnouncements';
+import styles from './AnnouncementList.module.scss';
 
 export function AnnouncementList() {
   const toPath = useRemotePath();

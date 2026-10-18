@@ -5,7 +5,7 @@ import {
   getAnnouncement,
   listAnnouncements,
 } from '@/features/announcements/api';
-import { maintenance } from '@/features/announcements/components/testData';
+import { maintenance } from '@/features/announcements/__fixtures__/announcements';
 import { EmbeddedApp, StandaloneApp } from './apps';
 
 jest.mock('@/features/announcements/api');

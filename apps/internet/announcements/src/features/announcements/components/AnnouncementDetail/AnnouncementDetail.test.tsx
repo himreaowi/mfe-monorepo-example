@@ -1,12 +1,11 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
-import { getAnnouncement, listAnnouncements } from '../api';
+import { getAnnouncement } from '../../api';
+import { maintenance } from '../../__fixtures__/announcements';
 import { AnnouncementDetail } from './AnnouncementDetail';
-import { AnnouncementList } from './AnnouncementList';
-import { maintenance } from './testData';
 
-jest.mock('../api');
+jest.mock('../../api');
 
 function renderIn(ui: React.ReactNode) {
   return render(
@@ -17,29 +16,6 @@ function renderIn(ui: React.ReactNode) {
     </MemoryRouter>,
   );
 }
-
-describe('AnnouncementList', () => {
-  it('lists announcements with date, topic and a link below the mount', async () => {
-    jest.mocked(listAnnouncements).mockResolvedValue([maintenance]);
-    renderIn(<AnnouncementList />);
-    expect(screen.getByRole('status')).toHaveTextContent('Loading');
-    const item = await screen.findByTestId('announcement');
-    expect(
-      within(item).getByRole('link', {
-        name: 'Online services maintenance on 25 October',
-      }),
-    ).toHaveAttribute('href', '/announcements/a-2026-031');
-    expect(item).toHaveTextContent('16 October 2026, Service update');
-  });
-
-  it('says when there are none', async () => {
-    jest.mocked(listAnnouncements).mockResolvedValue([]);
-    renderIn(<AnnouncementList />);
-    expect(
-      await screen.findByText('There are no announcements right now.'),
-    ).toBeInTheDocument();
-  });
-});
 
 describe('AnnouncementDetail', () => {
   it('shows the title, date and paragraphs', async () => {
@@ -68,6 +44,20 @@ describe('AnnouncementDetail', () => {
     renderIn(<AnnouncementDetail id="gone" />);
     expect(
       await screen.findByRole('heading', { name: 'Announcement not found' }),
+    ).toBeInTheDocument();
+  });
+
+  it('shows loading, then offers a retry when it cannot be loaded', async () => {
+    jest
+      .mocked(getAnnouncement)
+      .mockRejectedValue(new Error('500 Internal Server Error'));
+    renderIn(<AnnouncementDetail id="a-2026-031" />);
+    expect(screen.getByRole('status')).toHaveTextContent('Loading');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Could not load this announcement',
+    );
+    expect(
+      screen.getByRole('link', { name: 'Back to all announcements' }),
     ).toBeInTheDocument();
   });
 });
