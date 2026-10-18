@@ -1,4 +1,5 @@
 import { createHttpClient } from '@org/http-client';
+import { createFakeFetch, type FakeRoute } from '@org/jest-config/fetch';
 import {
   getLeaveBalance,
   getLeaveRequests,
@@ -6,26 +7,11 @@ import {
   submitLeaveRequest,
 } from './leaveApi';
 
-type Reply = { status: number; body?: unknown };
-
-function fakeHttp(reply: Reply) {
-  const calls: { url: string; init?: RequestInit }[] = [];
-  const fetchFn = jest.fn(
-    async (input: RequestInfo | URL, init?: RequestInit) => {
-      calls.push({ url: String(input), init });
-      return {
-        ok: reply.status >= 200 && reply.status < 300,
-        status: reply.status,
-        statusText: '',
-        url: String(input),
-        text: async () =>
-          reply.body === undefined ? '' : JSON.stringify(reply.body),
-      } as Response;
-    },
-  );
+function fakeHttp(routes: Record<string, FakeRoute>) {
+  const fetch = createFakeFetch(routes);
   return {
-    http: createHttpClient({ baseUrl: 'https://api.test/api', fetch: fetchFn }),
-    calls,
+    http: createHttpClient({ baseUrl: 'https://api.test/api', fetch }),
+    fetch,
   };
 }
 
@@ -38,33 +24,42 @@ const input = {
 
 describe('leave api', () => {
   it('reads balance and requests with defaults for missing fields', async () => {
-    await expect(
-      getLeaveBalance(fakeHttp({ status: 200, body: { year: 2026 } }).http),
-    ).resolves.toEqual({ year: 2026, balances: [] });
-    await expect(
-      getLeaveRequests(fakeHttp({ status: 200, body: {} }).http),
-    ).resolves.toEqual([]);
+    const { http } = fakeHttp({
+      'GET /api/leave/balance': { body: { year: 2026 } },
+      'GET /api/leave/requests': { body: {} },
+    });
+    await expect(getLeaveBalance(http)).resolves.toEqual({
+      year: 2026,
+      balances: [],
+    });
+    await expect(getLeaveRequests(http)).resolves.toEqual([]);
   });
 
   it('posts a trimmed request with extra headers', async () => {
-    const { http, calls } = fakeHttp({ status: 201, body: { id: 'LR-9' } });
+    const { http, fetch } = fakeHttp({
+      'POST /api/leave/requests': { status: 201, body: { id: 'LR-9' } },
+    });
     await expect(
       submitLeaveRequest(http, input, undefined, { 'X-CSRF-Token': 't' }),
     ).resolves.toEqual({ id: 'LR-9' });
-    expect(calls[0].url).toBe('https://api.test/api/leave/requests');
-    expect(calls[0].init?.method).toBe('POST');
-    expect(JSON.parse(String(calls[0].init?.body))).toEqual({
-      ...input,
-      reason: 'Dentist',
-    });
-    expect(new Headers(calls[0].init?.headers).get('x-csrf-token')).toBe('t');
+    const [call] = fetch.calls;
+    expect(call.url).toBe('https://api.test/api/leave/requests');
+    expect(call.method).toBe('POST');
+    expect(call.body).toEqual({ ...input, reason: 'Dentist' });
+    expect(new Headers(call.init.headers).get('x-csrf-token')).toBe('t');
   });
 
   it('turns a 422 into LeaveValidationError with known fields only', async () => {
     const { http } = fakeHttp({
-      status: 422,
-      body: {
-        errors: { endDate: 'You have 2 days left', evil: '<b>x</b>', type: 3 },
+      'POST /api/leave/requests': {
+        status: 422,
+        body: {
+          errors: {
+            endDate: 'You have 2 days left',
+            evil: '<b>x</b>',
+            type: 3,
+          },
+        },
       },
     });
     const error = await submitLeaveRequest(http, input).catch((e) => e);
@@ -73,7 +68,7 @@ describe('leave api', () => {
   });
 
   it('rethrows other failures', async () => {
-    const { http } = fakeHttp({ status: 500 });
+    const { http } = fakeHttp({ 'POST /api/leave/requests': { status: 500 } });
     await expect(submitLeaveRequest(http, input)).rejects.toThrow('500');
   });
 });

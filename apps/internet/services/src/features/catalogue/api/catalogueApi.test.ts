@@ -1,27 +1,19 @@
 import { createHttpClient } from '@org/http-client';
+import { createFakeFetch, type FakeRoute } from '@org/jest-config/fetch';
 import { getCategories, getService, listServices } from './catalogueApi';
 
-type Reply = { status?: number; body?: unknown };
-
-function fakeHttp(replies: Record<string, Reply>) {
-  const fetchFn = jest.fn(async (input: RequestInfo | URL) => {
-    const url = String(input);
-    const { status = 200, body } = replies[url] ?? { status: 404 };
-    return {
-      ok: status >= 200 && status < 300,
-      status,
-      statusText: '',
-      url,
-      text: async () => (body === undefined ? '' : JSON.stringify(body)),
-    } as Response;
-  });
-  return createHttpClient({ baseUrl: 'https://api.test/api', fetch: fetchFn });
+function fakeHttp(routes: Record<string, FakeRoute>) {
+  const fetch = createFakeFetch(routes);
+  return {
+    http: createHttpClient({ baseUrl: 'https://api.test/api', fetch }),
+    fetch,
+  };
 }
 
 describe('catalogue api', () => {
   it('lists services with query and category', async () => {
-    const http = fakeHttp({
-      'https://api.test/api/services?q=dog&category=Pets': {
+    const { http, fetch } = fakeHttp({
+      'GET /api/services': {
         body: { items: [{ slug: 'renew-dog-licence' }], categories: ['Pets'] },
       },
     });
@@ -32,19 +24,23 @@ describe('catalogue api', () => {
       total: 1,
       categories: ['Pets'],
     });
+    expect(fetch.calls[0].url).toBe(
+      'https://api.test/api/services?q=dog&category=Pets',
+    );
   });
 
   it('reads the categories from the unfiltered list', async () => {
-    const http = fakeHttp({
-      'https://api.test/api/services': { body: { categories: ['A', 'B'] } },
+    const { http, fetch } = fakeHttp({
+      'GET /api/services': { body: { categories: ['A', 'B'] } },
     });
     await expect(getCategories(http)).resolves.toEqual(['A', 'B']);
+    expect(fetch.calls[0].url).toBe('https://api.test/api/services');
   });
 
   it('returns a service with defaults, null when unknown', async () => {
-    const http = fakeHttp({
-      'https://api.test/api/services/x': { body: { slug: 'x', title: 'X' } },
-      'https://api.test/api/services/down': { status: 503 },
+    const { http } = fakeHttp({
+      'GET /api/services/x': { body: { slug: 'x', title: 'X' } },
+      'GET /api/services/down': { status: 503 },
     });
     await expect(getService(http, 'x')).resolves.toMatchObject({
       slug: 'x',
