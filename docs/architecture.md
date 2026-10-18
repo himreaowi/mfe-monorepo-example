@@ -22,6 +22,11 @@ Pinned versions and the reasons behind them: [toolchain.md](toolchain.md).
 
 ## Runtime
 
+![How the portal works in the browser: the browser opens the portal shell, which reads the remote list (mfe-manifest.json) and loads the Services, My profile and Payments remotes; Payments mounts an outside vendor module, and the shell signs users in through the sign-in service](diagrams/1-runtime.png)
+
+The plain-language picture ([standalone HTML](diagrams/1-runtime.html), [about the diagrams](diagrams/README.md)).
+The sequence below is the technical detail.
+
 ```mermaid
 sequenceDiagram
     participant B as Browser
@@ -179,6 +184,10 @@ goes in an iframe. Details: [external-modules.md](external-modules.md).
 
 ## Repository layout
 
+![What is inside the monorepo: apps on top, using shared packages, which use tools and safety checks, all on one workspace with one version list and task runner, and one shared deploy setup at the bottom](diagrams/2-layers.png)
+
+[Standalone HTML](diagrams/2-layers.html) · [about the diagrams](diagrams/README.md)
+
 ```
 apps/<zone>/<name>/      apps (generated); shells hold the zone's e2e suite in e2e/
 packages/                shared code: ui, design-tokens, mf-runtime, auth, http-client, pwa,
@@ -187,7 +196,7 @@ packages/                shared code: ui, design-tokens, mf-runtime, auth, http-
 tools/                   generators, scripts (check, apps, dev, e2e, validate-manifest, preview),
                          mock-api, mock-vendor (dev only; ports in root package.json mfe.tools)
 deploy/                  nginx template, Dockerfile, example per-environment manifest
-docs/                    this documentation
+docs/                    this documentation (diagrams and their generator in docs/diagrams/)
 ```
 
 ## Build and deploy

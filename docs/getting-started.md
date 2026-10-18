@@ -12,8 +12,16 @@ noted. Takes about ten minutes, most of it downloads.
 
 ## 2. Clone and install
 
+![Starting a new project: the template repo is copied once into your own project repo in its own folder; there you create apps, run and test them, and push to the pipeline; pulling template fixes later is optional](diagrams/3-new-project.png)
+
+The template and your project are separate repos: you copy the template once and from then on
+the copy is your project. Your project does not need to sit next to the template on disk. You
+can still pull template fixes later: see
+[Keeping up with template fixes](#keeping-up-with-template-fixes-optional).
+([Standalone HTML](diagrams/3-new-project.html), [about the diagrams](diagrams/README.md).)
+
 ```sh
-git clone <repo-url> my-portal
+git clone <template-url> my-portal
 cd my-portal
 nvm use               # Node 24 from .nvmrc
 corepack enable       # once per Node installation: puts the pinned pnpm on the PATH
@@ -128,6 +136,34 @@ CI runs the same gates ([devops-handoff.md](devops-handoff.md)).
 - [coding-conventions.md](coding-conventions.md) and [ui-context.md](ui-context.md) before writing code
 - [project-overview.md](project-overview.md): fill in your product
 - `AGENTS.md` if you work with AI coding agents
+
+## Keeping up with template fixes (optional)
+
+Your project keeps the template's history, so you can merge later template fixes. Once, in your
+project:
+
+```sh
+git remote rename origin template          # if you cloned the template
+# or: git remote add template <template-url>   (if you started another way)
+git remote add origin <your-project-url>   # your own repo
+git push -u origin main
+```
+
+Then, whenever you want the template's fixes:
+
+```sh
+git fetch template
+git merge template/main
+pnpm install && pnpm check && pnpm lint && pnpm typecheck && pnpm test
+```
+
+On conflicts: the template wins for `packages/`, `tools/` and `docs/` (change shared code in the
+template, not in your copy); your side wins for `apps/` and your own files
+(`docs/project-overview.md`, manifests, pipeline settings).
+
+Alternative to cloning: GitHub's **Use this template** button creates your repo in one step,
+but without the template's history; the first `git merge template/main` then needs
+`--allow-unrelated-histories` and resolves every shared file once.
 
 ## Troubleshooting
 

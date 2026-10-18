@@ -22,23 +22,24 @@ pnpm e2e:intranet          # e2e + axe WCAG 2.2 AA (after: pnpm --filter @org/sh
 
 ## Documentation
 
-| Doc                                                                                         | For                                                                 |
-| ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| [Getting started](docs/getting-started.md)                                                  | clone → install → generate → run → test → build                     |
-| [Architecture](docs/architecture.md)                                                        | decisions D1–D8, runtime (manifest → remotes), zones, auth, vendors |
-| [Adding an app](docs/adding-an-app.md)                                                      | generators, what they change, going to production                   |
-| [Adding dependencies](docs/adding-dependencies.md)                                          | dependency tiers: catalog, app-local, exceptions                    |
-| [Coding conventions](docs/coding-conventions.md)                                            | where code goes, data fetching, React/TS rules                      |
-| [UI context](docs/ui-context.md)                                                            | tokens, theming, components, a11y rules for UI work                 |
-| [Testing](docs/testing.md)                                                                  | unit, contract, e2e, accessibility; how CI runs them                |
-| [Guardrails](docs/guardrails.md)                                                            | every `pnpm check` / boundary rule and its fix                      |
-| [Auth contract](docs/auth-contract.md)                                                      | BFF endpoints, cookies, CSRF, CORS (for the backend team)           |
-| [External modules](docs/external-modules.md)                                                | vendor / other-framework integration, mount contract, vendor kit    |
-| [DevOps handoff](docs/devops-handoff.md)                                                    | Azure DevOps pipeline, affected matrix, nginx/Docker, manifest, CSP |
-| [Toolchain](docs/toolchain.md)                                                              | pinned versions, verified gotchas                                   |
-| [Project overview](docs/project-overview.md)                                                | your product (template to fill in)                                  |
-| Contracts: [theming](docs/contracts/theming.md), [WCAG 2.2 AA](docs/contracts/a11y-wcag.md) | normative UI rules                                                  |
-| [AGENTS.md](AGENTS.md), [constitution](.specify/memory/constitution.md)                     | AI agents checklist, engineering principles (Spec Kit)              |
+| Doc                                                                                         | For                                                                   |
+| ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| [Getting started](docs/getting-started.md)                                                  | clone → install → generate → run → test → build                       |
+| [Architecture](docs/architecture.md)                                                        | decisions D1–D8, runtime (manifest → remotes), zones, auth, vendors   |
+| [Adding an app](docs/adding-an-app.md)                                                      | generators, what they change, going to production                     |
+| [Adding dependencies](docs/adding-dependencies.md)                                          | dependency tiers: catalog, app-local, exceptions                      |
+| [Coding conventions](docs/coding-conventions.md)                                            | where code goes, data fetching, React/TS rules                        |
+| [UI context](docs/ui-context.md)                                                            | tokens, theming, components, a11y rules for UI work                   |
+| [Testing](docs/testing.md)                                                                  | unit, contract, e2e, accessibility; how CI runs them                  |
+| [Guardrails](docs/guardrails.md)                                                            | every `pnpm check` / boundary rule and its fix                        |
+| [Auth contract](docs/auth-contract.md)                                                      | BFF endpoints, cookies, CSRF, CORS (for the backend team)             |
+| [External modules](docs/external-modules.md)                                                | vendor / other-framework integration, mount contract, vendor kit      |
+| [DevOps handoff](docs/devops-handoff.md)                                                    | Azure DevOps pipeline, affected matrix, nginx/Docker, manifest, CSP   |
+| [Toolchain](docs/toolchain.md)                                                              | pinned versions, verified gotchas                                     |
+| [Diagrams](docs/diagrams/README.md)                                                         | runtime, repo layers, new project: PNG/SVG/HTML and how to regenerate |
+| [Project overview](docs/project-overview.md)                                                | your product (template to fill in)                                    |
+| Contracts: [theming](docs/contracts/theming.md), [WCAG 2.2 AA](docs/contracts/a11y-wcag.md) | normative UI rules                                                    |
+| [AGENTS.md](AGENTS.md), [constitution](.specify/memory/constitution.md)                     | AI agents checklist, engineering principles (Spec Kit)                |
 
 ## Commands
 
