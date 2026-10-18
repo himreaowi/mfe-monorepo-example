@@ -31,7 +31,8 @@ known acronyms in capitals (`it-helpdesk` → "IT helpdesk"); `--title "Staff po
 apps/<zone>/<name>/                 new remote (package @org/<zone>-<name>)
   package.json                      nx.tags zone/type/access(/kind), mfe.port, mfe.federationName
   rspack.config.js                  createRemoteConfig (reads mfe from package.json)
-  src/                              app/, features/demo, pages/, layouts/, core/, services/
+  src/                              app/, features/demo, pages/, layouts/, components/, core/, services/
+    features/demo/                  api/, hooks/, types/, utils/, components/<Name>/ (one folder per component), index.ts
 apps/<zone>/shell-<zone>/
   remotes.json                      + { name, title, path, federationName, package, access, kind }
   mfe-manifest.dev.json             + "<federationName>": { "entry": "http://localhost:<port>/mf-manifest.json" }
@@ -52,8 +53,9 @@ standalone mode and the axe scans cover it with no test changes.
 ## After generating
 
 1. `pnpm install`, then `pnpm dev:<zone>` and open the shell; the new remote is in the nav.
-2. Replace the demo: build your feature in `src/features/<name>/` (types → api → hooks → UI),
-   compose it in `src/pages/`, route it in `src/app/routes.tsx` with `routePaths`
+2. Replace the demo: build your feature in `src/features/<name>/` (types → api → hooks → UI,
+   one folder per component under `components/`, see
+   [coding-conventions.md](coding-conventions.md#one-folder-per-component)), compose it in `src/pages/`, route it in `src/app/routes.tsx` with `routePaths`
    ([coding-conventions.md](coding-conventions.md)). The demo's items list and "Add item" form
    (data from the zone's mock API, `tools/mock-api`) show the API and form patterns; add your
    mock endpoints to `tools/mock-api` while the real API is not there yet. Delete

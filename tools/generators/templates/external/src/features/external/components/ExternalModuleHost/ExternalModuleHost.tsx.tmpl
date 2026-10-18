@@ -9,7 +9,7 @@ import { joinBasePath, useHostProps } from '@org/mf-runtime/remote';
 import { RemoteFallback, useTheme } from '@org/ui';
 import { ModeBadge } from '@/components/ModeBadge';
 import { APP_TITLE, FEDERATION_NAME } from '@/core/constants/app';
-import { resolveVendorConfig } from './vendorConfig';
+import { resolveVendorConfig } from '../../utils/vendorConfig';
 import styles from './ExternalModuleHost.module.scss';
 
 type LogEntry = { id: number; kind: 'event' | 'error'; text: string };

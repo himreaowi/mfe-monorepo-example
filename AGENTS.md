@@ -32,6 +32,12 @@ Instructions for AI coding agents (and humans) working in this monorepo. Details
   service worker; links use `useRemotePath()`; keep standalone mode working.
 - No hardcoded API or app paths in components (`apiRoutes`, `routePaths`); no API calls in
   component `useEffect` (use `features/*/api` + `features/*/hooks`).
+- One folder per component: `features/<feature>/components/<Name>/` (and `src/components/<Name>/`)
+  with `<Name>.tsx`, its own `<Name>.module.scss` (never shared between components),
+  `<Name>.test.tsx` and `index.ts`; private sub-parts in the same folder; shared test data in
+  `features/<feature>/__fixtures__/`; helpers in `utils/`
+  ([docs/coding-conventions.md](docs/coding-conventions.md#one-folder-per-component)).
+  `pnpm check` reports violations.
 - Tokens (`var(--…)`) over hardcoded colours/spacing; WCAG 2.2 AA in light and dark; works at
   375 px (`MainLayout` keeps the header one row and collapses it when it does not fit; no per-app menus).
 - Forms validate on submit with an error summary + field errors; submit is disabled only while
@@ -40,7 +46,7 @@ Instructions for AI coding agents (and humans) working in this monorepo. Details
   API, mock vendor), assigned in the root `package.json` `mfe.tools` (new tool server:
   [docs/architecture.md](docs/architecture.md#adding-a-dev-tool-server)). Mock endpoints go into
   `tools/mock-api`.
-- Tests with the change: unit tests next to the code; flows in the zone's
+- Tests with the change: unit tests next to the code (every component has one); flows in the zone's
   `apps/<zone>/shell-<zone>/e2e/`. Import `test`/`expect` from `@org/playwright-config/test`.
 - Done means green: `pnpm check && pnpm lint && pnpm typecheck && pnpm test` (+ `pnpm build`
   and `pnpm e2e:<zone>` when apps changed) and `pnpm format:check`.

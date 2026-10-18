@@ -112,6 +112,9 @@ apps/
             │   ├── api/
             │   ├── hooks/
             │   ├── types/
+            │   ├── utils/
+            │   ├── components/[Component]/  # [Component].tsx, .module.scss, .test.tsx, index.ts
+            │   ├── __fixtures__/            # shared test data
             │   └── index.ts
             ├── pages/
             ├── components/[Component]/

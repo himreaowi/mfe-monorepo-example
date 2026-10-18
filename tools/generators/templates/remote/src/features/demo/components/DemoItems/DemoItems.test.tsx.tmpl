@@ -1,12 +1,12 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
-import { listItems } from '../api';
+import { listItems } from '../../api';
 import { DemoItems } from './DemoItems';
 
 // Hooks/UI tests mock the feature's api/ module: no HTTP here (docs/testing.md).
-jest.mock('../api', () => ({
-  ...jest.requireActual('../api'),
+jest.mock('../../api', () => ({
+  ...jest.requireActual('../../api'),
   listItems: jest.fn(),
   createItem: jest.fn(),
 }));

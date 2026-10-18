@@ -1,0 +1,19 @@
+import { ITEM_NAME_MAX_LENGTH } from '../types/item';
+import { validateItemDraft } from './validation';
+
+describe('validateItemDraft', () => {
+  it('requires a name (blank or whitespace is rejected)', () => {
+    expect(validateItemDraft({ name: '' })).toEqual({ name: 'Enter a name.' });
+    expect(validateItemDraft({ name: '   ' })).toEqual({ name: 'Enter a name.' });
+  });
+
+  it('limits the length', () => {
+    expect(
+      validateItemDraft({ name: 'x'.repeat(ITEM_NAME_MAX_LENGTH + 1) }),
+    ).toEqual({ name: `Use ${ITEM_NAME_MAX_LENGTH} characters or fewer.` });
+  });
+
+  it('accepts a valid name', () => {
+    expect(validateItemDraft({ name: 'New item' })).toEqual({});
+  });
+});

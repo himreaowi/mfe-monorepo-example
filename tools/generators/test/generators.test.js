@@ -158,8 +158,10 @@ describe('generators', () => {
       'src/app/App.tsx',
       'src/app/routes.tsx',
       'src/components/RemoteNav/RemoteNav.tsx',
-      'src/features/welcome/Welcome.tsx',
-      'src/features/startup/StartupError.tsx',
+      'src/features/welcome/components/Welcome/Welcome.tsx',
+      'src/features/welcome/components/Welcome/Welcome.test.tsx',
+      'src/features/welcome/components/Welcome/index.ts',
+      'src/features/startup/components/StartupError/StartupError.tsx',
       'src/layouts/ShellLayout/ShellLayout.tsx',
       'src/pages/HomePage/HomePage.tsx',
       'src/pages/RemotePage/RemotePage.tsx',
@@ -302,14 +304,23 @@ describe('generators', () => {
       'src/app/routes.tsx',
       'src/app/standaloneProps.ts',
       'src/components/ModeBadge/ModeBadge.tsx',
-      'src/features/demo/Demo.tsx',
-      'src/features/demo/Demo.test.tsx',
+      'src/components/ModeBadge/ModeBadge.test.tsx',
+      'src/features/demo/index.ts',
+      'src/features/demo/components/Demo/Demo.tsx',
+      'src/features/demo/components/Demo/Demo.module.scss',
+      'src/features/demo/components/Demo/Demo.test.tsx',
+      'src/features/demo/components/Demo/index.ts',
+      'src/features/demo/components/DemoDetails/DemoDetails.tsx',
+      'src/features/demo/components/DemoDetails/DemoDetails.test.tsx',
+      'src/features/demo/utils/validation.ts',
       'src/features/demo/api/itemsApi.ts',
       'src/features/demo/api/itemsApi.test.ts',
       'src/features/demo/hooks/useItems.ts',
-      'src/features/demo/components/DemoItems.tsx',
-      'src/features/demo/components/AddItemForm.tsx',
-      'src/features/demo/components/AddItemForm.test.tsx',
+      'src/features/demo/components/DemoItems/DemoItems.tsx',
+      'src/features/demo/components/DemoItems/DemoItems.module.scss',
+      'src/features/demo/components/AddItemForm/AddItemForm.tsx',
+      'src/features/demo/components/AddItemForm/AddItemForm.module.scss',
+      'src/features/demo/components/AddItemForm/AddItemForm.test.tsx',
       'src/layouts/StandaloneLayout/StandaloneLayout.tsx',
       'src/pages/OverviewPage/OverviewPage.tsx',
       'src/pages/DetailsPage/DetailsPage.tsx',
@@ -375,7 +386,7 @@ describe('generators', () => {
     ]);
     const adapter = read(
       root,
-      'apps/internet/payments/src/features/external/ExternalModuleHost.tsx',
+      'apps/internet/payments/src/features/external/components/ExternalModuleHost/ExternalModuleHost.tsx',
     );
     assert.match(adapter, /<ExternalModule/);
     assert.match(adapter, /@org\/mf-runtime\/external/);
@@ -391,7 +402,13 @@ describe('generators', () => {
     const files = listFiles(path.join(root, 'apps/internet/payments'));
     assert.ok(!files.some((f) => f.startsWith('src/features/demo/')));
     assert.ok(!files.includes('src/pages/DetailsPage/DetailsPage.tsx'));
-    assert.ok(files.includes('src/features/external/vendorConfig.ts'));
+    assert.ok(files.includes('src/features/external/utils/vendorConfig.ts'));
+    assert.ok(
+      files.includes(
+        'src/features/external/components/ExternalModuleHost/ExternalModuleHost.test.tsx',
+      ),
+    );
+    assert.ok(!files.includes('src/features/external/ExternalModuleHost.tsx'));
     // dev: the zone's mock API + mock vendor start with the adapter; the dev manifest points
     // at the internet mock vendor (tools range 3290-3299), generic config
     assert.deepEqual(pkg.nx.targets, {
@@ -415,7 +432,7 @@ describe('generators', () => {
     assert.equal(dev.settings.apiBaseUrl, 'http://localhost:3290/api');
     const fallback = read(
       root,
-      'apps/internet/payments/src/features/external/vendorConfig.ts',
+      'apps/internet/payments/src/features/external/utils/vendorConfig.ts',
     );
     assert.match(fallback, /http:\/\/localhost:3291\/mount\.js/);
     assert.doesNotMatch(fallback, /amount|merchant/i);
@@ -440,7 +457,10 @@ describe('generators', () => {
       config: { title: 'Widgets (mock vendor)' },
     });
     assert.match(
-      read(root, 'apps/internet/widgets/src/features/external/vendorConfig.ts'),
+      read(
+        root,
+        'apps/internet/widgets/src/features/external/utils/vendorConfig.ts',
+      ),
       /tagName: 'mock-vendor-widget'/,
     );
     assert.deepEqual(mockVendorConfig('intranet', 'script', 'X'), {

@@ -31,7 +31,7 @@ pnpm dev:<zone>
   (`mfe-manifest.dev.json` gets `"auth": { "mock": true }`, the dev-only mock sign-in). See
   `docs/auth-contract.md`.
 - `--external`: an **adapter remote** for a vendor module (tag `kind:external`, registry
-  `"kind": "external"`). `src/features/external/ExternalModuleHost.tsx` renders
+  `"kind": "external"`). `src/features/external/components/ExternalModuleHost/` renders
   `<ExternalModule>` (`@org/mf-runtime/external`) configured from the remote's manifest
   `props.vendor` (URL per environment); one splat route, so the vendor routes on `props.path`.
   The dev manifest entry points at the zone's mock vendor (`tools/mock-vendor`, intranet :3191,
@@ -50,6 +50,13 @@ pnpm dev:<zone>
 - The remote's demo feature (`src/features/demo`) loads `/items` from that API through
   `@org/http-client` (api/ → hooks/ → components) and has an "Add item" form with the
   validate-on-submit / error-summary pattern (docs/coding-conventions.md).
+- Every generated feature uses **one folder per component** (docs/coding-conventions.md):
+  `features/<feature>/components/<Name>/{<Name>.tsx, <Name>.module.scss, <Name>.test.tsx, index.ts}`,
+  non-component code in `api/`, `hooks/`, `types/`, `utils/`. Remote: `features/demo`
+  (`Demo`, `DemoDetails`, `DemoItems`, `AddItemForm`; `utils/validation.ts`). Shell:
+  `features/welcome` (`Welcome`), `features/startup` (`StartupError`). Adapter:
+  `features/external` (`ExternalModuleHost`; `utils/vendorConfig.ts`). `pnpm check` keeps it
+  that way.
 - Metadata in the generated `package.json`: `nx.tags` (`zone:`, `type:`, `access:`, `kind:`) and
   `mfe` (`port`, `federationName`). `rspack.config.js` reads `mfe` from `package.json`.
 - Dependencies: `catalog:` for third-party packages, `workspace:*` for `@org/*`.
