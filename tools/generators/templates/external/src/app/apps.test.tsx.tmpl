@@ -16,7 +16,7 @@ describe('__APP_TITLE__ external adapter remote', () => {
   it('embedded: mounts the vendor module below the shell mount with host props', () => {
     render(
       <ThemeProvider>
-        <MemoryRouter initialEntries={['__ROUTE_PATH__/receipt/1']}>
+        <MemoryRouter initialEntries={['__ROUTE_PATH__/details/1']}>
           <Routes>
             <Route
               path="__NAME__/*"
@@ -37,7 +37,7 @@ describe('__APP_TITLE__ external adapter remote', () => {
     expect(screen.getByTestId('external-module-stub')).toBeInTheDocument();
     expect(lastProps).toMatchObject({
       basePath: '__ROUTE_PATH__',
-      path: 'receipt/1',
+      path: 'details/1',
       user: { id: 'u1', name: 'Shell User' },
       config: { url: 'https://vendor.example/m.js' },
     });
@@ -47,6 +47,6 @@ describe('__APP_TITLE__ external adapter remote', () => {
     window.history.pushState({}, '', '/');
     render(<StandaloneApp />);
     expect(screen.getByTestId('mode-badge')).toHaveTextContent('Standalone');
-    expect(lastProps?.config).toMatchObject({ format: 'esm' });
+    expect(lastProps?.config).toMatchObject({ format: '__VENDOR_FORMAT__' });
   });
 });

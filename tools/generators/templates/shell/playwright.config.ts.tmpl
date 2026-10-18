@@ -1,6 +1,9 @@
 import { createZoneConfig } from '@org/playwright-config';
 
-// Zone e2e suite (e2e/*.spec.ts): starts `pnpm dev:__ZONE__` (shell + every __ZONE__ remote) unless
-// it is already running, then tests every remote listed in remotes.json, desktop + 375 px mobile.
+// Zone e2e suite (e2e/*.spec.ts): starts `pnpm dev:__ZONE__` (shell + every __ZONE__ remote + the
+// zone's mock API and mock vendor) unless it is already running, waits for every remote and the
+// local API's /health (settings.apiBaseUrl), then tests every remote listed in remotes.json,
+// desktop + 375 px mobile.
 // Run: `pnpm e2e:__ZONE__` (repo root) or `pnpm --filter __PACKAGE_NAME__ e2e`.
+// More servers to wait for: createZoneConfig({ ..., extraHealthUrls: ['http://localhost:…/health'] }).
 export default createZoneConfig({ shellDir: import.meta.dirname });

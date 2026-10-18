@@ -2,14 +2,15 @@
 /**
  * App generators.
  *
- *   pnpm gen:shell <zone>
- *   pnpm gen:remote <zone> <name> [--private] [--external]
+ *   pnpm gen:shell <zone> [--title "<text>"]
+ *   pnpm gen:remote <zone> <name> [--private] [--external [--vendor-format <format>]] [--title "<text>"]
  *
  * Apps live in apps/<zone>/<name>. Every app gets its own package.json (deps via `catalog:` /
  * `workspace:*`), Nx tags and a dev port from its zone's range.
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { toolPort } from '@org/scripts/zones';
 import {
   UsageError,
   ZONES,
@@ -86,11 +87,91 @@ const EXTERNAL_OMIT = [
   'src/core/constants/routePaths.ts',
 ];
 
-/** Dev-only mock vendor (tools/mock-vendor) used by `--external` adapters in development. */
-export const MOCK_VENDOR = {
-  package: '@org/mock-vendor',
-  url: 'http://localhost:3999/mount.js',
-};
+/** Dev-only mock vendor (tools/mock-vendor): one server per zone, port from the zone's tools range. */
+export const MOCK_VENDOR = { package: '@org/mock-vendor' };
+
+/** Dev-only mock API (tools/mock-api): one server per zone, port from the zone's tools range. */
+export const MOCK_API = { package: '@org/mock-api' };
+
+/** `--vendor-format` values the mock vendor can serve (format `mf` needs a real MF remote). */
+export const VENDOR_FORMATS = /** @type {const} */ ([
+  'esm',
+  'web-component',
+  'script',
+]);
+
+/** @typedef {(typeof VENDOR_FORMATS)[number]} VendorFormat */
+
+/** `settings.apiBaseUrl` of a zone's dev manifest: the zone's mock API. */
+export function mockApiBaseUrl(/** @type {Zone} */ zone) {
+  return `http://localhost:${toolPort(zone, 'mockApi')}/api`;
+}
+
+/**
+ * Manifest `props.vendor` pointing at the zone's mock vendor in the given format.
+ * `config` is generic (shown by the mock vendor); a real vendor documents its own.
+ * @param {Zone} zone
+ * @param {VendorFormat} format
+ * @param {string} title
+ */
+export function mockVendorConfig(zone, format, title) {
+  const origin = `http://localhost:${toolPort(zone, 'mockVendor')}`;
+  const config = { title: `${title} (mock vendor)` };
+  switch (format) {
+    case 'web-component':
+      return {
+        url: `${origin}/element.js`,
+        format,
+        tagName: 'mock-vendor-widget',
+        config,
+      };
+    case 'script':
+      return {
+        url: `${origin}/script.js`,
+        format,
+        global: 'MockVendor',
+        config,
+      };
+    default:
+      return { url: `${origin}/mount.js`, format: 'esm', config };
+  }
+}
+
+/**
+ * @param {unknown} format
+ * @returns {asserts format is VendorFormat}
+ */
+function assertVendorFormat(format) {
+  if (format === 'mf') {
+    throw new UsageError(
+      '--vendor-format mf: the mock vendor cannot serve a Module Federation remote. Generate with the default (esm) and set "format": "mf", "remoteName" and the vendor URL in props.vendor of mfe-manifest.json (docs/external-modules.md).',
+    );
+  }
+  if (!VENDOR_FORMATS.includes(/** @type {VendorFormat} */ (format))) {
+    throw new UsageError(
+      `Unknown --vendor-format "${String(format)}". Use one of: ${VENDOR_FORMATS.join(', ')}.`,
+    );
+  }
+}
+
+/**
+ * Nx `dev` dependencies: the zone's dev-only tool servers start with the app
+ * (`pnpm dev:<zone>`, `pnpm exec nx dev <app>`).
+ * @param {Zone} zone
+ * @param {{ vendor?: boolean }} [opts]
+ */
+function devToolTargets(zone, opts = {}) {
+  return {
+    dev: {
+      dependsOn: [
+        { projects: [MOCK_API.package], target: `serve:${zone}` },
+        ...(opts.vendor
+          ? [{ projects: [MOCK_VENDOR.package], target: `serve:${zone}` }]
+          : []),
+      ],
+    },
+  };
+}
 
 /**
  * @param {Record<string, string>} obj
@@ -165,12 +246,12 @@ function assertFree(root, dir, packageName) {
 
 /**
  * Generate apps/<zone>/shell-<zone>.
- * @param {{ root: string, zone: string }} options
- * @returns {Promise<{ dir: string, port: number, packageName: string, federationName: string }>}
+ * @param {{ root: string, zone: string, title?: string }} options
+ * @returns {Promise<{ dir: string, port: number, packageName: string, federationName: string, title: string }>}
  */
-export async function generateShell({ root, zone }) {
+export async function generateShell({ root, zone, title }) {
   assertZone(zone);
-  const names = shellNames(zone);
+  const names = shellNames(zone, { title });
   const dir = path.join(root, 'apps', zone, names.dirName);
   assertFree(root, dir, names.packageName);
   const port = allocatePort(root, zone, { shell: true });
@@ -182,6 +263,7 @@ export async function generateShell({ root, zone }) {
     FEDERATION_NAME: names.federationName,
     PORT: port,
     DIR_NAME: names.dirName,
+    MOCK_API_URL: mockApiBaseUrl(zone),
   });
   writeFiles(dir, files);
   await writeJson(
@@ -193,6 +275,8 @@ export async function generateShell({ root, zone }) {
       port,
       federationName: names.federationName,
       extraDependencies: { '@org/pwa': 'workspace:*' },
+      // `nx dev <shell>` / `pnpm dev:<zone>` also start the zone's dev-only mock API
+      nxTargets: devToolTargets(zone),
       shell: true,
     }),
   );
@@ -205,19 +289,25 @@ export async function generateShell({ root, zone }) {
     remotes: {},
     // dev-only mock sign-in (@org/auth); production manifests list the BFF URLs instead
     auth: { mock: true },
-    settings: {},
+    // dev-only mock API (tools/mock-api); production manifests point at the real API
+    settings: { apiBaseUrl: mockApiBaseUrl(zone) },
   });
   return {
     dir,
     port,
     packageName: names.packageName,
     federationName: names.federationName,
+    title: names.title,
   };
 }
 
 /**
  * Generate apps/<zone>/<name> and register it with the zone's shell.
- * @param {{ root: string, zone: string, name: string, private?: boolean, external?: boolean }} options
+ * @param {{
+ *   root: string, zone: string, name: string, private?: boolean, external?: boolean,
+ *   vendorFormat?: string, title?: string,
+ * }} options `vendorFormat` (only with `external`): format of the dev mock vendor config
+ * (`esm` default, `web-component`, `script`); `title`: overrides the title derived from the name
  * @returns {Promise<{ dir: string, port: number, packageName: string, federationName: string, entry: RegistryEntry }>}
  */
 export async function generateRemote({
@@ -226,10 +316,17 @@ export async function generateRemote({
   name,
   private: isPrivate = false,
   external = false,
+  vendorFormat,
+  title,
 }) {
   assertZone(zone);
   assertRemoteName(name);
-  const names = remoteNames(zone, name);
+  if (vendorFormat !== undefined && !external) {
+    throw new UsageError('--vendor-format only applies to --external remotes.');
+  }
+  const format = vendorFormat ?? 'esm';
+  assertVendorFormat(format);
+  const names = remoteNames(zone, name, { title });
   const shellDir = requireShellDir(root, zone);
   const dir = path.join(root, 'apps', zone, names.dirName);
   assertFree(root, dir, names.packageName);
@@ -249,6 +346,9 @@ export async function generateRemote({
   }
   const port = allocatePort(root, zone);
   const access = isPrivate ? 'private' : 'public';
+  const vendor = external
+    ? mockVendorConfig(zone, format, names.title)
+    : undefined;
 
   const rendered = await renderLayers(
     external ? ['remote', 'external'] : ['remote'],
@@ -263,6 +363,11 @@ export async function generateRemote({
       PORT: port,
       ACCESS: access,
       SHELL_PORT: ZONES[zone].first,
+      MOCK_API_URL: mockApiBaseUrl(zone),
+      MOCK_VENDOR_PORT: toolPort(zone, 'mockVendor'),
+      MOCK_VENDOR_URL: vendor?.url ?? '',
+      MOCK_VENDOR_CONFIG: JSON.stringify(vendor ?? null),
+      VENDOR_FORMAT: format,
     },
   );
   const files = external
@@ -283,14 +388,8 @@ export async function generateRemote({
       tags,
       port,
       federationName: names.federationName,
-      // `nx dev <adapter>` / `pnpm dev:<zone>` also start the dev-only mock vendor
-      nxTargets: external
-        ? {
-            dev: {
-              dependsOn: [{ projects: [MOCK_VENDOR.package], target: 'dev' }],
-            },
-          }
-        : undefined,
+      // `nx dev <remote>` / `pnpm dev:<zone>` also start the zone's mock API (+ mock vendor)
+      nxTargets: devToolTargets(zone, { vendor: external }),
     }),
   );
 
@@ -310,18 +409,8 @@ export async function generateRemote({
   const manifest = readDevManifest(shellDir);
   manifest.remotes[names.federationName] = {
     entry: `http://localhost:${port}/mf-manifest.json`,
-    // per-environment vendor config; dev points at the mock vendor (tools/mock-vendor)
-    ...(external
-      ? {
-          props: {
-            vendor: {
-              url: MOCK_VENDOR.url,
-              format: 'esm',
-              config: { title: `${names.title} (mock vendor)`, amount: 1250 },
-            },
-          },
-        }
-      : {}),
+    // per-environment vendor config; dev points at the zone's mock vendor (tools/mock-vendor)
+    ...(vendor ? { props: { vendor } } : {}),
   };
   await writeJson(path.join(shellDir, DEV_MANIFEST_FILE), manifest);
 

@@ -217,9 +217,11 @@ When the app catches up with our React version, it can become a plain remote aga
 
 ## Local development
 
-| What                   | How                                                                                                                                  |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Mock vendor (no React) | `tools/mock-vendor`, http://localhost:3999/mount.js (`esm`), `/element.js` (`web-component`), `/__down` simulates an outage          |
-| Started automatically  | the adapter's `nx.targets.dev.dependsOn` → `pnpm dev:<zone>` and `pnpm exec nx dev <adapter>` start it                               |
-| Test a vendor bundle   | `pnpm --filter @org/vendor-kit serve` → http://localhost:3998/test-host/?url=…&format=esm&autoMount=1                                |
-| Change the contract    | edit `packages/mf-runtime/src/external/contract.ts`, then `pnpm --filter @org/vendor-kit generate:contract` and bump the kit version |
+| What                   | How                                                                                                                                                                                                                                                                  |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Mock vendor (no React) | `tools/mock-vendor`, one per zone (intranet http://localhost:3191, internet :3291): `/mount.js` (`esm`), `/element.js` (`web-component`), `/script.js` (`script`), `/__down` simulates an outage; a neutral demo widget with a generic `config` (`title`, `message`) |
+| Generated config       | `pnpm gen:remote <zone> <name> --external [--vendor-format esm\|web-component\|script]` writes `props.vendor` for the zone's mock vendor into the dev manifest; replace it with the real vendor's URL/format/config when it delivers                                 |
+| Started automatically  | the adapter's `nx.targets.dev.dependsOn` (`@org/mock-vendor:serve:<zone>`) → `pnpm dev:<zone>` and `pnpm exec nx dev <adapter>` start it                                                                                                                             |
+| e2e                    | the zone suite checks **any** vendor generically (mounted content, no fallback, no console errors, unmount); mock-vendor-only checks skip with a reason when `props.vendor` points elsewhere                                                                         |
+| Test a vendor bundle   | `pnpm --filter @org/vendor-kit serve` → http://localhost:3998/test-host/?url=…&format=esm&autoMount=1                                                                                                                                                                |
+| Change the contract    | edit `packages/mf-runtime/src/external/contract.ts`, then `pnpm --filter @org/vendor-kit generate:contract` and bump the kit version                                                                                                                                 |

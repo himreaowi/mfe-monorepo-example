@@ -10,7 +10,8 @@ The __ZONE__ shell mounts it at `__ROUTE_PATH__/*` (entry in the shell's `remote
 
 | Command                                  | What                                                             |
 | ---------------------------------------- | ---------------------------------------------------------------- |
-| `pnpm --filter __PACKAGE_NAME__ dev`     | Standalone on http://localhost:__PORT__ (mock host props)        |
+| `pnpm exec nx dev __PACKAGE_NAME__`      | Standalone on http://localhost:__PORT__ (mock host props) + the zone's mock API |
+| `pnpm --filter __PACKAGE_NAME__ dev`     | Standalone only (the demo's API calls fail without the mock API) |
 | `pnpm dev:__ZONE__` (repo root)          | Inside the shell: http://localhost:__SHELL_PORT____ROUTE_PATH__  |
 | `pnpm --filter __PACKAGE_NAME__ build`   | Production build in `dist/` (`mf-manifest.json`, `remoteEntry.js`) |
 | `pnpm --filter __PACKAGE_NAME__ preview` | Serve `dist/` on port __PORT__ (CORS enabled)                    |
@@ -26,6 +27,21 @@ The __ZONE__ shell mounts it at `__ROUTE_PATH__/*` (entry in the shell's `remote
 - Never import another remote or a shell (`pnpm check` and ESLint module boundaries fail).
 - Dependencies: see `docs/adding-dependencies.md` (catalog vs app-local).
 
+## Data: the API pattern
+
+`settings.apiBaseUrl` (host prop from the shell's `mfe-manifest.json`; `standaloneProps` in
+standalone dev) is the API base URL; in development it is the zone's mock API
+(`tools/mock-api`, `__MOCK_API_URL__`). The demo feature shows the whole chain, copy it for real
+features:
+
+| Layer                                  | File                                                       |
+| -------------------------------------- | ---------------------------------------------------------- |
+| paths                                  | `src/core/constants/apiRoutes.ts`                          |
+| client (`@org/http-client`)            | `src/services/http.ts` (`useApiClient()`)                  |
+| requests, response validation, errors  | `src/features/demo/api/itemsApi.ts` (+ test with a fake fetch) |
+| state (loading / error / data, abort)  | `src/features/demo/hooks/useItems.ts`, `useCreateItem.ts`  |
+| UI                                     | `src/features/demo/components/DemoItems.tsx`, `AddItemForm.tsx` (validate on submit, error summary, server 422 field errors) |
+
 ## Layout
 
 ```
@@ -34,7 +50,7 @@ src/
   bootstrap.tsx       standalone only: global styles + <StandaloneApp />
   app/                RemoteApp (exposed), apps (createRemoteApp), routes, standaloneProps
   components/         ModeBadge
-  features/demo/      sample feature (host props, counter, links between pages)
+  features/demo/      sample feature (host props, counter, links, items from the API + form)
   layouts/            StandaloneLayout (MainLayout chrome, standalone only)
   pages/              OverviewPage, DetailsPage, NotFoundPage
   core/constants/     app, routePaths, apiRoutes

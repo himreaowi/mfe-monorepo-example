@@ -4,8 +4,9 @@ Apps are only created with the generators. They write the app from templates, pi
 set the metadata the guardrails check, and register remotes with their zone's shell.
 
 ```sh
-pnpm gen:shell <zone>                                   # zone: intranet | internet
-pnpm gen:remote <zone> <name> [--private] [--external]  # name: kebab-case, e.g. leave-requests
+pnpm gen:shell <zone> [--title "<text>"]                # zone: intranet | internet
+pnpm gen:remote <zone> <name> [--private] [--external [--vendor-format esm|web-component|script]] [--title "<text>"]
+                                                        # name: kebab-case, e.g. leave-requests
 pnpm install                                            # links the new app
 ```
 
@@ -21,7 +22,8 @@ The generators never overwrite: an existing folder, package name or registry ent
 | UI built by a vendor / another framework / another React major | `pnpm gen:remote internet payments --external` (add `--private` if it needs sign-in) |
 
 `--external` adapters are explained in [external-modules.md](external-modules.md); private
-routes in [auth-contract.md](auth-contract.md).
+routes in [auth-contract.md](auth-contract.md). Titles default to the name in sentence case with
+known acronyms in capitals (`it-helpdesk` → "IT helpdesk"); `--title "Staff portal"` overrides.
 
 ## What `gen:remote` creates and changes
 
@@ -35,14 +37,14 @@ apps/<zone>/shell-<zone>/
   mfe-manifest.dev.json             + "<federationName>": { "entry": "http://localhost:<port>/mf-manifest.json" }
 ```
 
-| Derived value   | Example (`internet my-profile`)       |
-| --------------- | ------------------------------------- |
-| Folder          | `apps/internet/my-profile`            |
-| Package         | `@org/internet-my-profile`            |
-| Federation name | `internet_my_profile`                 |
-| Route           | `/my-profile/*` in `shell-internet`   |
-| Nav title       | `My Profile` (edit in `remotes.json`) |
-| Dev port        | lowest free in 3201–3299              |
+| Derived value   | Example (`internet my-profile`)                                    |
+| --------------- | ------------------------------------------------------------------ |
+| Folder          | `apps/internet/my-profile`                                         |
+| Package         | `@org/internet-my-profile`                                         |
+| Federation name | `internet_my_profile`                                              |
+| Route           | `/my-profile/*` in `shell-internet`                                |
+| Nav title       | `My profile` (sentence case; `--title "…"` or edit `remotes.json`) |
+| Dev port        | lowest free in 3201–3289 (3290–3299: dev tools)                    |
 
 The zone's e2e suite picks the new remote up from `remotes.json`: deep links, private guard,
 standalone mode and the axe scans cover it with no test changes.
@@ -52,8 +54,10 @@ standalone mode and the axe scans cover it with no test changes.
 1. `pnpm install`, then `pnpm dev:<zone>` and open the shell; the new remote is in the nav.
 2. Replace the demo: build your feature in `src/features/<name>/` (types → api → hooks → UI),
    compose it in `src/pages/`, route it in `src/app/routes.tsx` with `routePaths`
-   ([coding-conventions.md](coding-conventions.md)). Delete `features/demo` and its tests when
-   you no longer need them.
+   ([coding-conventions.md](coding-conventions.md)). The demo's items list and "Add item" form
+   (data from the zone's mock API, `tools/mock-api`) show the API and form patterns; add your
+   mock endpoints to `tools/mock-api` while the real API is not there yet. Delete
+   `features/demo` and its tests when you no longer need them.
 3. Adjust `remotes.json` (`title`, `path`) if the defaults do not fit. Keep `name`,
    `federationName`, `package` and `access` in sync with the remote (`pnpm check` verifies).
 4. Mock host props for standalone mode: `src/app/standaloneProps.ts`.

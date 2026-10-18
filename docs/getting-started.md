@@ -55,8 +55,14 @@ pnpm dev:intranet
 ```
 
 Open http://localhost:3100. The shell loads every remote from its own dev server at runtime.
-"Sign in" uses the development mock (no backend needed). `it-helpdesk` mounts the mock vendor
-module (started automatically on port 3999). Stop with Ctrl+C.
+"Sign in" uses the development mock (no backend needed). The remotes' demo feature loads data
+from the zone's **mock API** (`tools/mock-api`, http://localhost:3190/api, started
+automatically; its URL is `settings.apiBaseUrl` in the shell's `mfe-manifest.dev.json`).
+`it-helpdesk` mounts the mock vendor module (started automatically on port 3191). Stop with
+Ctrl+C.
+
+The other zone can run at the same time (`pnpm dev:internet`: shell on 3200, mock API 3290,
+mock vendor 3291): every zone has its own port range, tools included (3190–3199 / 3290–3299).
 
 One remote on its own (standalone mode, mock host props):
 

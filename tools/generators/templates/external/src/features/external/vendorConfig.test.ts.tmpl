@@ -13,8 +13,8 @@ describe('resolveVendorConfig', () => {
 
   it('falls back to the dev mock vendor outside production', () => {
     expect(resolveVendorConfig(undefined)).toMatchObject({
-      url: 'http://localhost:3999/mount.js',
-      format: 'esm',
+      url: '__MOCK_VENDOR_URL__',
+      format: '__VENDOR_FORMAT__',
     });
   });
 

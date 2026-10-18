@@ -64,37 +64,100 @@ export function assertRemoteName(name) {
   }
 }
 
-/** "staff-directory" → "Staff Directory" */
-export function titleCase(/** @type {string} */ name) {
+/**
+ * Words written in capitals in generated titles. Extend when your product has more (keep it
+ * short: everything else is sentence case, docs/ui-context.md "Content & copy").
+ */
+export const TITLE_ACRONYMS = new Set([
+  'api',
+  'faq',
+  'hr',
+  'id',
+  'it',
+  'pdf',
+  'sms',
+  'ui',
+  'url',
+  'ux',
+]);
+
+/**
+ * Sentence-case title from a kebab-case name: "staff-directory" → "Staff directory",
+ * "it-helpdesk" → "IT helpdesk", "hr-faq" → "HR FAQ".
+ * @param {string} name
+ */
+export function titleFromName(name) {
   return name
     .split('-')
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .filter(Boolean)
+    .map((part, index) => {
+      if (TITLE_ACRONYMS.has(part)) return part.toUpperCase();
+      return index === 0 ? part.charAt(0).toUpperCase() + part.slice(1) : part;
+    })
     .join(' ');
 }
 
-/** Names derived for the zone's shell. */
-export function shellNames(/** @type {Zone} */ zone) {
+const TITLE_FORBIDDEN = /['"`\\<>{}$\r\n]/;
+
+/**
+ * Validate a `--title` override. It ends up in TS string literals, JSX and Markdown, so quotes,
+ * backslashes, braces, angle brackets, `$` and line breaks are refused (use ’ for apostrophes).
+ * @param {unknown} title
+ * @returns {string} the trimmed title
+ */
+export function assertTitle(title) {
+  if (typeof title !== 'string' || title.trim().length === 0) {
+    throw new UsageError(
+      '--title needs a non-empty text, e.g. --title "Staff portal".',
+    );
+  }
+  const trimmed = title.trim().replace(/\s+/g, ' ');
+  if (trimmed.length > 60) {
+    throw new UsageError(
+      `--title "${trimmed}" is too long: use 60 characters or fewer.`,
+    );
+  }
+  if (TITLE_FORBIDDEN.test(trimmed)) {
+    throw new UsageError(
+      `--title "${trimmed}" contains a character the templates cannot hold (' " \` \\ < > { } $). Use ’ for apostrophes.`,
+    );
+  }
+  return trimmed;
+}
+
+/**
+ * Names derived for the zone's shell.
+ * @param {Zone} zone
+ * @param {{ title?: string }} [opts] `title`: the `--title` override (default "Intranet shell")
+ */
+export function shellNames(zone, opts = {}) {
   return {
     zone,
     dirName: `shell-${zone}`,
     packageName: `${SCOPE}/shell-${zone}`,
     federationName: `${zone}_shell`,
-    title: `${titleCase(zone)} Shell`,
+    title:
+      opts.title !== undefined
+        ? assertTitle(opts.title)
+        : `${titleFromName(zone)} shell`,
   };
 }
 
-/** Names derived for a remote. */
-export function remoteNames(
-  /** @type {Zone} */ zone,
-  /** @type {string} */ name,
-) {
+/**
+ * Names derived for a remote.
+ * @param {Zone} zone
+ * @param {string} name
+ * @param {{ title?: string }} [opts] `title`: the `--title` override (default from the name)
+ */
+export function remoteNames(zone, name, opts = {}) {
   return {
     zone,
     name,
     dirName: name,
     packageName: `${SCOPE}/${zone}-${name}`,
     federationName: `${zone}_${name.replaceAll('-', '_')}`,
-    title: titleCase(name),
+    title:
+      opts.title !== undefined ? assertTitle(opts.title) : titleFromName(name),
     routePath: `/${name}`,
   };
 }

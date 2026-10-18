@@ -1,0 +1,55 @@
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { HostPropsProvider } from '@org/mf-runtime/remote';
+import { listItems } from '../api';
+import { DemoItems } from './DemoItems';
+
+// Hooks/UI tests mock the feature's api/ module: no HTTP here (docs/testing.md).
+jest.mock('../api', () => ({
+  ...jest.requireActual('../api'),
+  listItems: jest.fn(),
+  createItem: jest.fn(),
+}));
+const listItemsMock = jest.mocked(listItems);
+
+function renderWithApi(apiBaseUrl: string | undefined = 'http://api.test/api') {
+  return render(
+    <HostPropsProvider
+      value={{ embedded: true, basePath: '/x', settings: { apiBaseUrl } }}
+    >
+      <DemoItems />
+    </HostPropsProvider>,
+  );
+}
+
+describe('DemoItems', () => {
+  beforeEach(() => listItemsMock.mockReset());
+
+  it('shows loading, then the items from the API', async () => {
+    listItemsMock.mockResolvedValue([
+      { id: 1, name: 'First', description: 'One' },
+    ]);
+    renderWithApi();
+    expect(screen.getByRole('status')).toHaveTextContent('Loading items…');
+    expect(await screen.findByText('First')).toBeInTheDocument();
+    expect(screen.queryByText('Loading items…')).not.toBeInTheDocument();
+  });
+
+  it('shows an error with a retry', async () => {
+    listItemsMock
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      .mockResolvedValueOnce([]);
+    renderWithApi();
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /Could not load the items/,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(await screen.findByText('No items yet.')).toBeInTheDocument();
+  });
+
+  it('explains a missing settings.apiBaseUrl instead of calling the API', () => {
+    renderWithApi(undefined);
+    expect(screen.getByText(/No API configured/)).toBeInTheDocument();
+    expect(listItemsMock).not.toHaveBeenCalled();
+  });
+});
