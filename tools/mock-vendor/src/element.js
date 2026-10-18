@@ -2,7 +2,7 @@
 /**
  * DEV ONLY mock vendor, format "web-component": <mock-vendor-widget> wraps the same mount().
  * The host assigns `element.props` and re-assigns it on every update.
- *   { "url": "http://localhost:3999/element.js", "format": "web-component", "tagName": "mock-vendor-widget" }
+ *   { "url": "http://localhost:3191/element.js", "format": "web-component", "tagName": "mock-vendor-widget" }
  */
 import { contractVersion, mount } from './mount.js';
 

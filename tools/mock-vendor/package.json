@@ -2,13 +2,14 @@
   "name": "@org/mock-vendor",
   "version": "1.0.0",
   "private": true,
-  "description": "DEV ONLY: a mock external/vendor module written without React (plain DOM + shadow DOM + custom element), implementing the mount contract. Served on port 3999.",
+  "description": "DEV ONLY: a mock external/vendor module written without React (plain DOM + shadow DOM + custom element), implementing the mount contract. One server per zone on the zone's mock-vendor port (intranet 3191, internet 3291).",
   "type": "module",
   "bin": {
     "mock-vendor": "./bin/serve.js"
   },
   "scripts": {
-    "dev": "node bin/serve.js",
+    "serve:intranet": "node bin/serve.js --zone intranet",
+    "serve:internet": "node bin/serve.js --zone internet",
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json",
     "test": "node --test \"test/**/*.test.js\""
@@ -16,7 +17,17 @@
   "nx": {
     "tags": [
       "type:tool"
-    ]
+    ],
+    "targets": {
+      "serve:intranet": {
+        "continuous": true,
+        "cache": false
+      },
+      "serve:internet": {
+        "continuous": true,
+        "cache": false
+      }
+    }
   },
   "devDependencies": {
     "@org/eslint-config": "workspace:*",
@@ -26,5 +37,8 @@
     "eslint": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:"
+  },
+  "dependencies": {
+    "@org/scripts": "workspace:*"
   }
 }

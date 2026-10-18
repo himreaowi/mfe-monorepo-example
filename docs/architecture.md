@@ -71,12 +71,12 @@ global styles from their exposed module.
 
 ## Zones
 
-|           | intranet                       | internet                                           |
-| --------- | ------------------------------ | -------------------------------------------------- |
-| Shell     | `apps/intranet/shell-intranet` | `apps/internet/shell-internet`                     |
-| Dev ports | 3100 (shell), 3101–3199        | 3200 (shell), 3201–3299                            |
-| Users     | staff (SSO via the BFF)        | public + signed-in citizens (Singpass via the BFF) |
-| Sharing   | only `packages/*`              | only `packages/*`                                  |
+|           | intranet                                                                            | internet                                                       |
+| --------- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Shell     | `apps/intranet/shell-intranet`                                                      | `apps/internet/shell-internet`                                 |
+| Dev ports | 3100 (shell), 3101–3189 apps; 3190–3199 dev tools (mock API 3190, mock vendor 3191) | 3200 (shell), 3201–3289 apps; 3290–3299 dev tools (3290, 3291) |
+| Users     | staff (SSO via the BFF)                                                             | public + signed-in citizens (Singpass via the BFF)             |
+| Sharing   | only `packages/*`                                                                   | only `packages/*`                                              |
 
 Zones never share remotes, and remotes never import remotes or shells. Enforced by
 `pnpm check` (check-apps) and ESLint (Nx module boundaries); see [guardrails.md](guardrails.md).
