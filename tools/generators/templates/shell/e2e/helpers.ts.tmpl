@@ -46,6 +46,57 @@ export async function openHeaderMenu(page: Page): Promise<Locator> {
   return panel;
 }
 
+/**
+ * Resize the viewport and wait until the header has settled at the new width; returns its
+ * layout. `MainLayout` re-measures in a ResizeObserver callback that can run after
+ * `setViewportSize` returns (late under load), so a single read may still see the previous
+ * layout. This waits until the page reports the new width, then polls (two animation frames
+ * per read) until `data-layout` and the Menu button agree (`compact` ⇔ Menu visible, nav
+ * hidden; `wide` ⇔ Menu hidden, nav visible) and two consecutive reads are the same.
+ * Expects the header panel closed.
+ */
+export async function resizeHeader(
+  page: Page,
+  width: number,
+  height = 800,
+): Promise<'wide' | 'compact'> {
+  await page.setViewportSize({ width, height });
+  await page.waitForFunction((w) => window.innerWidth === w, width);
+  const header = page.getByTestId('main-header');
+  const menu = page.getByRole('button', { name: 'Menu' });
+  const nav = page.getByRole('list', { name: 'Apps' });
+  let previous = '';
+  let settled: 'wide' | 'compact' | undefined;
+  await expect
+    .poll(
+      async () => {
+        await page.evaluate(
+          () =>
+            new Promise((resolve) =>
+              requestAnimationFrame(() => requestAnimationFrame(resolve)),
+            ),
+        );
+        const layout = await header.getAttribute('data-layout');
+        const menuVisible = await menu.isVisible();
+        const navVisible = await nav.isVisible();
+        const state = `${layout} (Menu ${menuVisible ? 'visible' : 'hidden'}, nav ${navVisible ? 'visible' : 'hidden'})`;
+        const agree =
+          (layout === 'wide' && !menuVisible && navVisible) ||
+          (layout === 'compact' && menuVisible && !navVisible);
+        const stable = state === previous;
+        previous = state;
+        if (agree && stable) settled = layout;
+        return agree && stable ? 'settled' : state;
+      },
+      {
+        message: `header layout settles at ${width} px (data-layout and Menu button agree)`,
+        intervals: [50, 100, 250],
+      },
+    )
+    .toBe('settled');
+  return settled ?? 'wide';
+}
+
 /** The shell's nav ("Apps" list), opened first on phones. It closes again after a navigation. */
 export async function openNav(page: Page): Promise<Locator> {
   const panel = await openHeaderMenu(page);

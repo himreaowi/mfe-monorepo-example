@@ -418,6 +418,12 @@ integrity crossorigin>` first, then `import()` of the same URL reuses the verifi
   signal on, drops the output after it and exits 0 with one "dev servers stopped" line. Nx
   starts every task in its own process group, so the servers stop because Nx forwards the
   signal, also when only the launcher is signalled.
+- **Killing the `pnpm` PID of a background `pnpm dev:<zone>` leaves every server running.** With
+  Corepack + nvm, `pnpm` is a JS wrapper that starts `pnpm-native`, which runs the script in a
+  new process group; the wrapper exits on SIGTERM without passing it on. Signal the launcher
+  (`pkill -TERM -f 'tools/scripts/bin/dev.js --zone=<zone>'`) or the whole job's process group
+  (`set -m` in bash, then `kill -TERM -- -$!`); Ctrl-C in a terminal reaches everything.
+  Commands: docs/testing.md, "Stopping `pnpm dev:<zone>` yourself".
 - **Nx continuous dependencies are deduplicated**: the shell and every remote of a zone declare
   `dev.dependsOn: [{ projects: ['@org/mock-api'], target: 'serve:<zone>' }]`; `nx run-many -t dev`
   starts the mock API once.

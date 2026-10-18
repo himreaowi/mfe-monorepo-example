@@ -4,6 +4,7 @@ import {
   expectRemoteRendered,
   openHeaderMenu,
   openNav,
+  resizeHeader,
   zone,
 } from './helpers';
 
@@ -160,9 +161,9 @@ test.describe('__APP_TITLE__', () => {
       const menu = page.getByRole('button', { name: 'Menu' });
       const nav = page.getByRole('list', { name: 'Apps' });
       for (const width of HEADER_WIDTHS) {
-        await page.setViewportSize({ width, height: 800 });
-        // MainLayout measures the row: wide when brand, nav and actions fit, else compact
-        await expect(header).toHaveAttribute('data-layout', /^(wide|compact)$/);
+        // MainLayout measures the row: wide when brand, nav and actions fit, else compact;
+        // resizeHeader waits until the layout settled at the new width
+        const layout = await resizeHeader(page, width);
         const maxHeight = width < 640 ? 64 : 80;
         await expect
           .poll(
@@ -170,7 +171,7 @@ test.describe('__APP_TITLE__', () => {
             { message: `header height at ${width} px (one row ≤ ${maxHeight} px)` },
           )
           .toBeLessThanOrEqual(maxHeight);
-        if ((await header.getAttribute('data-layout')) === 'wide') {
+        if (layout === 'wide') {
           await expect(menu).toBeHidden();
           await expect(nav).toBeVisible();
         } else {
