@@ -115,21 +115,27 @@ function resolveMode(env, argv, explicit) {
 }
 
 /**
- * Style loaders: SCSS/CSS through sass-loader + css-loader + style-loader.
- * style-loader injects CSS from JS, so an exposed module brings its styles along when a shell
- * loads it (no separate CSS chunk loading across origins).
+ * Style loaders: SCSS/CSS through sass-loader + css-loader, then
+ * - development: style-loader (CSS injected as <style> from JS, fast style reload with HMR);
+ * - production: CssExtractRspackPlugin's loader (real, content-hashed .css files). No <style>
+ *   element at runtime, so the CSP needs no `style-src 'unsafe-inline'`. Each JS chunk's CSS
+ *   becomes a .css file that the chunk loader fetches as <link rel="stylesheet"> (from the
+ *   app's own origin via publicPath) and awaits before the chunk's code runs, also when a shell
+ *   loads a remote's exposed module.
  * CSS Module class names are salted with the federation name so two apps never generate the
  * same class name for e.g. `Button.module.scss` `.button`.
  * @param {{ name: string, isDev: boolean, modules: boolean }} o
  */
 function styleLoaders({ name, isDev, modules }) {
   return [
-    { loader: require.resolve('style-loader') },
+    isDev
+      ? { loader: require.resolve('style-loader') }
+      : { loader: rspack.CssExtractRspackPlugin.loader },
     {
       loader: require.resolve('css-loader'),
       options: {
         importLoaders: 1,
-        // no inline CSS source maps (with source paths) in production bundles
+        // no CSS source maps in production (neither inline nor as .css.map files)
         sourceMap: isDev,
         modules: modules
           ? {
@@ -292,6 +298,15 @@ function createBaseConfig(options, mode) {
             },
           },
         ],
+      }),
+    );
+  }
+  if (!isDev) {
+    plugins.push(
+      new rspack.CssExtractRspackPlugin({
+        // 8 hex chars like the JS chunks: deploy/nginx caches `*.<8 hex>.css` as immutable
+        filename: '[name].[contenthash:8].css',
+        chunkFilename: '[name].[contenthash:8].css',
       }),
     );
   }

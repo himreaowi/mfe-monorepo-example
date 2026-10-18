@@ -27,6 +27,17 @@ function pluginNamed(config, name) {
   );
 }
 
+/**
+ * Loader of each SCSS/CSS rule (first entry of `use`: style-loader or the CSS extract loader).
+ * @param {Configuration} config
+ * @returns {string[]}
+ */
+const styleRuleFirstLoaders = (config) =>
+  (config.module?.rules ?? [])
+    .map((r) => /** @type {any} */ (r))
+    .filter((r) => String(r.test).includes('css'))
+    .map((r) => r.use[0].loader);
+
 /** @param {Configuration} config */
 const mfOptions = (config) =>
   pluginNamed(config, 'ModuleFederationPlugin')._options;
@@ -109,6 +120,31 @@ describe('createShellConfig', () => {
     assert.equal(pluginNamed(config, 'PwaPlugin'), undefined);
   });
 
+  it('development: style-loader (fast style reload), no CSS extraction', () => {
+    const loaders = styleRuleFirstLoaders(config);
+    assert.equal(loaders.length, 2);
+    for (const loader of loaders) assert.match(loader, /style-loader/);
+    assert.equal(pluginNamed(config, 'CssExtractRspackPlugin'), undefined);
+  });
+
+  it('production: extracts CSS into [name].[contenthash:8].css files, no style-loader', () => {
+    const prod = createShellConfig({
+      rootDir: fixture,
+      name: 'test_shell',
+      port: 3100,
+    })({ RSPACK_BUILD: true }, {});
+    const loaders = styleRuleFirstLoaders(prod);
+    assert.equal(loaders.length, 2);
+    for (const loader of loaders) {
+      assert.equal(loader, rspack.CssExtractRspackPlugin.loader);
+      assert.doesNotMatch(loader, /style-loader/);
+    }
+    const extract = pluginNamed(prod, 'CssExtractRspackPlugin');
+    assert.ok(extract, 'CssExtractRspackPlugin in production');
+    assert.equal(extract.options.filename, '[name].[contenthash:8].css');
+    assert.equal(extract.options.chunkFilename, '[name].[contenthash:8].css');
+  });
+
   it('rejects invalid federation names', () => {
     assert.throws(
       () =>
@@ -130,8 +166,12 @@ describe('createRemoteConfig', () => {
       './App': './src/app/RemoteApp.tsx',
     });
     assert.equal(pluginNamed(config, 'PwaPlugin'), undefined);
+    assert.ok(pluginNamed(config, 'CssExtractRspackPlugin'));
   });
 });
+
+/** deploy/nginx/default.conf.template: content-hashed files cached as immutable */
+const NGINX_IMMUTABLE = /\.[0-9a-f]{8}\.(?:js|mjs|css)$/;
 
 describe('real build', () => {
   /**
@@ -164,11 +204,20 @@ describe('real build', () => {
       .filter((f) => f.endsWith('.js'))
       .map((f) => readFileSync(join(outDir, f), 'utf8'))
       .join('\n');
+    const cssFiles = files.filter((f) => f.endsWith('.css'));
+    const css = cssFiles
+      .map((f) => readFileSync(join(outDir, f), 'utf8'))
+      .join('\n');
     const html = readFileSync(join(outDir, 'index.html'), 'utf8');
     const maps = files
       .filter((f) => f.endsWith('.map'))
       .map((f) => readFileSync(join(outDir, f), 'utf8'));
-    return { js, files, html, maps };
+    const manifest = JSON.parse(
+      readFileSync(join(outDir, 'mf-manifest.json'), 'utf8'),
+    );
+    const read = (/** @type {string} */ f) =>
+      readFileSync(join(outDir, f), 'utf8');
+    return { js, css, cssFiles, files, html, maps, manifest, read };
   }
 
   after(
@@ -188,9 +237,37 @@ describe('real build', () => {
     assert.ok(classOf(a.js), 'class name exported');
     assert.ok(classOf(b.js), 'class name exported');
     assert.notEqual(classOf(a.js), classOf(b.js));
-    assert.match(a.js, /padding:\s?4px/, 'SCSS compiled');
+    // production: the CSS is in .css files, not in the JS (no style-loader runtime)
+    assert.match(a.css, /padding:\s?4px/, 'SCSS compiled into a .css file');
+    assert.ok(a.css.includes(`.${classOf(a.js)}`), 'salted class in the CSS');
+    assert.doesNotMatch(a.js, /padding:\s?4px/, 'no CSS inside the JS');
+    assert.doesNotMatch(a.js, /insertStyleElement|styleTagTransform/);
     // absolute script URL: a standalone deep link (/details) still loads the entry
     assert.match(a.html, /<script[^>]+src="\/main\.[^"]+\.js"/);
+  });
+
+  it('production: content-hashed .css per chunk (exposed module + lazy chunk), loaded by the chunk loader', async () => {
+    const prod = await build('app_css', { production: true });
+    assert.ok(prod.cssFiles.length >= 2, `css files: ${prod.cssFiles}`);
+    for (const f of prod.cssFiles) {
+      assert.match(f, NGINX_IMMUTABLE, `${f} matches the nginx immutable rule`);
+      assert.doesNotMatch(prod.read(f), /sourceMappingURL/, 'no CSS map ref');
+    }
+    assert.ok(
+      !prod.files.some((f) => f.endsWith('.css.map')),
+      'no CSS source maps',
+    );
+    const expose = prod.manifest.exposes.find(
+      (/** @type {{ name: string }} */ e) => e.name === 'App',
+    );
+    assert.equal(expose.assets.css.sync.length, 1, 'exposed module CSS');
+    assert.match(expose.assets.css.sync[0], NGINX_IMMUTABLE);
+    assert.ok(expose.assets.css.async.length >= 1, 'lazy chunk CSS');
+    assert.match(prod.css, /margin:3px/, 'lazy chunk CSS emitted');
+    // remoteEntry.js carries the CSS chunk loader (<link rel="stylesheet">, rejects on error)
+    const remoteEntry = prod.read('remoteEntry.js');
+    assert.match(remoteEntry, /CSS_CHUNK_LOAD_FAILED/);
+    assert.match(remoteEntry, /stylesheet/);
   });
 
   it('production: hidden source maps without sourcesContent, no dev-only code anywhere', async () => {

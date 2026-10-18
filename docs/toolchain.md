@@ -29,7 +29,7 @@ those versions were chosen.
 | jest / jest-environment-jsdom                   | 30.5.2                           | catalog (A2)                  | via `@org/jest-config`                                    |
 | @swc/jest / @swc/core                           | 0.2.39 / 1.16.18                 | catalog (A2)                  | ts-jest not used                                          |
 | @testing-library/react / user-event / jest-dom  | 16.3.3 / 14.6.8 / 7.0.1          | catalog (A2)                  | + @testing-library/dom 10.4.2, @types/jest 30.0.0         |
-| sass / sass-loader / css-loader / style-loader  | 1.105.1 / 17.0.1 / 7.1.5 / 4.0.0 | catalog (A2)                  | used by `@org/rspack-config`                              |
+| sass / sass-loader / css-loader / style-loader  | 1.105.1 / 17.0.1 / 7.1.5 / 4.0.0 | catalog (A2)                  | used by `@org/rspack-config` (style-loader: dev only)     |
 | workbox-build                                   | 7.4.1                            | catalog (A2)                  | used by `@org/pwa/build`                                  |
 | ajv                                             | 8.20.0                           | catalog (A3)                  | dev only: generates the manifest validator                |
 | @nx/eslint-plugin                               | 23.3.0                           | catalog (A5)                  | `enforce-module-boundaries`, same version as nx           |
@@ -172,6 +172,19 @@ tier-1 singleton.
   factories return `(env, argv) => config` and derive the mode from these.
 - Loaders (`style-loader`, `css-loader`, `sass-loader`) are passed as absolute paths
   (`require.resolve`) from `@org/rspack-config`. Apps do not need them installed (D7).
+- **Styles: style-loader in development, extracted `.css` files in production.** Development
+  keeps style-loader (`<style>` elements injected from JS): HMR swaps a changed stylesheet
+  without a reload. Production uses Rspack's built-in `CssExtractRspackPlugin` (the
+  mini-css-extract-plugin port): one `[name].[contenthash:8].css` per JS chunk, loaded as
+  `<link rel="stylesheet">` by the chunk loader before the chunk's code runs. No `<style>`
+  element is created at runtime, so the CSP needs no `style-src 'unsafe-inline'`. Only the last
+  loader differs between the modes; css-loader (CSS Modules naming and salt) and sass-loader
+  are the same, so class names are produced the same way in both.
+- Why not Rspack's native CSS (`type: 'css/auto'`; `experiments.css` is deprecated in Rspack 2):
+  it replaces css-loader's CSS Modules implementation (other class names, other options for
+  the salt and exports), so dev (style-loader needs css-loader) and prod would generate class
+  names differently, and its interplay with Module Federation exposes is less proven. The
+  extract plugin's runtime is what Module Federation remotes have used with webpack for years.
 - Rule `type: 'javascript/auto'` is set on the SCSS/CSS rules, so Rspack's native CSS handling
   does not process them a second time.
 - `css-loader` `modules.localIdentHashSalt = <federation name>` gives each app different hashes
@@ -213,7 +226,8 @@ true })` before loading again. Verified in the browser: the remote's `mf-manifes
 - Do not create file names that differ only by case (`remoteApp.tsx` vs `RemoteApp.tsx`). The
   default macOS file system is case-insensitive.
 - The remote fetches only `mf-manifest.json`, `remoteEntry.js`, its expose chunks and the small
-  css-loader/style-loader runtime chunk. It does not fetch React or react-router chunks.
+  css-loader runtime chunk (plus, since production CSS is extracted, the expose's `.css` file).
+  It does not fetch React or react-router chunks.
 
 ## Gotchas found in A4/A5
 
@@ -372,8 +386,9 @@ integrity crossorigin>` first, then `import()` of the same URL reuses the verifi
   security headers in front of production builds (shell :4100, remotes :4101–4103, mock vendor
   :3999): zero violations; with the remote origins removed, Chromium blocked the
   `mf-manifest.json` fetch and the shell showed `RemoteFallback`. `upgrade-insecure-requests`
-  was left out for that `http://localhost` test. `style-src 'unsafe-inline'` is required
-  (style-loader); `'unsafe-eval'` is not.
+  was left out for that `http://localhost` test. `'unsafe-eval'` is not needed;
+  `style-src 'unsafe-inline'` was needed then (style-loader in production) and is gone since
+  production CSS is extracted (see "CSS extraction (C2)" below).
 - nginx `add_header` is not inherited into a `location` that has its own `add_header`: every
   location in the template includes the security headers file again (checked by a test).
 - The official nginx image's envsubst step only replaces variables that exist in the
@@ -427,3 +442,52 @@ integrity crossorigin>` first, then `import()` of the same URL reuses the verifi
 - **Nx continuous dependencies are deduplicated**: the shell and every remote of a zone declare
   `dev.dependsOn: [{ projects: ['@org/mock-api'], target: 'serve:<zone>' }]`; `nx run-many -t dev`
   starts the mock API once.
+
+## CSS extraction for a strict CSP (C2)
+
+Production builds extract CSS (`CssExtractRspackPlugin`) so the CSP can drop
+`style-src 'unsafe-inline'`. Verified in a throwaway workspace (intranet shell, a public and a
+`--private` remote, an `--external` adapter with the mock vendor) built for production and
+served by a Node server that sends the headers rendered from `deploy/nginx` (CSP without
+`'unsafe-inline'`, CORS allow-list, caching) on five localhost origins, in headless Chromium:
+zero `securitypolicyviolation` events, no `<style>` element ever inserted, shell + remotes +
+vendor styled, light/dark and `--header-*` tokens working, no duplicate `<link>`s after
+navigating back and forth, a lazy route's CSS loaded before it rendered, and a remote whose CSS
+answered 503 showed `RemoteFallback` (then rendered styled after "Try again").
+
+- **How a remote's CSS reaches the shell.** The remote's `remoteEntry.js` contains the extract
+  plugin's CSS chunk loader. `container.get('./App')` loads the expose chunk's `.css` with
+  `<link rel="stylesheet">` from the remote's origin (`publicPath: 'auto'`) and resolves only on
+  the link's `load` event; on `error` it removes the link and rejects with
+  `CSS_CHUNK_LOAD_FAILED`, so `loadRemote` fails like for a missing JS chunk. Lazy chunks inside
+  the remote work the same way. It reuses an existing `<link>` with the same `href`, so
+  navigating away and back adds nothing (CSS stays in the page after unmount, as with
+  style-loader).
+- **The Module Federation runtime also injects the expose's CSS, and that breaks the above.**
+  For a manifest remote, MF 2.9's `snapshotPlugin` (`afterResolve` of `loadRemote`) reads the
+  expose's `assets.css.sync` from `mf-manifest.json` and appends `<link rel="stylesheet">`
+  without awaiting it and swallows its errors. The chunk loader then finds that link by `href`
+  and resolves at once, loaded or not. Measured: with the CSS answering 503 the remote rendered
+  unstyled instead of the fallback. `@org/mf-runtime` therefore registers a small runtime plugin
+  (`remoteCssPlugin`, from `initRemotes` and the `mf` vendor loader) that filters `.css` out of
+  those preloads in `beforePreloadRemote` (JS preloads stay), leaving CSS to the chunk loader.
+- **No `crossorigin` on the CSS links.** Neither loader sets it (`output.crossOriginLoading` is
+  off, like for the JS chunks), so stylesheets load in no-cors mode and apply without CORS
+  headers; nginx still sends `Access-Control-Allow-Origin` for allowed shells on hashed `.css`
+  (needed only if `crossOriginLoading` is turned on, e.g. for SRI). `style-src` must list the
+  remote origins (`CSP_REMOTE_ORIGINS`), as `script-src` does.
+- **Shared singletons bring their CSS from the shell.** `@org/ui` / `@org/auth` styles live in
+  the provider's chunks (the shell's), loaded with the shared module. Rspack emits a CSS-only
+  twin chunk for the consume fallback (same content, e.g. `812.<hash>.css` next to
+  `868.<hash>.css`); only one of them is ever requested.
+- **Rspack's CSS chunk error has an escaped newline**, a literal backslash-n before the URL:
+  `Loading CSS chunk 362 failed.\n(<url>)`. `RemoteApp` cuts the fallback reason there.
+- **`mf-manifest.json` lists the remote's standalone `bootstrap` chunk (with `global.scss`) as
+  async assets of the expose.** It is never requested through the expose; only an explicit
+  `preloadRemote({ resourceCategory: 'all' })` would preload it.
+- Constructable stylesheets (`adoptedStyleSheets`) are not subject to `style-src`; the mock
+  vendor and the vendor kit examples use them. React `style` props are set through the CSSOM
+  (`element.style`) and are allowed; only `<style>` elements and `style="…"` attributes in HTML
+  are blocked.
+- Development still uses style-loader (13 `<style>` elements in the standalone remote, an SCSS
+  edit applied by HMR without a reload). Dev servers send no CSP.

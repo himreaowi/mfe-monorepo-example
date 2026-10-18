@@ -32,8 +32,11 @@ test host (`README.md`) first; most items show up there.
 ## Security and CSP
 
 - [ ] Works under our CSP: no `eval`/`new Function`/string timers, no inline `<script>`, no
-      inline event handlers; styles via constructable stylesheets / `<link>` from your
-      allow-listed origin (no `'unsafe-inline'` styles)
+      inline event handlers; styles via constructable stylesheets (`adoptedStyleSheets`) or a
+      `<link>` from your allow-listed origin. No `<style>` elements (not even inside your
+      shadow root) and no `style="…"` attributes in HTML strings: our CSP has no
+      `'unsafe-inline'` for styles (`element.style.*` set from JavaScript is fine). The test
+      host reports every CSP violation as a failed check
 - [ ] Complete list of origins delivered (script, style, img, font, connect, frame)
 - [ ] No tokens, NRIC/FIN or other personal data in URLs, logs, `localStorage` or
       `sessionStorage`; only what your API needs, over HTTPS

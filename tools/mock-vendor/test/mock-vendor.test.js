@@ -1,5 +1,6 @@
 // @ts-check
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import vm from 'node:vm';
 import { after, before, describe, it } from 'node:test';
 import { SCRIPT_GLOBAL, classicScript, createServer } from '../bin/serve.js';
@@ -9,6 +10,16 @@ describe('mock vendor', () => {
   it('implements the contract shape (contract 1.x)', () => {
     assert.match(vendor.contractVersion, /^1\.\d+\.\d+$/);
     assert.equal(typeof vendor.mount, 'function');
+  });
+
+  it('styles its shadow root with a constructable stylesheet, never a <style> element (strict CSP)', () => {
+    const src = fs.readFileSync(
+      new URL('../src/mount.js', import.meta.url),
+      'utf8',
+    );
+    assert.match(src, /new CSSStyleSheet\(\)/);
+    assert.match(src, /adoptedStyleSheets = \[sheet\]/);
+    assert.doesNotMatch(src, /h\('style'|createElement\(['"]style['"]\)/);
   });
 
   it('format "script": a classic script that sets one global with the same exports', () => {

@@ -133,8 +133,14 @@ Behaviour:
 - **CSP** (shell's nginx, written by DevOps per environment): add exactly the vendor origins
   the vendor declares: `script-src` (bundle and chunks), `connect-src` (their APIs),
   `style-src`/`font-src`/`img-src` if they load such files, `frame-src` for iframes. Never
-  `'unsafe-eval'` or `'unsafe-inline'` for a vendor; constructable stylesheets / shadow DOM need
-  neither. The vendor kit test host runs under a comparable CSP.
+  `'unsafe-eval'` or `'unsafe-inline'` for a vendor. The portal's `style-src` has no
+  `'unsafe-inline'` at all (our own CSS is extracted into files), so a vendor module styles its
+  shadow root with a **constructable stylesheet** (`new CSSStyleSheet()` + `replaceSync()` +
+  `shadowRoot.adoptedStyleSheets`, not subject to `style-src`) or a `<link rel="stylesheet">` to
+  a CSS file on its declared origin. A `<style>` element (also inside a shadow root) or a
+  `style="…"` attribute in an HTML string is blocked; `element.style.*` from JavaScript is fine.
+  The mock vendor and the vendor kit examples use constructable stylesheets; the vendor kit test
+  host runs under a comparable CSP and reports every violation as a failed check.
 - **SRI**: pin `integrity` per release in the manifest (the vendor publishes it with each
   versioned URL). A changed file then fails closed instead of running.
 - **Versioned, immutable URLs** only (`/payments/1.4.2/mount.js`), no `/latest/` in production;

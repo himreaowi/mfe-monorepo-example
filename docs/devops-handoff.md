@@ -105,8 +105,8 @@ e2e per zone: run `pnpm e2e:<zone>` when `pnpm -s apps --affected --base=<sha> -
 
 | App type | `distDir` contents                                                                                                | Notes                                                |
 | -------- | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| shell    | `index.html`, `main.<hash>.js`, chunks, `service-worker.js`, `manifest.webmanifest`, icons                        | **no** `mfe-manifest.json` (written per environment) |
-| remote   | `mf-manifest.json`, `remoteEntry.js`, `__federation_expose_App.<hash>.js`, chunks, `index.html` (standalone page) | shells load `mf-manifest.json` cross-origin (CORS)   |
+| shell    | `index.html`, `main.<hash>.js`, chunks (`.js` + `.css`), `service-worker.js`, `manifest.webmanifest`, icons       | **no** `mfe-manifest.json` (written per environment) |
+| remote   | `mf-manifest.json`, `remoteEntry.js`, `__federation_expose_App.<hash>.js/.css`, chunks, `index.html` (standalone) | shells load `mf-manifest.json` cross-origin (CORS)   |
 
 Source maps (`*.map`) are emitted next to the files; the nginx template does not serve them
 (404). Upload them to the error tracker in the pipeline if you use one.
@@ -196,7 +196,7 @@ What the template does:
 | `/mfe-manifest.json` (from `/etc/mfe`)                   | `no-cache`                            |                                |
 | `/mf-manifest.json`, `/mf-stats.json`, `/remoteEntry.js` | `no-cache`                            | CORS for allowed shell origins |
 | `/service-worker.js`, `/manifest.webmanifest`            | `no-cache`                            |                                |
-| `*.<8 hex>.js/css` (content hash)                        | `public, max-age=31536000, immutable` | CORS                           |
+| `*.<8 hex>.js/css` (content hash, incl. extracted CSS)   | `public, max-age=31536000, immutable` | CORS                           |
 | other static files (icons, fonts)                        | `public, max-age=3600`                | CORS                           |
 | `*.map`                                                  | not served (404)                      |                                |
 | everything else (`/`, deep links)                        | `index.html`, `no-cache`              | SPA fallback                   |
@@ -212,7 +212,7 @@ Every response carries the security headers: CSP, `X-Content-Type-Options: nosni
 The template's policy (shell responses are what matters):
 
 ```
-default-src 'self'; script-src 'self' <remotes> <vendors>; style-src 'self' 'unsafe-inline' <remotes> <vendors>;
+default-src 'self'; script-src 'self' <remotes> <vendors>; style-src 'self' <remotes> <vendors>;
 img-src 'self' data: <remotes> <vendors>; font-src 'self' <remotes> <vendors>;
 connect-src 'self' <remotes> <bff> <apis> <vendors>; frame-src <frames|'none'>; worker-src 'self';
 manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self' <bff>; frame-ancestors 'none';
@@ -222,12 +222,22 @@ upgrade-insecure-requests
 - `script-src` + `connect-src` need every remote origin of the shell's manifest
   (`<script>` for `remoteEntry.js`/chunks, `fetch` for `mf-manifest.json`). Remotes on the
   shell's own origin (path-based routing) need nothing extra.
-- `'unsafe-inline'` for styles is required: each app's CSS is injected as `<style>` elements by
-  its JS (that is how a remote's CSS travels with it). No `'unsafe-eval'` is needed (the manifest
+- `style-src` has **no `'unsafe-inline'`**: production builds ship extracted, content-hashed
+  `.css` files, loaded as `<link rel="stylesheet">` from the app's own origin (the shell's from
+  `'self'`, each remote's from its origin, so `style-src` needs the remote origins like
+  `script-src`). Vendors style their shadow DOM with constructable stylesheets (not subject to
+  `style-src`) or a stylesheet from their declared origin (`CSP_VENDOR_ORIGINS`). React `style`
+  props are set through the CSSOM and are allowed. Blocked, by design: `<style>` elements and
+  `style="…"` attributes in HTML. No nonces are needed. No `'unsafe-eval'` either (the manifest
   validator is precompiled).
+- Remote CSS is requested without `crossorigin` (like the JS chunks), so it does not depend on
+  CORS headers; the template still sends `Access-Control-Allow-Origin` for the allowed shells on
+  hashed `.css` (needed only if a build turns on `crossOriginLoading`, e.g. for SRI).
 - Verified in a browser against production builds of a shell, two remotes and an external
   adapter on four origins plus a vendor origin: no violations; removing the remote origins
-  blocked them (the route showed its fallback). Add `report-to`/`report-uri` via `CSP_EXTRA`
+  blocked them (the route showed its fallback). Re-verified without `'unsafe-inline'` after the
+  switch to extracted CSS: zero violations, no `<style>` elements, everything styled, and a
+  remote whose `.css` failed to load showed its fallback. Add `report-to`/`report-uri` via `CSP_EXTRA`
   and roll out with `Content-Security-Policy-Report-Only` first if you prefer.
 
 ### Hosting topology

@@ -2,6 +2,7 @@ import {
   loadRemote,
   registerRemotes,
 } from '@module-federation/enhanced/runtime';
+import { registerRemoteCssPlugin } from '../remoteCss';
 import type { ExternalModuleConfig } from './config';
 
 /**
@@ -15,6 +16,8 @@ export async function loadMfExternalModule(
   if (!config.remoteName) {
     throw new Error('format "mf" needs "remoteName".');
   }
+  // CSS of the vendor remote: loaded and awaited by its chunk loader (see remoteCss.ts)
+  registerRemoteCssPlugin();
   // force: a retry (new URL) replaces a failed registration
   registerRemotes([{ name: config.remoteName, entry: config.url }], {
     force: true,

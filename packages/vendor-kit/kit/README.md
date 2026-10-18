@@ -98,7 +98,7 @@ The page uses the same loader code as our portals and a strict Content-Security-
 - logs every `onNavigate` / `onEvent` / `onError` call and lifecycle step; `onNavigate`
   updates `path` and calls your `update()` like the portal does
 - checks: mount time, `update()` present, no new globals, no styles added to the document,
-  `unmount()` removes everything
+  no CSP violations, `unmount()` removes everything
 
 All checks green and no errors in the browser console is the minimum for a delivery.
 
@@ -114,5 +114,10 @@ All checks green and no errors in the browser console is the minimum for a deliv
 - Your API must allow our portal origins (CORS) if the module calls it from the browser.
 - Tell us every origin your module loads from or connects to (scripts, styles, images, fonts,
   APIs): our Content-Security-Policy allow-lists exactly these.
+- Styles: our CSP has no `'unsafe-inline'` for styles. Style your shadow root with a
+  constructable stylesheet (`new CSSStyleSheet()` + `replaceSync()` +
+  `shadowRoot.adoptedStyleSheets`) or a `<link rel="stylesheet">` to a CSS file on your declared
+  origin. `<style>` elements (also inside a shadow root) and `style="…"` attributes in HTML
+  strings are blocked; setting `element.style.*` from JavaScript is fine.
 
 See `CHECKLIST.md` for the full acceptance list.

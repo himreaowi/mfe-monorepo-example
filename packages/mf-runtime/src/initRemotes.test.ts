@@ -1,8 +1,13 @@
-import { registerRemotes } from '@module-federation/enhanced/runtime';
+import {
+  registerPlugins,
+  registerRemotes,
+} from '@module-federation/enhanced/runtime';
 import { initRemotes, resetRemote } from './initRemotes';
+import { remoteCssPlugin } from './remoteCss';
 
 jest.mock('@module-federation/enhanced/runtime', () => ({
   registerRemotes: jest.fn(),
+  registerPlugins: jest.fn(),
   loadRemote: jest.fn(),
 }));
 
@@ -22,6 +27,8 @@ describe('initRemotes', () => {
     expect(registerRemotes).toHaveBeenCalledWith(expected, {
       force: undefined,
     });
+    // CSS of remotes is left to their chunk loader (see remoteCss.ts)
+    expect(registerPlugins).toHaveBeenCalledWith([remoteCssPlugin]);
   });
 
   it('resetRemote force-registers one remote', () => {
