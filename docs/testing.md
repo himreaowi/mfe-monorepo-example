@@ -135,7 +135,11 @@ How it runs (`@org/playwright-config`):
    the local API's `<settings.apiBaseUrl>/health` (the mock API) answer. More servers:
    `createZoneConfig({ shellDir, extraHealthUrls: [...] })`.
 3. Every test runs in two projects: `desktop` (1280×720) and `mobile` (375×812).
-4. Afterwards the dev servers are stopped. `pnpm e2e` runs the zones one after the other; the
+4. Afterwards the dev servers are stopped (SIGTERM). `pnpm dev:<zone>` runs through a small
+   launcher (`tools/scripts/bin/dev.js`) that ends with one line,
+   `dev:<zone>: dev servers stopped (SIGTERM, expected).`, instead of Nx's misleading "Tasks
+   not run because their dependencies failed" summary; a server that crashes on its own is
+   still reported in full. `pnpm e2e` runs the zones one after the other; the
    zones' port ranges (tools included) do not overlap, so `pnpm dev:intranet` and
    `pnpm dev:internet` can also run at the same time.
 

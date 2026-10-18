@@ -411,6 +411,13 @@ integrity crossorigin>` first, then `import()` of the same URL reuses the verifi
   `type:package`). `@org/playwright-config` therefore reads the same root `package.json`
   `mfe.tools` itself (`TOOL_PORTS`) and mirrors only the zones' tools ranges
   (`ZONE_TOOL_RANGES`); a `tools/scripts` test compares both with `zones.js`.
+- **Stopping `nx run-many` looks like a failure.** When Playwright stops the webServer (or you
+  press Ctrl-C), Nx kills its continuous tasks and prints "Tasks not run because their
+  dependencies failed or --nx-bail=true" plus "Tasks stopped before they finished"; no Nx flag
+  turns this off. `pnpm dev:<zone>` therefore runs `tools/scripts/bin/dev.js`, which passes the
+  signal on, drops the output after it and exits 0 with one "dev servers stopped" line. Nx
+  starts every task in its own process group, so the servers stop because Nx forwards the
+  signal, also when only the launcher is signalled.
 - **Nx continuous dependencies are deduplicated**: the shell and every remote of a zone declare
   `dev.dependsOn: [{ projects: ['@org/mock-api'], target: 'serve:<zone>' }]`; `nx run-many -t dev`
   starts the mock API once.
