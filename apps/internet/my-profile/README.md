@@ -41,8 +41,8 @@ src/
   main.tsx            import('./bootstrap')
   bootstrap.tsx       standalone only: global styles + <StandaloneApp />
   app/                RemoteApp (exposed), apps (createRemoteApp), routes, standaloneProps
-  components/         ModeBadge
-  features/demo/      sample feature (host props, counter, links between pages)
+  features/profile/   api/, hooks/, types/, __fixtures__/, components/ (one folder per
+                      component: MyProfile/, ProfileDetails/, PreferencesForm/)
   layouts/            StandaloneLayout (MainLayout chrome, standalone only)
   pages/              OverviewPage, DetailsPage, NotFoundPage
   core/constants/     app, routePaths, apiRoutes

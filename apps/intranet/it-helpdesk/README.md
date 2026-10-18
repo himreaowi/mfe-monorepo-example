@@ -37,7 +37,7 @@ in the build):
 `config` is passed to the vendor as `props.config`.
 
 In development the shell's `mfe-manifest.dev.json` points at the **example vendor**
-(`tools/example-vendors`, http://localhost:3192/helpdesk/1.0.0/mount.js), and `src/features/external/vendorConfig.ts`
+(`tools/example-vendors`, http://localhost:3192/helpdesk/1.0.0/mount.js), and `src/features/external/utils/vendorConfig.ts`
 falls back to it when no config is set (standalone mode). Production builds contain neither.
 
 ## Commands
@@ -71,7 +71,9 @@ Loading/mount errors, timeouts, an incompatible `contractVersion` or a fatal `on
 src/
   main.tsx / bootstrap.tsx   standalone entry
   app/                       RemoteApp (exposed ./App), apps, routes (one splat route)
-  features/external/         ExternalModuleHost (the adapter), vendorConfig (dev fallback)
+  features/external/
+    components/ExternalModuleHost/   the adapter (component, CSS module, test, index.ts)
+    utils/                           vendorConfig (dev fallback), activity (vendor event helpers)
   layouts/                   StandaloneLayout
   pages/OverviewPage         renders the adapter
 ```

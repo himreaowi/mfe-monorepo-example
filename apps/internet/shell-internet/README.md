@@ -94,7 +94,9 @@ src/
   bootstrap.tsx       global styles, PWA, load + validate /mfe-manifest.json, render
   app/                App (providers + router), routes, registry typing
   components/         RemoteNav
-  features/           welcome (home page content), startup (manifest/connection errors)
+  features/           welcome/components/Welcome/ (home page content),
+                      startup/components/StartupError/ (manifest/connection errors);
+                      one folder per component (docs/coding-conventions.md)
   layouts/            ShellLayout (MainLayout from @org/ui + nav)
   pages/              HomePage, RemotePage, NotFoundPage
   core/               constants, types
