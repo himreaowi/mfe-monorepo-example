@@ -45,9 +45,9 @@ is optional per environment):
 
 Production builds do not contain the mock client (a `"mock": true` manifest disables sign-in
 there). The BFF contract (endpoints, cookies, CSRF, CORS) is in `docs/auth-contract.md` at the
-repo root. The header shows `UserMenu` (Sign in / name + Sign out). On phones (below 40rem)
-`MainLayout` folds the nav, theme toggle and user menu behind a "Menu" button; no shell code is
-needed for it.
+repo root. The header shows `UserMenu` (Sign in / name + Sign out). The header is always one row:
+when brand, nav, theme toggle and user menu do not fit (always on phones, on wider screens too
+with many remotes) `MainLayout` folds them behind a "Menu" button; no shell code is needed for it.
 
 The shell never imports a remote's code (no dependency on remote packages). The guardrails
 (`pnpm check`, ESLint module boundaries) fail if it does.
@@ -61,12 +61,12 @@ viewport. The specs read `remotes.json`, so a new remote is covered without edit
 
 | Spec                 | Checks                                                                                                                                                                                                                                                                                      |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `shell.spec.ts`      | home lists every remote, nav opens each without a reload, 404, theme persists, offline banner, compact header + Menu on phones                                                                                                                                                              |
+| `shell.spec.ts`      | home lists every remote, nav opens each without a reload, 404, theme persists, offline banner, header one row at 375/800/1024/1280 px (signed in and out), Menu disclosure on phones                                                                                                        |
 | `remotes.spec.ts`    | per remote: deep link + reload, in-remote links (after the data loaded), private guard (nothing downloaded before sign-in, mock sign-in, sign-out), external adapter: any vendor mounts content without errors and unmounts; with the mock vendor also vendor routing + theme via the shell |
 | `standalone.spec.ts` | per remote: its own dev server renders standalone (own chrome, theme), deep link                                                                                                                                                                                                            |
 | `a11y.spec.ts`       | axe WCAG 2.2 A/AA on every page above, light and dark theme                                                                                                                                                                                                                                 |
 
-`e2e/helpers.ts`: `openNav(page)` / `openHeaderMenu(page)` (open the Menu panel on phones),
+`e2e/helpers.ts`: `openNav(page)` / `openHeaderMenu(page)` (open the Menu panel when the header is compact),
 `settle(page)` (network idle and no loading indicator, before link checks and axe scans),
 `openRemote`, `openStandalone`, `signInWithMock`, `signOut`.
 
