@@ -32,6 +32,24 @@ const targets: Target[] = [
     },
   },
   {
+    // the signed-in header (user name, "Sign out"): the shell's header colours
+    // (src/styles/shell.scss, --header-*) must keep every element at AA contrast
+    name: 'home, signed in, header menu open',
+    open: async (page) => {
+      test.skip(
+        !zone.authMock,
+        'needs "auth": { "mock": true } in mfe-manifest.dev.json',
+      );
+      await page.goto('/');
+      await expect(page.getByTestId('shell-welcome')).toBeVisible();
+      const panel = await openHeaderMenu(page);
+      await panel.getByRole('button', { name: 'Sign in' }).click();
+      await expect(page.getByTestId('user-name')).toBeAttached();
+      await openHeaderMenu(page);
+      await expect(page.getByTestId('user-name')).toBeVisible();
+    },
+  },
+  {
     name: 'not found',
     open: async (page) => {
       await page.goto('/e2e-no-such-page');

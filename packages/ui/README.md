@@ -16,7 +16,9 @@ Shared React components ported from starter-mfe (same markup, classes and tokens
 shell therefore uses the shell's copy of these components, styles and the `ThemeContext`.
 
 Styles are SCSS modules that read CSS variables from `@org/design-tokens`. The app that owns the
-page imports `@org/design-tokens/global.scss` once.
+page imports `@org/design-tokens/global.scss` once. Their class names are hashed per build and
+per app (CSS Modules): never select them from an app; use the tokens (e.g. the header colours
+below) or props.
 
 ## ThemeProvider: shell, remote, standalone
 
@@ -91,6 +93,31 @@ always stay fully visible.
 - Pass text or inline content (e.g. a home `<Link>`) as `brand`; a single block child truncates
   too. A padding/negative-margin pair keeps a focused brand link's focus ring inside the
   clipped box.
+
+### Header colours (`--header-*`)
+
+The header's colours come from five custom properties, each falling back to the page tokens, so
+unset the header looks as before:
+
+| Token                 | Elements                                                                                       | Fallback                                   |
+| --------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `--header-bg`         | header + Menu panel background, text on the pressed theme button, base of the hover tint       | `--color-surface`                          |
+| `--header-text`       | brand, nav links, Menu button, theme / Sign in buttons                                         | `--color-text`                             |
+| `--header-text-muted` | "Theme" label, user name, Menu button border                                                   | `--header-text`, then `--color-text-muted` |
+| `--header-border`     | bottom border, panel divider, secondary button borders                                         | `--color-border`                           |
+| `--header-accent`     | active nav link, focus rings, pressed theme button, ghost buttons (Use system theme, Sign out) | `--header-text`, then `--color-accent`     |
+
+`MainLayout.module.scss` resolves them on the layout root and re-declares the page tokens
+(`--color-surface`, `--color-text`, `--color-text-muted`, `--color-border`, `--color-accent`,
+`--color-accent-contrast`, `--color-bg`) inside `<header>`, so `ThemeToggle`, `UserMenu`, the
+shell's `RemoteNav` and any `headerActions` follow without knowing the header tokens. Once
+`--header-bg` is set, `--color-bg` (hover / "Menu open" background) becomes a 14 % tint of the
+header text over it (`color-mix()`), and `--color-accent-contrast` becomes `--header-bg`.
+
+The **shell** sets them per theme in its `src/styles/shell.scss` (imported after
+`@org/design-tokens/global.scss`); remotes never set them (`pnpm check`). Example, contrast
+rules and why not to target the hashed class names: `docs/ui-context.md` "Header colours per
+shell".
 
 Why not a "More" menu (priority+)? `nav` is any React node (the shell passes a list), so
 `MainLayout` cannot move individual items; and the theme toggle and user menu need a place

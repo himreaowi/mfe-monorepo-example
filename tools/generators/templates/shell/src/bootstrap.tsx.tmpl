@@ -1,4 +1,6 @@
 import '@org/design-tokens/global.scss';
+// after the tokens: shell-owned global styles (header colours per theme)
+import './styles/shell.scss';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { loadAuthClient } from '@org/auth';

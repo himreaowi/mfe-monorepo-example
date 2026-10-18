@@ -14,6 +14,17 @@ Normative rules for every app and package. Implementation: `@org/design-tokens` 
 | Contrast      | every text/background token pair meets WCAG 2.2 AA in both themes           |
 | UI kit        | no third-party component library required                                   |
 
+## Header colours (per shell)
+
+| Rule      | Requirement                                                                                                                                                                  |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tokens    | `--header-bg`, `--header-text`, `--header-text-muted`, `--header-border`, `--header-accent` (read by `MainLayout`, fallback to the page tokens)                              |
+| Owner     | only the shell sets them, in `src/styles/shell.scss` (imported after `@org/design-tokens/global.scss`), light and dark; remotes MUST NOT (`pnpm check` rule `header-tokens`) |
+| Contrast  | text, muted text and accent ≥ 4.5:1 on `--header-bg` in both themes; text ≥ 4.5:1 on the hover tint                                                                          |
+| Selectors | apps MUST NOT select `@org/ui` CSS Module class names (hashed per build and app)                                                                                             |
+
+Details and example: [ui-context.md](../ui-context.md#header-colours-per-shell).
+
 ## ThemeProvider and `data-theme`
 
 | Behaviour    | Requirement                                                               |
@@ -39,4 +50,5 @@ Normative rules for every app and package. Implementation: `@org/design-tokens` 
 The zone e2e suite (`shell.spec.ts`) checks first visit → system theme, toggle → reload → same
 theme, the theme applying to an embedded remote, "Use system theme"; `standalone.spec.ts`
 checks every remote standalone owns its theme; `remotes.spec.ts` checks the theme reaching a
-vendor module; `a11y.spec.ts` scans every page in both themes.
+vendor module; `a11y.spec.ts` scans every page in both themes (including the header signed in and with the
+Menu panel open, so a shell's header colours are checked).

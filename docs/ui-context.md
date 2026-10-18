@@ -57,6 +57,70 @@ read the CSS variables.
 
 _TODO: product-specific theme UX (e.g. high-contrast theme), if any._
 
+## Header colours per shell
+
+Each shell can give its header its own colours (e.g. a blue staff portal and a white citizen
+portal) with five CSS custom properties read by `MainLayout` (`@org/ui`). Unset, the header
+looks exactly as before (it falls back to the page tokens).
+
+| Token                 | Used for                                                                                                      | Fallback when unset                        |
+| --------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `--header-bg`         | header and compact Menu panel background; text colour of the pressed theme button; base of the hover tint     | `--color-surface`                          |
+| `--header-text`       | brand, nav links (shell `RemoteNav`), Menu button, theme / Sign in buttons                                    | `--color-text`                             |
+| `--header-text-muted` | "Theme" label, signed-in user name, Menu button border                                                        | `--header-text`, then `--color-text-muted` |
+| `--header-border`     | header bottom border, panel divider, secondary button borders ("Dark", "Sign in")                             | `--color-border`                           |
+| `--header-accent`     | active nav link, focus rings, pressed theme button background, ghost buttons ("Use system theme", "Sign out") | `--header-text`, then `--color-accent`     |
+
+How it works: `MainLayout` maps them onto the normal token names (`--color-surface`,
+`--color-text`, …) inside the header, so everything rendered there (theme toggle, `UserMenu`,
+`RemoteNav`, any `headerActions`) follows without code changes. Hover and "Menu open"
+backgrounds become a 14 % tint of `--header-text` over `--header-bg` once `--header-bg` is set.
+
+Where: the shell's own global stylesheet `apps/<zone>/shell-<zone>/src/styles/shell.scss`
+(generated with the tokens commented out), imported in `src/bootstrap.tsx` right after
+`@org/design-tokens/global.scss`. Set them per theme:
+
+```scss
+:root,
+[data-theme='light'] {
+  --header-bg: #1d4ed8;
+  --header-text: #ffffff;
+  --header-text-muted: #dbeafe;
+  --header-border: #60a5fa;
+  --header-accent: #ffffff;
+}
+
+[data-theme='dark'] {
+  --header-bg: #1e3a8a;
+  --header-text: #ffffff;
+  --header-text-muted: #bfdbfe;
+  --header-border: #3b82f6;
+  --header-accent: #ffffff;
+}
+```
+
+Rules:
+
+- **The header belongs to the shell.** Only the shell sets these tokens; remotes never do
+  (`pnpm check` fails when a remote's source or styles set a `--header-*` colour token). A
+  remote that set them would recolour the shell's header whenever it is loaded. Standalone, a
+  remote shows the default header.
+- **Contrast (WCAG 2.2 AA), both themes:** `--header-text`, `--header-text-muted` and
+  `--header-accent` each at least 4.5:1 on `--header-bg` (the accent is also active-link text,
+  and `--header-bg` is the text colour on the pressed accent button, the same pair); text at
+  least 4.5:1 on the hover tint. The example above: text 6.7:1 (light) / 10.4:1 (dark), muted
+  5.5:1 / 7.3:1, text on the hover tint 5.0:1 / 7.0:1. Setting only `--header-bg` and
+  `--header-text` gives an AA header when that pair passes (on the hover tint too): muted text
+  and accent then use the text colour. The
+  generated `a11y.spec.ts` scans the header in light and dark (signed in and out, Menu open on
+  phones).
+- **Do not target MainLayout's class names** (`.header`, `.menuButton`, …) from a shell. They
+  are CSS Modules classes: the build replaces them with generated names (a hash salted with the
+  app's federation name, different in dev and production, and changing whenever `@org/ui`'s
+  styles change), so a selector on them matches nothing after the next build or in another app,
+  without any error. The tokens are the supported, stable interface; if you need more than
+  colours, ask for a new token or prop in `@org/ui`.
+
 ## Component conventions
 
 - Shared components: `packages/ui/src/components/<Component>/` (`Component.tsx`,
@@ -136,6 +200,8 @@ Target WCAG 2.2 AA: [contracts/a11y-wcag.md](contracts/a11y-wcag.md). UI rules:
 ## Do / don't (for agents)
 
 - Use tokens and `@org/ui` primitives; check both themes.
+- Header colours: only the shell's `src/styles/shell.scss` sets `--header-*`; never style
+  `MainLayout`'s hashed class names.
 - Do not import global styles or set `data-theme` from a remote's exposed module.
 - Do not add a UI kit or icon font without approval.
 - Keep one `<h1>` per page and logical heading order.

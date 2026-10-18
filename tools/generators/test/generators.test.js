@@ -155,6 +155,7 @@ describe('generators', () => {
       'public/index.html',
       'src/main.tsx',
       'src/bootstrap.tsx',
+      'src/styles/shell.scss',
       'src/app/App.tsx',
       'src/app/routes.tsx',
       'src/components/RemoteNav/RemoteNav.tsx',
@@ -172,6 +173,35 @@ describe('generators', () => {
     }
     assert.match(read(root, `${dir}/rspack.config.js`), /createShellConfig/);
     assert.match(read(root, `${dir}/src/bootstrap.tsx`), /registerPwa\(\)/);
+    // shell-owned global styles (header colours): imported right after the design tokens,
+    // with the --header-* tokens as a commented-out example (unset = default header)
+    assert.match(
+      read(root, `${dir}/src/bootstrap.tsx`),
+      /^import '@org\/design-tokens\/global\.scss';\n(?:\/\/.*\n)*import '\.\/styles\/shell\.scss';$/m,
+    );
+    const shellStyles = read(root, `${dir}/src/styles/shell.scss`);
+    for (const token of [
+      '--header-bg',
+      '--header-text',
+      '--header-text-muted',
+      '--header-border',
+      '--header-accent',
+    ]) {
+      assert.match(
+        shellStyles,
+        new RegExp(`^// +${token}: #[0-9a-f]{6};$`, 'm'),
+      );
+    }
+    assert.match(shellStyles, /^\/\/ \[data-theme='dark'\] \{$/m);
+    assert.doesNotMatch(
+      shellStyles,
+      /^[^/\n]*--header-/m,
+      'example stays commented out',
+    );
+    assert.match(
+      shellStyles,
+      /docs\/ui-context\.md "Header colours per shell"/,
+    );
     assert.match(read(root, `${dir}/src/bootstrap.tsx`), /loadMfeManifest/);
     assert.match(
       read(root, `${dir}/src/bootstrap.tsx`),

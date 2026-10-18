@@ -57,6 +57,12 @@ pnpm dev:<zone>
   `features/welcome` (`Welcome`), `features/startup` (`StartupError`). Adapter:
   `features/external` (`ExternalModuleHost`; `utils/vendorConfig.ts`). `pnpm check` keeps it
   that way.
+- Shells get `src/styles/shell.scss`, the shell's own global stylesheet, imported in
+  `src/bootstrap.tsx` right after `@org/design-tokens/global.scss`. It holds the header colour
+  tokens (`--header-bg`, `--header-text`, `--header-text-muted`, `--header-border`,
+  `--header-accent`) per theme, commented out (default header) with a blue example. Remotes do
+  not get one and must not set those tokens (`pnpm check`). See `docs/ui-context.md` "Header
+  colours per shell".
 - Metadata in the generated `package.json`: `nx.tags` (`zone:`, `type:`, `access:`, `kind:`) and
   `mfe` (`port`, `federationName`). `rspack.config.js` reads `mfe` from `package.json`.
 - Dependencies: `catalog:` for third-party packages, `workspace:*` for `@org/*`.

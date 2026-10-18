@@ -267,6 +267,27 @@ describe('check-apps', () => {
       );
       assert.match(text, /HomePage\.tsx imports "@\/features\/staff/);
     });
+
+    it('fails when a remote sets the shell header colour tokens', async () => {
+      const r = await run(validApps(), {
+        ...validRegistries(),
+        // the shell may set them (its src/styles/shell.scss); reading them is fine everywhere
+        'apps/intranet/shell-intranet/src/styles/shell.scss':
+          ':root { --header-bg: #1d4ed8; --header-text: #fff; }\n',
+        [`${staff}/styles/global.scss`]:
+          '.x { color: var(--header-text, red); border: var( --header-border, red); }\n[data-theme=dark] {\n  --header-accent: #fff;\n}\n',
+        [`${staff}/bootstrap.tsx`]:
+          "document.documentElement.style.setProperty('--header-bg', 'red');\n",
+      });
+      assert.deepEqual(rules(r.errors), ['header-tokens', 'header-tokens']);
+      const text = r.errors.map((e) => e.message).join('\n');
+      assert.match(
+        text,
+        /staff\/src\/styles\/global\.scss sets --header-accent/,
+      );
+      assert.match(text, /staff\/src\/bootstrap\.tsx sets --header-bg/);
+      assert.match(text, /only in the shell's src\/styles\/shell\.scss/);
+    });
   });
 
   it('checks shell registries', async () => {
