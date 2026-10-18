@@ -27,28 +27,43 @@ export function remotePage(page: Page, remote: ZoneRemote): Locator {
 }
 
 /**
- * The header nav ("Apps" list). Below 40rem it sits behind a "Menu" disclosure: open it first,
- * so its links are visible and clickable on every viewport.
+ * The header panel (nav, theme toggle, user menu). Below 40rem `MainLayout` folds it behind a
+ * "Menu" button: open it first, so its contents are visible and clickable on every viewport.
+ * No-op on desktop and when it is already open.
  */
-export async function openNav(page: Page): Promise<Locator> {
+export async function openHeaderMenu(page: Page): Promise<Locator> {
   const menu = page.getByRole('button', { name: 'Menu' });
   if (
     (await menu.isVisible()) &&
     (await menu.getAttribute('aria-expanded')) !== 'true'
   ) {
     await menu.click();
+    await expect(menu).toHaveAttribute('aria-expanded', 'true');
   }
-  const nav = page.getByRole('list', { name: 'Apps' });
+  const panel = page.getByTestId('header-panel');
+  await expect(panel).toBeVisible();
+  return panel;
+}
+
+/** The shell's nav ("Apps" list), opened first on phones. It closes again after a navigation. */
+export async function openNav(page: Page): Promise<Locator> {
+  const panel = await openHeaderMenu(page);
+  const nav = panel.getByRole('list', { name: 'Apps' });
   await expect(nav).toBeVisible();
   return nav;
 }
 
-/** Wait until the page stopped loading data (API calls of the features have settled). */
+/**
+ * Wait until the page stopped loading: no network activity for 500 ms, then no loading
+ * indicator (`role="status"` starting with "Loading", `aria-busy="true"`) left. Use it before
+ * link checks and axe scans, so they see the loaded content and not a spinner.
+ */
 export async function settle(page: Page): Promise<void> {
   await page.waitForLoadState('networkidle');
   await expect(
-    page.locator('[role="status"]', { hasText: /^Loading/ }),
+    page.locator('[role="status"]', { hasText: /^\s*Loading/ }),
   ).toHaveCount(0);
+  await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
 }
 
 /** Sign in through the private route's prompt (dev mock: `"auth": { "mock": true }`). */
@@ -57,12 +72,33 @@ export async function signInWithMock(page: Page): Promise<void> {
     .getByTestId('sign-in-prompt')
     .getByRole('button', { name: 'Sign in' })
     .click();
-  await expect(page.getByTestId('user-name')).toBeVisible();
+  await expect(page.getByTestId('sign-in-prompt')).toHaveCount(0);
+  // the user menu is in the header panel (behind "Menu" on phones)
+  await expect(page.getByTestId('user-name')).toBeAttached();
+}
+
+/** Sign out through the user menu (opens the header panel first on phones). */
+export async function signOut(page: Page): Promise<void> {
+  const panel = await openHeaderMenu(page);
+  await panel.getByRole('button', { name: 'Sign out' }).click();
+}
+
+/**
+ * An external adapter's vendor module is mounted: no loading indicator, no fallback, and the
+ * mount container holds content rendered by the vendor (any vendor, any format).
+ */
+export async function expectVendorMounted(container: Locator): Promise<void> {
+  await expect(container.getByTestId('external-module-loading')).toHaveCount(0);
+  await expect(container.getByTestId('remote-fallback')).toHaveCount(0);
+  const root = container.getByTestId('external-module-root');
+  await expect(root).toBeAttached();
+  await expect(root.locator(':scope > *').first()).toBeAttached();
 }
 
 /**
  * The remote finished loading: its page heading is visible, no loading indicator, no
- * RemoteFallback. External adapters on the mock vendor must show the vendor's widget.
+ * RemoteFallback. External adapters must show the vendor's content (the mock vendor's widget
+ * when the dev manifest points at it).
  */
 export async function expectRemoteRendered(
   page: Page,
@@ -74,6 +110,9 @@ export async function expectRemoteRendered(
   ).toBeVisible();
   await expect(container.getByTestId('remote-loading')).toHaveCount(0);
   await expect(container.getByTestId('remote-fallback')).toHaveCount(0);
+  if (remote.kind === 'external') {
+    await expectVendorMounted(container);
+  }
   if (remote.mockVendor) {
     await expect(container.getByTestId('mock-vendor')).toBeVisible();
   }
@@ -110,6 +149,9 @@ export async function openStandalone(
   await page.goto(`${remote.standaloneUrl}${subPath}`);
   await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
   await expect(page.getByTestId('remote-fallback')).toHaveCount(0);
+  if (remote.kind === 'external') {
+    await expectVendorMounted(page.locator('main'));
+  }
   if (remote.mockVendor) {
     await expect(page.getByTestId('mock-vendor')).toBeVisible();
   }

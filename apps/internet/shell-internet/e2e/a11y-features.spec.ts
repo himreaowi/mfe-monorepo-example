@@ -4,7 +4,8 @@ import { openRemote, remotePage, settle, zone } from './helpers';
 
 /**
  * axe (WCAG 2.2 AA) on feature states the generated a11y spec does not reach: detail pages,
- * the payment error and receipt, the saved profile, the open Menu. Light and dark.
+ * the payment error and receipt, the saved profile. Light and dark (the open header
+ * menu is scanned by the generated a11y.spec.ts).
  */
 const remote = (name: string) => zone.remotes.find((r) => r.name === name)!;
 
@@ -43,15 +44,6 @@ const targets: { name: string; open: (page: Page) => Promise<void> }[] = [
       await page.getByRole('radio', { name: /Credit or debit card/ }).check();
       await pay.click();
       await expect(page.getByTestId('bright-receipt')).toBeVisible();
-    },
-  },
-  {
-    name: 'open Menu (375 px)',
-    open: async (page) => {
-      await page.setViewportSize({ width: 375, height: 812 });
-      await page.goto('/');
-      await page.getByRole('button', { name: 'Menu' }).click();
-      await expect(page.getByRole('list', { name: 'Apps' })).toBeVisible();
     },
   },
 ];

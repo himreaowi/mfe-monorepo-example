@@ -1,5 +1,11 @@
 import { expect, test } from '@org/playwright-config/test';
-import { escapeRegExp, openRemote, remotePage, zone } from './helpers';
+import {
+  escapeRegExp,
+  openHeaderMenu,
+  openRemote,
+  remotePage,
+  zone,
+} from './helpers';
 
 const remote = zone.remotes.find((r) => r.name === 'payments')!;
 
@@ -52,9 +58,12 @@ test.describe('Payments (vendor web component, no React)', () => {
     await openRemote(page, remote);
     const element = remotePage(page, remote).locator('bright-checkout');
     await expect(element).toHaveAttribute('data-theme', 'light');
-    await page.getByRole('button', { name: 'Use dark theme' }).click();
+    // theme toggle and user menu sit in the header panel (behind "Menu" at 375 px); the
+    // panel stays open after a button press (only links close it)
+    const header = await openHeaderMenu(page);
+    await header.getByRole('button', { name: 'Use dark theme' }).click();
     await expect(element).toHaveAttribute('data-theme', 'dark');
-    await page.getByRole('button', { name: 'Sign in' }).click();
+    await header.getByRole('button', { name: 'Sign in' }).click();
     await expect(element.getByTestId('bright-checkout')).toContainText(
       'Paying as Dev User (mock)',
     );

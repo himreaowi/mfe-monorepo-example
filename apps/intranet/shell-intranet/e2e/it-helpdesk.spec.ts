@@ -1,5 +1,11 @@
 import { expect, test } from '@org/playwright-config/test';
-import { escapeRegExp, openRemote, remotePage, zone } from './helpers';
+import {
+  escapeRegExp,
+  openHeaderMenu,
+  openRemote,
+  remotePage,
+  zone,
+} from './helpers';
 
 const remote = zone.remotes.find((r) => r.name === 'it-helpdesk')!;
 
@@ -68,7 +74,9 @@ test.describe('IT helpdesk (vendor module, no React)', () => {
       '[data-vendor="acme-service-desk"]',
     );
     await expect(vendor).toHaveAttribute('data-theme', 'light');
-    await page.getByRole('button', { name: 'Use dark theme' }).click();
+    // the theme toggle sits in the header panel (behind "Menu" at 375 px)
+    const header = await openHeaderMenu(page);
+    await header.getByRole('button', { name: 'Use dark theme' }).click();
     await expect(vendor).toHaveAttribute('data-theme', 'dark');
     await expect(vendor.getByTestId('helpdesk-ticket').first()).toBeVisible();
   });

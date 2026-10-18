@@ -55,10 +55,9 @@ test.describe('Staff directory', () => {
 });
 
 test.describe('Staff directory, unknown person', () => {
-  // The API answers 404 on purpose; Chromium logs every 4xx response as a console error (the
-  // message has no URL, so the allowance is scoped to this one test instead).
+  // The API answers 404 on purpose: allow exactly that request.
   test.use({
-    allowedConsoleErrors: [/the server responded with a status of 404/],
+    allowedHttpErrors: [{ url: /\/api\/staff\/s-0000$/, status: 404 }],
   });
 
   test('an unknown id gets a clear page', async ({ page }) => {

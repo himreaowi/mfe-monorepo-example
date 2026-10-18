@@ -1,7 +1,13 @@
 import { expect, test } from '@org/playwright-config/test';
-import { escapeRegExp, expectRemoteRendered, openNav, zone } from './helpers';
+import {
+  escapeRegExp,
+  expectRemoteRendered,
+  openHeaderMenu,
+  openNav,
+  zone,
+} from './helpers';
 
-test.describe('Citizen Portal shell', () => {
+test.describe('Citizen Portal', () => {
   test('home page lists every remote in the nav', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByTestId('shell-welcome')).toBeVisible();
@@ -24,7 +30,7 @@ test.describe('Citizen Portal shell', () => {
       (window as unknown as { __e2eSpa: boolean }).__e2eSpa = true;
     });
     for (const remote of zone.remotes) {
-      // the Menu (375 px) closes after each navigation
+      // on phones the menu closes after each navigation: open it every time
       const nav = await openNav(page);
       await nav.getByRole('link', { name: remote.title, exact: true }).click();
       await expect(page).toHaveURL(new RegExp(`${escapeRegExp(remote.path)}$`));
@@ -56,7 +62,11 @@ test.describe('Citizen Portal shell', () => {
     await page.emulateMedia({ colorScheme: 'light' });
     await page.goto('/');
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
-    await page.getByRole('button', { name: 'Use dark theme' }).click();
+    await (
+      await openHeaderMenu(page)
+    )
+      .getByRole('button', { name: 'Use dark theme' })
+      .click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await page.reload();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
@@ -66,8 +76,64 @@ test.describe('Citizen Portal shell', () => {
       await expectRemoteRendered(page, publicRemote);
       await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     }
-    await page.getByRole('button', { name: 'Use system theme' }).click();
+    await (
+      await openHeaderMenu(page)
+    )
+      .getByRole('button', { name: 'Use system theme' })
+      .click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  });
+
+  test('header: one compact row on phones, Menu disclosure; full row on desktop', async ({
+    page,
+  }, testInfo) => {
+    await page.goto('/');
+    await expect(page.getByTestId('shell-welcome')).toBeVisible();
+    const menu = page.getByRole('button', { name: 'Menu' });
+    const nav = page.getByRole('list', { name: 'Apps' });
+    if (testInfo.project.name !== 'mobile') {
+      await expect(menu).toBeHidden();
+      await expect(nav).toBeVisible();
+      await expect(
+        page.getByRole('button', { name: 'Use dark theme' }),
+      ).toBeVisible();
+      return;
+    }
+    const header = page.locator('header').first();
+    const box = await header.boundingBox();
+    expect(
+      box?.height ?? 0,
+      'collapsed header height at 375 px',
+    ).toBeLessThanOrEqual(64);
+    await expect(menu).toHaveAttribute('aria-expanded', 'false');
+    await expect(nav).toBeHidden();
+    // aria-controls points at the panel
+    expect(await menu.getAttribute('aria-controls')).toBe(
+      await page.getByTestId('header-panel').getAttribute('id'),
+    );
+    // open, Escape closes and returns focus
+    await menu.click();
+    await expect(menu).toHaveAttribute('aria-expanded', 'true');
+    await expect(nav).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(menu).toHaveAttribute('aria-expanded', 'false');
+    await expect(menu).toBeFocused();
+    // a click outside the header (below the open panel) closes it
+    await menu.click();
+    const viewport = page.viewportSize() ?? { width: 375, height: 812 };
+    await page.mouse.click(8, viewport.height - 8);
+    await expect(menu).toHaveAttribute('aria-expanded', 'false');
+    // following a link closes
+    const first = zone.remotes[0];
+    if (first) {
+      await (
+        await openNav(page)
+      )
+        .getByRole('link', { name: first.title, exact: true })
+        .click();
+      await expect(page).toHaveURL(new RegExp(`${escapeRegExp(first.path)}$`));
+      await expect(menu).toHaveAttribute('aria-expanded', 'false');
+    }
   });
 
   test('offline: shows the connection banner', async ({ page, context }) => {

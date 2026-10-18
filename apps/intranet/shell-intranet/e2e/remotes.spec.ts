@@ -3,10 +3,14 @@ import {
   DEEP_LINK,
   escapeRegExp,
   expectRemoteRendered,
+  expectVendorMounted,
+  openHeaderMenu,
+  openNav,
   openRemote,
   remotePage,
   settle,
   signInWithMock,
+  signOut,
   zone,
 } from './helpers';
 
@@ -26,13 +30,14 @@ for (const remote of zone.remotes) {
     if (remote.kind === 'react') {
       test('links inside the remote navigate client-side', async ({ page }) => {
         await openRemote(page, remote);
-        await settle(page); // links of data-driven pages appear after their API call
+        // data-driven pages render their links after the API answered: count only then
+        await settle(page);
         const links = remotePage(page, remote).locator(
           `a[href^="${remote.path}/"]`,
         );
         test.skip(
           (await links.count()) === 0,
-          'the remote has no internal links',
+          `${remote.title} renders no internal links (a[href^="${remote.path}/"]) after loading`,
         );
         const href = (await links.first().getAttribute('href')) ?? '';
         await page.evaluate(() => {
@@ -73,30 +78,48 @@ for (const remote of zone.remotes) {
           true,
         );
 
-        await page.getByRole('button', { name: 'Sign out' }).click();
+        await signOut(page);
         await expect(page.getByTestId('sign-in-prompt')).toBeVisible();
       });
     }
 
     if (remote.kind === 'external') {
-      test('mounts the vendor module; vendor navigation and theme go through the shell', async ({
+      // Works with ANY vendor (mock or real, any format): it only relies on the mount contract.
+      test('mounts the vendor module: vendor content, no fallback, no console errors; unmounts on leave', async ({
         page,
       }) => {
         await openRemote(page, remote);
+        await settle(page);
+        const container = remotePage(page, remote);
+        await expectVendorMounted(container);
+        // console errors / failed requests fail the test (fixture of @org/playwright-config)
+        await (await openNav(page)).getByRole('link', { name: 'Home' }).click();
+        await expect(page.getByTestId('shell-welcome')).toBeVisible();
+        await expect(page.getByTestId('external-module-root')).toHaveCount(0);
+      });
+
+      // Vendor-specific checks, written against tools/mock-vendor's demo widget.
+      test('mock vendor: vendor routing goes through the shell URL, theme reaches the vendor', async ({
+        page,
+      }) => {
         test.skip(
           !remote.mockVendor,
-          'vendor-specific checks are written for the mock vendor',
+          `props.vendor of ${remote.federationName} is not the dev mock vendor (${String(
+            (remote.vendor as { url?: unknown } | undefined)?.url ?? 'no url',
+          )}); add checks for your vendor in a spec of its own`,
         );
+        await openRemote(page, remote);
         const vendor = remotePage(page, remote).getByTestId('mock-vendor');
         await expect(vendor.getByTestId('mock-vendor-path')).toHaveText(
           '(root)',
         );
-        await vendor.getByRole('button', { name: 'View receipt' }).click();
+        await vendor.getByRole('button', { name: 'Open details' }).click();
         await expect(page).toHaveURL(
-          new RegExp(`${escapeRegExp(remote.path)}/receipt/`),
+          new RegExp(`${escapeRegExp(remote.path)}/details/`),
         );
-        await expect(vendor.getByTestId('mock-vendor-receipt')).toBeVisible();
-        await page.getByRole('button', { name: 'Use dark theme' }).click();
+        await expect(vendor.getByTestId('mock-vendor-details')).toBeVisible();
+        const header = await openHeaderMenu(page);
+        await header.getByRole('button', { name: 'Use dark theme' }).click();
         await expect(vendor.getByTestId('mock-vendor-theme')).toHaveText(
           'dark',
         );

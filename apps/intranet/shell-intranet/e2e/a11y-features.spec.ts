@@ -4,7 +4,8 @@ import { openRemote, remotePage, settle, zone } from './helpers';
 
 /**
  * axe (WCAG 2.2 AA) on feature states the generated a11y spec does not reach: detail pages,
- * forms with errors, the open Menu. Light and dark.
+ * forms with errors. Light and dark (the open header
+ * menu is scanned by the generated a11y.spec.ts).
  */
 const remote = (name: string) => zone.remotes.find((r) => r.name === name)!;
 
@@ -37,15 +38,6 @@ const targets: { name: string; open: (page: Page) => Promise<void> }[] = [
   {
     name: 'helpdesk ticket page (vendor)',
     open: (page) => openRemote(page, remote('it-helpdesk'), 'tickets/HD-1040'),
-  },
-  {
-    name: 'open Menu (375 px)',
-    open: async (page) => {
-      await page.setViewportSize({ width: 375, height: 812 });
-      await page.goto('/');
-      await page.getByRole('button', { name: 'Menu' }).click();
-      await expect(page.getByRole('list', { name: 'Apps' })).toBeVisible();
-    },
   },
 ];
 

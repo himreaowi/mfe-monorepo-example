@@ -1,5 +1,5 @@
 import { expect, test } from '@org/playwright-config/test';
-import { remotePage, signInWithMock, zone } from './helpers';
+import { remotePage, signInWithMock, signOut, zone } from './helpers';
 
 const remote = zone.remotes.find((r) => r.name === 'my-profile')!;
 
@@ -49,7 +49,7 @@ test.describe('My profile (private)', () => {
     await expect(page.getByTestId('welcome-user')).toHaveText(
       'Welcome back, Dev User (mock).',
     );
-    await page.getByRole('button', { name: 'Sign out' }).click();
+    await signOut(page); // user menu: in the header panel (behind "Menu" at 375 px)
     await page.goto(remote.path);
     await expect(page.getByTestId('sign-in-prompt')).toBeVisible();
   });
