@@ -3,7 +3,6 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
 import { Demo } from './Demo';
-import { DemoDetails } from './DemoDetails';
 
 describe('Demo', () => {
   it('standalone defaults: standalone badge, links from /', () => {
@@ -55,19 +54,5 @@ describe('Demo', () => {
     );
     await userEvent.click(screen.getByRole('button', { name: /clicked 0/i }));
     expect(screen.getByRole('button', { name: /clicked 1/i })).toBeInTheDocument();
-  });
-
-  it('details page shows the base path and links back', () => {
-    render(
-      <MemoryRouter>
-        <HostPropsProvider value={{ embedded: true, basePath: '/apps/x' }}>
-          <DemoDetails />
-        </HostPropsProvider>
-      </MemoryRouter>,
-    );
-    expect(screen.getByTestId('demo-base-path')).toHaveTextContent('/apps/x');
-    expect(
-      screen.getByRole('link', { name: 'Back to overview' }),
-    ).toHaveAttribute('href', '/apps/x');
   });
 });

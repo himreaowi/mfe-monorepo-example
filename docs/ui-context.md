@@ -61,7 +61,9 @@ _TODO: product-specific theme UX (e.g. high-contrast theme), if any._
 
 - Shared components: `packages/ui/src/components/<Component>/` (`Component.tsx`,
   `Component.module.scss`, `types.ts`, `Component.test.tsx`, `index.ts`). App-only components:
-  the app's `src/components/<Component>/`. Feature UI: `src/features/<name>/`.
+  the app's `src/components/<Component>/`. Feature UI: `src/features/<name>/components/<Component>/`,
+  same files (one folder per component, its own `.module.scss`, never shared; see
+  [coding-conventions.md](coding-conventions.md#one-folder-per-component)).
 - Composition first: `children` / slots and small hooks over boolean-prop sprawl.
 - No third-party component library by default. Adding one is a tier decision (1 if it holds
   context or theme, 2 if shared) and a platform team review.

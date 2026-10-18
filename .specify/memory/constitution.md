@@ -107,8 +107,9 @@ single faulty or compromised module from reaching user sessions.
 - Shared components, tokens and theme live in `packages/ui` and `packages/design-tokens`;
   apps consume `var(--…)` tokens instead of hardcoded colours and spacing.
 - Prefer composition (children, slots, small hooks) over boolean-prop sprawl. No Atomic Design
-  folder taxonomy; shared components at `components/<Component>/`, feature UI under
-  `features/<name>/`.
+  folder taxonomy; one folder per component (`<Component>.tsx`, own `.module.scss`, test,
+  `index.ts`): shared components at `components/<Component>/`, feature UI under
+  `features/<name>/components/<Component>/`.
 - The shell owns the document (global styles, theme attribute, service worker). Remotes never
   import global styles or register a service worker from their exposed module.
 
@@ -152,7 +153,8 @@ apps/<zone>/<name>/src/
 ├── main.tsx          # import('./bootstrap') (MF negotiates singletons first)
 ├── bootstrap.tsx     # shell: global styles, PWA, manifest, render; remote: standalone only
 ├── app/              # providers, routes, registry (shell) / RemoteApp, apps (remote)
-├── features/<name>/  # domain modules with a public index.ts (api/, hooks/, types/)
+├── features/<name>/  # domain modules with a public index.ts (api/, hooks/, types/, utils/,
+│                     #   components/<Component>/ one folder per component, __fixtures__/)
 ├── pages/            # route-level screens composing features
 ├── layouts/          # chrome
 ├── components/       # shared UI of this app, one folder per component

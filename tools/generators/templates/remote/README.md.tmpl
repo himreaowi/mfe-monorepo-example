@@ -40,7 +40,7 @@ features:
 | client (`@org/http-client`)            | `src/services/http.ts` (`useApiClient()`)                  |
 | requests, response validation, errors  | `src/features/demo/api/itemsApi.ts` (+ test with a fake fetch) |
 | state (loading / error / data, abort)  | `src/features/demo/hooks/useItems.ts`, `useCreateItem.ts`  |
-| UI                                     | `src/features/demo/components/DemoItems.tsx`, `AddItemForm.tsx` (validate on submit, error summary, server 422 field errors) |
+| UI                                     | `src/features/demo/components/DemoItems/`, `AddItemForm/` (validate on submit, error summary, server 422 field errors) |
 
 ## Layout
 
@@ -49,10 +49,18 @@ src/
   main.tsx            import('./bootstrap')
   bootstrap.tsx       standalone only: global styles + <StandaloneApp />
   app/                RemoteApp (exposed), apps (createRemoteApp), routes, standaloneProps
-  components/         ModeBadge
+  components/         ModeBadge/
   features/demo/      sample feature (host props, counter, links, items from the API + form)
+    api/ hooks/ types/ utils/
+    components/       one folder per component: Demo/, DemoDetails/, DemoItems/, AddItemForm/
+                      (<Name>.tsx, <Name>.module.scss, <Name>.test.tsx, index.ts)
+    index.ts          public API (Demo, DemoDetails)
   layouts/            StandaloneLayout (MainLayout chrome, standalone only)
   pages/              OverviewPage, DetailsPage, NotFoundPage
   core/constants/     app, routePaths, apiRoutes
   services/           http client (base URL from host settings)
 ```
+
+One folder per component, its own CSS module (never shared), a test for every component, shared
+test data in `features/<feature>/__fixtures__/`: see the repo's `docs/coding-conventions.md`
+("One folder per component"); `pnpm check` reports violations.

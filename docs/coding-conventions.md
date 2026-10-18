@@ -38,9 +38,9 @@ Hard rules (enforced by `pnpm check` and ESLint, see [guardrails.md](guardrails.
 | `src/main.tsx`         | `import('./bootstrap')` only (Module Federation negotiates the shared singletons first)             |
 | `src/bootstrap.tsx`    | Shell: global styles, PWA, manifest, auth client, render. Remote: standalone entry only             |
 | `src/app/`             | Wiring: providers, routes, registry (shell); `RemoteApp` (exposed `./App`), `apps`, routes (remote) |
-| `src/features/<name>/` | Domain UI + `api/` / `hooks/` / `types/`, public `index.ts`                                         |
+| `src/features/<name>/` | Domain UI (`components/<Name>/`) + `api/` / `hooks/` / `types/` / `utils/`, public `index.ts`       |
 | `src/pages/`           | Thin route containers that compose features                                                         |
-| `src/components/`      | UI primitives of this app (shared ones go to `@org/ui`)                                             |
+| `src/components/`      | UI primitives of this app, one folder per component (shared ones go to `@org/ui`)                   |
 | `src/layouts/`         | Chrome (`ShellLayout`, `StandaloneLayout`)                                                          |
 | `src/core/`            | Constants (`routePaths`, `apiRoutes`, `app`), types, small utils (no parallel `lib/`)               |
 | `src/services/`        | App-wide infra (`http` client)                                                                      |
@@ -50,6 +50,62 @@ core holds constants, services own HTTP.
 
 New capability: `features/<name>/` (types → api → hooks → UI) → thin `pages/` entry → route in
 `app/routes.tsx` using `routePaths`.
+
+## One folder per component
+
+Every component of a feature gets its own folder under `components/`, in every app (shells,
+remotes, external adapters). The app's own `src/components/` follows the same rule and naming.
+
+```
+src/features/<feature>/
+  api/  hooks/  types/  utils/          request functions, state hooks, types, pure helpers
+  components/
+    <ComponentName>/
+      <ComponentName>.tsx
+      <ComponentName>.module.scss       only if it has styles; never shared between components
+      <ComponentName>.test.tsx          every component has a test
+      index.ts                          export { ComponentName } from './ComponentName';
+      types.ts                          optional: props types, if non-trivial
+      <SubComponent>.tsx                optional: private parts used only by this component
+  __fixtures__/                         test data shared by several tests (or utils/testData.ts)
+  index.ts                              the feature's public API
+```
+
+Why:
+
+- **Co-located styles and tests**: a component's markup, styles and test move, change and get
+  deleted together. No `Feature.module.scss` that every component imports, where nobody knows
+  which rule is still used.
+- **Missing tests are visible**: a folder without `<Name>.test.tsx` stands out in review (and
+  `pnpm check` reports it, rule `component-test`).
+- **Scales with sub-components**: when a component grows, its private parts (`<SubComponent>.tsx`)
+  go into its folder instead of crowding `components/`; only `index.ts` is public.
+
+Rules:
+
+- Import a component through its folder (`'../StaffCard'`, `'./components/StaffCard'`), not its
+  file. Other features and pages import the feature's `index.ts` only.
+- A `.module.scss` is imported only from its own folder (the component and its private
+  sub-parts). Shared values come from tokens (`var(--…)` from `@org/design-tokens`). When two
+  components really share a style, decide case by case: duplicate a few declarations (simplest,
+  usually right), extract a small shared component that owns the style (a reused card, a
+  status message), or put a mixin in a Sass partial (`_<name>.scss` next to the feature's
+  components, `@use`d by each module). Never let a component's styles reach into a child
+  component's markup (`.panel a { … }` styles the children too and depends on CSS order).
+- `pages/` and `layouts/` already use one folder per page/layout (`HomePage/HomePage.tsx` +
+  `index.ts`); they have no test requirement of their own (routes and app tests cover them).
+- **Where test data goes**: data used by one test stays in that test file. Data shared by several
+  tests of a feature goes to `features/<feature>/__fixtures__/<name>.ts` (or
+  `utils/testData.ts`), never inside `components/` (a file there is not a component). Jest only
+  runs `*.test.ts(x)`, so fixtures are never collected as tests; production code never imports
+  them.
+- Non-component modules of a feature go to `api/` (requests, response normalisation), `hooks/`,
+  `types/` or `utils/` (pure helpers such as validation or formatting), with their tests next to
+  them.
+
+`pnpm check` enforces the layout (rules `component-folder`, `component-test`, `component-style`,
+[guardrails.md](guardrails.md)). The generated apps follow it: the remote's `features/demo`, the
+shell's `features/welcome` and `features/startup`, the adapter's `features/external`.
 
 ## Remotes
 
@@ -144,30 +200,35 @@ New capability: `features/<name>/` (types → api → hooks → UI) → thin `pa
 Order: React → external packages → `@org/*` → `@/…` → relative → styles. Prettier and ESLint
 handle formatting.
 
-| Kind         | Convention                 | Example                      |
-| ------------ | -------------------------- | ---------------------------- |
-| Component    | PascalCase                 | `LeaveForm.tsx`              |
-| Styles       | same base + `.module.scss` | `LeaveForm.module.scss`      |
-| Hook         | `use` + camelCase          | `useLeaveBalance.ts`         |
-| API function | camelCase verb             | `getLeaveBalance.ts`         |
-| Types        | under `types/`             | `types/leave.ts`             |
-| Unit test    | co-located                 | `LeaveForm.test.tsx`         |
-| e2e spec     | shell `e2e/`               | `e2e/leave-requests.spec.ts` |
+| Kind         | Convention                           | Example                                      |
+| ------------ | ------------------------------------ | -------------------------------------------- |
+| Component    | PascalCase, in a folder of that name | `components/LeaveForm/LeaveForm.tsx`         |
+| Styles       | same base + `.module.scss`           | `components/LeaveForm/LeaveForm.module.scss` |
+| Hook         | `use` + camelCase                    | `hooks/useLeaveBalance.ts`                   |
+| API function | camelCase verb                       | `api/leaveApi.ts` (`getLeaveBalance`)        |
+| Types        | under `types/`                       | `types/leave.ts`                             |
+| Helpers      | camelCase, under `utils/`            | `utils/validateLeave.ts`                     |
+| Unit test    | co-located                           | `components/LeaveForm/LeaveForm.test.tsx`    |
+| Test data    | feature `__fixtures__/`              | `__fixtures__/leave.ts`                      |
+| e2e spec     | shell `e2e/`                         | `e2e/leave-requests.spec.ts`                 |
 
 Package names: apps `@org/<zone>-<name>` / `@org/shell-<zone>` (generated); shared packages
 `@org/<name>` (never with an app prefix).
 
 ## Styling
 
-- CSS Modules (`*.module.scss`) next to the component; tokens (`var(--…)`) for colours, spacing,
-  radius, shadow. No hardcoded colours on themeable surfaces; both themes must pass contrast.
+- CSS Modules (`*.module.scss`) in the component's folder, one per component, never shared
+  ([One folder per component](#one-folder-per-component)); tokens (`var(--…)`) for colours,
+  spacing, radius, shadow. No hardcoded colours on themeable surfaces; both themes must pass contrast.
 - Global styles only in the shell (and a remote's standalone bootstrap).
 - See [ui-context.md](ui-context.md).
 
 ## Testing
 
-- Unit: Jest + Testing Library, co-located; assert user-visible behaviour; mock boundaries
-  (`api/`, `@org/mf-runtime`), not DOM internals.
+- Unit: Jest + Testing Library, co-located; every component has `<Name>.test.tsx`; assert
+  user-visible behaviour (data, empty/loading/error states, accessible names), not snapshots;
+  mock boundaries (`api/`, `@org/mf-runtime`), not DOM internals. Shared test data in the
+  feature's `__fixtures__/`.
 - e2e: the zone suite in the shell; feature flows as new specs there.
 - Details and commands: [testing.md](testing.md).
 
@@ -186,5 +247,7 @@ Package names: apps `@org/<zone>-<name>` / `@org/shell-<zone>` (generated); shar
 - `dangerouslySetInnerHTML` with untrusted content; `eval`/`new Function`.
 - Broad `console.log` in production paths.
 - Undocumented globals for host/embed detection (use `useHostProps().embedded`).
+- One `.module.scss` shared by several components, component files loose in `components/` or a
+  feature root, a component without a test.
 - Expanding scope beyond the requested change; prefer small, incremental changes.
 - Commits only when asked; never commit secrets.

@@ -21,8 +21,12 @@ export default createJestConfig({ rootDir: import.meta.dirname });
 `@org/jest-config` sets jsdom, the SWC transform (TS/TSX and the ESM-only `react-router`),
 `identity-obj-proxy` for (S)CSS modules, the `@/` alias, `jest-dom` matchers, `matchMedia` and
 `TextEncoder`. It caps `maxWorkers` at `50%` (Nx runs several Jest processes at once) and sets
-`testTimeout` to 15 s; keep both. Tests live next to the code (`Foo.tsx` + `Foo.test.tsx`), only
-under `src/` (Jest `roots`).
+`testTimeout` to 15 s; keep both. Tests live next to the code (`Foo/Foo.tsx` +
+`Foo/Foo.test.tsx`), only under `src/` (Jest `roots`). **Every component has a test**
+(`pnpm check` rule `component-test`, [coding-conventions.md](coding-conventions.md#one-folder-per-component)):
+what it renders from its data, its empty / loading / error states where it has them, and the
+accessible names users and assistive technology rely on; no snapshot tests. Test data shared by
+several tests of a feature goes to `features/<feature>/__fixtures__/`.
 
 What the generated apps test, as examples to follow:
 
@@ -30,7 +34,7 @@ What the generated apps test, as examples to follow:
 | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Shell            | routes (home, `/<remote>/*` mounts `<RemoteApp>`, 404) with `@org/mf-runtime` mocked; `RemotePage` (private remote not rendered before sign-in, `user` host prop); nav; startup error; http client                    |
 | Remote           | `EmbeddedApp` below a shell-like splat route (host props, links get the mount path) and `StandaloneApp` (mock host props, own chrome); the exposed module's import graph never reaches global styles or `registerPwa` |
-| External adapter | `ExternalModuleHost` with a fake `load` (mount, update on theme/path change, unmount, `onNavigate` through the router, errors → fallback); `vendorConfig` dev fallback                                                |
+| External adapter | `ExternalModuleHost` with `<ExternalModule>` stubbed (manifest config, sub-path, theme, minimal user, `onNavigate` through the router, vendor events); `utils/vendorConfig` dev fallback                              |
 
 Rules:
 

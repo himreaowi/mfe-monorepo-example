@@ -190,6 +190,85 @@ describe('check-apps', () => {
     assert.match(r.errors[0].message, /<RemoteApp>/);
   });
 
+  describe('component layout (one folder per component)', () => {
+    const staff = 'apps/intranet/staff/src';
+    const ok = (/** @type {string} */ dir, /** @type {string} */ name) => ({
+      [`${dir}/${name}/${name}.tsx`]: `import styles from './${name}.module.scss';\nexport const ${name} = () => styles;\n`,
+      [`${dir}/${name}/${name}.module.scss`]: '.a { color: red; }\n',
+      [`${dir}/${name}/${name}.test.tsx`]: '',
+      [`${dir}/${name}/index.ts`]: `export { ${name} } from './${name}';\n`,
+    });
+
+    it('passes on folder-per-component features and app components', async () => {
+      const r = await run(validApps(), {
+        ...validRegistries(),
+        ...ok(`${staff}/features/staff/components`, 'StaffCard'),
+        ...ok(`${staff}/features/staff/components`, 'StaffSearch'),
+        ...ok(`${staff}/components`, 'Badge'),
+        // a private sub-part may use its component's styles (same folder)
+        [`${staff}/features/staff/components/StaffSearch/SearchField.tsx`]:
+          "import styles from './StaffSearch.module.scss';\nexport const F = () => styles;\n",
+        [`${staff}/features/staff/components/index.ts`]:
+          "export * from './StaffCard';\n",
+        [`${staff}/features/staff/index.ts`]:
+          "export { StaffSearch } from './components/StaffSearch';\n",
+        [`${staff}/features/staff/__fixtures__/staff.ts`]:
+          'export const a = 1;\n',
+        [`${staff}/features/staff/utils/format.ts`]: 'export const b = 1;\n',
+        [`${staff}/pages/HomePage/HomePage.tsx`]:
+          "import styles from './HomePage.module.scss';\nexport const P = () => styles;\n",
+      });
+      assert.deepEqual(r.errors, []);
+    });
+
+    it('fails on loose component files, misnamed folders and missing index/test', async () => {
+      const r = await run(validApps(), {
+        ...validRegistries(),
+        [`${staff}/features/staff/StaffCard.tsx`]: '',
+        [`${staff}/features/staff/components/StaffList.tsx`]: '',
+        [`${staff}/features/staff/components/Staff.module.scss`]: '',
+        [`${staff}/features/staff/components/testData.ts`]: '',
+        [`${staff}/features/staff/components/__fixtures__/a.ts`]: '',
+        [`${staff}/features/staff/components/card/Card.tsx`]: '',
+        [`${staff}/features/staff/components/Detail/Detail.tsx`]: '',
+        [`${staff}/components/Badge.tsx`]: '',
+      });
+      assert.deepEqual(rules(r.errors).sort(), [
+        ...Array(8).fill('component-folder'),
+        'component-test',
+      ]);
+      const text = r.errors.map((e) => e.message).join('\n');
+      assert.match(text, /move it to components\/StaffCard\/StaffCard\.tsx/);
+      assert.match(
+        text,
+        /apps\/intranet\/staff\/src\/features\/staff\/components\/StaffList\/StaffList\.tsx/,
+      );
+      assert.match(text, /__fixtures__\/ \(or utils\/\)/);
+      assert.match(text, /components\/Detail\/: missing index\.ts/);
+      assert.match(text, /components\/Detail\/: missing Detail\.test\.tsx/);
+      assert.match(text, /src\/components\/Badge\/Badge\.tsx/);
+    });
+
+    it('fails when a CSS module is imported from another folder (shared styles)', async () => {
+      const r = await run(validApps(), {
+        ...validRegistries(),
+        ...ok(`${staff}/features/staff/components`, 'StaffCard'),
+        ...ok(`${staff}/features/staff/components`, 'StaffDetail'),
+        [`${staff}/features/staff/components/StaffDetail/StaffDetail.tsx`]:
+          "import styles from '../StaffCard/StaffCard.module.scss';\nexport const D = () => styles;\n",
+        [`${staff}/pages/HomePage/HomePage.tsx`]:
+          "import s from '@/features/staff/components/StaffCard/StaffCard.module.scss';\nexport const P = () => s;\n",
+      });
+      assert.deepEqual(rules(r.errors), ['component-style', 'component-style']);
+      const text = r.errors.map((e) => e.message).join('\n');
+      assert.match(
+        text,
+        /StaffDetail\.module\.scss with only the rules it uses/,
+      );
+      assert.match(text, /HomePage\.tsx imports "@\/features\/staff/);
+    });
+  });
+
   it('checks shell registries', async () => {
     const files = validRegistries();
     files['apps/intranet/shell-intranet/remotes.json'] = {

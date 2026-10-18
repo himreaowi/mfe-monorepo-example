@@ -2,7 +2,7 @@ import {
   ITEM_NAME_MAX_LENGTH,
   type ItemDraft,
   type ItemFieldErrors,
-} from './types/item';
+} from '../types/item';
 
 /** Client-side checks, run on submit. The server stays the authority (422). */
 export function validateItemDraft(draft: ItemDraft): ItemFieldErrors {

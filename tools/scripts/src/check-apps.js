@@ -10,6 +10,9 @@
  * - each shell's remotes.json / mfe-manifest.dev.json match the remotes of its zone
  * - the dev tool servers declared in the root package.json (`mfe.tools`) have unique offsets
  *   inside the zones' tools range and name existing workspace packages
+ * - component layout (docs/coding-conventions.md "One folder per component"): components live in
+ *   `features/<feature>/components/<Name>/` or `src/components/<Name>/` with `<Name>.tsx`,
+ *   `<Name>.test.tsx` and `index.ts`; a CSS module is imported only from its own folder
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -421,10 +424,129 @@ export async function checkApps({ root }) {
     }
   }
 
+  // --- component layout (one folder per component) -------------------------------------------
+  for (const info of infos) {
+    checkComponentLayout(root, path.join(root, info.app.dir), err);
+  }
+
   // --- dev tool servers (root package.json mfe.tools) ---------------------------------------
   checkTools(root, err);
 
   return { errors, warnings };
+}
+
+const CSS_MODULE = /\.module\.s?css$/;
+const COMPONENT_NAME = /^[A-Z][A-Za-z0-9]*$/;
+const LAYOUT_DOC = 'docs/coding-conventions.md ("One folder per component")';
+
+/**
+ * @param {string} dir
+ * @returns {fs.Dirent[]}
+ */
+function entries(dir) {
+  return fs.existsSync(dir) ? fs.readdirSync(dir, { withFileTypes: true }) : [];
+}
+
+/**
+ * One folder per component: `components/<Name>/{<Name>.tsx, <Name>.test.tsx, index.ts}` inside
+ * `src/components/` and every `src/features/<feature>/components/`; no component or style files
+ * loose in a feature root or a components/ folder; a CSS module is private to its folder (no
+ * styles shared between components through one .module.scss).
+ * @param {string} root
+ * @param {string} appDir absolute
+ * @param {(rule: string, message: string) => void} err
+ */
+function checkComponentLayout(root, appDir, err) {
+  const src = path.join(appDir, 'src');
+  const rel = (/** @type {string} */ file) =>
+    path.relative(root, file).split(path.sep).join('/');
+  /** @type {string[]} */
+  const componentDirs = [path.join(src, 'components')];
+  for (const feature of entries(path.join(src, 'features'))) {
+    if (!feature.isDirectory()) continue;
+    const featureDir = path.join(src, 'features', feature.name);
+    componentDirs.push(path.join(featureDir, 'components'));
+    for (const file of entries(featureDir)) {
+      if (
+        file.isFile() &&
+        /\.(tsx|s?css)$/.test(file.name) &&
+        !/^index\.tsx$/.test(file.name)
+      ) {
+        const base = file.name.replace(/\.(test\.)?tsx$|\.module\.s?css$/, '');
+        err(
+          'component-folder',
+          `${rel(path.join(featureDir, file.name))}: components and their styles live in features/${feature.name}/components/<Name>/ (move it to components/${base}/${file.name}). The feature root keeps only api/, hooks/, types/, utils/, components/ and index.ts. See ${LAYOUT_DOC}.`,
+        );
+      }
+    }
+  }
+  for (const dir of componentDirs) {
+    for (const item of entries(dir)) {
+      const where = rel(path.join(dir, item.name));
+      if (item.isFile() && /^index\.tsx?$/.test(item.name)) continue; // optional barrel
+      if (item.isFile()) {
+        const base = item.name.replace(
+          /\.(test\.)?[jt]sx?$|\.module\.s?css$|\.s?css$/,
+          '',
+        );
+        err(
+          'component-folder',
+          `${where}: one folder per component; move it to ${rel(dir)}/${base}/${item.name} (with ${base}.test.tsx and an index.ts re-export). Shared test data goes to the feature's __fixtures__/. See ${LAYOUT_DOC}.`,
+        );
+        continue;
+      }
+      if (!item.isDirectory()) continue;
+      const name = item.name;
+      const folder = path.join(dir, name);
+      if (name.startsWith('__')) {
+        err(
+          'component-folder',
+          `${where}/: test data and helpers shared by several components go to the feature's __fixtures__/ (or utils/), not inside components/. See ${LAYOUT_DOC}.`,
+        );
+        continue;
+      }
+      const has = (/** @type {string} */ f) =>
+        fs.existsSync(path.join(folder, f));
+      if (!COMPONENT_NAME.test(name) || !has(`${name}.tsx`)) {
+        err(
+          'component-folder',
+          `${where}/: a component folder is named after its component (PascalCase) and contains ${name}.tsx. See ${LAYOUT_DOC}.`,
+        );
+        continue;
+      }
+      if (!has('index.ts') && !has('index.tsx')) {
+        err(
+          'component-folder',
+          `${where}/: missing index.ts (export { ${name} } from './${name}';). Import the component through its folder.`,
+        );
+      }
+      if (!has(`${name}.test.tsx`)) {
+        err(
+          'component-test',
+          `${where}/: missing ${name}.test.tsx. Every component has a co-located unit test (docs/testing.md).`,
+        );
+      }
+    }
+  }
+
+  // CSS modules are private to their folder
+  for (const file of sourceFiles(appDir)) {
+    const code = fs.readFileSync(file, 'utf8');
+    for (const match of code.matchAll(IMPORT_RE)) {
+      const spec = match[1];
+      if (!CSS_MODULE.test(spec)) continue;
+      let resolved;
+      if (spec.startsWith('@/')) resolved = path.join(src, spec.slice(2));
+      else if (spec.startsWith('.')) {
+        resolved = path.resolve(path.dirname(file), spec);
+      } else continue;
+      if (path.dirname(resolved) === path.dirname(file)) continue;
+      err(
+        'component-style',
+        `${rel(file)} imports "${spec}" from another folder. A CSS module belongs to the component in its folder and is never shared: give this component its own ${path.basename(file).replace(/\.[jt]sx?$/, '')}.module.scss with only the rules it uses. Shared values come from tokens (var(--…)); a style two components really share becomes a small shared component or a Sass partial (_name.scss, @use). See ${LAYOUT_DOC}.`,
+      );
+    }
+  }
 }
 
 /** Ports a tool offset maps to, in every zone (e.g. "3192 / 3292"). */

@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Button } from '@org/ui';
 import { FEDERATION_NAME } from '@/core/constants/app';
-import { useCreateItem } from '../hooks/useCreateItem';
-import type { Item, ItemFieldErrors } from '../types/item';
-import { validateItemDraft } from '../validation';
-import styles from '../Demo.module.scss';
+import { useCreateItem } from '../../hooks/useCreateItem';
+import type { Item, ItemFieldErrors } from '../../types/item';
+import { validateItemDraft } from '../../utils/validation';
+import styles from './AddItemForm.module.scss';
 
 const NAME_ID = `${FEDERATION_NAME}-item-name`;
 const NAME_ERROR_ID = `${NAME_ID}-error`;

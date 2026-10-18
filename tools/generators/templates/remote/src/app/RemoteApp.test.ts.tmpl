@@ -3,10 +3,12 @@ import path from 'node:path';
 
 /**
  * The exposed module must not pull in global styles or the service worker: the shell owns the
- * page (see @org/ui ThemeProvider docs). Walks the relative/alias import graph from the expose.
+ * page (see @org/ui ThemeProvider docs). Walks the relative/alias import graph from the expose,
+ * through each component folder's index.ts, and also checks the CSS modules it reaches.
  */
 const SRC = path.join(__dirname, '..');
 const FORBIDDEN = [/@org\/design-tokens\/global\.scss/, /registerPwa/];
+const COMPONENT_FILE = /[\\/]features[\\/][^\\/]+[\\/]components[\\/][^\\/]+[\\/][^\\/]+\.tsx$/;
 
 function resolveLocal(from: string, spec: string): string | null {
   let base: string;
@@ -42,11 +44,14 @@ describe('exposed module', () => {
           match: false,
         });
       }
+      if (!/\.tsx?$/.test(file)) continue; // a CSS module: checked, not walked
       for (const [, spec] of code.matchAll(/from\s+['"]([^'"]+)['"]/g)) {
         const next = resolveLocal(file, spec);
-        if (next && /\.tsx?$/.test(next)) queue.push(next);
+        if (next && /\.(tsx?|scss)$/.test(next)) queue.push(next);
       }
     }
     expect(seen.size).toBeGreaterThan(3);
+    // the walk reached the feature components (features/<name>/components/<Name>/<Name>.tsx)
+    expect([...seen].some((file) => COMPONENT_FILE.test(file))).toBe(true);
   });
 });
