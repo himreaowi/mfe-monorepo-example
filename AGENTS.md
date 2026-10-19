@@ -16,7 +16,7 @@ Instructions for AI coding agents (and humans) working in this monorepo. Details
 
 ## Must follow
 
-- Create apps only with `pnpm gen:shell <zone> [--layout top|side]` / `pnpm gen:remote <zone> <name> [--private]
+- Create apps only with `pnpm gen:shell <zone> [--layout top|side]` (`--layout`: starter layout copied into the shell) / `pnpm gen:remote <zone> <name> [--private]
 [--external [--vendor-format esm|web-component|script]] [--title "<text>"]`, then
   `pnpm install`. Never copy an app folder.
 - A shell never imports a remote; a remote never imports another remote or a shell; zones
@@ -39,7 +39,11 @@ Instructions for AI coding agents (and humans) working in this monorepo. Details
   ([docs/coding-conventions.md](docs/coding-conventions.md#one-folder-per-component)).
   `pnpm check` reports violations.
 - Tokens (`var(--…)`) over hardcoded colours/spacing; WCAG 2.2 AA in light and dark; works at
-  375 px (`MainLayout` keeps the header one row and collapses it when it does not fit; no per-app menus).
+  375 px (the shell's own `src/layouts/ShellLayout` keeps the header one row and collapses it when
+  it does not fit, with `useFitLayout` / `useMenuDisclosure` from `@org/ui`; remotes build no menus).
+- The shell owns its layout: restyle or restructure it in `src/layouts/ShellLayout/` (colours in
+  `ShellLayout.module.scss`), never by adding options to `@org/ui` (a change there rebuilds every
+  app). Remotes never set page-wide custom properties (`:root`, `html`, `[data-theme]`).
 - Forms validate on submit with an error summary + field errors; submit is disabled only while
   sending ([docs/coding-conventions.md](docs/coding-conventions.md)).
 - Dev ports: apps 3100–3189 / 3200–3289; 3190–3199 / 3290–3299 are the zones' dev tools (mock

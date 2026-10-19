@@ -1,5 +1,5 @@
 import { expect, test } from '@org/playwright-config/test';
-import { DEEP_LINK, openHeaderMenu, openStandalone, zone } from './helpers';
+import { DEEP_LINK, openStandalone, zone } from './helpers';
 
 // Every remote also runs on its own dev server with mock host props (`pnpm dev` in its folder).
 for (const remote of zone.remotes) {
@@ -7,11 +7,10 @@ for (const remote of zone.remotes) {
     page,
   }) => {
     await openStandalone(page, remote);
-    // standalone = own chrome (MainLayout, Menu on phones) and own document theme
+    // standalone = own chrome (the remote's StandaloneLayout: header with a theme toggle) and
+    // own document theme
     await expect(
-      (await openHeaderMenu(page)).getByRole('button', {
-        name: 'Use dark theme',
-      }),
+      page.getByRole('banner').getByRole('button', { name: 'Use dark theme' }),
     ).toBeVisible();
     await expect(page.locator('html')).toHaveAttribute(
       'data-theme',

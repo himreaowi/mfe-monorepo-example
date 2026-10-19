@@ -19,8 +19,9 @@ const authClient = await loadAuthClient(manifest.auth); // AuthClient | null
   <BrowserRouter>…</BrowserRouter>
 </AuthProvider>
 
-// header
-<MainLayout headerActions={<UserMenu />} />
+// header actions in the shell's own layout (src/layouts/ShellLayout)
+<ThemeToggle />
+<UserMenu />
 
 // route of an access:private remote
 <RequireAuth title="Sign in to use My Profile">

@@ -451,7 +451,7 @@ Production builds extract CSS (`CssExtractRspackPlugin`) so the CSP can drop
 served by a Node server that sends the headers rendered from `deploy/nginx` (CSP without
 `'unsafe-inline'`, CORS allow-list, caching) on five localhost origins, in headless Chromium:
 zero `securitypolicyviolation` events, no `<style>` element ever inserted, shell + remotes +
-vendor styled, light/dark and `--header-*` tokens working, no duplicate `<link>`s after
+vendor styled, light/dark and per-shell header colours working, no duplicate `<link>`s after
 navigating back and forth, a lazy route's CSS loaded before it rendered, and a remote whose CSS
 answered 503 showed `RemoteFallback` (then rendered styled after "Try again").
 

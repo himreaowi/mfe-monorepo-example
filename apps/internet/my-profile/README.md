@@ -43,7 +43,7 @@ src/
   app/                RemoteApp (exposed), apps (createRemoteApp), routes, standaloneProps
   features/profile/   api/, hooks/, types/, __fixtures__/, components/ (one folder per
                       component: MyProfile/, ProfileDetails/, PreferencesForm/)
-  layouts/            StandaloneLayout (MainLayout chrome, standalone only)
+  layouts/            StandaloneLayout/ (own simple chrome, standalone only)
   pages/              OverviewPage, DetailsPage, NotFoundPage
   core/constants/     app, routePaths, apiRoutes
   services/           http client (base URL from host settings)

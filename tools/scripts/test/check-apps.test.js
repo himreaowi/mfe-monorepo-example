@@ -205,6 +205,9 @@ describe('check-apps', () => {
         ...ok(`${staff}/features/staff/components`, 'StaffCard'),
         ...ok(`${staff}/features/staff/components`, 'StaffSearch'),
         ...ok(`${staff}/components`, 'Badge'),
+        // layouts follow the same rule (a remote's StandaloneLayout, the shell's ShellLayout)
+        ...ok(`${staff}/layouts`, 'StandaloneLayout'),
+        ...ok('apps/intranet/shell-intranet/src/layouts', 'ShellLayout'),
         // a private sub-part may use its component's styles (same folder)
         [`${staff}/features/staff/components/StaffSearch/SearchField.tsx`]:
           "import styles from './StaffSearch.module.scss';\nexport const F = () => styles;\n",
@@ -232,9 +235,14 @@ describe('check-apps', () => {
         [`${staff}/features/staff/components/card/Card.tsx`]: '',
         [`${staff}/features/staff/components/Detail/Detail.tsx`]: '',
         [`${staff}/components/Badge.tsx`]: '',
+        [`${staff}/layouts/StandaloneLayout.tsx`]: '',
+        'apps/intranet/shell-intranet/src/layouts/ShellLayout/ShellLayout.tsx':
+          '',
+        'apps/intranet/shell-intranet/src/layouts/ShellLayout/index.ts': '',
       });
       assert.deepEqual(rules(r.errors).sort(), [
-        ...Array(8).fill('component-folder'),
+        ...Array(9).fill('component-folder'),
+        'component-test',
         'component-test',
       ]);
       const text = r.errors.map((e) => e.message).join('\n');
@@ -247,6 +255,14 @@ describe('check-apps', () => {
       assert.match(text, /components\/Detail\/: missing index\.ts/);
       assert.match(text, /components\/Detail\/: missing Detail\.test\.tsx/);
       assert.match(text, /src\/components\/Badge\/Badge\.tsx/);
+      assert.match(
+        text,
+        /src\/layouts\/StandaloneLayout\/StandaloneLayout\.tsx/,
+      );
+      assert.match(
+        text,
+        /layouts\/ShellLayout\/: missing ShellLayout\.test\.tsx/,
+      );
     });
 
     it('fails when a CSS module is imported from another folder (shared styles)', async () => {
@@ -268,25 +284,48 @@ describe('check-apps', () => {
       assert.match(text, /HomePage\.tsx imports "@\/features\/staff/);
     });
 
-    it('fails when a remote sets the shell header colour tokens', async () => {
+    it('fails when a remote sets custom properties for the whole page', async () => {
       const r = await run(validApps(), {
         ...validRegistries(),
-        // the shell may set them (its src/styles/shell.scss); reading them is fine everywhere
+        ...ok('apps/intranet/shell-intranet/src/layouts', 'ShellLayout'),
+        ...ok(`${staff}/features/x/components`, 'X'),
+        // the shell may set page tokens (src/styles/shell.scss) and its layout's own values
         'apps/intranet/shell-intranet/src/styles/shell.scss':
-          ':root { --header-bg: #1d4ed8; --header-text: #fff; }\n',
-        [`${staff}/styles/global.scss`]:
-          '.x { color: var(--header-text, red); border: var( --header-border, red); }\n[data-theme=dark] {\n  --header-accent: #fff;\n}\n',
+          ':root { --color-accent: #1d4ed8; }\n',
+        'apps/intranet/shell-intranet/src/layouts/ShellLayout/ShellLayout.module.scss':
+          '.host { --header-bg: #1d4ed8; }\n',
+        // component-scoped custom properties and reading tokens are fine in a remote
+        [`${staff}/components/Card/Card.module.scss`]:
+          ".card { --gap: 1rem; color: var(--color-text); }\n:global([data-theme='dark']) .card {\n  --gap: 2rem;\n}\n@media (max-width: 40rem) { .card { --gap: 0; } }\n.w { width: min(#{$x}, 100%); }\n// :root { --color-bg: red; }\n/* html { --color-bg: red; } */\n",
+        [`${staff}/components/Card/Card.tsx`]:
+          "import styles from './Card.module.scss';\nexport const Card = () => styles;\n",
+        [`${staff}/components/Card/Card.test.tsx`]:
+          "document.documentElement.style.setProperty('--color-bg', 'red');\n",
+        [`${staff}/components/Card/index.ts`]:
+          "export { Card } from './Card';\n",
+        // page-wide: :root / html / body / [data-theme], also nested or in @media, or from script
+        [`${staff}/styles/global.scss`]: ':root { --color-surface: red; }\n',
+        [`${staff}/features/x/components/X/X.module.scss`]:
+          "@media (min-width: 1px) {\n  :global(html[data-theme='dark']) {\n    --color-accent: red;\n  }\n}\n",
         [`${staff}/bootstrap.tsx`]:
-          "document.documentElement.style.setProperty('--header-bg', 'red');\n",
+          "document.documentElement.style.setProperty('--color-bg', 'red');\n",
       });
-      assert.deepEqual(rules(r.errors), ['header-tokens', 'header-tokens']);
+      assert.deepEqual(rules(r.errors).sort(), [
+        'remote-global-tokens',
+        'remote-global-tokens',
+        'remote-global-tokens',
+      ]);
       const text = r.errors.map((e) => e.message).join('\n');
       assert.match(
         text,
-        /staff\/src\/styles\/global\.scss sets --header-accent/,
+        /staff\/src\/styles\/global\.scss sets --color-surface on ":root"/,
       );
-      assert.match(text, /staff\/src\/bootstrap\.tsx sets --header-bg/);
-      assert.match(text, /only in the shell's src\/styles\/shell\.scss/);
+      assert.match(text, /X\.module\.scss sets --color-accent on/);
+      assert.match(
+        text,
+        /staff\/src\/bootstrap\.tsx sets --color-bg on the document/,
+      );
+      assert.match(text, /restyle the shell's layout/);
     });
   });
 

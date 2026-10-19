@@ -26,8 +26,8 @@ e2e spec after the state is shown.
 axe covers part of WCAG. For each new or changed flow check:
 
 - [ ] Keyboard only: everything reachable and operable, logical order, no traps, visible focus
-      (2.4.7, 2.4.11), skip to content where long nav precedes it (`MainLayout` has a skip
-      link in both nav placements; the shell e2e checks it)
+      (2.4.7, 2.4.11), skip to content where long nav precedes it (both shell layout starters
+      render `SkipLink` from `@org/ui` first; the shell e2e checks it)
 - [ ] Screen reader (NVDA + Chrome or VoiceOver + Safari): headings, landmarks, names, states,
       live announcements for status/errors
 - [ ] Zoom 200 % and reflow at 320 CSS px (1.4.10) without loss of content or two-way scrolling

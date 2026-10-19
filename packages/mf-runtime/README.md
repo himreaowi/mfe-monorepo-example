@@ -95,9 +95,8 @@ export const { EmbeddedApp, StandaloneApp } = createRemoteApp({
     user: { id: 'mock' },
     settings: { apiBaseUrl: '/mock-api' },
   },
-  StandaloneLayout: ({ children }) => (
-    <MainLayout brand="Staff">{children}</MainLayout>
-  ),
+  // the remote's own chrome for standalone mode (generated: src/layouts/StandaloneLayout)
+  StandaloneLayout,
 });
 
 // src/app/RemoteApp.tsx (exposed as './App')

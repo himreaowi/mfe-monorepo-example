@@ -1,56 +1,82 @@
+// Staff Portal layout (side navigation starter). This file is the shell's own code: restyle
+// and restructure freely, nothing else in the repo depends on it. Values come from
+// @org/design-tokens (var(--…)); keep both themes at WCAG 2.2 AA contrast (a11y.spec.ts scans
+// the header in light and dark).
+
 /*
- * Header colours (the shell's theming hook; docs/ui-context.md "Header colours per shell").
- * A shell sets these on :root / [data-theme='light'] and [data-theme='dark'] in its own global
- * stylesheet (src/styles/shell.scss); unset, the header uses the page tokens (look unchanged):
+ * ===== HEADER COLOURS: change them here =====
  *
- *   --header-bg          header + compact Menu panel background   (fallback --color-surface)
- *   --header-text        brand, nav links, buttons, Menu button    (fallback --color-text)
- *   --header-text-muted  "Theme" label, user name, Menu border    (fallback --header-text, then --color-text-muted)
- *   --header-border      bottom border, panel divider, button borders (fallback --color-border)
+ * Unchanged, the header uses the page tokens (white / dark surface). Every element inside the
+ * header (brand, RemoteNav, ThemeToggle, UserMenu, Menu button, sidebar, drawer) follows these
+ * values: `.header` below maps them onto the page token names (--color-surface, …).
+ *
+ *   --header-bg          top bar, sidebar and drawer background
+ *   --header-text        brand, nav links, buttons, Menu button
+ *   --header-text-muted  "Theme" label, user name, Menu button border
+ *   --header-border      bottom border, panel divider, button borders
  *   --header-accent      active nav link, focus rings, pressed theme button, ghost buttons
- *                        (fallback --header-text, then --color-accent)
+ *   --header-on-accent   text on the pressed theme button (on --header-accent)
+ *   --header-hover       hover and "Menu open" background
  *
- * They are resolved here on .host (from the inherited page tokens) and then mapped onto the page
- * token names inside .header, so everything rendered in the header (ThemeToggle, UserMenu, the
- * shell's RemoteNav, any headerActions) follows them without knowing about them. A custom
- * property cannot refer to itself, hence the private --_header-* step.
+ * Example: a blue header with white text (contrast on the header background: text 6.7:1
+ * light / 10.4:1 dark, muted text 5.5:1 / 7.3:1, text on the hover tint 5.0:1 / 7.0:1).
+ * Replace the values in `.host` with the light ones and add the dark block:
+ *
+ *   .host {
+ *     --header-bg: #1d4ed8;
+ *     --header-text: #ffffff;
+ *     --header-text-muted: #dbeafe;
+ *     --header-border: #60a5fa;
+ *     --header-accent: #ffffff;
+ *     --header-on-accent: var(--header-bg);
+ *     --header-hover: color-mix(in srgb, var(--header-text) 14%, var(--header-bg));
+ *   }
+ *
+ *   :global([data-theme='dark']) .host {
+ *     --header-bg: #1e3a8a;
+ *     --header-text: #ffffff;
+ *     --header-text-muted: #bfdbfe;
+ *     --header-border: #3b82f6;
+ *     --header-accent: #ffffff;
+ *   }
  */
+/* Staff Portal: a blue header with white text (top bar, sidebar and drawer). */
 .host {
-  --_header-bg: var(--header-bg, var(--color-surface));
-  --_header-text: var(--header-text, var(--color-text));
-  --_header-text-muted: var(
-    --header-text-muted,
-    var(--header-text, var(--color-text-muted))
-  );
-  --_header-border: var(--header-border, var(--color-border));
-  --_header-accent: var(
-    --header-accent,
-    var(--header-text, var(--color-accent))
-  );
-  /* text on an accent background (pressed theme button): the header background once it is set */
-  --_header-on-accent: var(--header-bg, var(--color-accent-contrast));
-  /* hover / expanded background: a tint of the header text over a custom header background;
-     invalid (so the page --color-bg below) while --header-bg is unset */
-  --_header-hover: color-mix(
-    in srgb,
-    var(--_header-text) 14%,
-    var(--header-bg)
-  );
-  --_page-bg: var(--color-bg);
+  --header-bg: #1d4ed8;
+  --header-text: #ffffff;
+  --header-text-muted: #dbeafe;
+  --header-border: #60a5fa;
+  --header-accent: #ffffff;
+  --header-on-accent: var(--header-bg);
+  --header-hover: color-mix(in srgb, var(--header-text) 14%, var(--header-bg));
 
   min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
+:global([data-theme='dark']) .host {
+  --header-bg: #1e3a8a;
+  --header-text: #ffffff;
+  --header-text-muted: #bfdbfe;
+  --header-border: #3b82f6;
+  --header-accent: #ffffff;
+}
+
+/*
+ * The header row: brand, nav, theme toggle and user menu. ShellLayout measures whether they fit
+ * in one row (useFitLayout from @org/ui) and sets data-layout="wide" | "compact" (and
+ * "measure" for an instant, never painted); before the first measurement the 56rem media
+ * queries at the bottom decide.
+ */
 .header {
-  --color-surface: var(--_header-bg);
-  --color-text: var(--_header-text);
-  --color-text-muted: var(--_header-text-muted);
-  --color-border: var(--_header-border);
-  --color-accent: var(--_header-accent);
-  --color-accent-contrast: var(--_header-on-accent);
-  --color-bg: var(--_header-hover, var(--_page-bg));
+  --color-surface: var(--header-bg);
+  --color-text: var(--header-text);
+  --color-text-muted: var(--header-text-muted);
+  --color-border: var(--header-border);
+  --color-accent: var(--header-accent);
+  --color-accent-contrast: var(--header-on-accent);
+  --color-bg: var(--header-hover);
 
   position: relative;
   display: flex;
@@ -65,37 +91,17 @@
 }
 
 /*
- * Brand: always one line. A name longer than the space left truncates with an ellipsis ON
- * SCREEN only: the DOM text stays whole, so screen readers and the accessibility tree get the
- * full name (no duplicate visually hidden copy). It is the flex item that shrinks first; the
- * Menu button and the panel never shrink. The padding / negative margin pair keeps a focus ring
- * (3 px + 2 px offset) of a link passed as `brand` inside the clipped box without changing the
- * header's size.
- *
- * --header-brand-min-width (default 30ch): the brand width the fit measurement counts at most
- * (see `.header[data-layout='measure']` below and README "Long brand names").
+ * Brand (`<Brand>` from @org/ui: one line, ellipsis, full accessible name). It is the flex item
+ * that shrinks first; the Menu button and the panel never shrink.
  */
 .brand {
   flex: 0 1 auto;
-  min-width: 0;
-  margin: -0.375rem;
-  padding: 0.375rem;
-  overflow: hidden;
   font-weight: 700;
   font-size: 1.125rem;
   letter-spacing: -0.02em;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-
-  /* a block child (e.g. a wrapper element) truncates the same way */
-  > * {
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
 }
 
-/* Zero-height strip across the header: MainLayout observes its width (= available width). */
+/* Zero-height strip across the header: useFitLayout observes its width (= available width). */
 .sizer {
   position: absolute;
   top: 0;
@@ -125,38 +131,6 @@
   /* target of the skip link (tabindex="-1"), not a control: no focus ring around the page */
   &:focus {
     outline: none;
-  }
-}
-
-/*
- * Skip link: the first focusable element (both placements). Visually hidden (clipped to
- * nothing, out of the flow: no pixel of the layout changes) until it has keyboard focus, then
- * shown over the top-left corner of the header. Outside the header, so page tokens.
- */
-.skipLink {
-  position: absolute;
-  top: var(--space-2);
-  left: var(--space-2);
-  z-index: 30;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius);
-  color: var(--color-text);
-  font-weight: 600;
-  background: var(--color-surface);
-
-  &:not(:focus) {
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    padding: 0;
-    overflow: hidden;
-    white-space: nowrap;
-    clip-path: inset(50%);
-  }
-
-  &:focus-visible {
-    outline: 3px solid var(--color-accent);
-    outline-offset: 2px;
   }
 }
 
@@ -214,9 +188,8 @@
 }
 
 /*
- * Compact: one header row (brand + Menu); nav, theme toggle and actions in a dropdown panel.
- * MainLayout sets data-layout="compact" when the row does not fit (measured); before that, and
- * without ResizeObserver, the 40rem breakpoint applies.
+ * Compact: one header row (brand + Menu); nav, theme toggle and user menu in the panel, shown
+ * as a drawer on the left (see `side-drawer` below).
  */
 @mixin compact-header {
   flex-wrap: nowrap;
@@ -250,7 +223,7 @@
     box-shadow: 0 8px 24px rgb(0 0 0 / 25%);
   }
 
-  /* stack the links (also a list passed as `nav`, e.g. the shell's RemoteNav) */
+  /* stack the links (also RemoteNav's list) */
   .open .nav,
   .open .nav ul {
     flex-direction: column;
@@ -305,7 +278,7 @@
 }
 
 /*
- * Measuring (set and removed by MainLayout within one task, never painted): the width of one
+ * Measuring (set and removed by useFitLayout within one task, never painted): the width of one
  * unwrapped row of brand, nav and actions, also while the panel is collapsed.
  */
 .header[data-layout='measure'] {
@@ -316,8 +289,9 @@
     display: none;
   }
 
-  /* counted at its full width, but at most --header-brand-min-width: a very long name cannot
-     force the compact layout at every width (wide then truncates it, never below that width) */
+  /* counted at its full width, but at most --header-brand-min-width (default 30ch): a very long
+     name cannot force the compact layout at every width (wide then truncates it, never below
+     that width) */
   .brand {
     flex: none;
     max-width: var(--header-brand-min-width, 30ch);
@@ -339,18 +313,18 @@
 }
 
 /*
- * navPlacement="side": a sticky top bar (brand, theme toggle, actions) and the nav as a sidebar
- * under it on the left; the content moves right by the sidebar width.
+ * Sidebar: a sticky top bar (brand, theme toggle, user menu) and the nav as a sidebar under it
+ * on the left; the content moves right by the sidebar width.
  *
  * The nav stays inside <header> (one nav element and one panel for both layouts, the header
- * colour tokens apply as they are): on wide screens it is positioned below the header
- * (`top: 100%`, `height: 100dvh - 100%`, both relative to the sticky header), so it stays in
- * view while the page scrolls and scrolls on its own when it is long.
+ * colours apply as they are): when wide it is positioned below the header (`top: 100%`,
+ * `height: 100dvh - 100%`, both relative to the sticky header), so it stays in view while the
+ * page scrolls and scrolls on its own when it is long.
  *
- * Wide when the top bar row fits AND the viewport leaves 40rem for the content next to the
- * 16rem sidebar (the measurement counts at least 56rem, see `[data-layout='measure']` below);
- * otherwise compact: the Menu button opens the panel (nav, theme toggle, actions) as a drawer
- * on the left. Before the first measurement: a 56rem breakpoint.
+ * Wide when the top bar row fits AND the viewport leaves $side-main-min-width for the content
+ * next to the sidebar (the measurement counts at least both, see `[data-layout='measure']`
+ * below); otherwise compact: the Menu button opens the panel (nav, theme toggle, user menu) as
+ * a drawer on the left. Before the first measurement: a media query at the same width.
  */
 $sidebar-width: 16rem;
 $side-main-min-width: 40rem;
@@ -390,7 +364,7 @@ $side-drawer-width: 20rem;
     border-right: 1px solid var(--color-border);
   }
 
-  /* stack the links (also a list passed as `nav`, e.g. the shell's RemoteNav) */
+  /* stack the links (also RemoteNav's list) */
   .nav ul {
     flex-direction: column;
     flex-wrap: nowrap;
@@ -414,8 +388,8 @@ $side-drawer-width: 20rem;
 
 /*
  * compact: the open panel is a drawer on the left, from the top bar to the bottom of the
- * viewport; at most 20rem, and always 3rem short of the right edge so the page stays visible
- * (and a tap there closes it) even at 320 px
+ * viewport; at most $side-drawer-width, and always 3rem short of the right edge so the page
+ * stays visible (and a tap there closes it) even at 320 px
  */
 @mixin side-drawer {
   .panel.open {

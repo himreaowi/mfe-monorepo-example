@@ -1,25 +1,32 @@
 # @org/ui
 
-Shared React components ported from starter-mfe (same markup, classes and tokens).
+Shared React **building blocks**: small components and hooks every app composes its own UI
+from. There is no shared page layout: **each shell owns its layout** (`src/layouts/ShellLayout`,
+copied from a starter by `pnpm gen:shell <zone> [--layout top|side]`) and each remote its
+standalone chrome. See `docs/ui-context.md` "Layout: the shell owns it".
 
-| Export                        | Notes                                                                                                                                                                                                                                                                      |
-| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Button`                      | `variant`: `primary` (default) / `secondary` / `ghost`                                                                                                                                                                                                                     |
-| `ThemeToggle`                 | Light / Dark / Use system theme (needs a `ThemeProvider` above)                                                                                                                                                                                                            |
-| `RemoteFallback`              | `role="alert"` panel; optional `onRetry` adds a "Try again" button                                                                                                                                                                                                         |
-| `ConnectionRequired`          | Offline banner (`visible`)                                                                                                                                                                                                                                                 |
-| `MainLayout`                  | Header (brand, `nav`, theme toggle, `headerActions`) + offline banner + `<main>`; renders `children` or `<Outlet />`. Always one header row: collapses into a "Menu" panel when the row does not fit (see below). `navPlacement="side"`: nav in a sidebar. Skip link first |
-| `useNavPlacement()`           | `'top' \| 'side'`: the placement of the `MainLayout` nav a component is rendered in (`top` outside one); type `NavPlacement`                                                                                                                                               |
-| `ThemeProvider`, `useTheme()` | Light/dark/system theme, sets `data-theme` on `<html>`                                                                                                                                                                                                                     |
+| Export                        | Notes                                                                                                                       |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `Button`                      | `variant`: `primary` (default) / `secondary` / `ghost`                                                                      |
+| `ThemeToggle`                 | Light / Dark / Use system theme (needs a `ThemeProvider` above)                                                             |
+| `SkipLink`                    | "Skip to main content": first Tab stop, visible on focus, focuses the target without a URL change (`targetId`, `children`)  |
+| `Brand`                       | the app name in a header: one line, ellipsis on screen, full accessible name (any `<div>` props, `className`)               |
+| `useMenuDisclosure()`         | headless Menu button + panel/drawer: state, `buttonProps`, `panelProps`, Escape / outside click / link / back-forward close |
+| `useFitLayout(options)`       | measures whether a row (header) fits: `'wide' \| 'compact'`, so a layout collapses behind "Menu" exactly when needed        |
+| `RemoteFallback`              | `role="alert"` panel; optional `onRetry` adds a "Try again" button                                                          |
+| `ConnectionRequired`          | Offline banner (`visible`; a shell passes `!useOnlineStatus()` from `@org/pwa`)                                             |
+| `ThemeProvider`, `useTheme()` | Light/dark/system theme, sets `data-theme` on `<html>`                                                                      |
 
 `@org/ui` is a **tier-1 singleton**: `@org/rspack-config` shares it through Module Federation
 (`singleton`, `strictVersion`, `requiredVersion` = this package's version). A remote rendered in a
-shell therefore uses the shell's copy of these components, styles and the `ThemeContext`.
+shell therefore uses the shell's copy of these components, styles and the `ThemeContext`. That
+is also why it holds no layout: every change here rebuilds every app, so what one shell wants
+to look different (its header, its nav position) lives in that shell.
 
 Styles are SCSS modules that read CSS variables from `@org/design-tokens`. The app that owns the
 page imports `@org/design-tokens/global.scss` once. Their class names are hashed per build and
-per app (CSS Modules): never select them from an app; use the tokens (e.g. the header colours
-below) or props.
+per app (CSS Modules): never select them from an app; pass a `className` (the components merge
+it after their own) or set tokens.
 
 ## ThemeProvider: shell, remote, standalone
 
@@ -40,78 +47,61 @@ this). It looks the same as the shell because the tokens are CSS variables inher
 `mode="root"` or `mode="follower"` forces a role. `storageKey` changes the localStorage key
 (default `mfe-theme`).
 
-## MainLayout header: always one row
+## Building a layout
 
-The header shows brand, `nav`, theme toggle and `headerActions` in one row **when they fit**.
-When they do not (always at 375 px; on wider screens too when a zone has many remotes or a
-signed-in user menu), it shows only the brand and a **Menu** button (one row, about 60 px tall)
-and the nav, the theme toggle and `headerActions` (e.g. `UserMenu`) move into a panel below it.
+The generated shell layouts show the full pattern (`tools/generators/templates/shell-layouts/`
+at the repo root, `top` and `side`); in short:
 
-How it decides (`useHeaderLayout`, internal):
+```tsx
+const mainId = useId();
+const sizerRef = useRef<HTMLDivElement>(null);
+const menu = useMenuDisclosure();
+const { setOpen } = menu;
+const onChange = useCallback((next: FitLayout) => next === 'wide' && setOpen(false), [setOpen]);
+const layout = useFitLayout({
+  container: menu.containerRef, sizer: sizerRef, panel: menu.panelRef,
+  button: menu.buttonRef, open: menu.open, onChange,
+});
 
-- it **measures** instead of using a fixed breakpoint: the width of one unwrapped row of brand +
-  nav + actions (`data-layout="measure"`, set and removed in the same task, never painted; the
-  brand counted at most 30ch, see "Long brand names") against the header's width. Any number
-  of nav items, any label length, signed in or out;
-- before the first paint (`useLayoutEffect`), then whenever the available width changes
-  (`ResizeObserver` on a zero-height strip, so the header's own height change cannot loop),
-  the header's content changes (`MutationObserver`: sign-in, nav items) or web fonts load.
-  Updates are committed with `flushSync`, so a wrong layout is never painted;
-- hysteresis: compact as soon as the row does not fit, wide again only with 24 px to spare
-  (`HEADER_HYSTERESIS_PX`; avoids flip-flopping when the page scrollbar comes and goes);
-- an open panel is not re-laid out; it is measured again when it closes. Becoming wide closes
-  the panel; collapsing while focus is in the nav moves focus to the Menu button;
-- the current layout is on the header: `data-layout="wide|compact"` (`data-testid="main-header"`).
-  Without ResizeObserver (and before hydration) the attribute is absent and a CSS breakpoint
-  (40rem) decides.
+<SkipLink targetId={mainId} />
+<header ref={menu.containerRef} className={styles.header} data-layout={layout}>
+  <div ref={sizerRef} className={styles.sizer} aria-hidden="true" />
+  <Brand className={styles.brand}>{APP_TITLE}</Brand>
+  <button {...menu.buttonProps} className={styles.menuButton}>Menu</button>
+  <div {...menu.panelProps} className={menu.open ? `${styles.panel} ${styles.open}` : styles.panel}>
+    <nav aria-label="Main">…</nav>
+    <ThemeToggle />
+    <UserMenu />
+  </div>
+</header>
+<main id={mainId} tabIndex={-1}>…</main>
+```
 
-## Nav placement: `top` or `side`
+### `SkipLink`
 
-`navPlacement` (default `top`, unchanged behaviour and look) moves `nav` into a sidebar:
+`<SkipLink targetId={mainId} />` renders `<a href="#<id>">Skip to main content</a>` (text from
+`children`). Visually hidden (clipped, out of the flow: no pixel of the layout changes) until it
+has keyboard focus, then shown over the top-left corner with the page tokens. Activating it
+focuses the target (give `<main>` `tabIndex={-1}` and no focus ring) without a `#fragment` URL
+change, which would be a router navigation. Render it as the first focusable element.
 
-| `side`, wide    | sticky top bar (brand, theme toggle, `headerActions`); the nav a 16rem sidebar below it on the left edge, full height, its own scrolling (`overflow-y: auto`) when long; everything after the header (offline banner, `<main>`) moves right by 16rem |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `side`, compact | brand + Menu; the Menu panel is a drawer on the left, from the top bar to the bottom of the viewport, `min(20rem, 100% - 3rem)` wide (the page stays visible on the right; a tap there closes it), nav first, then theme toggle and actions          |
+### `Brand`
 
-- **Switch rule**: the same measurement as the top header (`useHeaderLayout`, hysteresis
-  included). In `data-layout="measure"` the side header leaves the nav out and counts at least
-  `16rem + 40rem` (sidebar + minimum content width), so it is wide when brand + theme toggle +
-  actions fit and the viewport is 56rem (896 px) or wider; before the first measurement (and
-  without ResizeObserver) a 56rem media query decides. Widths are SCSS constants in
-  `MainLayout.module.scss` (`$sidebar-width`, `$side-main-min-width`, `$side-drawer-width`).
-- **One nav, one panel**: the nav stays inside `<header>` in both placements (absolutely
-  positioned under the sticky header when wide: `top: 100%`, `height: 100dvh - 100%`), so
-  there is one `<nav>` landmark, one disclosure (`aria-expanded`, `aria-controls`, Escape,
-  outside click, link followed, back/forward, focus back on the button) and the `--header-*`
-  tokens colour top bar, sidebar and drawer without extra tokens.
-- **Keyboard order = visual order**: wide side layout renders theme toggle + actions before
-  the nav (top bar, then sidebar); compact (drawer) and the top placement render the nav first.
-  The two are keyed, so React moves them instead of remounting.
-- **Sticky top bar and focus (WCAG 2.4.11)**: `html:has(<side header>)` gets
-  `scroll-padding-top: 5.5rem`, so a focused element or anchor is never scrolled under it.
-- **Nav content adapts**: `useNavPlacement()` returns the placement inside the header (the
-  shell's `RemoteNav` puts it on its list as `data-placement` and stacks the links with a bar on
-  the active one, besides `aria-current="page"` and bold text). Generic nav content is stacked
-  by MainLayout itself (`nav ul` column, `nav a` block).
-- On the header: `data-nav-placement="top|side"` (e2e tests read it).
+`<Brand className={styles.brand}>{APP_TITLE}</Brand>`: a `<div>` (all `<div>` props pass
+through, e.g. `data-testid`) that keeps the name on **one line**. It owns only the truncation;
+the layout owns typography and sizing through `className` (give it `flex: 0 1 auto` so it is the
+item that shrinks first, so the Menu button, nav and actions always stay fully visible).
 
-## Skip link
-
-The first focusable element in both placements is "Skip to main content" (`skipLinkLabel`),
-visually hidden until focused (clipped, out of the flow: no pixel of either layout changes).
-Activating it focuses `<main>` (`tabindex="-1"`, no focus ring) without a `#fragment` URL
-change (that would be a router navigation).
-
-### Long brand names
+#### Long brand names
 
 The brand is always **one line**. A name longer than the space left is truncated with an
 ellipsis on screen (`white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 min-width: 0`); it is the flex item that shrinks first, so the Menu button, nav and actions
 always stay fully visible.
 
-- **Fit rule.** The measurement counts the brand at its full width, but at most
-  `--header-brand-min-width` (CSS custom property, default `30ch` of the brand font; set it on
-  `:root` to change it). So the header is wide when brand + nav + actions fit with the brand
+- **Fit rule** (in the generated layouts' measuring CSS). The measurement counts the brand at
+  its full width, but at most `--header-brand-min-width` (CSS custom property, default `30ch`
+  of the brand font). So the header is wide when brand + nav + actions fit with the brand
   at full width (or, for a longer name, at least 30ch). Names up to that width never truncate
   in the wide layout; a longer name cannot keep the header compact at every width: in the wide
   layout it then shrinks, never below 30ch. The compact layout truncates the brand to whatever
@@ -128,48 +118,70 @@ always stay fully visible.
   `title` as an extra description (the name twice), and it would need its own resize
   measurement. Instead apps must show the full name elsewhere: the generated shell has it as
   the home page `<h1>` and the document `<title>` (see `docs/ui-context.md`).
-- Pass text or inline content (e.g. a home `<Link>`) as `brand`; a single block child truncates
-  too. A padding/negative-margin pair keeps a focused brand link's focus ring inside the
+- Pass text or inline content (e.g. a home `<Link>`) as children; a single block child
+  truncates too. A padding/negative-margin pair keeps a focused brand link's focus ring inside the
   clipped box.
 
-### Header colours (`--header-*`)
+### `useMenuDisclosure()`
 
-The header's colours come from five custom properties, each falling back to the page tokens, so
-unset the header looks as before:
+The WAI-ARIA disclosure for a "Menu" button and the panel or drawer it shows; markup and styles
+stay in the layout.
 
-| Token                 | Elements                                                                                       | Fallback                                   |
-| --------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| `--header-bg`         | header + Menu panel background, text on the pressed theme button, base of the hover tint       | `--color-surface`                          |
-| `--header-text`       | brand, nav links, Menu button, theme / Sign in buttons                                         | `--color-text`                             |
-| `--header-text-muted` | "Theme" label, user name, Menu button border                                                   | `--header-text`, then `--color-text-muted` |
-| `--header-border`     | bottom border, panel divider, secondary button borders                                         | `--color-border`                           |
-| `--header-accent`     | active nav link, focus rings, pressed theme button, ghost buttons (Use system theme, Sign out) | `--header-text`, then `--color-accent`     |
+```ts
+const menu = useMenuDisclosure<TPanel = HTMLDivElement, TContainer = HTMLElement>();
+menu.open; menu.setOpen(v); menu.toggle(); menu.close(restoreFocus?);
+menu.buttonProps  // { ref, type: 'button', 'aria-expanded', 'aria-controls', onClick }
+menu.panelProps   // { ref, id, onClick }
+menu.containerRef // optional: the element around both (e.g. <header>)
+menu.buttonRef; menu.panelRef; menu.panelId;
+```
 
-`MainLayout.module.scss` resolves them on the layout root and re-declares the page tokens
-(`--color-surface`, `--color-text`, `--color-text-muted`, `--color-border`, `--color-accent`,
-`--color-accent-contrast`, `--color-bg`) inside `<header>`, so `ThemeToggle`, `UserMenu`, the
-shell's `RemoteNav` and any `headerActions` follow without knowing the header tokens. Once
-`--header-bg` is set, `--color-bg` (hover / "Menu open" background) becomes a 14 % tint of the
-header text over it (`color-mix()`), and `--color-accent-contrast` becomes `--header-bg`.
+- the button gets `aria-expanded` and `aria-controls` (the panel's generated `id`); render the
+  panel `display: none` while closed, so it is out of the tab order and the accessibility tree;
+- **Escape** closes it and returns focus to the button;
+- a **pointer down outside** `containerRef` (or, without it, outside button and panel) closes it
+  and leaves focus where the user put it;
+- a **followed link inside the panel** (a click on `a[href]`, also Enter on a link) and
+  **browser back/forward** (`popstate`) close it;
+- closing while focus is inside the panel moves focus to the button (never lost on `<body>`);
+- listeners are attached only while it is open.
 
-The **shell** sets them per theme in its `src/styles/shell.scss` (imported after
-`@org/design-tokens/global.scss`); remotes never set them (`pnpm check`). Example, contrast
-rules and why not to target the hashed class names: `docs/ui-context.md` "Header colours per
-shell".
+### `useFitLayout(options)`
 
-Why not a "More" menu (priority+)? `nav` is any React node (the shell passes a list), so
-`MainLayout` cannot move individual items; and the theme toggle and user menu need a place
-too. One panel for everything keeps the API (`nav`, `headerActions`) unchanged.
+Collapses a header when its contents do not fit in one row, at any width (many remotes, a long
+user name, signed in or out), instead of at a fixed breakpoint.
 
-The disclosure:
+```ts
+const layout: 'wide' | 'compact' | undefined = useFitLayout({
+  container, // the row, e.g. <header>; put `data-layout={layout}` on it
+  sizer, // zero-height strip across it (absolute, left 0, right 0): the available width
+  panel, // the collapsible panel; button: the Menu button
+  button,
+  open, // menu.open
+  onChange, // e.g. close the panel when it becomes wide
+});
+```
 
-- the button has `aria-expanded` and `aria-controls` (the panel's id); the panel is
-  `display: none` while closed, so it is out of the tab order and the accessibility tree;
-- it closes on **Escape** (focus back on the button), on a **click outside** the header, after a
-  **link inside it is followed** (and on browser back/forward); if focus was inside the panel it
-  moves to the button;
-- props: `navLabel` (name of the `<nav>` landmark, default `Main`), `menuLabel` (default `Menu`).
+- **Measures**: sets `data-layout="measure"` on the container, reads its width, restores the
+  attribute in the same task (never painted). The layout's CSS defines what "one row" means
+  there (`width: max-content`, nothing wraps, the panel laid out as a row even when closed, the
+  Menu button hidden, the brand capped at `--header-brand-min-width`; a sidebar layout leaves
+  the nav out and adds a minimum content width). Compared with the container's width.
+- When: before the first paint (`useLayoutEffect`), then whenever the available width changes
+  (`ResizeObserver` on the sizer, so the container's own height change cannot loop), its content
+  changes (`MutationObserver`: sign-in, nav items) or web fonts load. Updates are committed with
+  `flushSync`, so a wrong layout is never painted.
+- **Hysteresis**: compact as soon as the row does not fit, wide again only with
+  `FIT_HYSTERESIS_PX` (24) to spare (avoids flip-flopping when the page scrollbar comes and goes).
+- An open compact panel is not re-measured; it is measured again when it closes. Collapsing
+  while focus is in the panel moves focus to the button.
+- Without `ResizeObserver` (and before hydration) it returns `undefined`: give the layout a CSS
+  breakpoint for `:not([data-layout])`.
+- Also exported for tests and custom hooks: `decideFitLayout(required, available, current)`
+  and `measureFit(element)`.
 
-Apps pass plain links or a list as `nav` and need no menu code of their own. In e2e tests open
-the panel first when the header is compact (the generated `e2e/helpers.ts` has `openNav(page)`
-and `openHeaderMenu(page)`, no-ops when it is wide).
+Why not a "More" menu (priority+)? The nav is any React node (the shell passes a list), so a
+generic hook cannot move individual items; and the theme toggle and user menu need a place too.
+One panel for everything keeps it simple. In e2e tests open the panel first when the header is
+compact (the generated `e2e/helpers.ts` has `openNav(page)` and `openHeaderMenu(page)`, no-ops
+when it is wide).

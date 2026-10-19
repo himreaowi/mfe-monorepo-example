@@ -18,7 +18,7 @@ export type CreateRemoteAppOptions = {
   routes: RouteObject[];
   /** Mock host props for standalone mode (e.g. a fake user, settings.apiBaseUrl). */
   standaloneProps?: Partial<HostProps>;
-  /** Chrome around the routes in standalone mode only (e.g. `@org/ui` MainLayout). */
+  /** Chrome around the routes in standalone mode only (the remote's own `StandaloneLayout`). */
   StandaloneLayout?: ComponentType<{ children: ReactNode }>;
 };
 

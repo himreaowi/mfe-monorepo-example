@@ -1575,9 +1575,6 @@ importers:
       '@org/design-tokens':
         specifier: workspace:*
         version: link:../design-tokens
-      '@org/pwa':
-        specifier: workspace:*
-        version: link:../pwa
     devDependencies:
       '@org/eslint-config':
         specifier: workspace:*

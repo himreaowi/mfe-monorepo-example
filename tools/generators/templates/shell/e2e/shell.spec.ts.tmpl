@@ -17,9 +17,10 @@ import {
  * Widths the header must stay one row at: 320 (WCAG 1.4.10 reflow, = 1280 px at 400 % zoom),
  * phone, tablet, small and common laptop.
  *
- * The header tests follow the shell's nav placement (`navPlacement` in src/layouts/ShellLayout,
- * read from the page): `top` = nav in the header row, `side` = sidebar from SIDEBAR_MIN_WIDTH
- * (top bar with brand, theme toggle and user menu), drawer behind "Menu" below it.
+ * The header tests follow the shell's own layout (src/layouts/ShellLayout; the hooks they rely
+ * on are listed at the top of helpers.ts): `data-nav-placement="top"` = nav in the header row,
+ * `"side"` = sidebar from SIDEBAR_MIN_WIDTH (top bar with brand, theme toggle and user menu),
+ * drawer behind "Menu" below it.
  */
 const HEADER_WIDTHS = [320, 375, 800, 1024, 1280];
 
@@ -256,7 +257,7 @@ test.describe('__APP_TITLE__', () => {
       const nav = page.getByRole('list', { name: 'Apps' });
       const placement = await navPlacement(page);
       for (const width of HEADER_WIDTHS) {
-        // MainLayout measures the row: wide when brand, nav and actions fit, else compact;
+        // the layout measures the row: wide when brand, nav and actions fit, else compact;
         // resizeHeader waits until the layout settled at the new width
         const layout = await resizeHeader(page, width);
         if (placement === 'side') {
@@ -301,7 +302,7 @@ test.describe('__APP_TITLE__', () => {
     await expect(page.getByTestId('shell-welcome')).toBeVisible();
     test.skip(
       (await navPlacement(page)) !== 'side',
-      'top navigation (navPlacement="top" in src/layouts/ShellLayout)',
+      'top navigation (data-nav-placement="top" on the header)',
     );
     expect(await resizeHeader(page, 1280)).toBe('wide');
     // make the page taller than the viewport, then scroll down

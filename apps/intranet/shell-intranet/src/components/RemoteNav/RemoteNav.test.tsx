@@ -1,6 +1,5 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
-import { MainLayout, ThemeProvider } from '@org/ui';
 import type { RemoteEntry } from '@/core/types/remotes';
 import { RemoteNav } from './RemoteNav';
 
@@ -69,37 +68,25 @@ describe('RemoteNav', () => {
     );
   });
 
-  it.each(['top', 'side'] as const)(
-    'follows the MainLayout nav placement (%s)',
-    (placement) => {
-      render(
-        <ThemeProvider>
-          <MemoryRouter>
-            <MainLayout
-              navPlacement={placement}
-              nav={<RemoteNav remotes={remotes} />}
-            >
-              <p>content</p>
-            </MainLayout>
-          </MemoryRouter>
-        </ThemeProvider>,
-      );
-      expect(screen.getByRole('list', { name: 'Apps' })).toHaveAttribute(
-        'data-placement',
-        placement,
-      );
-    },
-  );
-
-  it('is a top nav outside MainLayout', () => {
+  it('is horizontal by default', () => {
     render(
       <MemoryRouter>
         <RemoteNav remotes={remotes} />
       </MemoryRouter>,
     );
-    expect(screen.getByRole('list', { name: 'Apps' })).toHaveAttribute(
-      'data-placement',
-      'top',
+    const list = screen.getByRole('list', { name: 'Apps' });
+    expect(list).toHaveAttribute('data-orientation', 'horizontal');
+    expect(list).not.toHaveClass('vertical');
+  });
+
+  it('stacks its links when vertical (sidebar, drawer)', () => {
+    render(
+      <MemoryRouter>
+        <RemoteNav remotes={remotes} orientation="vertical" />
+      </MemoryRouter>,
     );
+    const list = screen.getByRole('list', { name: 'Apps' });
+    expect(list).toHaveAttribute('data-orientation', 'vertical');
+    expect(list).toHaveClass('vertical');
   });
 });

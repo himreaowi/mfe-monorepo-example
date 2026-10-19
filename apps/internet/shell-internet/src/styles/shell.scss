@@ -1,35 +1,10 @@
-// Citizen Portal: shell-owned global styles, imported once in src/bootstrap.tsx right after
-// @org/design-tokens/global.scss (so these rules come later and win).
+// Citizen Portal: shell-wide global styles, imported once in src/bootstrap.tsx right after
+// @org/design-tokens/global.scss (so these rules come later and win). Empty by default.
 //
-// Header colours: the shell owns the header, so only this file sets the --header-* tokens
-// (remotes never do; `pnpm check` fails if they try). Unset, the header uses the page tokens
-// (white / dark surface). Set them per theme, and check every pair for WCAG 2.2 AA contrast
-// (text ≥ 4.5:1 on --header-bg; --header-accent ≥ 4.5:1 too, it is also the active link
-// colour and the text colour of the pressed theme button is --header-bg).
-// See docs/ui-context.md "Header colours per shell" at the repo root.
+// Use it for what really is page-wide in this shell, e.g. self-hosted fonts (@font-face) or a
+// page token override for the whole shell and its remotes (`:root { --color-accent: …; }`,
+// both themes, WCAG 2.2 AA contrast).
 //
-// Do not style the header through MainLayout's class names (e.g. `.header`): they are CSS
-// Modules class names, hashed per build and per app, so a selector on them breaks silently.
-//
-// Citizen Portal keeps the default header on purpose (white in light, the dark surface in
-// dark: --color-surface), so nothing is set here.
-//
-// Example (a blue header with white text; contrast on the header background: text 6.7:1
-// light / 10.4:1 dark, muted text 5.5:1 / 7.3:1):
-//
-// :root,
-// [data-theme='light'] {
-//   --header-bg: #1d4ed8;
-//   --header-text: #ffffff;
-//   --header-text-muted: #dbeafe;
-//   --header-border: #60a5fa;
-//   --header-accent: #ffffff;
-// }
-//
-// [data-theme='dark'] {
-//   --header-bg: #1e3a8a;
-//   --header-text: #ffffff;
-//   --header-text-muted: #bfdbfe;
-//   --header-border: #3b82f6;
-//   --header-accent: #ffffff;
-// }
+// Header / sidebar colours and the layout itself are NOT here: they live in the shell's own
+// layout, src/layouts/ShellLayout/ShellLayout.module.scss ("HEADER COLOURS"). See
+// docs/ui-context.md "Layout: the shell owns it" at the repo root.

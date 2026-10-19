@@ -74,6 +74,25 @@ The shell owns the document: it imports the global styles, sets `data-theme` on 
 variables and use the shell's `ThemeProvider` through the shared `@org/ui`; they never import
 global styles from their exposed module.
 
+### Layouts belong to the apps
+
+Each shell owns its layout (`src/layouts/ShellLayout/`: header, nav, colours), copied from a
+starter by `pnpm gen:shell <zone> [--layout top|side]` and then edited like any other code of the
+shell; a remote owns its standalone chrome (`src/layouts/StandaloneLayout/`). `@org/ui` holds
+only building blocks (`SkipLink`, `Brand`, `ThemeToggle`, `useMenuDisclosure`, `useFitLayout`,
+…). Two reasons:
+
+- **Independence**: shells look and are structured differently (a blue staff portal with a
+  sidebar, a white citizen site with a top nav) without options in shared code that every app
+  would have to carry.
+- **No all-app rebuild for a restyle**: `@org/ui` is a tier-1 singleton every app depends on, so
+  any change to it affects every app (`pnpm -s apps --affected` lists them all, the pipeline
+  rebuilds and redeploys them). A change in a shell's `ShellLayout` affects only that shell.
+
+The shared parts are the ones that must behave the same everywhere (keyboard and screen reader
+behaviour of the skip link and the Menu disclosure, the measured collapse, theme and session
+state). See [ui-context.md](ui-context.md#layout-the-shell-owns-it).
+
 How CSS is delivered: in development style-loader injects `<style>` elements (fast HMR); in
 production every app ships extracted, content-hashed `.css` files. Loading a remote's exposed
 module (or one of its lazy chunks) makes the remote's own chunk loader add

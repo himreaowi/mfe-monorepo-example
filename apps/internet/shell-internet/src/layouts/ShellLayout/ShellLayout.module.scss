@@ -1,0 +1,305 @@
+// Citizen Portal layout (top navigation starter). This file is the shell's own code: restyle
+// and restructure freely, nothing else in the repo depends on it. Values come from
+// @org/design-tokens (var(--…)); keep both themes at WCAG 2.2 AA contrast (a11y.spec.ts scans
+// the header in light and dark).
+
+/*
+ * ===== HEADER COLOURS: change them here =====
+ *
+ * Unchanged, the header uses the page tokens (white / dark surface). Every element inside the
+ * header (brand, RemoteNav, ThemeToggle, UserMenu, Menu button, open panel) follows these
+ * values: `.header` below maps them onto the page token names (--color-surface, …).
+ *
+ *   --header-bg          header + open Menu panel background
+ *   --header-text        brand, nav links, buttons, Menu button
+ *   --header-text-muted  "Theme" label, user name, Menu button border
+ *   --header-border      bottom border, panel divider, button borders
+ *   --header-accent      active nav link, focus rings, pressed theme button, ghost buttons
+ *   --header-on-accent   text on the pressed theme button (on --header-accent)
+ *   --header-hover       hover and "Menu open" background
+ *
+ * Example: a blue header with white text (contrast on the header background: text 6.7:1
+ * light / 10.4:1 dark, muted text 5.5:1 / 7.3:1, text on the hover tint 5.0:1 / 7.0:1).
+ * Replace the values in `.host` with the light ones and add the dark block:
+ *
+ *   .host {
+ *     --header-bg: #1d4ed8;
+ *     --header-text: #ffffff;
+ *     --header-text-muted: #dbeafe;
+ *     --header-border: #60a5fa;
+ *     --header-accent: #ffffff;
+ *     --header-on-accent: var(--header-bg);
+ *     --header-hover: color-mix(in srgb, var(--header-text) 14%, var(--header-bg));
+ *   }
+ *
+ *   :global([data-theme='dark']) .host {
+ *     --header-bg: #1e3a8a;
+ *     --header-text: #ffffff;
+ *     --header-text-muted: #bfdbfe;
+ *     --header-border: #3b82f6;
+ *     --header-accent: #ffffff;
+ *   }
+ */
+/* Citizen Portal keeps the default header on purpose (white in light, the dark surface in dark). */
+.host {
+  --header-bg: var(--color-surface);
+  --header-text: var(--color-text);
+  --header-text-muted: var(--color-text-muted);
+  --header-border: var(--color-border);
+  --header-accent: var(--color-accent);
+  --header-on-accent: var(--color-accent-contrast);
+  --header-hover: var(--color-bg);
+
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/*
+ * The header row: brand, nav, theme toggle and user menu. ShellLayout measures whether they fit
+ * in one row (useFitLayout from @org/ui) and sets data-layout="wide" | "compact" (and
+ * "measure" for an instant, never painted); before the first measurement the 40rem media query
+ * at the bottom decides.
+ */
+.header {
+  --color-surface: var(--header-bg);
+  --color-text: var(--header-text);
+  --color-text-muted: var(--header-text-muted);
+  --color-border: var(--header-border);
+  --color-accent: var(--header-accent);
+  --color-accent-contrast: var(--header-on-accent);
+  --color-bg: var(--header-hover);
+
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4);
+  color: var(--color-text);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/*
+ * Brand (`<Brand>` from @org/ui: one line, ellipsis, full accessible name). It is the flex item
+ * that shrinks first; the Menu button and the panel never shrink.
+ */
+.brand {
+  flex: 0 1 auto;
+  font-weight: 700;
+  font-size: 1.125rem;
+  letter-spacing: -0.02em;
+}
+
+/* Zero-height strip across the header: useFitLayout observes its width (= available width). */
+.sizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Wide: nav + actions sit in the header row; the menu button is hidden. */
+.panel {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.main {
+  flex: 1;
+  padding: var(--space-4);
+  width: 100%;
+
+  /* target of the skip link (tabindex="-1"), not a control: no focus ring around the page */
+  &:focus {
+    outline: none;
+  }
+}
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  flex: 1;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-items: center;
+}
+
+.menuButton {
+  display: none;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 2.75rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-text-muted);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--color-bg);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  &[aria-expanded='true'] {
+    background: var(--color-bg);
+  }
+}
+
+/* three bars drawn with borders, so they follow the text colour in both themes */
+.menuIcon {
+  width: 1rem;
+  height: 0.75rem;
+  border-top: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  background: linear-gradient(currentColor, currentColor) center / 100% 2px
+    no-repeat;
+}
+
+/*
+ * Compact: one header row (brand + Menu); nav, theme toggle and user menu in a dropdown panel
+ * below the header.
+ */
+@mixin compact-header {
+  flex-wrap: nowrap;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+
+  .menuButton {
+    display: inline-flex;
+  }
+
+  .panel {
+    display: none;
+  }
+
+  .panel.open {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: var(--space-4);
+    max-height: calc(100vh - 4rem);
+    overflow-y: auto;
+    padding: var(--space-4);
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 25%);
+  }
+
+  /* stack the links (also RemoteNav's list) */
+  .open .nav,
+  .open .nav ul {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: var(--space-1);
+  }
+
+  .open .nav a {
+    display: block;
+  }
+
+  .open .actions {
+    gap: var(--space-3);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--color-border);
+  }
+}
+
+.header[data-layout='compact'] {
+  @include compact-header;
+}
+
+@media (max-width: 40rem) {
+  .header:not([data-layout]) {
+    @include compact-header;
+  }
+
+  .main {
+    padding: var(--space-3);
+  }
+}
+
+/* Measured to fit: keep everything on the row (never wrap into a second one). */
+.header[data-layout='wide'] {
+  flex-wrap: nowrap;
+
+  /* the brand (flex: 0 1 auto) absorbs any shortfall; nav and actions keep their full width */
+  .panel {
+    flex: 1 0 auto;
+  }
+
+  .panel,
+  .actions {
+    flex-wrap: nowrap;
+  }
+
+  .nav {
+    flex-wrap: nowrap;
+    white-space: nowrap;
+  }
+}
+
+/*
+ * Measuring (set and removed by useFitLayout within one task, never painted): the width of one
+ * unwrapped row of brand, nav and actions, also while the panel is collapsed.
+ */
+.header[data-layout='measure'] {
+  width: max-content;
+  flex-wrap: nowrap;
+
+  .menuButton {
+    display: none;
+  }
+
+  /* counted at its full width, but at most --header-brand-min-width (default 30ch): a very long
+     name cannot force the compact layout at every width (wide then truncates it, never below
+     that width) */
+  .brand {
+    flex: none;
+    max-width: var(--header-brand-min-width, 30ch);
+  }
+
+  .panel {
+    position: static;
+    display: flex;
+    flex: none;
+    flex-wrap: nowrap;
+  }
+
+  .nav,
+  .actions {
+    flex: none;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+  }
+}

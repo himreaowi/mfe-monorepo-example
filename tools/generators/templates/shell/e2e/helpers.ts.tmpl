@@ -7,6 +7,20 @@ import {
   type ZoneRemote,
 } from '@org/playwright-config/test';
 
+/*
+ * Layout contract. The header tests follow the shell's own layout (src/layouts/ShellLayout,
+ * copied from a starter by `pnpm gen:shell --layout top|side`) through these hooks, which both
+ * starters set; keep them when you restyle or restructure the layout, or adapt the helpers below:
+ *
+ * - `data-testid="main-header"` on the `<header>` (banner), with
+ *   `data-layout="wide" | "compact"` (from useFitLayout) and
+ *   `data-nav-placement="top" | "side"` (which checks apply: header row, or sidebar + drawer);
+ * - `data-testid="header-brand"` (the app name), `"header-menu-button"` (a button named "Menu",
+ *   visible only when compact) and `"header-panel"` (what the Menu button shows);
+ * - a `<nav>` named "Main" holding the "Apps" list (RemoteNav); one `<main>`;
+ * - a "Skip to main content" link as the first Tab stop.
+ */
+
 /**
  * This zone, read from the shell: port (package.json), remotes (remotes.json) and their dev
  * servers (mfe-manifest.dev.json). Every spec iterates `zone.remotes`, so a remote added with
@@ -27,8 +41,8 @@ export function remotePage(page: Page, remote: ZoneRemote): Locator {
 }
 
 /**
- * The header panel (nav, theme toggle, user menu). `MainLayout` folds it behind a "Menu" button
- * whenever the header row does not fit (always at 375 px; on wider screens too when the zone has
+ * The header panel (nav, theme toggle, user menu). The shell layout folds it behind a "Menu"
+ * button whenever the header row does not fit (always at 375 px; on wider screens too when the zone has
  * many remotes): open it first, so its contents are visible and clickable on every viewport.
  * No-op when the header is wide and when the panel is already open.
  */
@@ -48,7 +62,7 @@ export async function openHeaderMenu(page: Page): Promise<Locator> {
 
 /**
  * Resize the viewport and wait until the header has settled at the new width; returns its
- * layout. `MainLayout` re-measures in a ResizeObserver callback that can run after
+ * layout. The layout (useFitLayout) re-measures in a ResizeObserver callback that can run after
  * `setViewportSize` returns (late under load), so a single read may still see the previous
  * layout. This waits until the page reports the new width, then polls (two animation frames
  * per read) until `data-layout` and the Menu button agree (`compact` ⇔ Menu visible, nav
@@ -98,8 +112,9 @@ export async function resizeHeader(
 }
 
 /**
- * Where `MainLayout` puts the nav (`navPlacement` in src/layouts/ShellLayout): `top` (header
- * row) or `side` (sidebar on wide screens). Read from the page, so the specs follow a change.
+ * Where the shell layout puts the nav: `top` (header row) or `side` (sidebar on wide screens),
+ * read from `data-nav-placement` on the header (set by the starter in
+ * src/layouts/ShellLayout/ShellLayout.tsx), so the specs follow the layout the page shows.
  */
 export async function navPlacement(page: Page): Promise<'top' | 'side'> {
   const value = await page
@@ -109,8 +124,9 @@ export async function navPlacement(page: Page): Promise<'top' | 'side'> {
 }
 
 /**
- * Smallest viewport width with the sidebar (`navPlacement="side"`): 16rem sidebar + 40rem
- * content (MainLayout.module.scss). Narrower, the nav is a drawer behind "Menu".
+ * Smallest viewport width with the sidebar (side layout): 16rem sidebar + 40rem content
+ * (`$sidebar-width` + `$side-main-min-width` in src/layouts/ShellLayout/ShellLayout.module.scss;
+ * change both together). Narrower, the nav is a drawer behind "Menu".
  */
 export const SIDEBAR_MIN_WIDTH = 56 * 16;
 

@@ -1,1 +1,1 @@
-export { RemoteNav } from './RemoteNav';
+export { RemoteNav, type RemoteNavProps } from './RemoteNav';

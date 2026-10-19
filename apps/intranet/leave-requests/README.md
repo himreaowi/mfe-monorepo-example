@@ -44,7 +44,7 @@ src/
   features/leave/     api/, hooks/, types/, utils/, __fixtures__/, components/ (one folder per
                       component: LeaveOverview/, LeaveBalanceCards/, LeaveRequestList/,
                       LeaveRequestForm/ with its private Field.tsx)
-  layouts/            StandaloneLayout (MainLayout chrome, standalone only)
+  layouts/            StandaloneLayout/ (own simple chrome, standalone only)
   pages/              OverviewPage, DetailsPage, NotFoundPage
   core/constants/     app, routePaths, apiRoutes
   services/           http client (base URL from host settings)
