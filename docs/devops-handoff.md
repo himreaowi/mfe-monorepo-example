@@ -239,6 +239,9 @@ upgrade-insecure-requests
   switch to extracted CSS: zero violations, no `<style>` elements, everything styled, and a
   remote whose `.css` failed to load showed its fallback. Add `report-to`/`report-uri` via `CSP_EXTRA`
   and roll out with `Content-Security-Policy-Report-Only` first if you prefer.
+- The frontend dev servers (`pnpm dev`) send the same rules with localhost origins, and dev
+  builds extract CSS like production, so a change that would break this CSP already fails
+  locally and in the e2e suite.
 
 ### Hosting topology
 

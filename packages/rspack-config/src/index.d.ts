@@ -38,6 +38,14 @@ export interface BaseOptions {
   shared?: SharedConfig;
   /** Compile-time constants (JSON-stringified). Runtime config belongs in mfe-manifest.json. */
   define?: Record<string, unknown>;
+  /**
+   * Content-Security-Policy header of the dev server (`rspack dev`). Default `true`: the
+   * production rules (no `'unsafe-inline'`/`'unsafe-eval'`, `frame-src 'none'`, …) with any
+   * localhost origin allowed, so dev fails early on what production would block. Pass
+   * `{ extraOrigins }` when the dev manifest points at non-local origins (a deployed remote, a
+   * vendor sandbox, a shared dev API) and `{ frameSrc }` for iframes; `false` sends no CSP.
+   */
+  devCsp?: boolean | DevCspOptions;
   /** Emit service worker + web manifest in production. */
   pwa?: boolean;
   /**
@@ -52,6 +60,13 @@ export interface BaseOptions {
     | 'hidden-source-map'
     | 'source-map'
     | false;
+}
+
+export interface DevCspOptions {
+  /** More origins for script/style/img/font/connect/form-action (e.g. `https://dev-api.example.sg`). */
+  extraOrigins?: string[];
+  /** Allowed iframe origins (default: none, `frame-src 'none'`). */
+  frameSrc?: string[];
 }
 
 export interface ShellOptions extends BaseOptions {
@@ -72,6 +87,10 @@ export type ConfigFunction = (
 ) => Configuration;
 
 export declare const TIER1_SINGLETONS: string[];
+/** The dev servers' Content-Security-Policy value (see `BaseOptions.devCsp`). */
+export declare function devContentSecurityPolicy(
+  options?: DevCspOptions,
+): string;
 export declare function createShellConfig(
   options: ShellOptions,
 ): ConfigFunction;

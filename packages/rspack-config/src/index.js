@@ -115,22 +115,23 @@ function resolveMode(env, argv, explicit) {
 }
 
 /**
- * Style loaders: SCSS/CSS through sass-loader + css-loader, then
- * - development: style-loader (CSS injected as <style> from JS, fast style reload with HMR);
- * - production: CssExtractRspackPlugin's loader (real, content-hashed .css files). No <style>
- *   element at runtime, so the CSP needs no `style-src 'unsafe-inline'`. Each JS chunk's CSS
- *   becomes a .css file that the chunk loader fetches as <link rel="stylesheet"> (from the
- *   app's own origin via publicPath) and awaits before the chunk's code runs, also when a shell
- *   loads a remote's exposed module.
- * CSS Module class names are salted with the federation name so two apps never generate the
- * same class name for e.g. `Button.module.scss` `.button`.
+ * Style loaders, the same in development and production: sass-loader → css-loader →
+ * CssExtractRspackPlugin's loader. Each JS chunk's CSS becomes a real .css file that the chunk
+ * loader fetches as <link rel="stylesheet"> (from the app's own origin via publicPath) and
+ * awaits before the chunk's code runs, also when a shell loads a remote's exposed module. No
+ * <style> element at runtime, so the CSP needs no `style-src 'unsafe-inline'` (the dev servers
+ * send such a CSP too, see devContentSecurityPolicy).
+ * - development: unhashed `[name].css` with linked `.css.map` files; the extract loader adds a
+ *   small HMR handler, so an edited stylesheet is swapped by re-fetching its <link> (no reload).
+ * - production: `[name].[contenthash:8].css`, no CSS source maps.
+ * CSS Module class names are `[hash:base64:8]` in both modes (identical class names in dev and
+ * prod), salted with the federation name so two apps never generate the same class name for
+ * e.g. `Button.module.scss` `.button`.
  * @param {{ name: string, isDev: boolean, modules: boolean }} o
  */
 function styleLoaders({ name, isDev, modules }) {
   return [
-    isDev
-      ? { loader: require.resolve('style-loader') }
-      : { loader: rspack.CssExtractRspackPlugin.loader },
+    { loader: rspack.CssExtractRspackPlugin.loader },
     {
       loader: require.resolve('css-loader'),
       options: {
@@ -141,9 +142,7 @@ function styleLoaders({ name, isDev, modules }) {
           ? {
               namedExport: false,
               exportLocalsConvention: 'as-is',
-              localIdentName: isDev
-                ? '[name]__[local]__[hash:base64:5]'
-                : '[hash:base64:8]',
+              localIdentName: '[hash:base64:8]',
               localIdentHashSalt: name,
             }
           : false,
@@ -154,6 +153,42 @@ function styleLoaders({ name, isDev, modules }) {
       options: { implementation: sass, api: 'modern', sourceMap: isDev },
     },
   ];
+}
+
+/** Local dev origins: every dev server, mock API and mock vendor runs on localhost. */
+const DEV_ORIGINS = ['http://localhost:*', 'http://127.0.0.1:*'];
+/** HMR websockets of the dev servers (a shell page also connects to each remote's server). */
+const DEV_SOCKETS = ['ws://localhost:*', 'ws://127.0.0.1:*'];
+
+/**
+ * Content-Security-Policy the dev servers send: the production policy (deploy/nginx
+ * security-headers.inc.template) with the remote/vendor/API origin lists replaced by any
+ * localhost port, plus the HMR websockets. Same rules where it matters: no `'unsafe-inline'`
+ * (no `<style>` elements, no inline scripts), no `'unsafe-eval'`, `object-src 'none'`,
+ * `frame-src 'none'` unless `frameSrc` is given. Left out: production's
+ * `upgrade-insecure-requests` (dev servers are plain http).
+ * @param {{ extraOrigins?: string[], frameSrc?: string[] }} [options] extraOrigins: more origins
+ *   for script/style/img/font/connect/form-action (e.g. a deployed remote or a vendor sandbox
+ *   the dev manifest points at); frameSrc: allowed iframe origins
+ * @returns {string}
+ */
+function devContentSecurityPolicy({ extraOrigins = [], frameSrc = [] } = {}) {
+  const origins = [...DEV_ORIGINS, ...extraOrigins].join(' ');
+  return [
+    "default-src 'self'",
+    `script-src 'self' ${origins}`,
+    `style-src 'self' ${origins}`,
+    `img-src 'self' data: ${origins}`,
+    `font-src 'self' ${origins}`,
+    `connect-src 'self' ${origins} ${DEV_SOCKETS.join(' ')}`,
+    `frame-src ${frameSrc.length ? frameSrc.join(' ') : "'none'"}`,
+    "worker-src 'self'",
+    "manifest-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    `form-action 'self' ${origins}`,
+    "frame-ancestors 'none'",
+  ].join('; ');
 }
 
 /**
@@ -208,6 +243,7 @@ function createBaseConfig(options, mode) {
     pwa = false,
     devManifest = false,
     htmlPublicPath = '/',
+    devCsp = true,
     productionSourceMap = 'hidden-nosources-source-map',
   } = options;
   if (!rootDir || !path.isAbsolute(rootDir)) {
@@ -301,15 +337,14 @@ function createBaseConfig(options, mode) {
       }),
     );
   }
-  if (!isDev) {
-    plugins.push(
-      new rspack.CssExtractRspackPlugin({
-        // 8 hex chars like the JS chunks: deploy/nginx caches `*.<8 hex>.css` as immutable
-        filename: '[name].[contenthash:8].css',
-        chunkFilename: '[name].[contenthash:8].css',
-      }),
-    );
-  }
+  plugins.push(
+    new rspack.CssExtractRspackPlugin({
+      // production: 8 hex chars like the JS chunks (deploy/nginx caches `*.<8 hex>.css` as
+      // immutable); development: stable names, HMR re-fetches them with a `?<timestamp>` query
+      filename: isDev ? '[name].css' : '[name].[contenthash:8].css',
+      chunkFilename: isDev ? '[name].css' : '[name].[contenthash:8].css',
+    }),
+  );
   if (!isDev && pwa) {
     plugins.push(new PwaPlugin());
   }
@@ -373,10 +408,28 @@ function createBaseConfig(options, mode) {
     devServer: {
       port,
       hot: true,
-      historyApiFallback: { index: '/index.html', disableDotRule: true },
+      // index.html for page navigations only (Accept: text/html). A missing .json/.js (e.g. the
+      // hot-update manifest of a build that failed) must stay a 404: answered with index.html,
+      // HMR fails on the JSON and stops updating instead of falling back to a full reload.
+      historyApiFallback: {
+        index: '/index.html',
+        disableDotRule: true,
+        htmlAcceptHeaders: ['text/html'],
+      },
       allowedHosts: 'all',
       // A shell on another port loads this app's mf-manifest.json / chunks.
-      headers: { 'Access-Control-Allow-Origin': '*' },
+      // The CSP (production rules, localhost origins) makes dev fail early on anything production
+      // would block: a <style> element, an inline script, an undeclared origin.
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        ...(devCsp
+          ? {
+              'Content-Security-Policy': devContentSecurityPolicy(
+                devCsp === true ? {} : devCsp,
+              ),
+            }
+          : {}),
+      },
       client: { overlay: { errors: true, warnings: false } },
       static: hasPublicDir ? { directory: publicDirAbs } : false,
       ...(devManifest
@@ -440,6 +493,7 @@ export {
   createRemoteConfig,
   createBaseConfig,
   createSharedConfig,
+  devContentSecurityPolicy,
   installedVersion,
   TIER1_SINGLETONS,
 };

@@ -6,36 +6,36 @@ those versions were chosen.
 
 ## Pinned versions
 
-| Tool                                            | Version                          | Where pinned                  | Notes                                                     |
-| ----------------------------------------------- | -------------------------------- | ----------------------------- | --------------------------------------------------------- |
-| Node.js                                         | 24 LTS (tested 24.21.0)          | `.nvmrc`, `engines.node >=24` | Corepack ships with Node 24                               |
-| pnpm                                            | 12.14.0                          | `packageManager` (Corepack)   | `corepack enable` once, or run `corepack pnpm`            |
-| react / react-dom                               | 19.3.1                           | catalog (tier 1)              | MF singleton                                              |
-| react-router                                    | 8.4.0                            | catalog (tier 1)              | MF singleton. Package is ESM-only                         |
-| @types/react / @types/react-dom                 | 19.3.0                           | catalog (tier 1)              |                                                           |
-| @rspack/core / @rspack/cli                      | 2.2.9                            | catalog                       |                                                           |
-| @rspack/dev-server                              | 2.2.1                            | catalog                       |                                                           |
-| @module-federation/enhanced                     | 2.9.2                            | catalog                       | runtime API via `@module-federation/enhanced/runtime`     |
-| nx                                              | 23.3.0                           | catalog                       | package-based mode                                        |
-| typescript                                      | **6.0.3**                        | catalog                       | NOT 7.x, see below                                        |
-| eslint                                          | 10.12.0                          | catalog                       | 10.13.0 was less than 1 day old, see minimumReleaseAge    |
-| typescript-eslint                               | 8.71.2                           | catalog                       |                                                           |
-| @eslint/js                                      | 10.0.1                           | catalog                       |                                                           |
-| eslint-plugin-react-hooks                       | 7.1.1                            | catalog                       |                                                           |
-| eslint-plugin-prettier / eslint-config-prettier | 5.5.7 / 10.1.8                   | catalog                       |                                                           |
-| prettier                                        | 3.9.10                           | catalog                       |                                                           |
-| globals                                         | 17.13.0                          | catalog                       |                                                           |
-| @types/node                                     | 24.19.2                          | catalog                       | matches the Node major                                    |
-| jest / jest-environment-jsdom                   | 30.5.2                           | catalog (A2)                  | via `@org/jest-config`                                    |
-| @swc/jest / @swc/core                           | 0.2.39 / 1.16.18                 | catalog (A2)                  | ts-jest not used                                          |
-| @testing-library/react / user-event / jest-dom  | 16.3.3 / 14.6.8 / 7.0.1          | catalog (A2)                  | + @testing-library/dom 10.4.2, @types/jest 30.0.0         |
-| sass / sass-loader / css-loader / style-loader  | 1.105.1 / 17.0.1 / 7.1.5 / 4.0.0 | catalog (A2)                  | used by `@org/rspack-config` (style-loader: dev only)     |
-| workbox-build                                   | 7.4.1                            | catalog (A2)                  | used by `@org/pwa/build`                                  |
-| ajv                                             | 8.20.0                           | catalog (A3)                  | dev only: generates the manifest validator                |
-| @nx/eslint-plugin                               | 23.3.0                           | catalog (A5)                  | `enforce-module-boundaries`, same version as nx           |
-| yaml                                            | 2.9.1                            | catalog (A5)                  | `tools/scripts` reads `pnpm-workspace.yaml`               |
-| @playwright/test                                | 1.64.1                           | catalog (A8)                  | Chromium revision 1248; shells + `@org/playwright-config` |
-| @axe-core/playwright                            | 4.14.0                           | catalog (A8)                  | brings axe-core 4.14                                      |
+| Tool                                            | Version                  | Where pinned                  | Notes                                                                            |
+| ----------------------------------------------- | ------------------------ | ----------------------------- | -------------------------------------------------------------------------------- |
+| Node.js                                         | 24 LTS (tested 24.21.0)  | `.nvmrc`, `engines.node >=24` | Corepack ships with Node 24                                                      |
+| pnpm                                            | 12.14.0                  | `packageManager` (Corepack)   | `corepack enable` once, or run `corepack pnpm`                                   |
+| react / react-dom                               | 19.3.1                   | catalog (tier 1)              | MF singleton                                                                     |
+| react-router                                    | 8.4.0                    | catalog (tier 1)              | MF singleton. Package is ESM-only                                                |
+| @types/react / @types/react-dom                 | 19.3.0                   | catalog (tier 1)              |                                                                                  |
+| @rspack/core / @rspack/cli                      | 2.2.9                    | catalog                       |                                                                                  |
+| @rspack/dev-server                              | 2.2.1                    | catalog                       |                                                                                  |
+| @module-federation/enhanced                     | 2.9.2                    | catalog                       | runtime API via `@module-federation/enhanced/runtime`                            |
+| nx                                              | 23.3.0                   | catalog                       | package-based mode                                                               |
+| typescript                                      | **6.0.3**                | catalog                       | NOT 7.x, see below                                                               |
+| eslint                                          | 10.12.0                  | catalog                       | 10.13.0 was less than 1 day old, see minimumReleaseAge                           |
+| typescript-eslint                               | 8.71.2                   | catalog                       |                                                                                  |
+| @eslint/js                                      | 10.0.1                   | catalog                       |                                                                                  |
+| eslint-plugin-react-hooks                       | 7.1.1                    | catalog                       |                                                                                  |
+| eslint-plugin-prettier / eslint-config-prettier | 5.5.7 / 10.1.8           | catalog                       |                                                                                  |
+| prettier                                        | 3.9.10                   | catalog                       |                                                                                  |
+| globals                                         | 17.13.0                  | catalog                       |                                                                                  |
+| @types/node                                     | 24.19.2                  | catalog                       | matches the Node major                                                           |
+| jest / jest-environment-jsdom                   | 30.5.2                   | catalog (A2)                  | via `@org/jest-config`                                                           |
+| @swc/jest / @swc/core                           | 0.2.39 / 1.16.18         | catalog (A2)                  | ts-jest not used                                                                 |
+| @testing-library/react / user-event / jest-dom  | 16.3.3 / 14.6.8 / 7.0.1  | catalog (A2)                  | + @testing-library/dom 10.4.2, @types/jest 30.0.0                                |
+| sass / sass-loader / css-loader                 | 1.105.1 / 17.0.1 / 7.1.5 | catalog (A2)                  | used by `@org/rspack-config` (style-loader removed: CSS is extracted in dev too) |
+| workbox-build                                   | 7.4.1                    | catalog (A2)                  | used by `@org/pwa/build`                                                         |
+| ajv                                             | 8.20.0                   | catalog (A3)                  | dev only: generates the manifest validator                                       |
+| @nx/eslint-plugin                               | 23.3.0                   | catalog (A5)                  | `enforce-module-boundaries`, same version as nx                                  |
+| yaml                                            | 2.9.1                    | catalog (A5)                  | `tools/scripts` reads `pnpm-workspace.yaml`                                      |
+| @playwright/test                                | 1.64.1                   | catalog (A8)                  | Chromium revision 1248; shells + `@org/playwright-config`                        |
+| @axe-core/playwright                            | 4.14.0                   | catalog (A8)                  | brings axe-core 4.14                                                             |
 
 ## A0 spike: one React instance across shell and remote
 
@@ -170,20 +170,54 @@ tier-1 singleton.
 - The Rspack CLI sets `NODE_ENV` (`build` → production, `dev`/`serve` → development) before it
   loads the config and passes `env.RSPACK_SERVE` / `env.RSPACK_BUILD` to config functions. The
   factories return `(env, argv) => config` and derive the mode from these.
-- Loaders (`style-loader`, `css-loader`, `sass-loader`) are passed as absolute paths
+- Loaders (`css-loader`, `sass-loader`) are passed as absolute paths
   (`require.resolve`) from `@org/rspack-config`. Apps do not need them installed (D7).
-- **Styles: style-loader in development, extracted `.css` files in production.** Development
-  keeps style-loader (`<style>` elements injected from JS): HMR swaps a changed stylesheet
-  without a reload. Production uses Rspack's built-in `CssExtractRspackPlugin` (the
-  mini-css-extract-plugin port): one `[name].[contenthash:8].css` per JS chunk, loaded as
-  `<link rel="stylesheet">` by the chunk loader before the chunk's code runs. No `<style>`
-  element is created at runtime, so the CSP needs no `style-src 'unsafe-inline'`. Only the last
-  loader differs between the modes; css-loader (CSS Modules naming and salt) and sass-loader
-  are the same, so class names are produced the same way in both.
+- **Styles: extracted `.css` files in development and production.** Both modes use Rspack's
+  built-in `CssExtractRspackPlugin` (the mini-css-extract-plugin port): one `.css` file per JS
+  chunk, loaded as `<link rel="stylesheet">` by the chunk loader before the chunk's code runs
+  (production `[name].[contenthash:8].css`; development `[name].css` with a linked `.css.map`).
+  No `<style>` element is created at runtime, so the CSP needs no `style-src 'unsafe-inline'`.
+  **Why dev = prod:** with style-loader in dev (as before) the page that developers looked at
+  every day loaded CSS differently from production (a remote's CSS arrived with its JS instead
+  of from its origin through the chunk loader, failures could not happen, `<style>` elements
+  were fine), so CSS-loading and CSP bugs only showed up after a production build. Now the
+  loaders, the CSS Modules options (`[hash:base64:8]`, salted with the federation name) and the
+  remote CSS path are identical; class names are the same in dev and prod (checked by a real
+  build in the rspack-config tests). The price: class names in dev are hashes too (DevTools
+  maps them back to the `.module.scss` through the CSS source maps).
+- **CSS hot reload with extracted CSS.** The extract loader adds a small HMR handler to every
+  stylesheet module: on a change it re-fetches the page's `<link rel="stylesheet">` files with a
+  `?<timestamp>` query (for CSS Modules all of them, the old link is removed when the new one has
+  loaded), so the change shows without a page reload and React state survives. Verified with a
+  `window` marker that survives the update (template copy, both zones): a remote's
+  `.module.scss` standalone and embedded in the shell, an `@org/ui` `.module.scss` and the
+  shell's `ShellLayout.module.scss`, each applied in about 250 ms with no reload. Embedded
+  remotes work because the remote's `remoteEntry.js` (dev build) carries its own HMR client: in
+  the shell page it connects to the remote's dev server and reloads the remote's `<link>`
+  (from the remote's origin). Limits, same as with style-loader (no React Refresh in the
+  template): adding, renaming or removing a class changes the module's exports, so the update
+  is not accepted and the page reloads in full (for an embedded remote: the shell page).
+- **Dev servers send a CSP.** `rspack dev` sends the production CSP rules (no `'unsafe-inline'`,
+  no `'unsafe-eval'`, `frame-src 'none'`, `object-src 'none'`, …) with every localhost port
+  allowed instead of the per-environment origin lists, plus `ws://localhost:*` for the HMR
+  sockets (`devContentSecurityPolicy()` in `@org/rspack-config`; option `devCsp`:
+  `{ extraOrigins, frameSrc }` for a dev manifest that points at non-local origins, `false` to
+  turn it off). A `<style>` element, a `style="…"` attribute in HTML or an undeclared origin
+  fails in `pnpm dev` and in e2e (the fixture fails on the console error Chromium logs). HMR
+  works under it (hot-update chunks are scripts from the app's own dev server). Two things log
+  CSP errors under it, both harmless: the dev-server **error overlay** (shown only while the
+  build has an error) colours its text with inline `style` attributes, which are blocked; the
+  overlay still shows the error, partly uncoloured. **axe-core** sets temporary inline styles
+  while it scans; `checkA11y` (`@org/playwright-config`) ignores exactly those lines (no script
+  URL, only while axe runs).
+- **History fallback only for page navigations** (`htmlAcceptHeaders: ['text/html']`). With the
+  default (`*/*` too) a missing hot-update manifest after a failed build was answered with
+  `index.html`; HMR then failed on the JSON ("Update failed: Unexpected token '<'") and stopped
+  applying changes until a manual reload. Now it gets a 404, logs "Cannot find update" and
+  reloads the page once, after which HMR continues.
 - Why not Rspack's native CSS (`type: 'css/auto'`; `experiments.css` is deprecated in Rspack 2):
   it replaces css-loader's CSS Modules implementation (other class names, other options for
-  the salt and exports), so dev (style-loader needs css-loader) and prod would generate class
-  names differently, and its interplay with Module Federation exposes is less proven. The
+  the salt and exports), and its interplay with Module Federation exposes is less proven. The
   extract plugin's runtime is what Module Federation remotes have used with webpack for years.
 - Rule `type: 'javascript/auto'` is set on the SCSS/CSS rules, so Rspack's native CSS handling
   does not process them a second time.
@@ -489,5 +523,6 @@ answered 503 showed `RemoteFallback` (then rendered styled after "Try again").
   vendor and the vendor kit examples use them. React `style` props are set through the CSSOM
   (`element.style`) and are allowed; only `<style>` elements and `style="…"` attributes in HTML
   are blocked.
-- Development still uses style-loader (13 `<style>` elements in the standalone remote, an SCSS
-  edit applied by HMR without a reload). Dev servers send no CSP.
+- Development used style-loader at first (13 `<style>` elements in the standalone remote); it
+  now extracts CSS the same way, and the dev servers send a CSP without `'unsafe-inline'`
+  (see "Rspack / Module Federation" above).

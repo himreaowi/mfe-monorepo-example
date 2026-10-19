@@ -40,6 +40,19 @@ export const THEME_STORAGE_KEY = 'mfe-theme';
 /** Chromium's console line for a failed subresource; reported with its URL from network events. */
 const FAILED_RESOURCE = /^Failed to load resource: /;
 
+/** Chromium's console line when the CSP blocks an inline style (`style-src` without 'unsafe-inline'). */
+const CSP_INLINE_STYLE =
+  /^Applying inline style violates the following Content Security Policy/;
+
+/**
+ * Pages on which `checkA11y` is running axe-core right now. axe sets temporary inline styles
+ * on elements while it measures (e.g. colour contrast); under the dev servers' CSP (no
+ * 'unsafe-inline' for styles, like production) Chromium blocks and logs them. Those lines come
+ * from the injected axe script (no script URL) and are not errors of the page.
+ * @type {WeakSet<import('@playwright/test').Page>}
+ */
+const axeRunning = new WeakSet();
+
 /**
  * Does an HTTP failure match an allowance? A RegExp is tested against
  * `"<status> <METHOD> <url>"` (status `failed` for network errors); an object matches when every
@@ -102,7 +115,11 @@ async function collectConsoleErrors(
     if (message.type() !== 'error') return;
     const text = message.text();
     if (FAILED_RESOURCE.test(text)) return; // recorded by the network listeners, with URL
-    messages.push({ text, url: message.location().url ?? '', kind: 'console' });
+    const url = message.location().url ?? '';
+    if (axeRunning.has(page) && url === '' && CSP_INLINE_STYLE.test(text)) {
+      return; // axe-core's own temporary inline styles (see axeRunning)
+    }
+    messages.push({ text, url, kind: 'console' });
   });
   page.on('pageerror', (error) => {
     messages.push({ text: error.message, url: '', kind: 'uncaught' });
@@ -230,7 +247,13 @@ export async function checkA11y(page, options = {}) {
   if (options.disableRules?.length) {
     builder = builder.disableRules(options.disableRules);
   }
-  const results = await builder.analyze();
+  axeRunning.add(page);
+  let results;
+  try {
+    results = await builder.analyze();
+  } finally {
+    axeRunning.delete(page);
+  }
   expect(
     formatViolations(results.violations),
     `axe WCAG 2.2 AA violations on ${page.url()}`,

@@ -47,21 +47,31 @@ Shared by both:
   before React loads). `HtmlRspackPlugin` with `chunks: ['main']`; template `public/index.html` or
   the package default (`templates/index.html`).
 - TS/TSX via `builtin:swc-loader` (automatic JSX runtime).
-- SCSS/CSS via sass-loader + css-loader, then **style-loader in development** (`<style>` from JS,
-  HMR style reload) and **`CssExtractRspackPlugin` in production**: one
-  `[name].[contenthash:8].css` per chunk, loaded as `<link rel="stylesheet">` by the chunk
-  loader before the chunk runs (a remote's CSS comes from its own origin, also when a shell
-  loads it; a CSS file that fails rejects the load → `RemoteFallback`). No `<style>` elements in
-  production, so the CSP has no `style-src 'unsafe-inline'`. Why not native CSS: docs/toolchain.md.
-  CSS Modules: `[name]__[local]__[hash]` in dev, `[hash]` in prod, **hash salted with the
-  federation name** so two apps never produce the same class name.
+- SCSS/CSS via sass-loader + css-loader + **`CssExtractRspackPlugin` in development and
+  production** (no style-loader): one `.css` per chunk (`[name].[contenthash:8].css` in
+  production, `[name].css` + linked `.css.map` in development), loaded as
+  `<link rel="stylesheet">` by the chunk loader before the chunk runs (a remote's CSS comes from
+  its own origin, also when a shell loads it; a CSS file that fails rejects the load →
+  `RemoteFallback`). No `<style>` elements, so the CSP has no `style-src 'unsafe-inline'`. CSS
+  hot reload in development re-fetches the changed stylesheets (no page reload; adding or
+  removing a class reloads the page). Why dev = prod and why not native CSS: docs/toolchain.md.
+  CSS Modules: `[hash:base64:8]` in both modes (same class names in dev and prod), **hash salted
+  with the federation name** so two apps never produce the same class name.
+- **Dev server CSP** (`devCsp`, default on): the production rules (no `'unsafe-inline'` /
+  `'unsafe-eval'`, `frame-src 'none'`, …) with any `http://localhost:*` origin and the HMR
+  websockets allowed (`devContentSecurityPolicy()`). `devCsp: { extraOrigins: [...] }` when the
+  dev manifest points at non-local origins, `{ frameSrc: [...] }` for iframes, `false` = no CSP.
+  The dev-server error overlay (only shown on a build error) logs CSP errors for its inline
+  colours.
 - **Tier-1 singletons** (`TIER1_SINGLETONS`: react, react-dom, react-router, @org/ui, @org/auth) shared with
   `singleton: true, strictVersion: true, requiredVersion: <installed version>`. The installed
   version is the catalog version (or the workspace version for `@org/ui` / `@org/auth`), so any drift fails
   loudly at load time and the shell shows `RemoteFallback`. Extra `shared` entries can be passed.
 - `index.html` script URLs are absolute (`htmlPublicPath`, default `/`), so a deep link or reload
   of a standalone remote (`/details`) still loads its entry.
-- `lazyCompilation: false`; dev server with CORS `*`, history fallback, HMR, `public/` as static.
+- `lazyCompilation: false`; dev server with CORS `*`, history fallback for page navigations
+  (`Accept: text/html`; other missing files stay 404 so HMR recovers after a failed build), HMR,
+  `public/` as static.
 - Production: `[name].[contenthash:8].js` / `.css` (8 hex: the nginx immutable-cache rule),
   **hidden source maps without sources**
   (`hidden-nosources-source-map`: `.map` files with mappings and file names, no

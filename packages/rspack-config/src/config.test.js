@@ -8,6 +8,7 @@ import {
   createRemoteConfig,
   createShellConfig,
   createSharedConfig,
+  devContentSecurityPolicy,
   TIER1_SINGLETONS,
 } from './index.js';
 
@@ -28,7 +29,7 @@ function pluginNamed(config, name) {
 }
 
 /**
- * Loader of each SCSS/CSS rule (first entry of `use`: style-loader or the CSS extract loader).
+ * Loader of each SCSS/CSS rule (first entry of `use`: the CSS extract loader).
  * @param {Configuration} config
  * @returns {string[]}
  */
@@ -87,8 +88,48 @@ describe('createShellConfig', () => {
     assert.equal(config.lazyCompilation, false);
     const devServer = /** @type {any} */ (config.devServer);
     assert.equal(devServer.port, 3100);
-    assert.deepEqual(devServer.headers, { 'Access-Control-Allow-Origin': '*' });
+    assert.equal(devServer.headers['Access-Control-Allow-Origin'], '*');
     assert.equal(typeof devServer.setupMiddlewares, 'function');
+    // missing .json/.js files stay 404 (HMR falls back to a reload after a failed build)
+    assert.deepEqual(devServer.historyApiFallback.htmlAcceptHeaders, [
+      'text/html',
+    ]);
+  });
+
+  it('dev server sends the production CSP rules with localhost origins', () => {
+    const devServer = /** @type {any} */ (config.devServer);
+    const csp = devServer.headers['Content-Security-Policy'];
+    assert.equal(csp, devContentSecurityPolicy());
+    assert.doesNotMatch(csp, /unsafe-inline|unsafe-eval/);
+    assert.match(
+      csp,
+      /style-src 'self' http:\/\/localhost:\* http:\/\/127\.0\.0\.1:\*;/,
+    );
+    assert.match(csp, /script-src 'self' http:\/\/localhost:\* /);
+    assert.match(csp, /connect-src [^;]*ws:\/\/localhost:\*/, 'HMR websockets');
+    assert.match(csp, /frame-src 'none'/);
+    assert.match(csp, /object-src 'none'/);
+    assert.match(csp, /frame-ancestors 'none'/);
+  });
+
+  it('devCsp: extra origins / frames, or off', () => {
+    const csp = (/** @type {any} */ devCsp) =>
+      /** @type {any} */ (
+        createShellConfig({
+          rootDir: fixture,
+          name: 'test_shell',
+          port: 3100,
+          devCsp,
+        })({ RSPACK_SERVE: true }, {}).devServer
+      ).headers['Content-Security-Policy'];
+    const extra = csp({
+      extraOrigins: ['https://dev.example.sg'],
+      frameSrc: ['https://vendor.example.com'],
+    });
+    assert.match(extra, /style-src 'self' [^;]*https:\/\/dev\.example\.sg;/);
+    assert.match(extra, /connect-src 'self' [^;]*https:\/\/dev\.example\.sg /);
+    assert.match(extra, /frame-src https:\/\/vendor\.example\.com;/);
+    assert.equal(csp(false), undefined);
   });
 
   it("uses publicPath '/' and registers remotes only at runtime", () => {
@@ -120,11 +161,32 @@ describe('createShellConfig', () => {
     assert.equal(pluginNamed(config, 'PwaPlugin'), undefined);
   });
 
-  it('development: style-loader (fast style reload), no CSS extraction', () => {
+  it('development: extracts CSS like production (unhashed [name].css), no style-loader', () => {
     const loaders = styleRuleFirstLoaders(config);
     assert.equal(loaders.length, 2);
-    for (const loader of loaders) assert.match(loader, /style-loader/);
-    assert.equal(pluginNamed(config, 'CssExtractRspackPlugin'), undefined);
+    for (const loader of loaders) {
+      assert.equal(loader, rspack.CssExtractRspackPlugin.loader);
+      assert.doesNotMatch(loader, /style-loader/);
+    }
+    const extract = pluginNamed(config, 'CssExtractRspackPlugin');
+    assert.ok(extract, 'CssExtractRspackPlugin in development');
+    assert.equal(extract.options.filename, '[name].css');
+    assert.equal(extract.options.chunkFilename, '[name].css');
+  });
+
+  it('CSS Modules: the same class name pattern and salt in development and production', () => {
+    const prod = createShellConfig({
+      rootDir: fixture,
+      name: 'test_shell',
+      port: 3100,
+    })({ RSPACK_BUILD: true }, {});
+    /** @param {Configuration} c */
+    const modulesOptions = (c) =>
+      (c.module?.rules ?? [])
+        .map((r) => /** @type {any} */ (r))
+        .find((r) => String(r.test).includes('module')).use[1].options.modules;
+    assert.deepEqual(modulesOptions(config), modulesOptions(prod));
+    assert.equal(modulesOptions(config).localIdentHashSalt, 'test_shell');
   });
 
   it('production: extracts CSS into [name].[contenthash:8].css files, no style-loader', () => {
@@ -176,7 +238,9 @@ const NGINX_IMMUTABLE = /\.[0-9a-f]{8}\.(?:js|mjs|css)$/;
 describe('real build', () => {
   /**
    * @param {string} name
-   * @param {{ production?: boolean }} [opts] production: keep the default devtool + minifier
+   * @param {{ production?: boolean, development?: boolean, outName?: string }} [opts]
+   *   production: keep the default devtool + minifier; development: a `rspack dev` config
+   *   (compiled without the dev server)
    */
   async function build(name, opts = {}) {
     const config = createRemoteConfig({
@@ -184,10 +248,10 @@ describe('real build', () => {
       name,
       port: 3101,
       exposes: { './App': './src/App.tsx' },
-    })({ RSPACK_BUILD: true }, {});
-    const outDir = join(fixture, 'dist', name);
+    })(opts.development ? { RSPACK_SERVE: true } : { RSPACK_BUILD: true }, {});
+    const outDir = join(fixture, 'dist', opts.outName ?? name);
     config.output = { ...config.output, path: outDir };
-    if (!opts.production) {
+    if (!opts.production && !opts.development) {
       config.devtool = false;
       config.optimization = { minimize: false };
     }
@@ -268,6 +332,39 @@ describe('real build', () => {
     const remoteEntry = prod.read('remoteEntry.js');
     assert.match(remoteEntry, /CSS_CHUNK_LOAD_FAILED/);
     assert.match(remoteEntry, /stylesheet/);
+  });
+
+  it('development: unhashed .css per chunk with linked .css.map, no <style> runtime, same class names as production', async () => {
+    const dev = await build('app_same', {
+      development: true,
+      outName: 'app_same_dev',
+    });
+    const prod = await build('app_same', {
+      production: true,
+      outName: 'app_same_prod',
+    });
+    assert.ok(dev.cssFiles.length >= 2, `css files: ${dev.cssFiles}`);
+    assert.ok(dev.cssFiles.includes('__federation_expose_App.css'));
+    for (const f of dev.cssFiles) {
+      assert.doesNotMatch(f, NGINX_IMMUTABLE, `${f} is not content-hashed`);
+      assert.match(
+        dev.read(f),
+        new RegExp(`sourceMappingURL=${f.replace('.', '\\.')}\\.map`),
+        'linked CSS map (not an inline data: URI)',
+      );
+      assert.ok(dev.files.includes(`${f}.map`), `${f}.map emitted`);
+    }
+    assert.doesNotMatch(dev.js, /insertStyleElement|styleTagTransform/);
+    assert.doesNotMatch(dev.css, /data:application\/json/);
+    const classes = (/** @type {string} */ css) =>
+      [...css.matchAll(/\.([A-Za-z0-9_-]{8})(?=[\s{:,.>[)])/g)]
+        .map((m) => m[1])
+        .sort();
+    assert.ok(classes(dev.css).length > 0);
+    assert.deepEqual(
+      [...new Set(classes(dev.css))],
+      [...new Set(classes(prod.css))],
+    );
   });
 
   it('production: hidden source maps without sourcesContent, no dev-only code anywhere', async () => {

@@ -35,8 +35,7 @@
     "@org/pwa": "workspace:*",
     "css-loader": "catalog:",
     "sass": "catalog:",
-    "sass-loader": "catalog:",
-    "style-loader": "catalog:"
+    "sass-loader": "catalog:"
   },
   "peerDependencies": {
     "@rspack/core": "^2.0.0",
