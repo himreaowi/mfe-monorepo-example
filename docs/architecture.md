@@ -93,13 +93,15 @@ The shared parts are the ones that must behave the same everywhere (keyboard and
 behaviour of the skip link and the Menu disclosure, the measured collapse, theme and session
 state). See [ui-context.md](ui-context.md#layout-the-shell-owns-it).
 
-How CSS is delivered: in development style-loader injects `<style>` elements (fast HMR); in
-production every app ships extracted, content-hashed `.css` files. Loading a remote's exposed
+How CSS is delivered: every app ships extracted `.css` files, in development (`[name].css`,
+with CSS hot reload) exactly as in production (content-hashed). Loading a remote's exposed
 module (or one of its lazy chunks) makes the remote's own chunk loader add
 `<link rel="stylesheet">` for that chunk's CSS from the remote's origin and wait for it before
 the code runs; a CSS file that fails to load fails the remote like a JS chunk (fallback with
-retry). Nothing in the page needs inline styles, so the CSP has no `style-src 'unsafe-inline'`
-([devops-handoff.md](devops-handoff.md#csp); details in [toolchain.md](toolchain.md)).
+retry). Nothing in the page needs inline styles, so the CSP has no `style-src 'unsafe-inline'`;
+the dev servers send the same rules (localhost origins), so a `<style>` element fails in
+`pnpm dev` already ([devops-handoff.md](devops-handoff.md#csp); details in
+[toolchain.md](toolchain.md)).
 
 ## Zones
 
