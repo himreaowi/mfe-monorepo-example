@@ -41,9 +41,9 @@ Hard rules (enforced by `pnpm check` and ESLint, see [guardrails.md](guardrails.
 | `src/features/<name>/` | Domain UI (`components/<Name>/`) + `api/` / `hooks/` / `types/` / `utils/`, public `index.ts`       |
 | `src/pages/`           | Thin route containers that compose features                                                         |
 | `src/components/`      | UI primitives of this app, one folder per component (shared ones go to `@org/ui`)                   |
-| `src/layouts/`         | Chrome (`ShellLayout`, `StandaloneLayout`)                                                          |
+| `src/layouts/`         | Chrome, owned by the app: `ShellLayout` (shell), `StandaloneLayout` (remote), one folder each       |
 | `src/core/`            | Constants (`routePaths`, `apiRoutes`, `app`), types, small utils (no parallel `lib/`)               |
-| `src/styles/`          | Shell only: `shell.scss`, its global stylesheet (header colours `--header-*` per theme)             |
+| `src/styles/`          | Shell only: `shell.scss`, shell-wide global styles (empty by default)                               |
 | `src/services/`        | App-wide infra (`http` client)                                                                      |
 
 **Rule of thumb:** pages compose, features own domain data, components stay presentational,
@@ -93,8 +93,11 @@ Rules:
   status message), or put a mixin in a Sass partial (`_<name>.scss` next to the feature's
   components, `@use`d by each module). Never let a component's styles reach into a child
   component's markup (`.panel a { … }` styles the children too and depends on CSS order).
-- `pages/` and `layouts/` already use one folder per page/layout (`HomePage/HomePage.tsx` +
-  `index.ts`); they have no test requirement of their own (routes and app tests cover them).
+- `layouts/` follows the same rule as `components/`: `ShellLayout/{ShellLayout.tsx,
+ShellLayout.module.scss, ShellLayout.test.tsx, index.ts}` (small private parts of the layout
+  may sit in the same folder). A layout is real code (the shell's header, nav, disclosure), so
+  it has its own test. `pages/` use one folder per page (`HomePage/HomePage.tsx` + `index.ts`)
+  without a test requirement of their own (routes and app tests cover them).
 - **Where test data goes**: data used by one test stays in that test file. Data shared by several
   tests of a feature goes to `features/<feature>/__fixtures__/<name>.ts` (or
   `utils/testData.ts`), never inside `components/` (a file there is not a component). Jest only
@@ -106,7 +109,8 @@ Rules:
 
 `pnpm check` enforces the layout (rules `component-folder`, `component-test`, `component-style`,
 [guardrails.md](guardrails.md)). The generated apps follow it: the remote's `features/demo`, the
-shell's `features/welcome` and `features/startup`, the adapter's `features/external`.
+shell's `features/welcome` and `features/startup` and its `layouts/ShellLayout`, the remote's
+`layouts/StandaloneLayout`, the adapter's `features/external`.
 
 ## Remotes
 
@@ -222,11 +226,13 @@ Package names: apps `@org/<zone>-<name>` / `@org/shell-<zone>` (generated); shar
   ([One folder per component](#one-folder-per-component)); tokens (`var(--…)`) for colours,
   spacing, radius, shadow. No hardcoded colours on themeable surfaces; both themes must pass contrast.
 - Global styles only in the shell (and a remote's standalone bootstrap). The shell's own global
-  rules live in `src/styles/shell.scss` (imported after `@org/design-tokens/global.scss`); its
-  main use is the header colours ([ui-context.md](ui-context.md#header-colours-per-shell)),
-  which only the shell sets.
-- Never select another package's CSS Module class names (e.g. `MainLayout`'s `.header`): they
-  are hashed per build and per app. Use tokens or props.
+  rules live in `src/styles/shell.scss` (imported after `@org/design-tokens/global.scss`). The
+  header colours are not global: they are in the shell's own
+  `src/layouts/ShellLayout/ShellLayout.module.scss`
+  ([ui-context.md](ui-context.md#header-colours)). Remotes never set custom properties for the
+  whole page (`:root`, `html`, `body`, `[data-theme]`; `pnpm check` rule `remote-global-tokens`).
+- Never select another package's CSS Module class names (e.g. `@org/ui`'s `.skipLink`): they
+  are hashed per build and per app. Pass a `className` to the building block, or use tokens.
 - See [ui-context.md](ui-context.md).
 
 ## Testing

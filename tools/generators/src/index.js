@@ -2,7 +2,7 @@
 /**
  * App generators.
  *
- *   pnpm gen:shell <zone> [--layout top|side] [--title "<text>"]
+ *   pnpm gen:shell <zone> [--layout top|side] [--title "<text>"]   (--layout: starter layout to copy)
  *   pnpm gen:remote <zone> <name> [--private] [--external [--vendor-format <format>]] [--title "<text>"]
  *
  * Apps live in apps/<zone>/<name>. Every app gets its own package.json (deps via `catalog:` /
@@ -103,9 +103,10 @@ export const VENDOR_FORMATS = /** @type {const} */ ([
 /** @typedef {(typeof VENDOR_FORMATS)[number]} VendorFormat */
 
 /**
- * `gen:shell --layout` values: where `MainLayout` puts the remotes nav on wide screens
- * (`navPlacement` in the generated ShellLayout). `top` (default): in the header row; `side`: a
- * sidebar left of the content. Both collapse behind "Menu" on narrow screens.
+ * `gen:shell --layout` values: which starter layout is copied into the shell as its own code
+ * (`templates/shell-layouts/<layout>` → `src/layouts/ShellLayout/`). `top` (default): nav in
+ * the header row; `side`: nav in a sidebar left of the content. Both collapse behind "Menu"
+ * on narrow screens. After generation there is no layout option: the team edits the files.
  */
 export const SHELL_LAYOUTS = /** @type {const} */ (['top', 'side']);
 
@@ -272,7 +273,7 @@ function assertFree(root, dir, packageName) {
 /**
  * Generate apps/<zone>/shell-<zone>.
  * @param {{ root: string, zone: string, title?: string, layout?: string }} options `layout`:
- * nav placement (`top` default, `side`), written once into src/layouts/ShellLayout
+ * the starter layout copied into src/layouts/ShellLayout (`top` default, `side`)
  * @returns {Promise<{ dir: string, port: number, packageName: string, federationName: string, title: string, layout: ShellLayout }>}
  */
 export async function generateShell({ root, zone, title, layout = 'top' }) {
@@ -283,7 +284,7 @@ export async function generateShell({ root, zone, title, layout = 'top' }) {
   assertFree(root, dir, names.packageName);
   const port = allocatePort(root, zone, { shell: true });
 
-  const files = await renderLayers(['shell'], dir, {
+  const files = await renderLayers(['shell', `shell-layouts/${layout}`], dir, {
     ZONE: zone,
     APP_TITLE: names.title,
     PACKAGE_NAME: names.packageName,
@@ -291,7 +292,7 @@ export async function generateShell({ root, zone, title, layout = 'top' }) {
     PORT: port,
     DIR_NAME: names.dirName,
     MOCK_API_URL: mockApiBaseUrl(zone, root),
-    NAV_PLACEMENT: layout,
+    SHELL_LAYOUT: layout,
   });
   writeFiles(dir, files);
   await writeJson(

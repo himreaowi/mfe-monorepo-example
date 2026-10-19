@@ -23,8 +23,8 @@ const targets: Target[] = [
     },
   },
   {
-    // on phones: the open Menu panel (nav, theme toggle, user menu) is scanned too; with
-    // navPlacement="side" that is the drawer (on wide screens the sidebar is always scanned)
+    // on phones: the open Menu panel (nav, theme toggle, user menu) is scanned too; in the
+    // side layout that is the drawer (on wide screens the sidebar is always scanned)
     name: 'home, header menu open',
     open: async (page) => {
       await page.goto('/');
@@ -34,7 +34,7 @@ const targets: Target[] = [
   },
   {
     // the signed-in header (user name, "Sign out"): the shell's header colours
-    // (src/styles/shell.scss, --header-*) must keep every element at AA contrast
+    // (src/layouts/ShellLayout/ShellLayout.module.scss) must keep every element at AA contrast
     name: 'home, signed in, header menu open',
     open: async (page) => {
       test.skip(

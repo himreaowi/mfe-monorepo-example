@@ -172,50 +172,80 @@ describe('generators', () => {
     ]) {
       assert.ok(files.includes(f), `missing ${f}`);
     }
-    // nav placement: one named constant in ShellLayout, passed to MainLayout (default top)
+    // the layout is the shell's own code, copied from the "top" starter: one folder per
+    // component, no layout option anywhere, built from @org/ui building blocks
+    for (const f of [
+      'ShellLayout.tsx',
+      'ShellLayout.module.scss',
+      'ShellLayout.test.tsx',
+      'index.ts',
+    ]) {
+      assert.ok(files.includes(`src/layouts/ShellLayout/${f}`), `missing ${f}`);
+    }
     const layout = read(root, `${dir}/src/layouts/ShellLayout/ShellLayout.tsx`);
-    assert.match(layout, /^const NAV_PLACEMENT: NavPlacement = 'top';$/m);
-    assert.match(layout, /navPlacement=\{NAV_PLACEMENT\}/);
-    assert.equal(layout.match(/NAV_PLACEMENT/g)?.length, 2); // declared once, used once
-    // RemoteNav adapts to the placement (sidebar: stacked links, active bar)
-    assert.match(
-      read(root, `${dir}/src/components/RemoteNav/RemoteNav.tsx`),
-      /data-placement=\{useNavPlacement\(\)\}/,
+    assert.match(layout, /data-nav-placement="top"/);
+    assert.match(layout, /<RemoteNav remotes=\{remotes\} \/>/);
+    assert.doesNotMatch(
+      layout,
+      /MainLayout|navPlacement|NAV_PLACEMENT|NavPlacement/,
     );
-    // the header e2e tests read the placement from the page (no generated copy per layout)
+    for (const block of [
+      'Brand',
+      'SkipLink',
+      'ThemeToggle',
+      'useFitLayout',
+      'useMenuDisclosure',
+    ]) {
+      assert.match(layout, new RegExp(`\\b${block}\\b`), block);
+    }
+    assert.match(layout, /from '@org\/ui'/);
+    assert.match(layout, /import styles from '\.\/ShellLayout\.module\.scss'/);
+    // the e2e hooks the generated specs rely on
+    for (const hook of [
+      'main-header',
+      'header-brand',
+      'header-menu-button',
+      'header-panel',
+    ]) {
+      assert.match(layout, new RegExp(`data-testid="${hook}"`), hook);
+    }
+    // header colours: one commented block of values in the shell's own layout styles
+    const layoutStyles = read(
+      root,
+      `${dir}/src/layouts/ShellLayout/ShellLayout.module.scss`,
+    );
+    assert.match(layoutStyles, /HEADER COLOURS: change them here/);
+    assert.match(layoutStyles, /^ {2}--header-bg: var\(--color-surface\);$/m);
+    assert.match(layoutStyles, /^ {2}--color-surface: var\(--header-bg\);$/m);
+    assert.match(layoutStyles, /^ \* +--header-bg: #1d4ed8;$/m); // the blue example, commented
+    assert.doesNotMatch(layoutStyles, /\$sidebar-width|\.side\b/);
+    // RemoteNav: horizontal by default, vertical on request (no context from @org/ui)
+    const remoteNav = read(
+      root,
+      `${dir}/src/components/RemoteNav/RemoteNav.tsx`,
+    );
+    assert.match(remoteNav, /orientation = 'horizontal'/);
+    assert.doesNotMatch(remoteNav, /useNavPlacement|@org\/ui/);
+    // the header e2e tests read the structure from the page (no generated copy per layout)
     assert.match(read(root, `${dir}/e2e/helpers.ts`), /data-nav-placement/);
     assert.match(read(root, `${dir}/e2e/shell.spec.ts`), /expectSidebar/);
     assert.match(read(root, `${dir}/rspack.config.js`), /createShellConfig/);
     assert.match(read(root, `${dir}/src/bootstrap.tsx`), /registerPwa\(\)/);
-    // shell-owned global styles (header colours): imported right after the design tokens,
-    // with the --header-* tokens as a commented-out example (unset = default header)
+    // shell-wide global styles: imported right after the design tokens; no header colours
     assert.match(
       read(root, `${dir}/src/bootstrap.tsx`),
       /^import '@org\/design-tokens\/global\.scss';\n(?:\/\/.*\n)*import '\.\/styles\/shell\.scss';$/m,
     );
     const shellStyles = read(root, `${dir}/src/styles/shell.scss`);
-    for (const token of [
-      '--header-bg',
-      '--header-text',
-      '--header-text-muted',
-      '--header-border',
-      '--header-accent',
+    assert.doesNotMatch(shellStyles, /^(?!\/\/).+$/m, 'comments only');
+    assert.doesNotMatch(shellStyles, /--header-/);
+    assert.match(shellStyles, /ShellLayout\.module\.scss/);
+    for (const text of [
+      read(root, `${dir}/README.md`),
+      ...files.map((f) => read(root, `${dir}/${f}`)),
     ]) {
-      assert.match(
-        shellStyles,
-        new RegExp(`^// +${token}: #[0-9a-f]{6};$`, 'm'),
-      );
+      assert.doesNotMatch(text, /MainLayout|useNavPlacement/);
     }
-    assert.match(shellStyles, /^\/\/ \[data-theme='dark'\] \{$/m);
-    assert.doesNotMatch(
-      shellStyles,
-      /^[^/\n]*--header-/m,
-      'example stays commented out',
-    );
-    assert.match(
-      shellStyles,
-      /docs\/ui-context\.md "Header colours per shell"/,
-    );
     assert.match(read(root, `${dir}/src/bootstrap.tsx`), /loadMfeManifest/);
     assert.match(
       read(root, `${dir}/src/bootstrap.tsx`),
@@ -366,6 +396,9 @@ describe('generators', () => {
       'src/features/demo/components/AddItemForm/AddItemForm.module.scss',
       'src/features/demo/components/AddItemForm/AddItemForm.test.tsx',
       'src/layouts/StandaloneLayout/StandaloneLayout.tsx',
+      'src/layouts/StandaloneLayout/StandaloneLayout.module.scss',
+      'src/layouts/StandaloneLayout/StandaloneLayout.test.tsx',
+      'src/layouts/StandaloneLayout/index.ts',
       'src/pages/OverviewPage/OverviewPage.tsx',
       'src/pages/DetailsPage/DetailsPage.tsx',
       'src/core/constants/apiRoutes.ts',
@@ -400,6 +433,12 @@ describe('generators', () => {
           `${app}/${f}`,
         );
         assert.ok(!f.endsWith('.tmpl'), f);
+        // no app uses a shared layout component any more
+        assert.doesNotMatch(
+          fs.readFileSync(path.join(dir, f), 'utf8'),
+          /MainLayout|useNavPlacement/,
+          `${app}/${f}`,
+        );
       }
     }
   });
@@ -412,10 +451,24 @@ describe('generators', () => {
       root,
       'apps/internet/shell-internet/src/layouts/ShellLayout/ShellLayout.tsx',
     );
-    assert.match(shellLayout, /^const NAV_PLACEMENT: NavPlacement = 'side';$/m);
-    assert.match(shellLayout, /navPlacement=\{NAV_PLACEMENT\}/);
-    // the layout is recorded only there: same e2e suite, package.json, registry and manifest
-    // as a top-nav shell
+    assert.match(shellLayout, /data-nav-placement="side"/);
+    assert.match(shellLayout, /orientation="vertical"/);
+    assert.doesNotMatch(shellLayout, /MainLayout|navPlacement=/);
+    const sideStyles = read(
+      root,
+      'apps/internet/shell-internet/src/layouts/ShellLayout/ShellLayout.module.scss',
+    );
+    assert.match(sideStyles, /^\$sidebar-width: 16rem;$/m);
+    assert.match(sideStyles, /HEADER COLOURS: change them here/);
+    assert.match(
+      read(
+        root,
+        'apps/internet/shell-internet/src/layouts/ShellLayout/ShellLayout.test.tsx',
+      ),
+      /sidebar when wide/,
+    );
+    // the starter differs only in src/layouts/ShellLayout: same e2e suite, package.json,
+    // registry and manifest as a top-nav shell
     const intranetShell = path.join(root, 'apps/intranet/shell-intranet');
     const internetShell = path.join(root, 'apps/internet/shell-internet');
     for (const f of [
@@ -668,13 +721,13 @@ describe('generators', () => {
       },
     );
     assert.match(out, /Created apps\/internet\/shell-internet .*port 3200/);
-    assert.match(out, /side navigation/);
+    assert.match(out, /side starter layout in src\/layouts\/ShellLayout/);
     assert.match(
       read(
         cliRoot,
         'apps/internet/shell-internet/src/layouts/ShellLayout/ShellLayout.tsx',
       ),
-      /NAV_PLACEMENT: NavPlacement = 'side'/,
+      /data-nav-placement="side"/,
     );
     assert.match(out, /"Internet shell"/);
     const remote = execFileSync(

@@ -1,0 +1,21 @@
+/*
+ * One line, ellipsis ON SCREEN only: the DOM text stays whole. `min-width: 0` lets a flex
+ * parent shrink it below its content width. The padding / negative margin pair keeps the focus
+ * ring (3 px + 2 px offset) of a link passed as children inside the clipped box without
+ * changing the brand's size.
+ */
+.brand {
+  min-width: 0;
+  margin: -0.375rem;
+  padding: 0.375rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+
+  /* a block child (e.g. a wrapper element) truncates the same way */
+  > * {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}

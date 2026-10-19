@@ -1,0 +1,31 @@
+/*
+ * Visually hidden (clipped to nothing, out of the flow: no pixel of the layout changes) until it
+ * has keyboard focus, then shown over the top-left corner of the page. Page tokens (it sits
+ * outside the header, so it is not affected by a shell's header colours).
+ */
+.skipLink {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: 30;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius);
+  color: var(--color-text);
+  font-weight: 600;
+  background: var(--color-surface);
+
+  &:not(:focus) {
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    clip-path: inset(50%);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+}

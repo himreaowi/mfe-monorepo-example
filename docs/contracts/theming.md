@@ -14,16 +14,17 @@ Normative rules for every app and package. Implementation: `@org/design-tokens` 
 | Contrast      | every text/background token pair meets WCAG 2.2 AA in both themes           |
 | UI kit        | no third-party component library required                                   |
 
-## Header colours (per shell)
+## Shell layout colours
 
-| Rule      | Requirement                                                                                                                                                                                                                               |
-| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Tokens    | `--header-bg`, `--header-text`, `--header-text-muted`, `--header-border`, `--header-accent` (read by `MainLayout`, fallback to the page tokens); with `navPlacement="side"` they also colour the sidebar and the drawer (no extra tokens) |
-| Owner     | only the shell sets them, in `src/styles/shell.scss` (imported after `@org/design-tokens/global.scss`), light and dark; remotes MUST NOT (`pnpm check` rule `header-tokens`)                                                              |
-| Contrast  | text, muted text and accent ≥ 4.5:1 on `--header-bg` in both themes; text ≥ 4.5:1 on the hover tint                                                                                                                                       |
-| Selectors | apps MUST NOT select `@org/ui` CSS Module class names (hashed per build and app)                                                                                                                                                          |
+| Rule      | Requirement                                                                                                                                                                                                              |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Owner     | each shell owns its layout and its colours: `src/layouts/ShellLayout/ShellLayout.module.scss` ("HEADER COLOURS": `--header-*` values on the layout root, light and dark), never shared code                              |
+| Values    | built from tokens or explicit colours, both themes; the starters map them onto the page token names inside the header, so shared building blocks (`ThemeToggle`, `UserMenu`) follow without options                      |
+| Contrast  | text, muted text and accent ≥ 4.5:1 on the header background in both themes; text on the pressed theme button ≥ 4.5:1; text ≥ 4.5:1 on the hover background                                                              |
+| Remotes   | MUST NOT set custom properties page-wide (`:root`, `html`, `body`, `[data-theme]`, `document.documentElement.style`): they would restyle the shell's layout and other remotes (`pnpm check` rule `remote-global-tokens`) |
+| Selectors | apps MUST NOT select another app's or package's CSS Module class names (hashed per build and app); pass `className` to `@org/ui` building blocks                                                                         |
 
-Details and example: [ui-context.md](../ui-context.md#header-colours-per-shell).
+Details and example: [ui-context.md](../ui-context.md#header-colours).
 
 ## ThemeProvider and `data-theme`
 

@@ -1,5 +1,5 @@
 import '@org/design-tokens/global.scss';
-// after the tokens: shell-owned global styles (header colours per theme)
+// after the tokens: shell-wide global styles (header colours: src/layouts/ShellLayout)
 import './styles/shell.scss';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';

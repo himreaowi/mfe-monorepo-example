@@ -14,8 +14,9 @@ const USAGE = `Usage:
   pnpm gen:remote <zone> <name> [--private] [--external [--vendor-format <format>]] [--title "<text>"]
 
 Options:
-  --layout top|side       gen:shell: where the nav goes on wide screens: top (default, in the
-                          header row) or side (sidebar left of the content); phones: Menu button
+  --layout top|side       gen:shell: the starter layout copied into the shell (its own code
+                          afterwards): top (default, nav in the header row) or side (nav in a
+                          sidebar left of the content); phones: Menu button
   --private               remote needs a signed-in user (tag access:private, marked in the shell registry)
   --external              adapter remote for an external/vendor module (tag kind:external)
   --vendor-format <f>     with --external: format of the dev mock vendor config:
@@ -67,7 +68,7 @@ async function main() {
       layout: values.layout,
     });
     console.log(
-      `Created ${path.relative(root, r.dir)} (${r.packageName}, "${r.title}", federation name ${r.federationName}, port ${r.port}, ${r.layout} navigation).`,
+      `Created ${path.relative(root, r.dir)} (${r.packageName}, "${r.title}", federation name ${r.federationName}, port ${r.port}, ${r.layout} starter layout in src/layouts/ShellLayout).`,
     );
     console.log(
       `\nNext:\n  pnpm install\n  pnpm gen:remote ${zone} <name>\n  pnpm dev:${zone}`,

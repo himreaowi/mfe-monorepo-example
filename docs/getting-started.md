@@ -45,7 +45,7 @@ Each zone (`intranet`, `internet`) has one shell and any number of remotes. Crea
 first:
 
 ```sh
-pnpm gen:shell intranet                                 # --layout side: sidebar nav
+pnpm gen:shell intranet                                 # --layout side: sidebar starter layout
 pnpm gen:remote intranet staff-directory                # public remote
 pnpm gen:remote intranet leave-requests --private       # sign-in required
 pnpm gen:remote intranet it-helpdesk --external         # adapter for a vendor module
@@ -123,7 +123,7 @@ CI runs the same gates ([devops-handoff.md](devops-handoff.md)).
 | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
 | `pnpm dev:<zone>`                                                                                       | shell + every remote of the zone                                    |
 | `pnpm --filter <package> dev`                                                                           | one app (`pnpm -s apps` lists package names)                        |
-| `pnpm gen:shell <zone> [--layout top\|side]` / `pnpm gen:remote <zone> <name> [--private] [--external]` | new apps                                                            |
+| `pnpm gen:shell <zone> [--layout top\|side]` / `pnpm gen:remote <zone> <name> [--private] [--external]` | new apps (`--layout`: which starter layout the shell copies)        |
 | `pnpm --filter <package> add <dep>`                                                                     | add a dependency ([adding-dependencies.md](adding-dependencies.md)) |
 | `pnpm lint` / `typecheck` / `test` / `build`                                                            | all projects (Nx, cached)                                           |
 | `pnpm e2e` / `pnpm e2e:<zone>`                                                                          | zone e2e suites                                                     |

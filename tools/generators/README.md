@@ -22,15 +22,18 @@ pnpm dev:<zone>
   overrides it (max 60 characters; no quotes, backslashes, `<>`, `{}` or `$`: use ’ for
   apostrophes). Change it later in `src/core/constants/app.ts` and the shell's `remotes.json`.
 
-- **`--layout top|side`** (`gen:shell`, default `top`): where `MainLayout` puts the remotes nav
-  on wide screens: in the header row (`top`) or a sidebar left of the content (`side`); on
-  narrow screens both fold it behind "Menu" (the side variant as a drawer). The generator writes
-  it once, as `const NAV_PLACEMENT: NavPlacement = 'top' | 'side'` in
-  `src/layouts/ShellLayout/ShellLayout.tsx` (passed as `navPlacement`), and nowhere else: change
-  that line to switch an existing shell. The generated e2e suite reads the placement from the
-  page (`data-nav-placement` on the header) and checks the matching layout. See
-  `docs/ui-context.md` "Navigation placement". `gen:remote --layout` is an error (the shell owns
-  the layout).
+- **`--layout top|side`** (`gen:shell`, default `top`): which **starter layout** is copied into
+  the shell as its own code: `templates/shell-layouts/<layout>/` →
+  `src/layouts/ShellLayout/{ShellLayout.tsx, ShellLayout.module.scss, ShellLayout.test.tsx}`
+  (`index.ts` comes from the shell template). `top`: remotes nav in the header row; `side`: a
+  sticky top bar and the nav in a sidebar left of the content. On narrow screens both fold the
+  nav behind "Menu" (the side starter as a drawer). After generation there is no layout option
+  anywhere: the team edits the files (colours in the "HEADER COLOURS" block of
+  `ShellLayout.module.scss`). Both starters are built from `@org/ui` building blocks and set the
+  hooks the generated e2e suite relies on (`data-testid` `main-header` with `data-layout` and
+  `data-nav-placement`, `header-brand`, `header-menu-button`, `header-panel`; listed at the top
+  of `e2e/helpers.ts`), so the same suite checks either layout. See `docs/ui-context.md`
+  "Layout: the shell owns it". `gen:remote --layout` is an error (the shell owns the layout).
 - Non-interactive. Never overwrites: an existing folder, package name or registry entry is an
   error. `gen:remote` needs the zone's shell (`pnpm gen:shell <zone>` first).
 - `--private`: tag `access:private` and `"access": "private"` in the shell registry. The shell
@@ -63,31 +66,33 @@ pnpm dev:<zone>
   `features/<feature>/components/<Name>/{<Name>.tsx, <Name>.module.scss, <Name>.test.tsx, index.ts}`,
   non-component code in `api/`, `hooks/`, `types/`, `utils/`. Remote: `features/demo`
   (`Demo`, `DemoDetails`, `DemoItems`, `AddItemForm`; `utils/validation.ts`). Shell:
-  `features/welcome` (`Welcome`), `features/startup` (`StartupError`). Adapter:
+  `features/welcome` (`Welcome`), `features/startup` (`StartupError`) and
+  `layouts/ShellLayout`; remotes `layouts/StandaloneLayout`. Adapter:
   `features/external` (`ExternalModuleHost`; `utils/vendorConfig.ts`). `pnpm check` keeps it
   that way.
-- Shells get `src/styles/shell.scss`, the shell's own global stylesheet, imported in
-  `src/bootstrap.tsx` right after `@org/design-tokens/global.scss`. It holds the header colour
-  tokens (`--header-bg`, `--header-text`, `--header-text-muted`, `--header-border`,
-  `--header-accent`) per theme, commented out (default header) with a blue example. Remotes do
-  not get one and must not set those tokens (`pnpm check`). See `docs/ui-context.md` "Header
-  colours per shell".
+- Shells get `src/styles/shell.scss`, the shell's own global stylesheet (empty by default, for
+  fonts or a shell-wide token override), imported in `src/bootstrap.tsx` right after
+  `@org/design-tokens/global.scss`. The header colours are not there: they are in the copied
+  `ShellLayout.module.scss`. Remotes get their own small `src/layouts/StandaloneLayout/`
+  (standalone mode only) and must not set page-wide custom properties (`pnpm check` rule
+  `remote-global-tokens`).
 - Metadata in the generated `package.json`: `nx.tags` (`zone:`, `type:`, `access:`, `kind:`) and
   `mfe` (`port`, `federationName`). `rspack.config.js` reads `mfe` from `package.json`.
 - Dependencies: `catalog:` for third-party packages, `workspace:*` for `@org/*`.
 - Shells get the zone's e2e suite: `playwright.config.ts` (`@org/playwright-config`) and
   `e2e/*.spec.ts`, which iterate `remotes.json` (deep links, private guard, external adapters
   with any vendor + mock-vendor extras, standalone remotes, one-row header at 320–1280 px (signed in and out; long brand truncates on one line) with the Menu disclosure, axe WCAG
-  2.2 AA in light and dark, landmarks + skip link + keyboard order; with `navPlacement="side"`
-  also the sidebar from 896 px, the drawer below it and the sticky top bar) with the helpers
+  2.2 AA in light and dark, landmarks + skip link + keyboard order; with the side layout
+  (`data-nav-placement="side"`) also the sidebar from 896 px, the drawer below it and the
+  sticky top bar) with the helpers
   `openNav`, `openHeaderMenu`, `navPlacement`, `expectSidebar`, `expectDrawer` and `settle`. `pnpm e2e:<zone>` runs it. Remotes get no
   e2e folder of their own: their standalone mode is covered by the zone suite. See
   `docs/testing.md`.
 - Generated files are formatted with the repo's Prettier config.
 
-Templates live in `templates/shell`, `templates/remote` and `templates/external` (an overlay on
-`remote`). Files end in `.tmpl` (so the repo's tools ignore them) and use `__TOKEN__` placeholders
-(`__ZONE__`, `__NAME__`, `__APP_TITLE__`, `__NAV_PLACEMENT__`, `__PACKAGE_NAME__`, `__FEDERATION_NAME__`,
+Templates live in `templates/shell`, `templates/shell-layouts/top|side` (an overlay on `shell`:
+the starter layout), `templates/remote` and `templates/external` (an overlay on `remote`). Files end in `.tmpl` (so the repo's tools ignore them) and use `__TOKEN__` placeholders
+(`__ZONE__`, `__NAME__`, `__APP_TITLE__`, `__SHELL_LAYOUT__`, `__PACKAGE_NAME__`, `__FEDERATION_NAME__`,
 `__ROUTE_PATH__`, `__PORT__`, `__SHELL_PORT__`, `__ACCESS__`, `__DIR_NAME__`, `__MOCK_API_URL__`,
 `__MOCK_VENDOR_PORT__`, `__MOCK_VENDOR_URL__`, `__MOCK_VENDOR_CONFIG__` (JSON),
 `__VENDOR_FORMAT__`). An unknown token is an error.

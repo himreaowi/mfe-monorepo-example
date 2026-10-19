@@ -4,8 +4,8 @@ import styles from './UserMenu.module.scss';
 
 /**
  * Header control: "Sign in" when signed out, the user's name + "Sign out" when signed in.
- * Renders nothing while loading or when auth is disabled. Pass it to `MainLayout`
- * `headerActions`.
+ * Renders nothing while loading or when auth is disabled. Place it in the shell layout's
+ * header (the generated `ShellLayout` puts it after the theme toggle).
  */
 export function UserMenu() {
   const auth = useAuth();

@@ -11,9 +11,12 @@
  * - the dev tool servers declared in the root package.json (`mfe.tools`) have unique offsets
  *   inside the zones' tools range and name existing workspace packages
  * - component layout (docs/coding-conventions.md "One folder per component"): components live in
- *   `features/<feature>/components/<Name>/` or `src/components/<Name>/` with `<Name>.tsx`,
- *   `<Name>.test.tsx` and `index.ts`; a CSS module is imported only from its own folder
- * - remotes never set the shell's header colour tokens (`--header-bg`, …)
+ *   `features/<feature>/components/<Name>/`, `src/components/<Name>/` or `src/layouts/<Name>/`
+ *   with `<Name>.tsx`, `<Name>.test.tsx` and `index.ts`; a CSS module is imported only from its
+ *   own folder
+ * - remotes never set CSS custom properties page-wide (`:root`, `html`, `body`, `[data-theme]`,
+ *   `document.documentElement.style.setProperty('--…')`): that would restyle the shell's layout
+ *   and every other remote
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -430,9 +433,9 @@ export async function checkApps({ root }) {
     checkComponentLayout(root, path.join(root, info.app.dir), err);
   }
 
-  // --- header colours belong to the shell ------------------------------------------------------
+  // --- the page (tokens, shell layout) belongs to the shell --------------------------------------
   for (const info of infos.filter((i) => i.type === 'remote')) {
-    checkHeaderTokens(root, path.join(root, info.app.dir), err);
+    checkGlobalTokens(root, path.join(root, info.app.dir), err);
   }
 
   // --- dev tool servers (root package.json mfe.tools) ---------------------------------------
@@ -455,7 +458,8 @@ function entries(dir) {
 
 /**
  * One folder per component: `components/<Name>/{<Name>.tsx, <Name>.test.tsx, index.ts}` inside
- * `src/components/` and every `src/features/<feature>/components/`; no component or style files
+ * `src/components/`, `src/layouts/` (the shell's ShellLayout, a remote's StandaloneLayout) and
+ * every `src/features/<feature>/components/`; no component or style files
  * loose in a feature root or a components/ folder; a CSS module is private to its folder (no
  * styles shared between components through one .module.scss).
  * @param {string} root
@@ -467,7 +471,10 @@ function checkComponentLayout(root, appDir, err) {
   const rel = (/** @type {string} */ file) =>
     path.relative(root, file).split(path.sep).join('/');
   /** @type {string[]} */
-  const componentDirs = [path.join(src, 'components')];
+  const componentDirs = [
+    path.join(src, 'components'),
+    path.join(src, 'layouts'),
+  ];
   for (const feature of entries(path.join(src, 'features'))) {
     if (!feature.isDirectory()) continue;
     const featureDir = path.join(src, 'features', feature.name);
@@ -555,13 +562,6 @@ function checkComponentLayout(root, appDir, err) {
   }
 }
 
-/**
- * Setting a MainLayout header colour token: a declaration (`--header-bg: #1d4ed8`, also as a
- * quoted object key) or `setProperty('--header-bg', …)`. Reading it (`var(--header-bg)`) is fine.
- */
-const HEADER_TOKEN_DECL =
-  /(?:(?:^|[\s{;])(--header-(?:bg|text|text-muted|border|accent))\s*:|['"`](--header-(?:bg|text|text-muted|border|accent))['"`]\s*[:,])/m;
-
 /** Source and style files under src/ (styles included, unlike `sourceFiles`). */
 function styleAndSourceFiles(/** @type {string} */ dir) {
   const src = path.join(dir, 'src');
@@ -573,24 +573,91 @@ function styleAndSourceFiles(/** @type {string} */ dir) {
     .filter((f) => !f.includes(`${path.sep}node_modules${path.sep}`));
 }
 
+/** A selector that reaches the whole page: everything (the shell's layout too) inherits from it. */
+const PAGE_SELECTOR = /:root\b|(?:^|[\s>+~,(])(?:html|body)\b|\[data-theme\b/;
+
+/** Setting a custom property on the document from script. */
+const PAGE_SET_PROPERTY =
+  /(?:documentElement|document\.body)\s*\.style\s*\.setProperty\(\s*['"`](--[\w-]+)/;
+
 /**
- * The header (MainLayout) belongs to the shell: only the shell sets the `--header-*` colour
- * tokens (its src/styles/shell.scss). A remote setting them would recolour the shell's header
- * whenever it is loaded (and differently per remote).
+ * Custom property declarations (`--name: …`) whose selector chain reaches the whole page
+ * (`:root`, `html`, `body`, `[data-theme…]`) without a class that scopes it to the app's own
+ * elements (`.card`, outside `:global(…)`). At-rules (`@media`, `@supports`, …) are transparent.
+ * @param {string} css
+ * @returns {{ name: string, selector: string }[]}
+ */
+export function pageWideCustomProperties(css) {
+  const code = css
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:'"])\/\/.*$/gm, '$1')
+    // Sass interpolation (`#{$width}`) is not a block
+    .replace(/#\{[^}]*\}/g, 'x');
+  /** @type {{ name: string, selector: string }[]} */
+  const found = [];
+  /** @type {string[]} */
+  const stack = [];
+  let buffer = '';
+  const declaration = () => {
+    const match = /^\s*(--[\w-]+)\s*:/.exec(buffer);
+    buffer = '';
+    if (!match) return;
+    const chain = stack.filter((selector) => !selector.startsWith('@'));
+    if (!chain.some((selector) => PAGE_SELECTOR.test(selector))) return;
+    const scoped = chain.some((selector) =>
+      /\.[A-Za-z_-]/.test(selector.replace(/:global\([^)]*\)/g, '')),
+    );
+    if (!scoped) found.push({ name: match[1], selector: chain.join(' ') });
+  };
+  for (const ch of code) {
+    if (ch === '{') {
+      stack.push(buffer.trim());
+      buffer = '';
+    } else if (ch === '}') {
+      declaration();
+      stack.pop();
+    } else if (ch === ';') {
+      declaration();
+    } else {
+      buffer += ch;
+    }
+  }
+  return found;
+}
+
+/**
+ * The page belongs to the shell: its tokens (`--color-*`, …) and its own layout, which reads
+ * them. A remote that sets custom properties page-wide would restyle the shell's header and
+ * every other remote whenever it is loaded (and differently per remote). Component-scoped
+ * custom properties (`.card { --gap: … }`) are fine. Test files are skipped.
  * @param {string} root
  * @param {string} appDir absolute
  * @param {(rule: string, message: string) => void} err
  */
-function checkHeaderTokens(root, appDir, err) {
+function checkGlobalTokens(root, appDir, err) {
   for (const file of styleAndSourceFiles(appDir)) {
     if (/\.test\.[cm]?[jt]sx?$/.test(file)) continue;
     const code = fs.readFileSync(file, 'utf8');
-    const match = HEADER_TOKEN_DECL.exec(code);
-    if (!match) continue;
-    err(
-      'header-tokens',
-      `${path.relative(root, file).split(path.sep).join('/')} sets ${match[1] ?? match[2]}. The header belongs to the shell: header colours are set only in the shell's src/styles/shell.scss (docs/ui-context.md "Header colours per shell"). Remove it from the remote.`,
-    );
+    const rel = path.relative(root, file).split(path.sep).join('/');
+    const hint =
+      'A remote never sets custom properties for the whole page: they would restyle the shell\'s layout and every other remote whenever it is loaded. Scope it to your component (`.myClass { --x: … }`), or ask for a token in @org/design-tokens (docs/ui-context.md "Layout: the shell owns it").';
+    if (/\.s?css$/.test(file)) {
+      const [first] = pageWideCustomProperties(code);
+      if (first) {
+        err(
+          'remote-global-tokens',
+          `${rel} sets ${first.name} on "${first.selector}". ${hint}`,
+        );
+      }
+      continue;
+    }
+    const match = PAGE_SET_PROPERTY.exec(code);
+    if (match) {
+      err(
+        'remote-global-tokens',
+        `${rel} sets ${match[1]} on the document (style.setProperty). ${hint}`,
+      );
+    }
   }
 }
 
