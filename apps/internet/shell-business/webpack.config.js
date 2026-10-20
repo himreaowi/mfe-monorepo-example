@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { createShellConfig } from '@org/rspack-config';
+import { createShellConfig } from '@org/webpack-config';
 
 // Port, federation name and base path live in package.json ("mfe"), so tools (check-apps,
 // gen:remote, the zone's dev proxy) and this config read the same values.
@@ -12,5 +12,5 @@ export default createShellConfig({
   name: mfe.federationName,
   port: mfe.port,
   basePath: mfe.basePath,
-  title: 'Staff Portal',
+  title: 'Business Portal',
 });

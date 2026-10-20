@@ -1,5 +1,5 @@
 // Standalone entry only (`pnpm dev` in this folder). Never imported by the exposed module.
-// Module Federation starts asynchronously (experiments.asyncStartup in @org/rspack-config): the
+// Module Federation starts asynchronously (experiments.asyncStartup in @org/webpack-config): the
 // shared singletons are negotiated before this module runs, so it imports React directly.
 import '@org/design-tokens/global.scss';
 import { StrictMode } from 'react';

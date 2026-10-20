@@ -1,6 +1,6 @@
 # MFE monorepo example
 
-An example application built from the MFE monorepo template (pnpm workspaces + Nx + Rspack +
+An example application built from the MFE monorepo template (pnpm workspaces + Nx + webpack 5 +
 Module Federation 2): a **Staff Portal** (intranet zone) and a **Citizen Portal** (internet zone).
 The apps were created only with the generators (commit "feat(B1): generate …"); everything after
 that commit is what a team writes by hand. The template README follows below the example
@@ -91,7 +91,7 @@ vendors.
 
 ## Template README
 
-Template monorepo for **React microfrontends**: pnpm workspaces + Nx (package-based), Rspack +
+Template monorepo for **React microfrontends**: pnpm workspaces + Nx (package-based), webpack 5 +
 Module Federation 2, React 19, TypeScript. Two zones (intranet, internet), each with one or more shells
 (each under its own base path, e.g. `/citizen` and `/business`) that load their remotes at
 runtime from a per-environment manifest. Shared UI, auth (BFF
@@ -160,7 +160,7 @@ pnpm e2e:intranet          # e2e + axe WCAG 2.2 AA (after: pnpm --filter @org/sh
 | [`packages/auth`](packages/auth)                            | `@org/auth`: AuthProvider, useAuth, RequireAuth, UserMenu, BFF session client, dev mock                                                                                           |
 | [`packages/http-client`](packages/http-client)              | `@org/http-client`: fetch wrapper, runtime base URL, apiRoutes pattern                                                                                                            |
 | [`packages/pwa`](packages/pwa)                              | `@org/pwa`: registerPwa, useOnlineStatus, Workbox build plugin                                                                                                                    |
-| [`packages/rspack-config`](packages/rspack-config)          | `@org/rspack-config`: createShellConfig / createRemoteConfig (Rspack + MF 2, tier-1 singletons)                                                                                   |
+| [`packages/webpack-config`](packages/webpack-config)        | `@org/webpack-config`: createShellConfig / createRemoteConfig (webpack + MF 2, tier-1 singletons)                                                                                 |
 | [`packages/jest-config`](packages/jest-config)              | `@org/jest-config`: Jest 30 preset (jsdom, SWC, Testing Library)                                                                                                                  |
 | [`packages/playwright-config`](packages/playwright-config)  | `@org/playwright-config`: zone e2e config, console-error fixture, axe WCAG 2.2 AA helper                                                                                          |
 | `packages/eslint-config`, `prettier-config`, `tsconfig`     | shared lint/format/TS configs (incl. Nx module boundaries)                                                                                                                        |

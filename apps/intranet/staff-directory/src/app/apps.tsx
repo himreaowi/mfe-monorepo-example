@@ -1,4 +1,4 @@
-// The exposed module ('./App', rspack.config.js default): the shell renders its default export
+// The exposed module ('./App', webpack.config.js default): the shell renders its default export
 // with HostProps; src/main.tsx renders StandaloneApp when this remote runs on its own. Nothing
 // reachable from here may import global styles or register a service worker: the shell owns
 // the page (apps.test.tsx checks it).

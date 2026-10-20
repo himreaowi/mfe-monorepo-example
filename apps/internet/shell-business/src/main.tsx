@@ -1,5 +1,5 @@
 // Entry of the shell. Module Federation starts asynchronously (experiments.asyncStartup in
-// @org/rspack-config): the shared singletons (react, react-dom, react-router, @org/ui, @org/auth)
+// @org/webpack-config): the shared singletons (react, react-dom, react-router, @org/ui, @org/auth)
 // are negotiated before this module runs, so it imports them directly.
 import '@org/design-tokens/global.scss';
 // after the tokens: shell-wide global styles (header colours: src/layouts/ShellLayout)

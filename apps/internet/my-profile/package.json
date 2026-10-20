@@ -5,8 +5,8 @@
   "description": "My Profile: remote of the internet zone (private)",
   "type": "module",
   "scripts": {
-    "dev": "rspack dev",
-    "build": "rspack build",
+    "dev": "webpack serve",
+    "build": "webpack build",
     "preview": "mfe-preview",
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json",
@@ -49,12 +49,9 @@
   "devDependencies": {
     "@org/eslint-config": "workspace:*",
     "@org/jest-config": "workspace:*",
-    "@org/rspack-config": "workspace:*",
     "@org/scripts": "workspace:*",
     "@org/tsconfig": "workspace:*",
-    "@rspack/cli": "catalog:",
-    "@rspack/core": "catalog:",
-    "@rspack/dev-server": "catalog:",
+    "@org/webpack-config": "workspace:*",
     "@testing-library/dom": "catalog:",
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/react": "catalog:",
@@ -66,6 +63,9 @@
     "eslint": "catalog:",
     "jest": "catalog:",
     "prettier": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "webpack": "catalog:",
+    "webpack-cli": "catalog:",
+    "webpack-dev-server": "catalog:"
   }
 }

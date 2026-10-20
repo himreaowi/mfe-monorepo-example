@@ -11,7 +11,7 @@
  *   }
  *
  * Development builds fall back to the example vendor (tools/example-vendors, port 3292) so the
- * adapter also works standalone. Rspack replaces `process.env.NODE_ENV` in production builds
+ * adapter also works standalone. webpack replaces `process.env.NODE_ENV` in production builds
  * and drops this branch, so the dev URL is not in production bundles.
  */
 export function resolveVendorConfig(fromHost: unknown): unknown {

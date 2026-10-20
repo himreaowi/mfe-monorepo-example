@@ -10,7 +10,7 @@
  *   }
  *
  * Development builds fall back to the example vendor (tools/example-vendors, port 3192) and
- * the mock API (tools/mock-api, port 3190) so the adapter also works standalone. Rspack replaces
+ * the mock API (tools/mock-api, port 3190) so the adapter also works standalone. webpack replaces
  * `process.env.NODE_ENV` in production builds and drops this branch, so the dev URLs are not in
  * production bundles.
  */

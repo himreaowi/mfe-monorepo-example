@@ -5,8 +5,8 @@
   "description": "Staff Portal: host app (shell) of the intranet zone",
   "type": "module",
   "scripts": {
-    "dev": "mfe-dev-manifest --shell-dir . && rspack dev",
-    "build": "rspack build",
+    "dev": "mfe-dev-manifest --shell-dir . && webpack serve",
+    "build": "webpack build",
     "preview": "mfe-preview",
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json && tsc -p e2e/tsconfig.json",
@@ -74,13 +74,10 @@
     "@org/eslint-config": "workspace:*",
     "@org/jest-config": "workspace:*",
     "@org/playwright-config": "workspace:*",
-    "@org/rspack-config": "workspace:*",
     "@org/scripts": "workspace:*",
     "@org/tsconfig": "workspace:*",
+    "@org/webpack-config": "workspace:*",
     "@playwright/test": "catalog:",
-    "@rspack/cli": "catalog:",
-    "@rspack/core": "catalog:",
-    "@rspack/dev-server": "catalog:",
     "@testing-library/dom": "catalog:",
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/react": "catalog:",
@@ -92,6 +89,9 @@
     "eslint": "catalog:",
     "jest": "catalog:",
     "prettier": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "webpack": "catalog:",
+    "webpack-cli": "catalog:",
+    "webpack-dev-server": "catalog:"
   }
 }

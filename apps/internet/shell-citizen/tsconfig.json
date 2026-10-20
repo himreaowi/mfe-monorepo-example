@@ -6,7 +6,7 @@
       "jest",
       "node",
       "@testing-library/jest-dom",
-      "@org/rspack-config/client"
+      "@org/webpack-config/client"
     ]
   },
   "include": ["src", "remotes.json"]
