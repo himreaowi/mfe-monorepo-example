@@ -132,7 +132,9 @@ export function createZoneConfig(options) {
       mfeHint: `Start the zone with "pnpm dev:${zone.zone}" (or stop a stale server on one of these ports) and run again.`,
     },
     use: {
-      baseURL: zone.shellUrl,
+      // the zone's dev proxy origin; specs navigate to absolute paths below the shell's base
+      // path (`zone.home`, `remote.path`)
+      baseURL: zone.origin,
       trace: ci ? 'on-first-retry' : 'retain-on-failure',
       screenshot: 'only-on-failure',
     },

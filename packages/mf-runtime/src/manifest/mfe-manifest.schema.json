@@ -29,6 +29,17 @@
           "description": "Development builds only: use the in-browser mock auth client instead of a BFF.",
           "type": "boolean"
         },
+        "mockUser": {
+          "description": "With mock: the fake user the dev mock signs in as (default \"Dev User (mock)\"), e.g. a Corppass-style business user for a business shell. Development builds only.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id"],
+          "properties": {
+            "id": { "type": "string", "pattern": "\\S" },
+            "name": { "type": "string" },
+            "roles": { "type": "array", "items": { "type": "string" } }
+          }
+        },
         "sessionUrl": {
           "description": "GET: 200 { user, csrfToken?, expiresAt? } when signed in, 401 when not. Called with credentials: 'include'.",
           "$ref": "#/definitions/url"

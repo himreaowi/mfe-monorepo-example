@@ -16,6 +16,8 @@ export type MfeRemoteConfig = {
  */
 export type MfeAuthConfig = {
   mock?: boolean;
+  /** With `mock`: the fake user (development builds only). */
+  mockUser?: { id: string; name?: string; roles?: string[] };
   sessionUrl?: string;
   loginUrl?: string;
   logoutUrl?: string;
@@ -36,6 +38,15 @@ export type MfeManifest = {
 };
 
 export const DEFAULT_MANIFEST_URL = '/mfe-manifest.json';
+
+/**
+ * URL of a shell's manifest: `mfe-manifest.json` in the folder the shell is served from
+ * (`/` → `/mfe-manifest.json`, `/citizen` → `/citizen/mfe-manifest.json`).
+ */
+export function mfeManifestUrl(basePath = '/'): string {
+  const base = basePath.replace(/\/+$/, '');
+  return `${base}/mfe-manifest.json`;
+}
 
 /** Thrown when the manifest cannot be fetched, parsed or validated. `issues` lists each problem. */
 export class MfeManifestError extends Error {

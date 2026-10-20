@@ -21,3 +21,10 @@ declare module '*.svg' {
 
 /** Federation name of the app (DefinePlugin). */
 declare const __MFE_NAME__: string;
+/**
+ * Base path of the shell (`/`, or e.g. `/citizen`; package.json `mfe.basePath` →
+ * createShellConfig `basePath`). Always `/` in remotes. Read it with
+ * `typeof __MFE_BASE_PATH__ === 'string' ? __MFE_BASE_PATH__ : '/'` so tests (no DefinePlugin)
+ * fall back to `/`.
+ */
+declare const __MFE_BASE_PATH__: string;

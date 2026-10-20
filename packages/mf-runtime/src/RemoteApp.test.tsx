@@ -73,6 +73,26 @@ describe('RemoteApp', () => {
     });
   });
 
+  it('basePath is a router path: a shell base path (router basename) is not part of it', async () => {
+    loadRemoteMock.mockResolvedValue({ default: Probe });
+    render(
+      <MfeManifestProvider manifest={manifest}>
+        <MemoryRouter
+          basename="/citizen"
+          initialEntries={['/citizen/apps/staff/route-1']}
+        >
+          <Routes>
+            <Route path="apps/staff/*" element={<RemoteApp name="staff" />} />
+          </Routes>
+        </MemoryRouter>
+      </MfeManifestProvider>,
+    );
+    const props = JSON.parse(
+      (await screen.findByTestId('host-props')).textContent!,
+    );
+    expect(props.basePath).toBe('/apps/staff');
+  });
+
   it('shows RemoteFallback when the remote cannot be loaded, without breaking the shell', async () => {
     loadRemoteMock.mockRejectedValue(
       new Error(

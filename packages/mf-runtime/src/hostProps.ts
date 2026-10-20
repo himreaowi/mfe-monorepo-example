@@ -19,8 +19,11 @@ export type HostProps = {
   /** `true` when rendered by a shell, `false` when the remote runs standalone. */
   embedded: boolean;
   /**
-   * Absolute URL path where the shell mounted the remote (e.g. `/apps/staff`), `/` standalone.
+   * Absolute path where the shell mounted the remote (e.g. `/apps/staff`), `/` standalone.
    * The remote's routes are relative to it; use `useRemotePath()` for absolute links.
+   * It is a path of the shell's router: a shell served below a base path (`/citizen`, its
+   * router `basename`) mounts the remote at `/apps/staff` and the router turns links and
+   * `navigate()` calls into `/citizen/apps/staff/…`. Never prefix the shell's base path yourself.
    */
   basePath: string;
   /** Current user, `null` when signed out, `undefined` when the shell has no auth. */

@@ -25,7 +25,14 @@ export type MockAuthClientOptions = {
   signedIn?: boolean;
 };
 
-const STORAGE_KEY = MOCK_AUTH_MARKER;
+/**
+ * sessionStorage key of the signed-in flag. A custom user gets its own key, so two shells on one
+ * origin with different mock users (e.g. /citizen and /business behind the zone's dev proxy)
+ * keep separate sessions, like BFF cookies scoped to each shell's path.
+ */
+export function mockStorageKey(user: AuthUser | undefined): string {
+  return user ? `${MOCK_AUTH_MARKER}:${user.id}` : MOCK_AUTH_MARKER;
+}
 
 function defaultStorage(): MockAuthClientOptions['storage'] {
   try {
@@ -39,6 +46,7 @@ export function createMockAuthClient(
   options: MockAuthClientOptions = {},
 ): AuthClient {
   const user = options.user ?? MOCK_USER;
+  const STORAGE_KEY = mockStorageKey(options.user);
   const storage =
     options.storage === undefined ? defaultStorage() : options.storage;
   let memory = options.signedIn ?? false;

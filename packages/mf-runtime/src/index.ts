@@ -1,6 +1,7 @@
 // Host-side API (shells). Remote-side helpers live in '@org/mf-runtime/remote'.
 export {
   DEFAULT_MANIFEST_URL,
+  mfeManifestUrl,
   loadMfeManifest,
   MfeManifestError,
   parseMfeManifest,

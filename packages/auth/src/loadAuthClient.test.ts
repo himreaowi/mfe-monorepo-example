@@ -34,6 +34,16 @@ describe('loadAuthClient', () => {
     expect(client?.kind).toBe('mock');
   });
 
+  it('mock with mockUser → signs in as that user', async () => {
+    jest.spyOn(console, 'info').mockImplementation(() => {});
+    const mockUser = { id: 'biz-1', name: 'Biz (Acme)', roles: ['business'] };
+    const client = await loadAuthClient({
+      mock: true,
+      mockUser,
+    });
+    expect(await client?.signIn()).toMatchObject({ user: mockUser });
+  });
+
   it('mock in production → null (fail closed)', async () => {
     process.env.NODE_ENV = 'production';
     const error = jest.spyOn(console, 'error').mockImplementation(() => {});
