@@ -48,7 +48,7 @@
         }
       },
       "settings": {
-        "apiBaseUrl": "http://localhost:3290/api"
+        "apiBaseUrl": "/business/api"
       }
     }
   },

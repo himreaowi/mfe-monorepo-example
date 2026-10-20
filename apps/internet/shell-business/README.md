@@ -32,7 +32,9 @@ dev proxy: this shell is http://localhost:3200/business/.
   the generators run it too), never edited by hand: each remote of `remotes.json` points at its
   dev server (`http://localhost:<its package.json mfe.port>/mf-manifest.json`); everything else
   comes from `mfe.devManifest` in this shell's `package.json`: `auth` (`{ "mock": true }`),
-  `settings.apiBaseUrl` (the zone's dev-only mock API, `http://localhost:3290/api`, `tools/mock-api`) and
+  `settings.apiBaseUrl` (`/business/api`: the shell's same-origin API path on the zone's dev proxy,
+  which forwards it to `API_UPSTREAM` from `.env`, by default the zone's dev-only mock API,
+  `http://localhost:3290/api`, `tools/mock-api`; production nginx does the same) and
   per-remote dev `props` (`remotes.<federationName>.props`, e.g. an adapter's `vendor`).
   `pnpm check` fails when the file is out of date. The shell passes `settings` to every remote. Shell code that calls an API uses
   `useApiClient()` from `@org/mf-runtime` (same base URL, `credentials: 'include'`).

@@ -41,7 +41,7 @@
         "mock": true
       },
       "settings": {
-        "apiBaseUrl": "http://localhost:3290/api"
+        "apiBaseUrl": "/citizen/api"
       },
       "remotes": {
         "internet_payments": {

@@ -41,7 +41,7 @@
         "mock": true
       },
       "settings": {
-        "apiBaseUrl": "http://localhost:3190/api"
+        "apiBaseUrl": "/api"
       },
       "remotes": {
         "intranet_it_helpdesk": {
