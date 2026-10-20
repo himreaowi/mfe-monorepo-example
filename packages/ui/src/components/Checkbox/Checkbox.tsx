@@ -8,7 +8,10 @@ export type CheckboxProps = Omit<ComponentPropsWithRef<'input'>, 'type'> & {
   label: ReactNode;
   /** Help text under the label, linked with `aria-describedby`. */
   hint?: ReactNode;
-  /** Error message, linked with `aria-describedby`; sets `aria-invalid`. */
+  /**
+   * Error message, linked with `aria-describedby`; sets `aria-invalid`. For an error of the
+   * whole group, show it once at the `<fieldset>` and pass `aria-invalid` to each checkbox.
+   */
   error?: ReactNode;
 };
 
@@ -23,6 +26,7 @@ export function Checkbox({
   id,
   className,
   'aria-describedby': describedBy,
+  'aria-invalid': ariaInvalid,
   ...rest
 }: CheckboxProps) {
   const generatedId = useId();
@@ -42,7 +46,7 @@ export function Checkbox({
         type="checkbox"
         className={styles.input}
         aria-describedby={describedByIds}
-        aria-invalid={hasError ? true : undefined}
+        aria-invalid={hasError ? true : ariaInvalid}
       />
       <div className={styles.text}>
         <label htmlFor={inputId} className={styles.label}>
