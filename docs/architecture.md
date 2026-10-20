@@ -46,7 +46,7 @@ sequenceDiagram
     S->>V: (external adapter) import(vendor url) → mount(el, props)
 ```
 
-1. The shell's `bootstrap.tsx` fetches `/mfe-manifest.json`. It is **not** part of the build:
+1. The shell's `main.tsx` fetches `/mfe-manifest.json`. It is **not** part of the build:
    DevOps writes one per environment (`deploy/mfe-manifest.example.json`), so one build runs
    everywhere. Invalid → start-up error page; offline → connection message.
 2. `initRemotes(manifest)` registers every remote with the Module Federation runtime.

@@ -25,7 +25,7 @@ export type CreateRemoteAppOptions = {
 export type RemoteAppParts = {
   /** Default export of the exposed module (`./App`). Rendered by the shell's `<RemoteApp>`. */
   EmbeddedApp: ComponentType<HostProps>;
-  /** Rendered by the remote's own bootstrap when it runs standalone (`pnpm dev`). */
+  /** Rendered by the remote's own `src/main.tsx` when it runs standalone (`pnpm dev`). */
   StandaloneApp: ComponentType<Partial<HostProps>>;
 };
 

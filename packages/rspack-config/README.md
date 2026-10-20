@@ -43,8 +43,9 @@ imports.
 
 Shared by both:
 
-- Entry `./src/main.tsx` (which must `import('./bootstrap')` so shared singletons are negotiated
-  before React loads). `HtmlRspackPlugin` with `chunks: ['main']`; template `public/index.html` or
+- Entry `./src/main.tsx`, which imports React and renders directly: Module Federation runs with
+  `experiments: { asyncStartup: true }`, so the shared singletons are negotiated before the entry
+  module runs (no `import('./bootstrap')` boundary file). `HtmlRspackPlugin` with `chunks: ['main']`; template `public/index.html` or
   the package default (`templates/index.html`).
 - TS/TSX via `builtin:swc-loader` (automatic JSX runtime).
 - SCSS/CSS via sass-loader + css-loader + **`CssExtractRspackPlugin` in development and

@@ -71,7 +71,7 @@ pnpm dev:<zone>
   `features/external` (`ExternalModuleHost`; `utils/vendorConfig.ts`). `pnpm check` keeps it
   that way.
 - Shells get `src/styles/shell.scss`, the shell's own global stylesheet (empty by default, for
-  fonts or a shell-wide token override), imported in `src/bootstrap.tsx` right after
+  fonts or a shell-wide token override), imported in `src/main.tsx` right after
   `@org/design-tokens/global.scss`. The header colours are not there: they are in the copied
   `ShellLayout.module.scss`. Remotes get their own small `src/layouts/StandaloneLayout/`
   (standalone mode only) and must not set page-wide custom properties (`pnpm check` rule

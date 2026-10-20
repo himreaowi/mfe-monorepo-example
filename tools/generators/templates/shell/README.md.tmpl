@@ -34,7 +34,7 @@ copied from the `__SHELL_LAYOUT__` starter, `--layout`).
 
 ## Auth
 
-`src/bootstrap.tsx` creates the auth client from the manifest's `auth` section
+`src/main.tsx` creates the auth client from the manifest's `auth` section
 (`loadAuthClient` from `@org/auth`) and `App` wraps everything in `<AuthProvider>` (always; auth
 is optional per environment):
 
@@ -80,7 +80,7 @@ plus `UserMenu` from `@org/auth`.
   (`RemoteNav` takes `orientation="vertical"` for a sidebar). When to choose which:
   `docs/ui-context.md` "Navigation: top or side" at the repo root.
 - **Shell-wide styles** (fonts, a page token override for the whole shell):
-  `src/styles/shell.scss`, imported in `src/bootstrap.tsx` after `@org/design-tokens/global.scss`.
+  `src/styles/shell.scss`, imported in `src/main.tsx` after `@org/design-tokens/global.scss`.
 - **e2e contract**: the generated header tests find the layout through a few hooks the starter
   sets (`data-testid` `main-header` with `data-layout` and `data-nav-placement`,
   `header-brand`, `header-menu-button`, `header-panel`; the "Menu" button; the `<nav>` named
@@ -116,8 +116,7 @@ spec or project:
 ```
 e2e/                  zone e2e suite (Playwright + axe), helpers.ts reads remotes.json
 src/
-  main.tsx            import('./bootstrap') (shared singletons are negotiated first)
-  bootstrap.tsx       global styles, PWA, load + validate /mfe-manifest.json, render
+  main.tsx            entry: global styles, PWA, load + validate /mfe-manifest.json, render
   styles/shell.scss   shell-wide global styles (empty by default)
   app/                App (providers + router), routes, registry typing
   components/         RemoteNav/

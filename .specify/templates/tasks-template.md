@@ -21,8 +21,8 @@ description: 'Task list template for feature implementation'
 ## Path Conventions
 
 - Apps: `apps/<zone>/<name>/src/` (canonical layout: `app/`, `features/`,
-  `pages/`, `layouts/`, `components/`, `core/`, `services/`, `main.tsx`,
-  `bootstrap.tsx`); shared code: `packages/<name>/src/`
+  `pages/`, `layouts/`, `components/`, `core/`, `services/`,
+  `main.tsx`); shared code: `packages/<name>/src/`
 - New apps: a setup task runs the generator (`pnpm gen:shell <zone>`,
   `pnpm gen:remote <zone> <name> [--private] [--external]`) and `pnpm install`;
   never copy an app folder

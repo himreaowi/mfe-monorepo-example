@@ -35,8 +35,7 @@ Hard rules (enforced by `pnpm check` and ESLint, see [guardrails.md](guardrails.
 
 | Layer                  | Role                                                                                                |
 | ---------------------- | --------------------------------------------------------------------------------------------------- |
-| `src/main.tsx`         | `import('./bootstrap')` only (Module Federation negotiates the shared singletons first)             |
-| `src/bootstrap.tsx`    | Shell: global styles, PWA, manifest, auth client, render. Remote: standalone entry only             |
+| `src/main.tsx`         | Entry. Shell: global styles, PWA, manifest, auth client, render. Remote: standalone entry only      |
 | `src/app/`             | Wiring: providers, routes, registry (shell); `RemoteApp` (exposed `./App`), `apps`, routes (remote) |
 | `src/features/<name>/` | Domain UI (`components/<Name>/`) + `api/` / `hooks/` / `types/` / `utils/`, public `index.ts`       |
 | `src/pages/`           | Thin route containers that compose features                                                         |
@@ -225,7 +224,7 @@ Package names: apps `@org/<zone>-<name>` / `@org/shell-<zone>` (generated); shar
 - CSS Modules (`*.module.scss`) in the component's folder, one per component, never shared
   ([One folder per component](#one-folder-per-component)); tokens (`var(--…)`) for colours,
   spacing, radius, shadow. No hardcoded colours on themeable surfaces; both themes must pass contrast.
-- Global styles only in the shell (and a remote's standalone bootstrap). The shell's own global
+- Global styles only in the shell (and a remote's standalone entry, `src/main.tsx`). The shell's own global
   rules live in `src/styles/shell.scss` (imported after `@org/design-tokens/global.scss`). The
   header colours are not global: they are in the shell's own
   `src/layouts/ShellLayout/ShellLayout.module.scss`

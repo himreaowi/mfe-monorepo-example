@@ -307,7 +307,7 @@ describe('check-apps', () => {
         [`${staff}/styles/global.scss`]: ':root { --color-surface: red; }\n',
         [`${staff}/features/x/components/X/X.module.scss`]:
           "@media (min-width: 1px) {\n  :global(html[data-theme='dark']) {\n    --color-accent: red;\n  }\n}\n",
-        [`${staff}/bootstrap.tsx`]:
+        [`${staff}/main.tsx`]:
           "document.documentElement.style.setProperty('--color-bg', 'red');\n",
       });
       assert.deepEqual(rules(r.errors).sort(), [
@@ -323,7 +323,7 @@ describe('check-apps', () => {
       assert.match(text, /X\.module\.scss sets --color-accent on/);
       assert.match(
         text,
-        /staff\/src\/bootstrap\.tsx sets --color-bg on the document/,
+        /staff\/src\/main\.tsx sets --color-bg on the document/,
       );
       assert.match(text, /restyle the shell's layout/);
     });

@@ -317,6 +317,10 @@ function createBaseConfig(options, mode) {
       shared,
       manifest: true,
       dts: false,
+      // Async startup: the runtime negotiates the shared singletons (react, react-dom,
+      // react-router, @org/ui, @org/auth) before the entry module runs, so `src/main.tsx` can
+      // import React directly (no `import('./bootstrap')` boundary file).
+      experiments: { asyncStartup: true },
     }),
   ];
 

@@ -21,7 +21,7 @@ The __ZONE__ shell mounts it at `__ROUTE_PATH__/*` (entry in the shell's `remote
 
 - `src/app/RemoteApp.tsx` is the exposed module (`./App`). It must **not** import global styles
   (`@org/design-tokens/global.scss`) or register a service worker: the shell owns the page. Only
-  `src/bootstrap.tsx` (standalone) does that.
+  `src/main.tsx` (standalone) does that.
 - Routes in `src/app/routes.tsx` are relative. Link between pages with `useRemotePath()` from
   `@org/mf-runtime/remote` (gives `__ROUTE_PATH__/details` in the shell, `/details` standalone).
 - Never import another remote or a shell (`pnpm check` and ESLint module boundaries fail).
@@ -46,8 +46,7 @@ features:
 
 ```
 src/
-  main.tsx            import('./bootstrap')
-  bootstrap.tsx       standalone only: global styles + <StandaloneApp />
+  main.tsx            standalone entry only: global styles + <StandaloneApp />
   app/                RemoteApp (exposed), apps (createRemoteApp), routes, standaloneProps
   components/         ModeBadge/
   features/demo/      sample feature (host props, counter, links, items from the API + form)

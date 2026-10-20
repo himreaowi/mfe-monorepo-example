@@ -9,7 +9,7 @@ export type RegisteredRemote = { name: string; entry: string };
  * (`registerRemotes`, NOT `createInstance`: a separate instance would not share the shell's
  * singletons and React could load twice).
  *
- * Call once in the shell bootstrap, after the async import boundary. Remotes are downloaded only
+ * Call once in the shell's entry (`src/main.tsx`). Remotes are downloaded only
  * when first rendered (`<RemoteApp>` → `loadRemote`). Also registers `remoteCssPlugin`: a remote's
  * CSS files are loaded (and awaited) by the remote's chunk loader, see `remoteCss.ts`.
  */

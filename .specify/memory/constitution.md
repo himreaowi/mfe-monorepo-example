@@ -150,8 +150,8 @@ resilience are product quality, not polish.
 
 ```text
 apps/<zone>/<name>/src/
-├── main.tsx          # import('./bootstrap') (MF negotiates singletons first)
-├── bootstrap.tsx     # shell: global styles, PWA, manifest, render; remote: standalone only
+├── main.tsx          # entry (MF async startup): shell: global styles, PWA, manifest, render;
+│                     #   remote: standalone only
 ├── app/              # providers, routes, registry (shell) / RemoteApp, apps (remote)
 ├── features/<name>/  # domain modules with a public index.ts (api/, hooks/, types/, utils/,
 │                     #   components/<Component>/ one folder per component, __fixtures__/)

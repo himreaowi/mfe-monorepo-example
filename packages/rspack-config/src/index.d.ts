@@ -20,7 +20,10 @@ export interface BaseOptions {
   port: number;
   /** Force a mode. Default: from the Rspack CLI (`rspack dev` → development, `rspack build` → production). */
   mode?: 'development' | 'production';
-  /** Entry module. Default `./src/main.tsx` (which does `import('./bootstrap')`). */
+  /**
+   * Entry module. Default `./src/main.tsx`. Module Federation starts asynchronously
+   * (`experiments.asyncStartup`), so the entry imports React and renders directly.
+   */
   entry?: string;
   /** HTML title. Default: name. */
   title?: string;

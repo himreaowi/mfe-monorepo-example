@@ -142,6 +142,8 @@ describe('createShellConfig', () => {
     assert.equal(mf.shared.react.singleton, true);
     assert.equal(mf.shared.react.strictVersion, true);
     assert.equal(mf.dts, false);
+    // shared singletons are negotiated before the entry runs: no import('./bootstrap') file
+    assert.deepEqual(mf.experiments, { asyncStartup: true });
   });
 
   it("only injects the 'main' chunk into the HTML", () => {

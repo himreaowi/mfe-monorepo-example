@@ -155,7 +155,6 @@ describe('generators', () => {
       'e2e/a11y.spec.ts',
       'public/index.html',
       'src/main.tsx',
-      'src/bootstrap.tsx',
       'src/styles/shell.scss',
       'src/app/App.tsx',
       'src/app/routes.tsx',
@@ -230,10 +229,13 @@ describe('generators', () => {
     assert.match(read(root, `${dir}/e2e/helpers.ts`), /data-nav-placement/);
     assert.match(read(root, `${dir}/e2e/shell.spec.ts`), /expectSidebar/);
     assert.match(read(root, `${dir}/rspack.config.js`), /createShellConfig/);
-    assert.match(read(root, `${dir}/src/bootstrap.tsx`), /registerPwa\(\)/);
+    // async startup (@org/rspack-config): one entry file, no import('./bootstrap') boundary
+    assert.ok(!files.includes('src/bootstrap.tsx'));
+    assert.doesNotMatch(read(root, `${dir}/src/main.tsx`), /import\(/);
+    assert.match(read(root, `${dir}/src/main.tsx`), /registerPwa\(\)/);
     // shell-wide global styles: imported right after the design tokens; no header colours
     assert.match(
-      read(root, `${dir}/src/bootstrap.tsx`),
+      read(root, `${dir}/src/main.tsx`),
       /^import '@org\/design-tokens\/global\.scss';\n(?:\/\/.*\n)*import '\.\/styles\/shell\.scss';$/m,
     );
     const shellStyles = read(root, `${dir}/src/styles/shell.scss`);
@@ -246,9 +248,9 @@ describe('generators', () => {
     ]) {
       assert.doesNotMatch(text, /MainLayout|useNavPlacement/);
     }
-    assert.match(read(root, `${dir}/src/bootstrap.tsx`), /loadMfeManifest/);
+    assert.match(read(root, `${dir}/src/main.tsx`), /loadMfeManifest/);
     assert.match(
-      read(root, `${dir}/src/bootstrap.tsx`),
+      read(root, `${dir}/src/main.tsx`),
       /loadAuthClient\(manifest\.auth\)/,
     );
     assert.match(read(root, `${dir}/src/app/App.tsx`), /<AuthProvider/);
@@ -411,7 +413,7 @@ describe('generators', () => {
     for (const f of ['src/app/RemoteApp.tsx', 'src/app/apps.tsx']) {
       assert.doesNotMatch(read(root, `${dir}/${f}`), /global\.scss/);
     }
-    assert.match(read(root, `${dir}/src/bootstrap.tsx`), /global\.scss/);
+    assert.match(read(root, `${dir}/src/main.tsx`), /global\.scss/);
     assert.match(
       read(root, `${dir}/src/app/RemoteApp.tsx`),
       /EmbeddedApp as default/,

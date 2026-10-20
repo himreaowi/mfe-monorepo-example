@@ -10,7 +10,7 @@ The BFF endpoints and what the backend must provide: [docs/auth-contract.md](../
 ## Shell
 
 ```tsx
-// src/bootstrap.tsx
+// src/main.tsx
 const manifest = await loadMfeManifest();
 const authClient = await loadAuthClient(manifest.auth); // AuthClient | null
 

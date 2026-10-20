@@ -129,8 +129,14 @@ tier-1 singleton.
 - `rspack dev` does not reload the config file when it changes. Restart the dev server after
   editing `rspack.config.*` or the shared config. A stale server showed exactly the two-router
   failure above.
-- The bootstrap pattern (`index.js` → `import('./bootstrap')`) is still required so shared
-  singletons are negotiated before React is imported.
+- The spike used the bootstrap pattern (`main.tsx` → `import('./bootstrap')`) so shared
+  singletons are negotiated before React is imported. Since v3 the config sets Module
+  Federation's `experiments: { asyncStartup: true }` instead: the runtime awaits the shared-scope
+  negotiation before the entry module runs, so `src/main.tsx` imports React and renders directly
+  (one file). Verified with Rspack 2.2.9 + `@module-federation/enhanced` 2.9.2 in `rspack dev`
+  and in production builds: shell, remotes embedded and standalone, every tier-1 package
+  (`react`, `react-dom`, `react-router`, `@org/ui`, `@org/auth`) loaded once from the shell
+  (`__FEDERATION__` share scope), a remote's `useAuth()` reads the shell's session.
 
 ### Jest (for A8)
 
@@ -305,7 +311,7 @@ true })` before loading again. Verified in the browser: the remote's `mf-manifes
 - `rspack preview` is not used: `pnpm preview` runs `mfe-preview` (`@org/scripts`), a small static
   server with CORS and SPA fallback on the app's port. A shell needs a `mfe-manifest.json`
   (`--manifest <file>` or a copy in `dist/`), as in production.
-- Shell `bootstrap.tsx` catches a failing `/mfe-manifest.json` and renders `StartupError`
+- Shell `main.tsx` catches a failing `/mfe-manifest.json` and renders `StartupError`
   (connection-required message when offline) instead of a blank page.
 - Remote templates test that the exposed module's import graph never reaches
   `@org/design-tokens/global.scss` or `registerPwa`.
@@ -516,9 +522,10 @@ answered 503 showed `RemoteFallback` (then rendered styled after "Try again").
   `868.<hash>.css`); only one of them is ever requested.
 - **Rspack's CSS chunk error has an escaped newline**, a literal backslash-n before the URL:
   `Loading CSS chunk 362 failed.\n(<url>)`. `RemoteApp` cuts the fallback reason there.
-- **`mf-manifest.json` lists the remote's standalone `bootstrap` chunk (with `global.scss`) as
-  async assets of the expose.** It is never requested through the expose; only an explicit
-  `preloadRemote({ resourceCategory: 'all' })` would preload it.
+- **The remote's standalone entry is not an asset of the expose.** With the old
+  `import('./bootstrap')` split, `mf-manifest.json` listed the standalone `bootstrap` chunk (with
+  `global.scss`) as async assets of the expose. Since the entry is one synchronous `main.tsx`
+  (async startup), the expose lists only its own JS/CSS; `global.scss` is only in `main.*.css`.
 - Constructable stylesheets (`adoptedStyleSheets`) are not subject to `style-src`; the mock
   vendor and the vendor kit examples use them. React `style` props are set through the CSSOM
   (`element.style`) and are allowed; only `<style>` elements and `style="…"` attributes in HTML
