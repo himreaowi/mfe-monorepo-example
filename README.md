@@ -25,6 +25,7 @@ pnpm e2e:intranet          # e2e + axe WCAG 2.2 AA (after: pnpm --filter @org/sh
 
 | Doc                                                                                         | For                                                                   |
 | ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| [Configuration](docs/configuration.md)                                                      | variables, `.env` files, same-origin `/api` and `/auth` proxy         |
 | [Getting started](docs/getting-started.md)                                                  | clone → install → generate → run → test → build                       |
 | [Architecture](docs/architecture.md)                                                        | decisions D1–D8, runtime (manifest → remotes), zones, auth, vendors   |
 | [Adding an app](docs/adding-an-app.md)                                                      | generators, what they change, going to production                     |

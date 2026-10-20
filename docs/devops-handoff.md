@@ -12,8 +12,9 @@ pipeline runs the gates once for the repo, asks `pnpm -s apps --affected` which 
 (a change in `packages/` affects every app that depends on it), and builds/deploys only those,
 one matrix job per app, each into its own nginx image from the one shared `deploy/Dockerfile`.
 The same image is promoted through every environment; what differs per environment is the
-shell's `/mfe-manifest.json` (remote URLs, BFF URLs, vendor URLs) and the nginx environment
-variables (CORS, CSP).
+shell container's environment variables ([configuration.md](configuration.md)): the API and BFF
+upstreams nginx proxies to, the remotes' URLs (from which the container generates the shell's
+`/mfe-manifest.json`) and the CORS/CSP values.
 
 ## Toolchain
 
@@ -160,9 +161,19 @@ Example: [`deploy/mfe-manifest.example.json`](../deploy/mfe-manifest.example.jso
 [packages/mf-runtime/README.md](../packages/mf-runtime/README.md),
 [auth-contract.md](auth-contract.md), [external-modules.md](external-modules.md).
 
-- Keep one manifest per shell per environment (e.g. a config repo or secure files:
-  `intranet/dev.json`, `intranet/prod.json`). It is public (served to browsers): no secrets.
-- Validate before deploying:
+- **Preferred: no hand-written manifest.** The container generates it at start from variables
+  (`API_UPSTREAM`, `AUTH_UPSTREAM`, `REMOTE_<FEDERATION_NAME>_URL`, optional `MFE_ENVIRONMENT`),
+  validates them and refuses to start with a list of what is wrong. Keep one Azure DevOps variable
+  group per zone/shell and environment (`internet-citizen-uat`, `intranet-prod`, ...), the
+  committed `apps/<zone>/.env.example` lists the variables. Everything in
+  [configuration.md](configuration.md).
+- The manifest holds relative URLs only (`apiBaseUrl: "<base>/api"`, auth under `<base>/auth/...`):
+  nginx forwards `<base>/api` to `API_UPSTREAM` and `<base>/auth` to `AUTH_UPSTREAM`, so the
+  browser never sees (or needs CORS/CSP for) a backend host. It is public (served to browsers): no
+  secrets, and the upstream hosts are not in it.
+- Alternatively keep a complete manifest per shell per environment (config repo or secure files:
+  `intranet/dev.json`, `intranet/prod.json`), used instead of the variables.
+- Validate before deploying (a complete manifest, or the file a test container generated):
 
   ```sh
   pnpm -s validate-manifest intranet/prod.json --zone=intranet
@@ -175,15 +186,15 @@ Example: [`deploy/mfe-manifest.example.json`](../deploy/mfe-manifest.example.jso
   `"auth": { "mock": true }` and on `http://` entries; warns on unknown remotes.
 
 - Provide it to the shell container either as a mounted file at
-  `/etc/mfe/mfe-manifest.json` (ConfigMap / App Service file mount) or as the env var
-  `MFE_MANIFEST_JSON` (the image writes it at start-up). nginx serves it with
-  `Cache-Control: no-cache`.
+  `/etc/mfe/mfe-manifest.json` (ConfigMap / App Service file mount, read-only) or as the env var
+  `MFE_MANIFEST_JSON` (the image writes it at start-up). Both take precedence over the
+  variables. nginx serves it with `Cache-Control: no-cache`.
 - Remote URL, vendor version, BFF location changes = manifest change + shell container
   restart (or file update). No rebuild.
-- `settings.apiBaseUrl`: the API base URL of that environment (absolute, or a same-origin path
-  such as `/api` behind the BFF). The generated `mfe-manifest.dev.json` points it at the
-  dev-only mock API (`tools/mock-api`, `http://localhost:3190/api` / `:3290`), which is never
-  built or deployed.
+- `settings.apiBaseUrl`: the shell's same-origin API path, `<base>/api` (`/api` for a shell at
+  `/`). The generated `mfe-manifest.dev.json` uses the same path: the zone's dev proxy forwards it
+  to `API_UPSTREAM`, by default the dev-only mock API (`tools/mock-api`, `http://localhost:3190/api`
+  / `:3290`), which is never built or deployed.
 
 ## nginx and Docker: one template for every app
 
@@ -191,18 +202,20 @@ Example: [`deploy/mfe-manifest.example.json`](../deploy/mfe-manifest.example.jso
 every app; change caching, headers or CSP once there. The image renders them at start-up with
 these environment variables (defaults in `deploy/Dockerfile`):
 
-| Variable                 | Default                                                | Set to                                                                                             |
-| ------------------------ | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| `NGINX_PORT`             | `8080`                                                 |                                                                                                    |
-| `MFE_CORS_ORIGINS_REGEX` | `^$` (no CORS)                                         | **remotes**: the shell origins, e.g. `^https://(portal\|staff)\.example\.sg$`                      |
-| `CSP_REMOTE_ORIGINS`     | empty                                                  | **shells**: origins of the remotes in the manifest (`https://staff-directory.portal.example.sg …`) |
-| `CSP_BFF_ORIGINS`        | empty                                                  | BFF origin if not same-origin (recommended: same origin via the gateway)                           |
-| `CSP_API_ORIGINS`        | empty                                                  | API origins called from the browser                                                                |
-| `CSP_VENDOR_ORIGINS`     | empty                                                  | origins each vendor declared (bundle, chunks, APIs, fonts)                                         |
-| `CSP_FRAME_SRC`          | `'none'`                                               | iframe origins (iframe-integrated vendors)                                                         |
-| `CSP_EXTRA`              | empty                                                  | extra directives, e.g. `report-to csp`                                                             |
-| `PERMISSIONS_POLICY`     | `camera=(), microphone=(), geolocation=(), payment=()` | relax per app if a feature needs it (`payment=(self "https://pay.vendor.example")`)                |
-| `MFE_MANIFEST_JSON`      | empty                                                  | shells: the environment's manifest (or mount the file)                                             |
+| Variable                 | Default                                                | Set to                                                                                                  |
+| ------------------------ | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| `NGINX_PORT`             | `8080`                                                 |                                                                                                         |
+| `MFE_CORS_ORIGINS_REGEX` | `^$` (no CORS)                                         | **remotes**: the shell origins, e.g. `^https://(portal\|staff)\.example\.sg$`                           |
+| `CSP_REMOTE_ORIGINS`     | empty                                                  | **shells**: origins of the remotes in the manifest (`https://staff-directory.portal.example.sg …`)      |
+| `CSP_VENDOR_ORIGINS`     | empty                                                  | origins each vendor declared (bundle, chunks, APIs, fonts)                                              |
+| `CSP_FRAME_SRC`          | `'none'`                                               | iframe origins (iframe-integrated vendors)                                                              |
+| `CSP_EXTRA`              | empty                                                  | extra directives, e.g. `report-to csp`                                                                  |
+| `PERMISSIONS_POLICY`     | `camera=(), microphone=(), geolocation=(), payment=()` | relax per app if a feature needs it (`payment=(self "https://pay.vendor.example")`)                     |
+| `API_UPSTREAM`           | empty                                                  | **shells**: backend `<base>/api` is proxied to (server-side only), e.g. `https://api.uat.example.sg/v1` |
+| `AUTH_UPSTREAM`          | empty                                                  | **shells with sign-in**: the BFF `<base>/auth` is proxied to (required for them)                        |
+| `REMOTE_<NAME>_URL`      | unset                                                  | **shells**: entry URL of each registered remote (`<NAME>` = federation name upper-cased; required)      |
+| `MFE_ENVIRONMENT`        | empty                                                  | shells: `settings.environment`                                                                          |
+| `MFE_MANIFEST_JSON`      | empty                                                  | shells: a complete manifest instead of the variables (or mount the file)                                |
 
 What the template does:
 
@@ -229,8 +242,8 @@ The template's policy (shell responses are what matters):
 ```
 default-src 'self'; script-src 'self' <remotes> <vendors>; style-src 'self' <remotes> <vendors>;
 img-src 'self' data: <remotes> <vendors>; font-src 'self' <remotes> <vendors>;
-connect-src 'self' <remotes> <bff> <apis> <vendors>; frame-src <frames|'none'>; worker-src 'self';
-manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self' <bff>; frame-ancestors 'none';
+connect-src 'self' <remotes> <vendors>; frame-src <frames|'none'>; worker-src 'self';
+manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';
 upgrade-insecure-requests
 ```
 
@@ -269,8 +282,10 @@ Either works; the build is the same:
   entries (`/remotes/staff-directory/mf-manifest.json`). Remote chunks load relative to
   `remoteEntry.js` (`publicPath: 'auto'`). A remote's standalone `index.html` is then only
   reachable at its own root; it is a developer tool, not a user page.
-- Route `/bff/*` (and APIs) through the shell's origin if possible: no CORS, `__Host-` cookies
-  (see [auth-contract.md](auth-contract.md)).
+- The API and the sign-in BFF are always reached through the shell's own origin
+  (`<base>/api`, `<base>/auth`, proxied by the shell container): no CORS, no API/BFF origins in the
+  CSP, `__Host-` cookies possible (see [auth-contract.md](auth-contract.md),
+  [configuration.md](configuration.md)).
 
 ### Rollouts and rollbacks
 
@@ -396,11 +411,13 @@ stages:
 - [ ] Matrix from `pnpm -s apps --affected --base=<sha> --matrix`; one image per app from
       `deploy/Dockerfile` (`--build-arg APP=<package>`); images promoted unchanged across
       environments
-- [ ] Per environment and shell: `mfe-manifest.json` validated with
-      `pnpm -s validate-manifest <file> --zone=<zone>`, mounted at `/etc/mfe/mfe-manifest.json`
-      (or `MFE_MANIFEST_JSON`)
+- [ ] Per environment and shell: a variable group (`<zone>-<shell>-<env>`) with `API_UPSTREAM`,
+      `AUTH_UPSTREAM`, `REMOTE_<NAME>_URL`, ...; the container generates and validates the manifest
+      (optionally `pnpm -s validate-manifest <file> --zone=<zone>` on a test run's output, or a
+      complete manifest mounted at `/etc/mfe/mfe-manifest.json` / `MFE_MANIFEST_JSON`)
 - [ ] nginx env vars per app/environment: `MFE_CORS_ORIGINS_REGEX` (remotes), `CSP_*` (shells)
-- [ ] TLS + HSTS at the gateway; `/bff/*` routed through the shell origin if possible
+- [ ] TLS + HSTS at the gateway; `<base>/api` and `<base>/auth` reach the upstreams from the shell
+      container (network rules, upstream CA trusted)
 - [ ] Old hashed assets kept during rollouts; tier-1 upgrades deployed zone-wide together
 - [ ] Branch policies: build validation + path-based reviewers
 - [ ] Vendor origins in the CSP; vendor URLs + SRI in the manifest; mock vendor never deployed

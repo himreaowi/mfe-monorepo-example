@@ -136,7 +136,7 @@ How it runs (`@org/playwright-config`):
    zone's mock API and, for external adapters, the zone's mock vendor. Locally an already running
    `pnpm dev:<zone>` is reused (fast reruns while you work); CI always starts fresh servers.
 2. Global setup waits until every remote in `mfe-manifest.dev.json`, local vendor bundles and
-   the local API's `<settings.apiBaseUrl>/health` (the mock API) answer. More servers:
+   the API's `<settings.apiBaseUrl>/health` (through the zone proxy: the mock API by default) answer. More servers:
    `createZoneConfig({ shellDir, extraHealthUrls: [...] })`.
 3. Every test runs in two projects: `desktop` (1280×720) and `mobile` (375×812).
 4. Afterwards the dev servers are stopped (SIGTERM). `pnpm dev:<zone>` runs through a small

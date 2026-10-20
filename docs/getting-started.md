@@ -39,6 +39,11 @@ pnpm test
 
 `apps/` is empty: the template ships shared packages, tools and docs only.
 
+Local settings live in `.env` files (git-ignored), next to a committed `.env.example` that lists
+every variable: after generating a shell, `cp apps/<zone>/.env.example apps/<zone>/.env` only if
+you want to change a default (for instance `API_UPSTREAM` to develop against a real UAT API).
+Nothing is needed for the mock API. See [configuration.md](configuration.md).
+
 ## 3. Create apps
 
 Each zone (`intranet`, `internet`) has one or more shells and any number of remotes. Create
@@ -77,8 +82,10 @@ base path (a zone with shells at `/citizen` and `/business` redirects `/` to the
 The shell loads every remote from its own dev server at runtime.
 "Sign in" uses the development mock (no backend needed). The remotes' demo feature loads data
 from the zone's **mock API** (`tools/mock-api`, http://localhost:3190/api, started
-automatically; its URL is `settings.apiBaseUrl` in the shell's generated `mfe-manifest.dev.json`, from
-`mfe.devManifest` in the shell's `package.json`).
+automatically). Pages call `<base path>/api/...` on the proxy origin (`settings.apiBaseUrl` in
+the shell's generated `mfe-manifest.dev.json`, from `mfe.devManifest` in its `package.json`); the
+proxy forwards it to `API_UPSTREAM`, by default that mock API. To change it (e.g. a real UAT API),
+copy the zone's `.env.example` to `.env` and edit it, see [configuration.md](configuration.md).
 `it-helpdesk` mounts the mock vendor module (started automatically on port 3191). Stop with
 Ctrl+C.
 
