@@ -34,7 +34,8 @@ Instructions for AI coding agents (and humans) working in this monorepo. Details
   component `useEffect` (use `features/*/api` + `features/*/hooks`).
 - One folder per component: `features/<feature>/components/<Name>/` (and `src/components/<Name>/`)
   with `<Name>.tsx`, its own `<Name>.module.scss` (never shared between components),
-  `<Name>.test.tsx` and `index.ts`; private sub-parts in the same folder; shared test data in
+  `<Name>.test.tsx`, no `index.ts` (import the file: `@/components/Card/Card`; the only barrel is
+  a feature's public `features/<feature>/index.ts`); private sub-parts in the same folder; shared test data in
   `features/<feature>/__fixtures__/`; helpers in `utils/`
   ([docs/coding-conventions.md](docs/coding-conventions.md#one-folder-per-component)).
   `pnpm check` reports violations.

@@ -60,8 +60,7 @@ _TODO: product-specific theme UX (e.g. high-contrast theme), if any._
 ## Layout: the shell owns it
 
 Each shell owns its layout: `apps/<zone>/shell-<zone>/src/layouts/ShellLayout/` is ordinary
-code of that shell (`ShellLayout.tsx`, `ShellLayout.module.scss`, `ShellLayout.test.tsx`,
-`index.ts`). `pnpm gen:shell <zone> [--layout top|side]` copies a **starter** there once; after
+code of that shell (`ShellLayout.tsx`, `ShellLayout.module.scss`, `ShellLayout.test.tsx`). `pnpm gen:shell <zone> [--layout top|side]` copies a **starter** there once; after
 that there is no layout option anywhere: the team edits the files. `@org/ui` gives building
 blocks only (`SkipLink`, `Brand`, `ThemeToggle`, `useMenuDisclosure`, `useFitLayout`, …), so
 the hard parts (accessibility, the collapsing header) behave the same in every shell while the
@@ -155,7 +154,8 @@ Rules:
 ## Component conventions
 
 - Shared components: `packages/ui/src/components/<Component>/` (`Component.tsx`,
-  `Component.module.scss`, `types.ts`, `Component.test.tsx`, `index.ts`). App-only components:
+  `Component.module.scss`, `types.ts`, `Component.test.tsx`; no `index.ts`: the package's
+  `src/index.ts` exports each component from its file). App-only components:
   the app's `src/components/<Component>/`. Feature UI: `src/features/<name>/components/<Component>/`,
   same files (one folder per component, its own `.module.scss`, never shared; see
   [coding-conventions.md](coding-conventions.md#one-folder-per-component)).

@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { THEME_STORAGE_KEY } from '@org/design-tokens';
-import { ThemeProvider } from '../../providers/ThemeProvider';
+import { ThemeProvider } from '../../providers/ThemeProvider/ThemeProvider';
 import { ThemeToggle } from './ThemeToggle';
 
 describe('ThemeToggle', () => {

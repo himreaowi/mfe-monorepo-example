@@ -32,7 +32,7 @@ apps/<zone>/<name>/                 new remote (package @org/<zone>-<name>)
   package.json                      nx.tags zone/type/access(/kind), mfe.port, mfe.federationName
   rspack.config.js                  createRemoteConfig (reads mfe from package.json)
   src/                              app/, features/demo, pages/, layouts/, components/, core/
-    features/demo/                  api/, hooks/, types/, utils/, components/<Name>/ (one folder per component), index.ts
+    features/demo/                  api/, hooks/, types/, utils/, components/<Name>/ (one folder per component), index.ts (public API)
 apps/<zone>/shell-<zone>/
   remotes.json                      + { name, title, path, federationName, package, access, kind }
   mfe-manifest.dev.json             regenerated: + "<federationName>": { "entry": "http://localhost:<port>/mf-manifest.json" }
@@ -91,7 +91,7 @@ e2e suite (`e2e/`, `playwright.config.ts`). There is exactly one shell per zone.
 
 The shell owns its layout: `--layout top|side` (default `top`) picks which **starter** is copied
 into `src/layouts/ShellLayout/` (`ShellLayout.tsx`, `ShellLayout.module.scss`,
-`ShellLayout.test.tsx`, `index.ts`): the remotes nav in the header row (`top`) or in a sidebar
+`ShellLayout.test.tsx`): the remotes nav in the header row (`top`) or in a sidebar
 left of the content (`side`; many remotes, internal tools). On phones both put it behind the
 "Menu" button. After that the files are the shell's own code and there is no layout option:
 restyle the header in `ShellLayout.module.scss` ("HEADER COLOURS"), change the structure in

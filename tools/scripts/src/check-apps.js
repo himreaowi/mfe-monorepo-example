@@ -13,8 +13,10 @@
  *   inside the zones' tools range and name existing workspace packages
  * - component layout (docs/coding-conventions.md "One folder per component"): components live in
  *   `features/<feature>/components/<Name>/`, `src/components/<Name>/` or `src/layouts/<Name>/`
- *   with `<Name>.tsx`, `<Name>.test.tsx` and `index.ts`; a CSS module is imported only from its
- *   own folder
+ *   with `<Name>.tsx` and `<Name>.test.tsx`; a CSS module is imported only from its own folder
+ * - no barrel files: the only `index.ts` in an app is a feature's public API
+ *   (`src/features/<feature>/index.ts`); everything else is imported from its file
+ *   (`@/components/Card/Card`)
  * - remotes never set CSS custom properties page-wide (`:root`, `html`, `body`, `[data-theme]`,
  *   `document.documentElement.style.setProperty('--…')`): that would restyle the shell's layout
  *   and every other remote
@@ -470,7 +472,7 @@ function entries(dir) {
 }
 
 /**
- * One folder per component: `components/<Name>/{<Name>.tsx, <Name>.test.tsx, index.ts}` inside
+ * One folder per component: `components/<Name>/{<Name>.tsx, <Name>.test.tsx}` inside
  * `src/components/`, `src/layouts/` (the shell's ShellLayout, a remote's StandaloneLayout) and
  * every `src/features/<feature>/components/`; no component or style files
  * loose in a feature root or a components/ folder; a CSS module is private to its folder (no
@@ -509,7 +511,7 @@ function checkComponentLayout(root, appDir, err) {
   for (const dir of componentDirs) {
     for (const item of entries(dir)) {
       const where = rel(path.join(dir, item.name));
-      if (item.isFile() && /^index\.tsx?$/.test(item.name)) continue; // optional barrel
+      if (item.isFile() && /^index\.tsx?$/.test(item.name)) continue; // barrel-file rule
       if (item.isFile()) {
         const base = item.name.replace(
           /\.(test\.)?[jt]sx?$|\.module\.s?css$|\.s?css$/,
@@ -517,7 +519,7 @@ function checkComponentLayout(root, appDir, err) {
         );
         err(
           'component-folder',
-          `${where}: one folder per component; move it to ${rel(dir)}/${base}/${item.name} (with ${base}.test.tsx and an index.ts re-export). Shared test data goes to the feature's __fixtures__/. See ${LAYOUT_DOC}.`,
+          `${where}: one folder per component; move it to ${rel(dir)}/${base}/${item.name} (with ${base}.test.tsx). Shared test data goes to the feature's __fixtures__/. See ${LAYOUT_DOC}.`,
         );
         continue;
       }
@@ -540,12 +542,6 @@ function checkComponentLayout(root, appDir, err) {
         );
         continue;
       }
-      if (!has('index.ts') && !has('index.tsx')) {
-        err(
-          'component-folder',
-          `${where}/: missing index.ts (export { ${name} } from './${name}';). Import the component through its folder.`,
-        );
-      }
       if (!has(`${name}.test.tsx`)) {
         err(
           'component-test',
@@ -553,6 +549,20 @@ function checkComponentLayout(root, appDir, err) {
         );
       }
     }
+  }
+
+  // no barrel files: index.ts only as a feature's public API (src/features/<feature>/index.ts)
+  for (const file of sourceFiles(appDir)) {
+    if (!/^index\.tsx?$/.test(path.basename(file))) continue;
+    const parent = path.dirname(file);
+    const isFeatureApi =
+      path.dirname(parent) === path.join(src, 'features') &&
+      path.basename(file) === 'index.ts';
+    if (isFeatureApi) continue;
+    err(
+      'barrel-file',
+      `${rel(file)}: no index.ts barrels. Import from the file itself (e.g. '@/components/Card/Card', '../api/itemsApi'); the only index.ts in an app is a feature's public API, src/features/<feature>/index.ts. See ${LAYOUT_DOC}.`,
+    );
   }
 
   // CSS modules are private to their folder

@@ -173,7 +173,6 @@ describe('generators', () => {
       'src/components/RemoteNav/RemoteNav.tsx',
       'src/features/welcome/components/Welcome/Welcome.tsx',
       'src/features/welcome/components/Welcome/Welcome.test.tsx',
-      'src/features/welcome/components/Welcome/index.ts',
       'src/features/startup/components/StartupError/StartupError.tsx',
       'src/layouts/ShellLayout/ShellLayout.tsx',
       'src/pages/HomePage/HomePage.tsx',
@@ -188,7 +187,6 @@ describe('generators', () => {
       'ShellLayout.tsx',
       'ShellLayout.module.scss',
       'ShellLayout.test.tsx',
-      'index.ts',
     ]) {
       assert.ok(files.includes(`src/layouts/ShellLayout/${f}`), `missing ${f}`);
     }
@@ -397,7 +395,6 @@ describe('generators', () => {
       'src/features/demo/components/Demo/Demo.tsx',
       'src/features/demo/components/Demo/Demo.module.scss',
       'src/features/demo/components/Demo/Demo.test.tsx',
-      'src/features/demo/components/Demo/index.ts',
       'src/features/demo/components/DemoDetails/DemoDetails.tsx',
       'src/features/demo/components/DemoDetails/DemoDetails.test.tsx',
       'src/features/demo/utils/validation.ts',
@@ -412,7 +409,6 @@ describe('generators', () => {
       'src/layouts/StandaloneLayout/StandaloneLayout.tsx',
       'src/layouts/StandaloneLayout/StandaloneLayout.module.scss',
       'src/layouts/StandaloneLayout/StandaloneLayout.test.tsx',
-      'src/layouts/StandaloneLayout/index.ts',
       'src/pages/OverviewPage/OverviewPage.tsx',
       'src/pages/DetailsPage/DetailsPage.tsx',
       'src/core/constants/apiRoutes.ts',
@@ -439,6 +435,24 @@ describe('generators', () => {
       read(root, `${dir}/src/app/apps.test.tsx`),
       /scanExposedModule\(/,
     );
+  });
+
+  it('no index.ts barrels except a feature root (the feature public API)', () => {
+    for (const app of [
+      'shell-intranet',
+      'staff-directory',
+      'leave-requests',
+      'it-helpdesk',
+    ]) {
+      const dir = path.join(root, 'apps', 'intranet', app);
+      const barrels = listFiles(dir).filter((f) =>
+        /(^|\/)index\.tsx?$/.test(f),
+      );
+      for (const f of barrels) {
+        assert.match(f, /^src\/features\/[^/]+\/index\.ts$/, `${app}/${f}`);
+      }
+      assert.ok(barrels.length > 0, `${app} has a feature public API`);
+    }
   });
 
   it('substitutes every template token', () => {

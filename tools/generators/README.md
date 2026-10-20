@@ -25,7 +25,7 @@ pnpm dev:<zone>
 - **`--layout top|side`** (`gen:shell`, default `top`): which **starter layout** is copied into
   the shell as its own code: `templates/shell-layouts/<layout>/` →
   `src/layouts/ShellLayout/{ShellLayout.tsx, ShellLayout.module.scss, ShellLayout.test.tsx}`
-  (`index.ts` comes from the shell template). `top`: remotes nav in the header row; `side`: a
+  `top`: remotes nav in the header row; `side`: a
   sticky top bar and the nav in a sidebar left of the content. On narrow screens both fold the
   nav behind "Menu" (the side starter as a drawer). After generation there is no layout option
   anywhere: the team edits the files (colours in the "HEADER COLOURS" block of
@@ -64,7 +64,8 @@ pnpm dev:<zone>
   `@org/http-client` (api/ → hooks/ → components) and has an "Add item" form with the
   validate-on-submit / error-summary pattern (docs/coding-conventions.md).
 - Every generated feature uses **one folder per component** (docs/coding-conventions.md):
-  `features/<feature>/components/<Name>/{<Name>.tsx, <Name>.module.scss, <Name>.test.tsx, index.ts}`,
+  `features/<feature>/components/<Name>/{<Name>.tsx, <Name>.module.scss, <Name>.test.tsx}` (no
+  `index.ts`: imports name the file; a feature's `index.ts` is its public API),
   non-component code in `api/`, `hooks/`, `types/`, `utils/`. Remote: `features/demo`
   (`Demo`, `DemoDetails`, `DemoItems`, `AddItemForm`; `utils/validation.ts`). Shell:
   `features/welcome` (`Welcome`), `features/startup` (`StartupError`) and

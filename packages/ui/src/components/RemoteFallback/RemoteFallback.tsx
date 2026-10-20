@@ -1,4 +1,4 @@
-import { Button } from '../Button';
+import { Button } from '../Button/Button';
 import styles from './RemoteFallback.module.scss';
 import type { RemoteFallbackProps } from './types';
 

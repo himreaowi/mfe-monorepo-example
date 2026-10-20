@@ -113,9 +113,9 @@ apps/
             │   ├── hooks/
             │   ├── types/
             │   ├── utils/
-            │   ├── components/[Component]/  # [Component].tsx, .module.scss, .test.tsx, index.ts
+            │   ├── components/[Component]/  # [Component].tsx, .module.scss, .test.tsx (no index.ts)
             │   ├── __fixtures__/            # shared test data
-            │   └── index.ts
+            │   └── index.ts       # the feature's public API (the only barrel)
             ├── pages/
             ├── components/[Component]/
             ├── core/constants/    # routePaths, apiRoutes

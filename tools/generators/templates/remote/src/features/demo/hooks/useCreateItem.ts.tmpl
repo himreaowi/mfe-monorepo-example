@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useApiClient } from '@org/mf-runtime/remote';
-import { createItem, describeError, readFieldErrors } from '../api';
+import { createItem, describeError, readFieldErrors } from '../api/itemsApi';
 import type { Item, ItemDraft, ItemFieldErrors } from '../types/item';
 
 export type CreateItemResult =

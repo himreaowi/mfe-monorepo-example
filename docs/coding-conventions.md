@@ -63,12 +63,11 @@ src/features/<feature>/
     <ComponentName>/
       <ComponentName>.tsx
       <ComponentName>.module.scss       only if it has styles; never shared between components
-      <ComponentName>.test.tsx          every component has a test
-      index.ts                          export { ComponentName } from './ComponentName';
+      <ComponentName>.test.tsx          every component has a test (no index.ts: import the file)
       types.ts                          optional: props types, if non-trivial
       <SubComponent>.tsx                optional: private parts used only by this component
   __fixtures__/                         test data shared by several tests (or utils/testData.ts)
-  index.ts                              the feature's public API
+  index.ts                              the feature's public API (the only barrel)
 ```
 
 Why:
@@ -79,12 +78,18 @@ Why:
 - **Missing tests are visible**: a folder without `<Name>.test.tsx` stands out in review (and
   `pnpm check` reports it, rule `component-test`).
 - **Scales with sub-components**: when a component grows, its private parts (`<SubComponent>.tsx`)
-  go into its folder instead of crowding `components/`; only `index.ts` is public.
+  go into its folder instead of crowding `components/`; other features see only the feature's
+  `index.ts`.
 
 Rules:
 
-- Import a component through its folder (`'../StaffCard'`, `'./components/StaffCard'`), not its
-  file. Other features and pages import the feature's `index.ts` only.
+- **No barrel files.** Import a component from its file (`'../StaffCard/StaffCard'`,
+  `'@/components/ModeBadge/ModeBadge'`, `'../api/itemsApi'`); component, layout, page and
+  provider folders have no `index.ts`. The one exception is the feature's public API,
+  `features/<feature>/index.ts`: other features, pages and `app/` import a feature through it
+  only. Why: one name per thing (the editor's "go to definition" and search land on the
+  component, not on a re-export), no file that only forwards, no accidental import cycles
+  through a barrel. `pnpm check` reports other `index.ts` files (rule `barrel-file`).
 - A `.module.scss` is imported only from its own folder (the component and its private
   sub-parts). Shared values come from tokens (`var(--…)` from `@org/design-tokens`). When two
   components really share a style, decide case by case: duplicate a few declarations (simplest,
@@ -93,9 +98,10 @@ Rules:
   components, `@use`d by each module). Never let a component's styles reach into a child
   component's markup (`.panel a { … }` styles the children too and depends on CSS order).
 - `layouts/` follows the same rule as `components/`: `ShellLayout/{ShellLayout.tsx,
-ShellLayout.module.scss, ShellLayout.test.tsx, index.ts}` (small private parts of the layout
+ShellLayout.module.scss, ShellLayout.test.tsx}` (small private parts of the layout
   may sit in the same folder). A layout is real code (the shell's header, nav, disclosure), so
-  it has its own test. `pages/` use one folder per page (`HomePage/HomePage.tsx` + `index.ts`)
+  it has its own test. `pages/` use one folder per page (`HomePage/HomePage.tsx`, imported as
+  `@/pages/HomePage/HomePage`)
   without a test requirement of their own (routes and app tests cover them).
 - **Where test data goes**: data used by one test stays in that test file. Data shared by several
   tests of a feature goes to `features/<feature>/__fixtures__/<name>.ts` (or

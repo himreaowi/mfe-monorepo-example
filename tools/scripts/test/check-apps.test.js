@@ -198,7 +198,6 @@ describe('check-apps', () => {
       [`${dir}/${name}/${name}.tsx`]: `import styles from './${name}.module.scss';\nexport const ${name} = () => styles;\n`,
       [`${dir}/${name}/${name}.module.scss`]: '.a { color: red; }\n',
       [`${dir}/${name}/${name}.test.tsx`]: '',
-      [`${dir}/${name}/index.ts`]: `export { ${name} } from './${name}';\n`,
     });
 
     it('passes on folder-per-component features and app components', async () => {
@@ -213,10 +212,9 @@ describe('check-apps', () => {
         // a private sub-part may use its component's styles (same folder)
         [`${staff}/features/staff/components/StaffSearch/SearchField.tsx`]:
           "import styles from './StaffSearch.module.scss';\nexport const F = () => styles;\n",
-        [`${staff}/features/staff/components/index.ts`]:
-          "export * from './StaffCard';\n",
+        // the feature's public API is the only index.ts
         [`${staff}/features/staff/index.ts`]:
-          "export { StaffSearch } from './components/StaffSearch';\n",
+          "export { StaffSearch } from './components/StaffSearch/StaffSearch';\n",
         [`${staff}/features/staff/__fixtures__/staff.ts`]:
           'export const a = 1;\n',
         [`${staff}/features/staff/utils/format.ts`]: 'export const b = 1;\n',
@@ -226,7 +224,7 @@ describe('check-apps', () => {
       assert.deepEqual(r.errors, []);
     });
 
-    it('fails on loose component files, misnamed folders and missing index/test', async () => {
+    it('fails on loose component files, misnamed folders and missing tests', async () => {
       const r = await run(validApps(), {
         ...validRegistries(),
         [`${staff}/features/staff/StaffCard.tsx`]: '',
@@ -240,10 +238,9 @@ describe('check-apps', () => {
         [`${staff}/layouts/StandaloneLayout.tsx`]: '',
         'apps/intranet/shell-intranet/src/layouts/ShellLayout/ShellLayout.tsx':
           '',
-        'apps/intranet/shell-intranet/src/layouts/ShellLayout/index.ts': '',
       });
       assert.deepEqual(rules(r.errors).sort(), [
-        ...Array(9).fill('component-folder'),
+        ...Array(8).fill('component-folder'),
         'component-test',
         'component-test',
       ]);
@@ -254,7 +251,6 @@ describe('check-apps', () => {
         /apps\/intranet\/staff\/src\/features\/staff\/components\/StaffList\/StaffList\.tsx/,
       );
       assert.match(text, /__fixtures__\/ \(or utils\/\)/);
-      assert.match(text, /components\/Detail\/: missing index\.ts/);
       assert.match(text, /components\/Detail\/: missing Detail\.test\.tsx/);
       assert.match(text, /src\/components\/Badge\/Badge\.tsx/);
       assert.match(
@@ -264,6 +260,29 @@ describe('check-apps', () => {
       assert.match(
         text,
         /layouts\/ShellLayout\/: missing ShellLayout\.test\.tsx/,
+      );
+    });
+
+    it('fails on index.ts barrels outside a feature root', async () => {
+      const r = await run(validApps(), {
+        ...validRegistries(),
+        ...ok(`${staff}/features/staff/components`, 'StaffCard'),
+        ...ok(`${staff}/components`, 'Badge'),
+        ...ok('apps/intranet/shell-intranet/src/layouts', 'ShellLayout'),
+        [`${staff}/features/staff/index.ts`]:
+          "export { StaffCard } from './components/StaffCard/StaffCard';\n",
+        [`${staff}/features/staff/components/StaffCard/index.ts`]: '',
+        [`${staff}/features/staff/components/index.ts`]: '',
+        [`${staff}/features/staff/api/index.ts`]: '',
+        [`${staff}/components/Badge/index.tsx`]: '',
+        [`${staff}/pages/HomePage/index.ts`]: '',
+        'apps/intranet/shell-intranet/src/layouts/ShellLayout/index.ts': '',
+        [`${staff}/providers/index.ts`]: '',
+      });
+      assert.deepEqual(rules(r.errors), Array(7).fill('barrel-file'));
+      assert.match(
+        r.errors[0].message,
+        /no index\.ts barrels\. Import from the file itself/,
       );
     });
 
@@ -303,8 +322,6 @@ describe('check-apps', () => {
           "import styles from './Card.module.scss';\nexport const Card = () => styles;\n",
         [`${staff}/components/Card/Card.test.tsx`]:
           "document.documentElement.style.setProperty('--color-bg', 'red');\n",
-        [`${staff}/components/Card/index.ts`]:
-          "export { Card } from './Card';\n",
         // page-wide: :root / html / body / [data-theme], also nested or in @media, or from script
         [`${staff}/styles/global.scss`]: ':root { --color-surface: red; }\n',
         [`${staff}/features/x/components/X/X.module.scss`]:

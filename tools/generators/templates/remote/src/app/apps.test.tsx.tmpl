@@ -3,12 +3,12 @@ import { render, screen } from '@testing-library/react';
 import { scanExposedModule } from '@org/jest-config/exposed-module';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { ThemeProvider } from '@org/ui';
-import { listItems } from '@/features/demo/api';
+import { listItems } from '@/features/demo/api/itemsApi';
 import EmbeddedApp, { StandaloneApp } from './apps';
 
 // the demo feature loads items from the API: no HTTP in unit tests
-jest.mock('@/features/demo/api', () => ({
-  ...jest.requireActual('@/features/demo/api'),
+jest.mock('@/features/demo/api/itemsApi', () => ({
+  ...jest.requireActual('@/features/demo/api/itemsApi'),
   listItems: jest.fn().mockResolvedValue([]),
 }));
 
