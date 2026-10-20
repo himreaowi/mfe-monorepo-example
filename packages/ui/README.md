@@ -1,13 +1,49 @@
 # @org/ui
 
-Shared React **building blocks**: small components and hooks every app composes its own UI
-from. There is no shared page layout: **each shell owns its layout** (`src/layouts/ShellLayout`,
-copied from a starter by `pnpm gen:shell <zone> [--layout top|side]`) and each remote its
-standalone chrome. See `docs/ui-context.md` "Layout: the shell owns it".
+The in-house **component library** (native HTML first, design tokens only, WCAG 2.2 AA) and
+the **shell building blocks**. Use these before writing a component in an app
+(docs/coding-conventions.md "Use @org/ui first"). There is no shared page layout: **each shell
+owns its layout** (`src/layouts/ShellLayout`, copied from a starter by
+`pnpm gen:shell <zone> [--layout top|side]`) and each remote its standalone chrome. See
+`docs/ui-context.md` "Layout: the shell owns it".
+
+No external UI or headless libraries: everything is built here on native elements
+(`<button>`, `<input>`, `<select>`, `<dialog>`, `<table>`, `<fieldset>`), which bring keyboard
+and screen-reader behaviour for free. The APIs follow common conventions (`variant`, `size`,
+`label`, `hint`, `error`, native props passed through) so a headless library could replace the
+internals later without changing call sites.
+
+## Components
+
+Every component takes the props of the element it renders (`type`, `name`, `onChange`,
+`aria-*`, `data-testid`, …), a `ref` (React 19 ref-as-prop; it points at the native element)
+and a `className` (added after its own classes; for field components it goes on the wrapper
+and `inputClassName` / `selectClassName` / `textAreaClassName` style the control).
+
+| Export           | Element                               | Notes                                                                                                                                                                                              |
+| ---------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Button`         | `<button>`                            | `variant` primary / secondary / danger / ghost, `size` sm / md / lg, `loading` (spinner + `aria-disabled`, keeps focus); `type="button"` by default                                                |
+| `Link`           | react-router `<Link>` or `<a>`        | `to` (in-app, needs a router) or `href` (plain); `newTab` adds `target`/`rel` and "(opens in a new tab)" for screen readers                                                                        |
+| `TextField`      | `<input>`                             | `label`, `hint`, `error`, `required`; `type` text / email / password / search / tel / url / number                                                                                                 |
+| `TextArea`       | `<textarea>`                          | as TextField; 4 rows by default, resizes vertically                                                                                                                                                |
+| `Select`         | native `<select>`                     | `options` (`{ value, label, disabled? }`) or `<option>` children, `placeholder` (empty first option)                                                                                               |
+| `DateField`      | `<input type="date">`                 | the browser's date picker and keyboard entry; ISO values, `min` / `max`                                                                                                                            |
+| `Checkbox`       | `<input type="checkbox">`             | `label` to the right, `hint`, `error`; several related ones go in a `<fieldset>` + `<legend>`                                                                                                      |
+| `RadioGroup`     | `<fieldset>` + `<legend>` + radios    | `label` (legend), `options` (`{ value, label, hint?, disabled? }`), `value` / `defaultValue` + `onChange(value)`, `hint`, `error`, `required`, `inline`                                            |
+| `Field`          | label + hint + error                  | wiring for a custom control: `children` is `(control) => <input {...control} />` (`id`, `aria-describedby`, `aria-invalid`, `required`)                                                            |
+| `Dialog`         | native `<dialog>` (`showModal()`)     | `open` + `onClose`, `title` (`aria-labelledby`), `description` (`aria-describedby`), `footer`, `size`; Escape closes, focus is trapped and returns to the opener; no inline styles                 |
+| `Alert`          | `<div>`                               | `variant` info / success / warning / error, `title`; `role="alert"` for error/warning, `role="status"` for info/success (`live={false}` for a message that is part of the page from the start)     |
+| `Card`           | `<div>` (`as` section / article / li) | surface with border; optional `title` (+ `headingLevel`) and `footer`                                                                                                                              |
+| `Badge`          | `<span>`                              | `variant` neutral / accent / info / success / warning / danger; the text says the state (colour is never the only signal)                                                                          |
+| `Spinner`        | `<span role="status">`                | `label` (default `Loading…`, read by screen readers; `labelVisible` shows it), `size`; `decorative` inside a busy control; no spinning with `prefers-reduced-motion`                               |
+| `Table`          | `<table>`                             | `caption` (required; `captionHidden`), `columns` (`key`, `header`, `cell`, `sortable`, `sortValue`, `align`, `rowHeader`), `rows`, `getRowKey`; sort buttons with `aria-sort`, scrolls in a region |
+| `Tabs`           | `tablist` / `tab` / `tabpanel`        | WAI-ARIA tabs by hand: roving tabindex, Left/Right/Home/End; `activation` automatic (default) or manual (arrows only move focus: use it when showing a panel is slow)                              |
+| `VisuallyHidden` | `<span>`                              | text for screen readers only                                                                                                                                                                       |
+
+Shell building blocks:
 
 | Export                        | Notes                                                                                                                       |
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `Button`                      | `variant`: `primary` (default) / `secondary` / `ghost`                                                                      |
 | `ThemeToggle`                 | Light / Dark / Use system theme (needs a `ThemeProvider` above)                                                             |
 | `SkipLink`                    | "Skip to main content": first Tab stop, visible on focus, focuses the target without a URL change (`targetId`, `children`)  |
 | `Brand`                       | the app name in a header: one line, ellipsis on screen, full accessible name (any `<div>` props, `className`)               |
@@ -17,14 +53,75 @@ standalone chrome. See `docs/ui-context.md` "Layout: the shell owns it".
 | `ConnectionRequired`          | Offline banner (`visible`; a shell passes `!useOnlineStatus()` from `@org/pwa`)                                             |
 | `ThemeProvider`, `useTheme()` | Light/dark/system theme, sets `data-theme` on `<html>`                                                                      |
 
+```tsx
+import { Alert, Button, Select, TextField } from '@org/ui';
+
+<form noValidate onSubmit={onSubmit}>
+  {formError ? <Alert variant="error">{formError}</Alert> : null}
+  <TextField label="Name" name="name" required error={errors.name} />
+  <Select
+    label="Type"
+    name="type"
+    placeholder="Choose a type"
+    options={types}
+  />
+  <Button type="submit" loading={sending}>
+    {sending ? 'Sending…' : 'Send'}
+  </Button>
+</form>;
+```
+
+## Storybook (dev only)
+
+| Command                | What                                                                                                      |
+| ---------------------- | --------------------------------------------------------------------------------------------------------- |
+| `pnpm storybook`       | Storybook dev server on http://localhost:3192 (root `package.json` `mfe.tools.storybook`)                 |
+| `pnpm build-storybook` | static build in `packages/ui/storybook-static/` (git-ignored, Nx cached)                                  |
+| `pnpm test:ui`         | builds Storybook, then axe (WCAG 2.2 AA) + screenshots of every story in light and dark (port 3193)       |
+| `pnpm test:ui:update`  | the same, writing new screenshot baselines (`visual/__screenshots__/<platform>/`); review and commit them |
+
+Storybook 10 with the webpack 5 builder (`.storybook/main.ts`: the apps' swc + Sass + CSS
+Modules loaders) is a devDependency of this package only: no app depends on it and nothing in
+`src/` imports it, so it never reaches an app bundle. The toolbar's **Theme** switch sets
+`data-theme` on `<html>` (the global decorator in `.storybook/preview.tsx`, which also loads
+`@org/design-tokens/global.scss`).
+
+`pnpm test:ui` (Playwright, `visual/`) opens each story of the static build in both themes:
+axe with the tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa` must report nothing,
+and the page must match its baseline screenshot. Baselines depend on the OS's font rendering,
+so they are stored per platform; the repo has `darwin` ones. On a platform without baselines
+(e.g. Linux CI) the a11y checks still run and the screenshots are skipped with a note: generate
+them once on that platform (`pnpm test:ui:update`, e.g. in the CI image) and commit them. It is
+not part of `pnpm test`, which stays fast.
+
+## Adding a component
+
+1. `src/components/<Name>/` with `<Name>.tsx`, `<Name>.module.scss`, `<Name>.test.tsx` and
+   `<Name>.stories.tsx` (`pnpm check` rule `ui-component-files`). No `index.ts` in the folder:
+   export it (and its props type) from `src/index.ts`.
+2. Start from the native element and extend its props
+   (`ComponentPropsWithRef<'button'> & { variant?: … }`); spread the rest onto the element,
+   merge `className` last (`cx()` from `src/utils/cx/cx.ts`). Reuse the prop names above.
+3. Styles: tokens only (`var(--color-…)`, `var(--space-…)`, no colour literals), light and dark
+   come from the tokens; visible focus with the `focus-ring` mixin
+   (`@use '../../styles/mixins' as *;`); no inline styles (strict CSP).
+4. Tests: roles, names, keyboard and ARIA states with Testing Library. Stories: one per
+   meaningful state (default, error, disabled, …); every story is run by `pnpm test:ui`.
+5. `pnpm test:ui:update`, look at the new screenshots, commit them.
+
+A component that two apps have copied is flagged by `pnpm check` (`shared-component`): move it
+here. Intentional per-app copies are listed with a reason in the root `package.json`
+`mfe.componentDuplicatesAllowed`.
+
 `@org/ui` is a **tier-1 singleton**: `@org/webpack-config` shares it through Module Federation
 (`singleton`, `strictVersion`, `requiredVersion` = this package's version). A remote rendered in a
 shell therefore uses the shell's copy of these components, styles and the `ThemeContext`. That
 is also why it holds no layout: every change here rebuilds every app, so what one shell wants
 to look different (its header, its nav position) lives in that shell.
 
-Styles are SCSS modules that read CSS variables from `@org/design-tokens`. The app that owns the
-page imports `@org/design-tokens/global.scss` once. Their class names are CSS Modules names
+Styles are SCSS modules that read CSS variables from `@org/design-tokens` (including the status
+colours `--color-success`, `--color-warning`, `--color-info` and their `-bg` pairs). The app
+that owns the page imports `@org/design-tokens/global.scss` once. Their class names are CSS Modules names
 with a per-app hash (`Button_button__x3Yb1`): never select them from an app; pass a `className` (the components merge
 it after their own) or set tokens.
 
