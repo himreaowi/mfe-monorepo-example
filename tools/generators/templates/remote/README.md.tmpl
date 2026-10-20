@@ -40,8 +40,12 @@ features:
 | paths                                  | `src/core/constants/apiRoutes.ts`                          |
 | client                                 | `useApiClient()` from `@org/mf-runtime/remote` (base URL from `settings.apiBaseUrl`, `credentials: 'include'`) |
 | requests, response validation, errors  | `src/features/demo/api/itemsApi.ts` (+ test with a fake fetch) |
-| state (loading / error / data, abort)  | `src/features/demo/hooks/useItems.ts`, `useCreateItem.ts`  |
-| UI                                     | `src/features/demo/components/DemoItems/`, `AddItemForm/` (validate on submit, error summary, server 422 field errors) |
+| state (loading / error / data, abort)  | `src/features/demo/hooks/useItems.ts`, `useCreateItem.ts` (+ tests with the api mocked) |
+| page (calls the hooks, passes data down) | `src/pages/OverviewPage/OverviewPage.tsx`              |
+| UI (display only, props in)            | `src/features/demo/components/DemoItems/`, `AddItemForm/` (validate on submit, error summary, server 422 field errors) |
+
+Pages fetch, components display: a feature component never calls a data hook itself, so every
+API call of a page is in the page file (`docs/coding-conventions.md` "Data fetching").
 
 ## Layout
 

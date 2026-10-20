@@ -56,11 +56,12 @@ jsdom implements no Fetch API: in a plain `jest-environment-jsdom`, `fetch`, `He
 
 Recommended split (the generated remote's `features/demo` does exactly this):
 
-| Layer                     | How to test                                                                                                                          |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `features/*/api/` (pure)  | real `@org/http-client` + a fake fetch: `createFakeFetch` from `@org/jest-config/fetch`; assert URLs, bodies, parsed results, errors |
-| `features/*/hooks/`, UI   | `jest.mock('../api')` (or pass a stubbed client): render states (loading, data, empty, error, retry) without HTTP                    |
-| Real API / mock API flows | e2e (`tools/mock-api` runs with `pnpm dev:<zone>`)                                                                                   |
+| Layer                     | How to test                                                                                                                                 |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `features/*/api/` (pure)  | real `@org/http-client` + a fake fetch: `createFakeFetch` from `@org/jest-config/fetch`; assert URLs, bodies, parsed results, errors        |
+| `features/*/hooks/`       | `jest.mock('../api/itemsApi')` + `renderHook` inside `HostPropsProvider` (`settings.apiBaseUrl`): loading, data, error, retry, unconfigured |
+| feature components        | props only (pages fetch, components display): render each state from props, assert callbacks; no API mock needed                            |
+| Real API / mock API flows | e2e (`tools/mock-api` runs with `pnpm dev:<zone>`)                                                                                          |
 
 ```ts
 import { createFakeFetch } from '@org/jest-config/fetch';

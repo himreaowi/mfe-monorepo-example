@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Button } from '@org/ui';
 import { FEDERATION_NAME } from '@/core/constants/app';
-import { useCreateItem } from '../../hooks/useCreateItem';
-import type { Item, ItemFieldErrors } from '../../types/item';
+import type { CreateItemResult } from '../../hooks/useCreateItem';
+import type { Item, ItemDraft, ItemFieldErrors } from '../../types/item';
 import { validateItemDraft } from '../../utils/validation';
 import styles from './AddItemForm.module.scss';
 
@@ -13,9 +13,17 @@ const NAME_ERROR_ID = `${NAME_ID}-error`;
  * The form pattern of docs/coding-conventions.md: validate on submit, then an error summary
  * (focused, links to the fields) plus an error next to each field; server 422 errors land in
  * the same places; submit is disabled only while sending.
+ *
+ * It sends nothing itself: `onCreate` comes from the page (`useCreateItem()`), the form keeps
+ * only its own UI state (field value, errors, "sending").
  */
-export function AddItemForm({ onCreated }: { onCreated: (item: Item) => void }) {
-  const createItem = useCreateItem();
+export function AddItemForm({
+  onCreate,
+  onCreated,
+}: {
+  onCreate: (draft: ItemDraft) => Promise<CreateItemResult>;
+  onCreated: (item: Item) => void;
+}) {
   const [name, setName] = useState('');
   const [errors, setErrors] = useState<ItemFieldErrors>({});
   const [formError, setFormError] = useState('');
@@ -47,7 +55,7 @@ export function AddItemForm({ onCreated }: { onCreated: (item: Item) => void }) 
     }
     setErrors({});
     setSending(true);
-    const result = await createItem(draft);
+    const result = await onCreate(draft);
     setSending(false);
     if (result.ok) {
       onCreated(result.item);

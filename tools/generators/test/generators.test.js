@@ -418,6 +418,20 @@ describe('generators', () => {
     }
     assert.match(read(root, `${dir}/rspack.config.js`), /createRemoteConfig/);
     assert.ok(!files.some((f) => f.startsWith('src/services/')));
+    // page-level data fetching: the page calls the hooks, the components only display
+    const overview = read(
+      root,
+      `${dir}/src/pages/OverviewPage/OverviewPage.tsx`,
+    );
+    assert.match(overview, /useItems\(\)/);
+    assert.match(overview, /useCreateItem\(\)/);
+    for (const c of ['Demo', 'DemoItems', 'AddItemForm', 'DemoDetails']) {
+      assert.doesNotMatch(
+        read(root, `${dir}/src/features/demo/components/${c}/${c}.tsx`),
+        /=\s*use(Items|CreateItem|ApiClient)\(/,
+        c,
+      );
+    }
     assert.match(
       read(root, `${dir}/src/features/demo/hooks/useItems.ts`),
       /import \{ useApiClient \} from '@org\/mf-runtime\/remote';/,

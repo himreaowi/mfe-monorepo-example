@@ -1,55 +1,58 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { HostPropsProvider } from '@org/mf-runtime/remote';
-import { listItems } from '../../api/itemsApi';
+import type { ItemsState } from '../../hooks/useItems';
 import { DemoItems } from './DemoItems';
 
-// Hooks/UI tests mock the feature's api/ module: no HTTP here (docs/testing.md).
-jest.mock('../../api/itemsApi', () => ({
-  ...jest.requireActual('../../api/itemsApi'),
-  listItems: jest.fn(),
-  createItem: jest.fn(),
-}));
-const listItemsMock = jest.mocked(listItems);
-
-function renderWithApi(
-  settings: Record<string, unknown> = { apiBaseUrl: 'http://api.test/api' },
-) {
-  return render(
-    <HostPropsProvider value={{ embedded: true, basePath: '/x', settings }}>
-      <DemoItems />
-    </HostPropsProvider>,
-  );
+// A display component: states and callbacks come in as props (the page calls the hooks).
+function renderItems(state: ItemsState) {
+  const props = {
+    state,
+    onRetry: jest.fn(),
+    onCreate: jest.fn(),
+    onCreated: jest.fn(),
+  };
+  render(<DemoItems {...props} />);
+  return props;
 }
 
 describe('DemoItems', () => {
-  beforeEach(() => listItemsMock.mockReset());
-
-  it('shows loading, then the items from the API', async () => {
-    listItemsMock.mockResolvedValue([
-      { id: 1, name: 'First', description: 'One' },
-    ]);
-    renderWithApi();
+  it('shows loading', () => {
+    renderItems({ status: 'loading' });
     expect(screen.getByRole('status')).toHaveTextContent('Loading items…');
-    expect(await screen.findByText('First')).toBeInTheDocument();
-    expect(screen.queryByText('Loading items…')).not.toBeInTheDocument();
+  });
+
+  it('shows the items and the add form', () => {
+    renderItems({
+      status: 'success',
+      items: [{ id: 1, name: 'First', description: 'One' }],
+    });
+    expect(screen.getByText('First')).toBeInTheDocument();
+    expect(screen.getByText(/One/)).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Add item' }),
+    ).toBeInTheDocument();
+  });
+
+  it('shows an empty list', () => {
+    renderItems({ status: 'success', items: [] });
+    expect(screen.getByText('No items yet.')).toBeInTheDocument();
   });
 
   it('shows an error with a retry', async () => {
-    listItemsMock
-      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
-      .mockResolvedValueOnce([]);
-    renderWithApi();
-    expect(await screen.findByRole('alert')).toHaveTextContent(
+    const { onRetry } = renderItems({
+      status: 'error',
+      message: 'Could not load the items. Check your connection and try again.',
+    });
+    expect(screen.getByRole('alert')).toHaveTextContent(
       /Could not load the items/,
     );
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
-    expect(await screen.findByText('No items yet.')).toBeInTheDocument();
+    expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
-  it('explains a missing settings.apiBaseUrl instead of calling the API', () => {
-    renderWithApi({});
+  it('explains a missing settings.apiBaseUrl', () => {
+    renderItems({ status: 'unconfigured' });
     expect(screen.getByText(/No API configured/)).toBeInTheDocument();
-    expect(listItemsMock).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button')).toBeNull();
   });
 });

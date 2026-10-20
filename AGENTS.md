@@ -31,7 +31,9 @@ Instructions for AI coding agents (and humans) working in this monorepo. Details
 - Remotes: the exposed `src/app/apps.tsx` (and what it imports) must not import global styles or register a
   service worker; links use `useRemotePath()`; keep standalone mode working.
 - No hardcoded API or app paths in components (`apiRoutes`, `routePaths`); no API calls in
-  component `useEffect` (use `features/*/api` + `features/*/hooks`).
+  component `useEffect` (use `features/*/api` + `features/*/hooks`). Pages call the data hooks
+  and pass data down; feature components only display
+  ([docs/coding-conventions.md](docs/coding-conventions.md#data-fetching)).
 - One folder per component: `features/<feature>/components/<Name>/` (and `src/components/<Name>/`)
   with `<Name>.tsx`, its own `<Name>.module.scss` (never shared between components),
   `<Name>.test.tsx`, no `index.ts` (import the file: `@/components/Card/Card`; the only barrel is

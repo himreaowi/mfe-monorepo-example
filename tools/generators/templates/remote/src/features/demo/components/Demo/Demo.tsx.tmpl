@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { useAuth } from '@org/auth';
 import { useHostProps, useRemotePath } from '@org/mf-runtime/remote';
@@ -6,17 +6,16 @@ import { Button } from '@org/ui';
 import { ModeBadge } from '@/components/ModeBadge/ModeBadge';
 import { APP_TITLE } from '@/core/constants/app';
 import { routePaths } from '@/core/constants/routePaths';
-import { DemoItems } from '../DemoItems/DemoItems';
 import styles from './Demo.module.scss';
 
 /**
  * Sample feature (ported from starter-mfe demo/demoRemote): reads host props, keeps local state
- * (proves the shared React works across the federation boundary), links to a sibling page and
- * loads data from the API (`DemoItems`: the data-fetching and form patterns).
+ * (proves the shared React works across the federation boundary) and links to a sibling page.
+ * `children`: more content of the panel (the overview page puts `DemoItems` there).
  * `user` comes from host props; `useAuth()` reads the shell's AuthProvider directly (@org/auth
  * is a shared singleton), "disabled" when standalone.
  */
-export function Demo() {
+export function Demo({ children }: { children?: ReactNode }) {
   const { embedded, title, user } = useHostProps();
   const auth = useAuth();
   const toPath = useRemotePath();
@@ -45,7 +44,7 @@ export function Demo() {
         </Button>
         <Link to={toPath(routePaths.details)}>Go to details</Link>
       </div>
-      <DemoItems />
+      {children}
     </section>
   );
 }

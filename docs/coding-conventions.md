@@ -38,14 +38,15 @@ Hard rules (enforced by `pnpm check` and ESLint, see [guardrails.md](guardrails.
 | `src/main.tsx`         | Entry. Shell: global styles, PWA, manifest, auth client, render. Remote: standalone entry only    |
 | `src/app/`             | Wiring: providers, routes, registry (shell); `apps` (exposed `./App`), routes (remote)            |
 | `src/features/<name>/` | Domain UI (`components/<Name>/`) + `api/` / `hooks/` / `types/` / `utils/`, public `index.ts`     |
-| `src/pages/`           | Thin route containers that compose features                                                       |
+| `src/pages/`           | Route containers: call the features' data hooks, pass data down, compose feature components       |
 | `src/components/`      | UI primitives of this app, one folder per component (shared ones go to `@org/ui`)                 |
 | `src/layouts/`         | Chrome, owned by the app: `ShellLayout` (shell), `StandaloneLayout` (remote), one folder each     |
 | `src/core/`            | Constants (`routePaths`, `apiRoutes`, `app`), types, small utils (no parallel `lib/`)             |
 | `src/styles/`          | Shell only: `shell.scss`, shell-wide global styles (empty by default)                             |
 | `src/services/`        | Optional app-wide infra. Not generated: the API client is `useApiClient()` from `@org/mf-runtime` |
 
-**Rule of thumb:** pages compose, features own domain data, components stay presentational,
+**Rule of thumb:** pages fetch and compose, features own domain logic and data hooks, components
+stay presentational,
 core holds constants, `api/` modules own the requests (through `useApiClient()`).
 
 New capability: `features/<name>/` (types → api → hooks → UI) → thin `pages/` entry → route in
@@ -152,7 +153,20 @@ shell's `features/welcome` and `features/startup` and its `layouts/ShellLayout`,
 - Do **not** hardcode app paths: use `routePaths` / `useRemotePath()`.
 - Do **not** call APIs in a component's `useEffect`. Use `features/<feature>/api/` (pure request
   functions) + `features/<feature>/hooks/` (loading / success / error, abort on unmount or
-  dependency change). Components render from hooks/props.
+  dependency change).
+- **Page-level data fetching.** Pages (`src/pages/<Name>Page/`) call the feature's data hooks
+  (exported from the feature's `index.ts`) and pass the data, and callbacks such as `reload` or
+  `onCreate`, down as props. Feature components only display: they never call a data hook or
+  `useApiClient()` themselves (a form keeps its own UI state: field values, errors, "sending").
+  Why: every API call of a page is visible in one file, so two components quietly loading the
+  same list, or a list loaded again on every navigation inside the page, show up in review;
+  components are easy to test (props in, markup out, no API mocks) and to reuse with other
+  data. A component deep in the tree gets its data through props or `children` composition
+  (`<Demo><DemoItems state={…} /></Demo>`); UI state shared by many components of a feature may live in a
+  feature Context, but API data is still loaded by the page. There is
+  no query cache (no TanStack Query): when two pages need the same data, each page loads it.
+  Generated example: `pages/OverviewPage` calls `useItems()` and `useCreateItem()`, `DemoItems`
+  and `AddItemForm` only display.
 - Cookies, not tokens: requests to the BFF/API use the session cookie
   (`credentials: 'include'` when cross-origin) and send the CSRF header on state-changing
   requests ([auth-contract.md](auth-contract.md)). On 401 call `useAuth().refresh()`.
