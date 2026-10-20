@@ -30,4 +30,12 @@ describe('Checkbox', () => {
     expect(box).toHaveAttribute('aria-invalid', 'true');
     expect(box).toHaveAccessibleDescription('Error: You must agree');
   });
+
+  it('aria-invalid without a message (group error shown at the fieldset)', () => {
+    render(<Checkbox label="SMS" aria-invalid />);
+    expect(screen.getByRole('checkbox', { name: 'SMS' })).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
+  });
 });
