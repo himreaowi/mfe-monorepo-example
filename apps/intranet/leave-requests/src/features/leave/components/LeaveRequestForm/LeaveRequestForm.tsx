@@ -2,14 +2,15 @@ import { useId, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useRemotePath } from '@org/mf-runtime/remote';
 import { Button, RemoteFallback } from '@org/ui';
+import type { ApiResult, SubmitResult } from '@org/use-api';
 import { routePaths } from '@/core/constants/routePaths';
 import { LeaveValidationError } from '../../api/leaveApi';
-import { useLeaveBalance } from '../../hooks/useLeaveBalance';
-import { useSubmitLeaveRequest } from '../../hooks/useSubmitLeaveRequest';
 import type {
   LeaveBalance,
+  LeaveBalances,
   LeaveField,
   LeaveFieldErrors,
+  LeaveRequest,
   LeaveRequestInput,
   LeaveType,
 } from '../../types/leave';
@@ -38,12 +39,18 @@ function balanceLabel(balance: LeaveBalance): string {
 /**
  * New leave request. Validates on submit (and against the balance), shows an error summary
  * that takes focus and links to each field; the API's 422 field errors are shown the same way.
+ * It loads and sends nothing itself: the page passes the balance (`useLeaveBalance()`) and the
+ * save (`useSubmitLeaveRequest()`); the form keeps only its own UI state.
  */
-export function LeaveRequestForm() {
+export function LeaveRequestForm({
+  balance,
+  save,
+}: {
+  balance: ApiResult<LeaveBalances>;
+  save: SubmitResult<LeaveRequestInput, LeaveRequest>;
+}) {
   const toPath = useRemotePath();
   const navigate = useNavigate();
-  const balance = useLeaveBalance();
-  const save = useSubmitLeaveRequest();
   const [values, setValues] = useState<LeaveRequestInput>(EMPTY);
   const [errors, setErrors] = useState<LeaveFieldErrors>({});
   const [sendError, setSendError] = useState('');

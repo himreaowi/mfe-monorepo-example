@@ -2,10 +2,9 @@ import { useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router';
 import { useRemotePath } from '@org/mf-runtime/remote';
 import { RemoteFallback } from '@org/ui';
+import type { ApiResult } from '@org/use-api';
 import { routePaths } from '@/core/constants/routePaths';
-import { useLeaveBalance } from '../../hooks/useLeaveBalance';
-import { useLeaveRequests } from '../../hooks/useLeaveRequests';
-import type { LeaveRequest } from '../../types/leave';
+import type { LeaveBalances, LeaveRequest } from '../../types/leave';
 import { formatDays, formatRange } from '../../utils/dates';
 import { LeaveBalanceCards } from '../LeaveBalanceCards/LeaveBalanceCards';
 import { LeaveRequestList } from '../LeaveRequestList/LeaveRequestList';
@@ -19,11 +18,19 @@ function createdFrom(state: unknown): LeaveRequest | undefined {
   return created && typeof created.id === 'string' ? created : undefined;
 }
 
-/** Balance per leave type, the user's requests and the way to a new request. */
-export function LeaveOverview() {
+/**
+ * Balance per leave type, the user's requests and the way to a new request. Displays only: the
+ * page loads both (`useLeaveBalance()`, `useLeaveRequests()`) and passes the results down
+ * (docs/coding-conventions.md "Data fetching").
+ */
+export function LeaveOverview({
+  balance,
+  requests,
+}: {
+  balance: ApiResult<LeaveBalances>;
+  requests: ApiResult<LeaveRequest[]>;
+}) {
   const toPath = useRemotePath();
-  const balance = useLeaveBalance();
-  const requests = useLeaveRequests();
   const created = createdFrom(useLocation().state);
   const successRef = useRef<HTMLParagraphElement>(null);
   const createdId = created?.id;

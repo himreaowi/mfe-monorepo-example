@@ -2,21 +2,30 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
-import {
-  getLeaveBalance,
-  LeaveValidationError,
-  submitLeaveRequest,
-} from '../../api/leaveApi';
+import { useSubmit, type ApiResult } from '@org/use-api';
+import { LeaveValidationError } from '../../api/leaveApi';
+import type {
+  LeaveBalances,
+  LeaveRequest,
+  LeaveRequestInput,
+} from '../../types/leave';
 import { LeaveRequestForm } from './LeaveRequestForm';
 import { balances, request } from '../../__fixtures__/leave';
 
-jest.mock('../../api/leaveApi', () => ({
-  ...jest.requireActual('../../api/leaveApi'),
-  getLeaveBalance: jest.fn(),
-  submitLeaveRequest: jest.fn(),
-}));
+/** What the page's `useSubmitLeaveRequest()` would send: a fake here (no API). */
+const submitMock = jest.fn<Promise<LeaveRequest>, [LeaveRequestInput]>();
+const reload = jest.fn();
+const loadedBalance: ApiResult<LeaveBalances> = {
+  status: 'success',
+  data: balances,
+  reload,
+};
 
-const submitMock = jest.mocked(submitLeaveRequest);
+/** The form gets balance and save from the page; a real useSubmit gives it the same states. */
+function Form({ balance }: { balance: ApiResult<LeaveBalances> }) {
+  const save = useSubmit((input: LeaveRequestInput) => submitMock(input));
+  return <LeaveRequestForm balance={balance} save={save} />;
+}
 
 function Overview() {
   const { state } = useLocation();
@@ -27,18 +36,12 @@ function Overview() {
   );
 }
 
-function renderForm() {
+function renderForm(balance: ApiResult<LeaveBalances> = loadedBalance) {
   return render(
     <MemoryRouter initialEntries={['/leave/new']}>
-      <HostPropsProvider
-        value={{
-          embedded: true,
-          basePath: '/leave',
-          settings: { apiBaseUrl: 'https://api.test' },
-        }}
-      >
+      <HostPropsProvider value={{ embedded: true, basePath: '/leave' }}>
         <Routes>
-          <Route path="/leave/new" element={<LeaveRequestForm />} />
+          <Route path="/leave/new" element={<Form balance={balance} />} />
           <Route path="/leave" element={<Overview />} />
         </Routes>
       </HostPropsProvider>
@@ -66,8 +69,8 @@ async function fillValid(user: ReturnType<typeof userEvent.setup>) {
 }
 
 beforeEach(() => {
-  jest.mocked(getLeaveBalance).mockResolvedValue(balances);
   submitMock.mockReset();
+  reload.mockReset();
 });
 
 describe('LeaveRequestForm', () => {
@@ -113,10 +116,7 @@ describe('LeaveRequestForm', () => {
     await user.click(screen.getByRole('button', { name: 'Send request' }));
     expect(await screen.findByTestId('overview')).toHaveTextContent('LR-0042');
     expect(submitMock).toHaveBeenCalledWith(
-      expect.anything(),
       expect.objectContaining({ type: 'unpaid', reason: 'Moving' }),
-      expect.any(AbortSignal),
-      undefined,
     );
   });
 
@@ -151,5 +151,25 @@ describe('LeaveRequestForm', () => {
     expect(screen.getByRole('combobox', { name: 'Leave type' })).toHaveValue(
       'unpaid',
     );
+  });
+
+  it('says "Loading…" in the type list while the balance loads', () => {
+    renderForm({ status: 'loading', reload });
+    expect(
+      screen.getByRole('option', { name: 'Loading…' }),
+    ).toBeInTheDocument();
+  });
+
+  it('offers a retry when the balance cannot be loaded', async () => {
+    renderForm({
+      status: 'error',
+      error: new Error('502 Bad Gateway'),
+      reload,
+    });
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Could not load your leave balance',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(reload).toHaveBeenCalledTimes(1);
   });
 });
