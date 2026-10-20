@@ -1,44 +1,40 @@
-import { useSearchParams } from 'react-router';
 import {
+  StaffFiltersProvider,
   StaffSearch,
   useDebouncedValue,
   useDepartments,
+  useStaffFilters,
   useStaffSearch,
-  type StaffSearchQuery,
 } from '@/features/staff';
 
 /**
- * Page-level data fetching: the page reads the query from the URL (`?q=&department=`, so
- * results survive a reload and the back button), loads the results (250 ms after typing stops)
- * and the departments, and passes them to `StaffSearch`, which only displays.
+ * The staff directory. `<StaffFiltersProvider>` holds the search text and department (feature
+ * state, stored in the URL as `?q=&department=`, so a link or a reload shows the same list):
+ * `StaffFilters` (inside `StaffSearch`) changes them, `StaffDirectory` below searches with them.
  */
 export function OverviewPage() {
-  const [params, setParams] = useSearchParams();
-  const query: StaffSearchQuery = {
-    q: params.get('q') ?? '',
-    department: params.get('department') ?? '',
-  };
-  const search = useStaffSearch({
-    q: useDebouncedValue(query.q),
-    department: query.department,
-  });
-  const departments = useDepartments();
-
-  const onQueryChange = (key: keyof StaffSearchQuery, value: string) => {
-    const next = new URLSearchParams(params);
-    if (value) next.set(key, value);
-    else next.delete(key);
-    setParams(next, { replace: true });
-  };
-
   return (
     <div data-testid="overview-page">
-      <StaffSearch
-        query={query}
-        onQueryChange={onQueryChange}
-        search={search}
-        departments={departments}
-      />
+      <StaffFiltersProvider>
+        <StaffDirectory />
+      </StaffFiltersProvider>
     </div>
+  );
+}
+
+/**
+ * Page-level data fetching, inside the provider: loads the results for the current filters
+ * (250 ms after typing stops) and the departments, and passes them to `StaffSearch`, which only
+ * displays (docs/coding-conventions.md "Data fetching").
+ */
+function StaffDirectory() {
+  const { q, department } = useStaffFilters();
+  const search = useStaffSearch({ q: useDebouncedValue(q), department });
+  const departments = useDepartments();
+  return (
+    <StaffSearch
+      search={search}
+      departments={departments.status === 'success' ? departments.data : []}
+    />
   );
 }

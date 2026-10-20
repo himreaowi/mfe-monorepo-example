@@ -1,35 +1,24 @@
-import { useId } from 'react';
 import { RemoteFallback } from '@org/ui';
 import type { ApiResult } from '@org/use-api';
-import type { StaffSearchQuery, StaffSearchResult } from '../../types/staff';
+import type { StaffSearchResult } from '../../types/staff';
 import { StaffCard } from '../StaffCard/StaffCard';
+import { StaffFilters } from '../StaffFilters/StaffFilters';
 import styles from './StaffSearch.module.scss';
 
 export type StaffSearchProps = {
-  /** Search text and department (the page keeps them in the URL: `?q=&department=`). */
-  query: StaffSearchQuery;
-  /** The user changed the search text or the department. */
-  onQueryChange: (key: keyof StaffSearchQuery, value: string) => void;
-  /** From `useStaffSearch()`, called by the page. */
+  /** From `useStaffSearch()`, called by the page with the current filters. */
   search: ApiResult<StaffSearchResult>;
-  /** From `useDepartments()`, called by the page. */
-  departments: ApiResult<string[]>;
+  /** Department names for the filter (`useDepartments()`, called by the page). */
+  departments: string[];
 };
 
 /**
- * Staff list with search and a department filter. Displays only: the page reads the query
- * from the URL, loads the results and the departments and passes them down
- * (docs/coding-conventions.md "Data fetching").
+ * Staff list with search and a department filter (`StaffFilters`, feature state in the URL).
+ * Displays only: the page loads the results for the current filters and the departments and
+ * passes them down (docs/coding-conventions.md "Data fetching"). Render it inside
+ * `<StaffFiltersProvider>`.
  */
-export function StaffSearch({
-  query: { q, department },
-  onQueryChange,
-  search,
-  departments,
-}: StaffSearchProps) {
-  const searchId = useId();
-  const departmentId = useId();
-
+export function StaffSearch({ search, departments }: StaffSearchProps) {
   const count =
     search.status === 'success'
       ? `${search.data.total} ${search.data.total === 1 ? 'person' : 'people'} found`
@@ -43,42 +32,7 @@ export function StaffSearch({
       <p className={styles.lead}>
         Find colleagues by name, job title, department or skill.
       </p>
-      <form
-        className={styles.filters}
-        role="search"
-        aria-label="Staff"
-        onSubmit={(event) => event.preventDefault()}
-      >
-        <div className={styles.field}>
-          <label htmlFor={searchId}>Search staff</label>
-          <input
-            id={searchId}
-            type="search"
-            value={q}
-            autoComplete="off"
-            onChange={(event) => onQueryChange('q', event.target.value)}
-          />
-        </div>
-        <div className={styles.field}>
-          <label htmlFor={departmentId}>Department</label>
-          <select
-            id={departmentId}
-            value={department}
-            onChange={(event) =>
-              onQueryChange('department', event.target.value)
-            }
-          >
-            <option value="">All departments</option>
-            {departments.status === 'success'
-              ? departments.data.map((name) => (
-                  <option key={name} value={name}>
-                    {name}
-                  </option>
-                ))
-              : null}
-          </select>
-        </div>
-      </form>
+      <StaffFilters departments={departments} />
       <p className={styles.status} role="status" data-testid="staff-count">
         {count}
       </p>

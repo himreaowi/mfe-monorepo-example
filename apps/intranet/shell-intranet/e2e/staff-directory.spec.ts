@@ -1,5 +1,11 @@
 import { expect, test } from '@org/playwright-config/test';
-import { openRemote, remotePage, settle, zone } from './helpers';
+import {
+  expectRemoteRendered,
+  openRemote,
+  remotePage,
+  settle,
+  zone,
+} from './helpers';
 
 const remote = zone.remotes.find((r) => r.name === 'staff-directory')!;
 
@@ -51,6 +57,39 @@ test.describe('Staff directory', () => {
       '2 people found',
     );
     await expect(container.getByTestId('staff-card')).toHaveCount(2);
+  });
+
+  test('the filters live in the URL: a link reproduces the view, a reload restores it', async ({
+    page,
+  }) => {
+    // a shared link
+    await page.goto(`${remote.path}?department=Legal&q=privacy`);
+    await expectRemoteRendered(page, remote);
+    const container = remotePage(page, remote);
+    const search = container.getByRole('searchbox', { name: 'Search staff' });
+    const department = container.getByRole('combobox', { name: 'Department' });
+    await expect(search).toHaveValue('privacy');
+    await expect(department).toHaveValue('Legal');
+    await expect(container.getByTestId('staff-count')).toHaveText(
+      '1 person found',
+    );
+    await expect(
+      container.getByRole('link', { name: 'Wei Jie Ho' }),
+    ).toBeVisible();
+
+    // change a filter: the URL follows; a reload shows the same list
+    await search.fill('');
+    await expect(container.getByTestId('staff-count')).toHaveText(
+      '2 people found',
+    );
+    await expect(page).toHaveURL(/\/staff-directory\?department=Legal$/);
+    await page.reload();
+    await expectRemoteRendered(page, remote);
+    await expect(department).toHaveValue('Legal');
+    await expect(search).toHaveValue('');
+    await expect(container.getByTestId('staff-count')).toHaveText(
+      '2 people found',
+    );
   });
 });
 
