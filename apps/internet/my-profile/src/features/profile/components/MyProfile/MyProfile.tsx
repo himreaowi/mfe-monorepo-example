@@ -1,17 +1,25 @@
 import { useHostProps } from '@org/mf-runtime/remote';
 import { RemoteFallback } from '@org/ui';
-import { useProfile } from '../../hooks/useProfile';
+import type { ApiResult, SubmitResult } from '@org/use-api';
+import type { Preferences, Profile } from '../../types/profile';
 import { PreferencesForm } from '../PreferencesForm/PreferencesForm';
 import { ProfileDetails } from '../ProfileDetails/ProfileDetails';
 import styles from './MyProfile.module.scss';
 
 /**
  * The signed-in user's profile. Only rendered after sign-in: the shell wraps this private
- * remote in <RequireAuth> and does not even download it before.
+ * remote in <RequireAuth> and does not even download it before. Displays only: the page loads
+ * the profile (`useProfile()`) and provides the save (`useSavePreferences()`) for the form.
  */
-export function MyProfile() {
+export function MyProfile({
+  profile,
+  save,
+}: {
+  profile: ApiResult<Profile>;
+  /** Saves the notification choices (`useSavePreferences()`, called by the page). */
+  save: SubmitResult<Preferences, Profile>;
+}) {
   const { user } = useHostProps();
-  const profile = useProfile();
   return (
     <section className={styles.page} data-testid="my-profile">
       <div>
@@ -33,7 +41,7 @@ export function MyProfile() {
       {profile.status === 'success' ? (
         <>
           <ProfileDetails profile={profile.data} />
-          <PreferencesForm initial={profile.data.preferences} />
+          <PreferencesForm initial={profile.data.preferences} save={save} />
         </>
       ) : null}
     </section>

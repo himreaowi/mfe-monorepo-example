@@ -1,51 +1,43 @@
 import { render, screen } from '@testing-library/react';
-import { useAuth } from '@org/auth';
-import { HttpClientError } from '@org/http-client';
+import userEvent from '@testing-library/user-event';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
-import { getProfile } from '../../api/profileApi';
-import { MyProfile } from './MyProfile';
+import type { ApiResult, SubmitResult } from '@org/use-api';
 import { profile } from '../../__fixtures__/profile';
+import type { Preferences, Profile } from '../../types/profile';
+import { MyProfile } from './MyProfile';
 
-jest.mock('../../api/profileApi');
-jest.mock('@org/auth', () => ({ useAuth: jest.fn() }));
+const idleSave: SubmitResult<Preferences, Profile> = {
+  state: { status: 'idle' },
+  submit: jest.fn(),
+  reset: jest.fn(),
+};
+const reload = jest.fn();
 
-const refresh = jest.fn();
-
-function renderProfile() {
+// A display component: the page loads the profile and passes it in (no API here).
+function renderProfile(result: ApiResult<Profile>) {
   return render(
     <HostPropsProvider
       value={{
         embedded: true,
         basePath: '/my-profile',
-        settings: { apiBaseUrl: 'https://api.test' },
         user: { id: 'mock-user-1', name: 'Dev User (mock)' },
       }}
     >
-      <MyProfile />
+      <MyProfile profile={result} save={idleSave} />
     </HostPropsProvider>,
   );
 }
 
-beforeEach(() => {
-  refresh.mockReset();
-  jest.mocked(useAuth).mockReturnValue({
-    csrfToken: 'csrf-1',
-    csrfHeaderName: 'X-CSRF-Token',
-    refresh,
-  } as unknown as ReturnType<typeof useAuth>);
-  jest.mocked(getProfile).mockResolvedValue(profile);
-});
-
 describe('MyProfile', () => {
-  it("shows the signed-in user's details", async () => {
-    renderProfile();
+  it("shows the signed-in user's details and the notification choices", () => {
+    renderProfile({ status: 'success', data: profile, reload });
     expect(
       screen.getByRole('heading', { level: 1, name: 'My profile' }),
     ).toBeInTheDocument();
     expect(
       screen.getByText('Signed in as Dev User (mock).'),
     ).toBeInTheDocument();
-    const details = await screen.findByTestId('profile-details');
+    const details = screen.getByTestId('profile-details');
     expect(details).toHaveTextContent('dev.user@example.org');
     expect(details).toHaveTextContent('Singapore 560123');
     expect(details).toHaveTextContent('April 2021');
@@ -54,18 +46,24 @@ describe('MyProfile', () => {
     ).toBeInTheDocument();
   });
 
-  it('asks the shell to re-check the session after a 401', async () => {
-    jest.mocked(getProfile).mockRejectedValue(
-      new HttpClientError({
-        status: 401,
-        statusText: 'Unauthorized',
-        url: 'https://api.test/api/profile/me',
-      } as Response),
+  it('shows loading', () => {
+    renderProfile({ status: 'loading', reload });
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Loading your profile…',
     );
-    renderProfile();
-    expect(await screen.findByRole('alert')).toHaveTextContent(
+    expect(screen.queryByTestId('profile-details')).toBeNull();
+  });
+
+  it('offers a retry when the profile cannot be loaded', async () => {
+    renderProfile({
+      status: 'error',
+      error: new Error('401 Unauthorized'),
+      reload,
+    });
+    expect(screen.getByRole('alert')).toHaveTextContent(
       'Could not load your profile',
     );
-    expect(refresh).toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(reload).toHaveBeenCalledTimes(1);
   });
 });

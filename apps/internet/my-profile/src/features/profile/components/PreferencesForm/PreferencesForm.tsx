@@ -1,8 +1,8 @@
 import { useId, useRef, useState, type FormEvent } from 'react';
 import { HttpClientError } from '@org/http-client';
 import { Button } from '@org/ui';
-import { useSavePreferences } from '../../hooks/useProfile';
-import type { Preferences } from '../../types/profile';
+import type { SubmitResult } from '@org/use-api';
+import type { Preferences, Profile } from '../../types/profile';
 import styles from './PreferencesForm.module.scss';
 
 /** The `preferences` field error of a 422 (`{ errors: { preferences } }`), if there is one. */
@@ -21,12 +21,18 @@ function preferencesError(error: Error): string | undefined {
  * invalid on the client, so only the server validates: a 422 is shown like any form error
  * (focused error summary linking to the choices + the error next to them,
  * docs/coding-conventions.md), other failures as a form-level error. The button is disabled
- * only while saving.
+ * only while saving. It sends nothing itself: `save` comes from the page
+ * (`useSavePreferences()`); the form keeps only its own UI state (choices, field error).
  */
-export function PreferencesForm({ initial }: { initial: Preferences }) {
+export function PreferencesForm({
+  initial,
+  save,
+}: {
+  initial: Preferences;
+  save: SubmitResult<Preferences, Profile>;
+}) {
   const [values, setValues] = useState(initial);
   const [fieldError, setFieldError] = useState<string>();
-  const save = useSavePreferences();
   const saving = save.state.status === 'submitting';
   const summaryRef = useRef<HTMLDivElement>(null);
   const id = useId();
