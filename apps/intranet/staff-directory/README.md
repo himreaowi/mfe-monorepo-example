@@ -8,10 +8,17 @@ The intranet shell mounts it at `/staff-directory/*` (entry in the shell's `remo
 
 ## In this example
 
-Staff search (name, job title, department, skill) with a department filter; the query lives in
-the URL (`?q=&department=`). Each person has a page (`/staff-directory/<id>`) with contact
-details, manager, direct reports and skills. Data: `GET /staff`, `GET /staff/:id` of the mock
-API (`settings.apiBaseUrl`), through `@org/use-api` hooks.
+Staff search (name, job title, department, skill) with a department filter. Each person has a
+page (`/staff-directory/<id>`) with contact details, manager, direct reports and skills. Data:
+`GET /staff`, `GET /staff/:id` of the mock API (`settings.apiBaseUrl`), through `@org/use-api`
+hooks that the pages call (`OverviewPage`, `StaffDetailPage`); the components only display.
+
+The filters are the example of the state pattern (`docs/coding-conventions.md` "State
+management"): `features/staff/state/` holds a pure reducer (`staffFiltersReducer.ts`, search
+text + department) and `StaffFiltersContext.tsx` (`<StaffFiltersProvider>`, separate state and
+dispatch contexts, hooks that throw outside the provider). The filters are shareable, so their
+store is the URL (`?q=&department=`): a pasted link, a reload and the back button show the same
+list. `StaffFilters` (the search form) reads and changes them, `OverviewPage` searches with them.
 
 ## Commands
 
@@ -25,9 +32,13 @@ API (`settings.apiBaseUrl`), through `@org/use-api` hooks.
 
 ## Rules
 
-- `src/app/RemoteApp.tsx` is the exposed module (`./App`). It must **not** import global styles
+- `src/app/apps.tsx` is the exposed module (`./App`, default export = the embedded app; it also
+  holds the standalone mock host props). Nothing it reaches may import global styles
   (`@org/design-tokens/global.scss`) or register a service worker: the shell owns the page. Only
-  `src/bootstrap.tsx` (standalone) does that.
+  `src/main.tsx` (standalone) does that; `apps.test.tsx` checks it.
+- Pages fetch, components display: a page calls the feature's data hooks (exported from the
+  feature's `index.ts`; the client is `useApiClient()` from `@org/mf-runtime/remote`) and passes
+  data and callbacks down (`docs/coding-conventions.md` "Data fetching").
 - Routes in `src/app/routes.tsx` are relative. Link between pages with `useRemotePath()` from
   `@org/mf-runtime/remote` (gives `/staff-directory/details` in the shell, `/details` standalone).
 - Never import another remote or a shell (`pnpm check` and ESLint module boundaries fail).
@@ -37,13 +48,12 @@ API (`settings.apiBaseUrl`), through `@org/use-api` hooks.
 
 ```
 src/
-  main.tsx            import('./bootstrap')
-  bootstrap.tsx       standalone only: global styles + <StandaloneApp />
-  app/                RemoteApp (exposed), apps (createRemoteApp), routes, standaloneProps
-  features/staff/     api/, hooks/, types/, __fixtures__/, components/ (one folder per
-                      component: StaffSearch/, StaffCard/, StaffDetail/)
+  main.tsx            standalone entry only: global styles + <StandaloneApp />
+  app/                apps (exposed ./App: createRemoteApp + standalone props), routes
+  features/staff/     api/, hooks/, types/, __fixtures__/, state/ (filters: reducer +
+                      Context), components/ (one folder per component, no index.ts:
+                      StaffSearch/, StaffFilters/, StaffCard/, StaffDetail/), index.ts
   layouts/            StandaloneLayout/ (own simple chrome, standalone only)
-  pages/              OverviewPage, DetailsPage, NotFoundPage
+  pages/              OverviewPage, StaffDetailPage, NotFoundPage (they call the data hooks)
   core/constants/     app, routePaths, apiRoutes
-  services/           http client (base URL from host settings)
 ```

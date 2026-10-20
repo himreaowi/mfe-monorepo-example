@@ -36,7 +36,8 @@ in the build):
 `format`: `esm` | `web-component` (+ `tagName`) | `script` (+ `global`) | `mf` (+ `remoteName`).
 `config` is passed to the vendor as `props.config`.
 
-In development the shell's `mfe-manifest.dev.json` points at the **example vendor**
+In development the shell's generated `mfe-manifest.dev.json` (from `mfe.devManifest` in the
+shell's `package.json`) points at the **example vendor**
 (`tools/example-vendors`, http://localhost:3292/payments/2.3.1/element.js), and `src/features/external/utils/vendorConfig.ts`
 falls back to it when no config is set (standalone mode). Production builds contain neither.
 
@@ -69,10 +70,10 @@ Loading/mount errors, timeouts, an incompatible `contractVersion` or a fatal `on
 
 ```
 src/
-  main.tsx / bootstrap.tsx   standalone entry
-  app/                       RemoteApp (exposed ./App), apps, routes (one splat route)
+  main.tsx                   standalone entry
+  app/                       apps (exposed ./App), routes (one splat route)
   features/external/
-    components/ExternalModuleHost/   the adapter (component, CSS module, test, index.ts)
+    components/ExternalModuleHost/   the adapter (component, CSS module, test)
     utils/                           vendorConfig (dev fallback), payment (vendor event helpers)
   layouts/                   StandaloneLayout
   pages/OverviewPage         renders the adapter

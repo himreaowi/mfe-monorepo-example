@@ -23,9 +23,13 @@ plain-text paragraphs; no HTML from the API is rendered.
 
 ## Rules
 
-- `src/app/RemoteApp.tsx` is the exposed module (`./App`). It must **not** import global styles
+- `src/app/apps.tsx` is the exposed module (`./App`, default export = the embedded app; it also
+  holds the standalone mock host props). Nothing it reaches may import global styles
   (`@org/design-tokens/global.scss`) or register a service worker: the shell owns the page. Only
-  `src/bootstrap.tsx` (standalone) does that.
+  `src/main.tsx` (standalone) does that; `apps.test.tsx` checks it.
+- Pages fetch, components display: a page calls the feature's data hooks (exported from the
+  feature's `index.ts`; the client is `useApiClient()` from `@org/mf-runtime/remote`) and passes
+  data and callbacks down (`docs/coding-conventions.md` "Data fetching").
 - Routes in `src/app/routes.tsx` are relative. Link between pages with `useRemotePath()` from
   `@org/mf-runtime/remote` (gives `/announcements/details` in the shell, `/details` standalone).
 - Never import another remote or a shell (`pnpm check` and ESLint module boundaries fail).
@@ -35,13 +39,11 @@ plain-text paragraphs; no HTML from the API is rendered.
 
 ```
 src/
-  main.tsx            import('./bootstrap')
-  bootstrap.tsx       standalone only: global styles + <StandaloneApp />
-  app/                RemoteApp (exposed), apps (createRemoteApp), routes, standaloneProps
+  main.tsx            standalone entry only: global styles + <StandaloneApp />
+  app/                apps (exposed ./App: createRemoteApp + standalone props), routes
   features/announcements/  api/, hooks/, types/, __fixtures__/, components/ (one folder
                       per component: AnnouncementList/, AnnouncementDetail/)
   layouts/            StandaloneLayout/ (own simple chrome, standalone only)
-  pages/              OverviewPage, DetailsPage, NotFoundPage
+  pages/              OverviewPage, AnnouncementPage, NotFoundPage (they call the data hooks)
   core/constants/     app, routePaths, apiRoutes
-  services/           http client (base URL from host settings)
 ```
