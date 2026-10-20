@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
 import { useAuth } from '@org/auth';
 import { HttpClientError } from '@org/http-client';
-import { useApi, useSubmit } from '@org/use-api';
-import { useApiClient } from '@/services/http';
+import { requireApiClient, useApi, useSubmit } from '@org/use-api';
+import { useApiClient } from '@org/mf-runtime/remote';
 import { getProfile, updatePreferences } from '../api';
 import type { Preferences } from '../types/profile';
 
@@ -25,7 +25,7 @@ export function useProfile() {
   const load = useCallback(
     async (signal: AbortSignal) => {
       try {
-        return await getProfile(http, signal);
+        return await getProfile(requireApiClient(http), signal);
       } catch (error) {
         onUnauthorized(error);
         throw error;
@@ -44,7 +44,7 @@ export function useSavePreferences() {
   return useSubmit(async (preferences: Preferences, signal: AbortSignal) => {
     try {
       return await updatePreferences(
-        http,
+        requireApiClient(http),
         preferences,
         csrfToken ? { [csrfHeaderName]: csrfToken } : {},
         signal,

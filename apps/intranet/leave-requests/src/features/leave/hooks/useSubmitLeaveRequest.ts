@@ -1,6 +1,6 @@
 import { useAuth } from '@org/auth';
-import { useSubmit } from '@org/use-api';
-import { useApiClient } from '@/services/http';
+import { requireApiClient, useSubmit } from '@org/use-api';
+import { useApiClient } from '@org/mf-runtime/remote';
 import { submitLeaveRequest } from '../api';
 import type { LeaveRequestInput } from '../types/leave';
 
@@ -8,9 +8,9 @@ import type { LeaveRequestInput } from '../types/leave';
 export function useSubmitLeaveRequest() {
   const http = useApiClient();
   const { csrfToken, csrfHeaderName } = useAuth();
-  return useSubmit((input: LeaveRequestInput, signal: AbortSignal) =>
+  return useSubmit(async (input: LeaveRequestInput, signal: AbortSignal) =>
     submitLeaveRequest(
-      http,
+      requireApiClient(http),
       input,
       signal,
       csrfToken ? { [csrfHeaderName]: csrfToken } : undefined,

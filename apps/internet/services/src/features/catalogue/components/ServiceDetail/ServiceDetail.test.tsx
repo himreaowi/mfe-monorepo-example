@@ -11,7 +11,13 @@ const getMock = jest.mocked(getService);
 function renderDetail() {
   return render(
     <MemoryRouter>
-      <HostPropsProvider value={{ embedded: true, basePath: '/services' }}>
+      <HostPropsProvider
+        value={{
+          embedded: true,
+          basePath: '/services',
+          settings: { apiBaseUrl: 'https://api.test' },
+        }}
+      >
         <ServiceDetail slug="renew-dog-licence" />
       </HostPropsProvider>
     </MemoryRouter>,

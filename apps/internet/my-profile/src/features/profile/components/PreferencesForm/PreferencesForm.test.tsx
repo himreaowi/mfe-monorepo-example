@@ -12,7 +12,13 @@ jest.mock('@org/auth', () => ({ useAuth: jest.fn() }));
 
 function renderProfile() {
   return render(
-    <HostPropsProvider value={{ embedded: true, basePath: '/my-profile' }}>
+    <HostPropsProvider
+      value={{
+        embedded: true,
+        basePath: '/my-profile',
+        settings: { apiBaseUrl: 'https://api.test' },
+      }}
+    >
       <PreferencesForm initial={profile.preferences} />
     </HostPropsProvider>,
   );

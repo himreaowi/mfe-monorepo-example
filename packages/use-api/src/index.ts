@@ -11,3 +11,4 @@ export {
   type SubmitResult,
   type SubmitState,
 } from './useSubmit';
+export { API_NOT_CONFIGURED, requireApiClient } from './requireApiClient';

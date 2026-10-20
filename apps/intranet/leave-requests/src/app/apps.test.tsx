@@ -21,7 +21,13 @@ function renderEmbedded(url: string) {
         <Routes>
           <Route
             path="leave-requests/*"
-            element={<EmbeddedApp embedded basePath="/leave-requests" />}
+            element={
+              <EmbeddedApp
+                embedded
+                basePath="/leave-requests"
+                settings={{ apiBaseUrl: 'https://api.test' }}
+              />
+            }
           />
         </Routes>
       </MemoryRouter>

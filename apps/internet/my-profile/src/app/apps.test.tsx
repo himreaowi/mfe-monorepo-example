@@ -25,6 +25,7 @@ describe('My Profile remote', () => {
                 <EmbeddedApp
                   embedded
                   basePath="/my-profile"
+                  settings={{ apiBaseUrl: 'https://api.test' }}
                   user={{ id: 'mock-user-1', name: 'Shell User' }}
                 />
               }

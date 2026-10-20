@@ -10,7 +10,13 @@ jest.mock('../../api');
 function renderIn(ui: React.ReactNode) {
   return render(
     <MemoryRouter>
-      <HostPropsProvider value={{ embedded: true, basePath: '/announcements' }}>
+      <HostPropsProvider
+        value={{
+          embedded: true,
+          basePath: '/announcements',
+          settings: { apiBaseUrl: 'https://api.test' },
+        }}
+      >
         {ui}
       </HostPropsProvider>
     </MemoryRouter>,

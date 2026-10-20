@@ -1,12 +1,13 @@
 import { useCallback } from 'react';
-import { useApi } from '@org/use-api';
-import { useApiClient } from '@/services/http';
+import { requireApiClient, useApi } from '@org/use-api';
+import { useApiClient } from '@org/mf-runtime/remote';
 import { getLeaveRequests } from '../api';
 
 export function useLeaveRequests() {
   const http = useApiClient();
   const load = useCallback(
-    (signal: AbortSignal) => getLeaveRequests(http, signal),
+    async (signal: AbortSignal) =>
+      getLeaveRequests(requireApiClient(http), signal),
     [http],
   );
   return useApi(load);

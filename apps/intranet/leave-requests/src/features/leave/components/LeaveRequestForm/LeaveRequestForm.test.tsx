@@ -30,7 +30,13 @@ function Overview() {
 function renderForm() {
   return render(
     <MemoryRouter initialEntries={['/leave/new']}>
-      <HostPropsProvider value={{ embedded: true, basePath: '/leave' }}>
+      <HostPropsProvider
+        value={{
+          embedded: true,
+          basePath: '/leave',
+          settings: { apiBaseUrl: 'https://api.test' },
+        }}
+      >
         <Routes>
           <Route path="/leave/new" element={<LeaveRequestForm />} />
           <Route path="/leave" element={<Overview />} />

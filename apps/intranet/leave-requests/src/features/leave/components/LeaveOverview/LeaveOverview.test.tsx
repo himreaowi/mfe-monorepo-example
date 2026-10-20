@@ -10,7 +10,13 @@ jest.mock('../../api');
 function renderOverview(state?: unknown) {
   return render(
     <MemoryRouter initialEntries={[{ pathname: '/leave', state }]}>
-      <HostPropsProvider value={{ embedded: true, basePath: '/leave' }}>
+      <HostPropsProvider
+        value={{
+          embedded: true,
+          basePath: '/leave',
+          settings: { apiBaseUrl: 'https://api.test' },
+        }}
+      >
         <LeaveOverview />
       </HostPropsProvider>
     </MemoryRouter>,

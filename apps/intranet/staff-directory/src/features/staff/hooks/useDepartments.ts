@@ -1,12 +1,13 @@
 import { useCallback } from 'react';
-import { useApi } from '@org/use-api';
-import { useApiClient } from '@/services/http';
+import { requireApiClient, useApi } from '@org/use-api';
+import { useApiClient } from '@org/mf-runtime/remote';
 import { getDepartments } from '../api';
 
 export function useDepartments() {
   const http = useApiClient();
   const load = useCallback(
-    (signal: AbortSignal) => getDepartments(http, signal),
+    async (signal: AbortSignal) =>
+      getDepartments(requireApiClient(http), signal),
     [http],
   );
   return useApi(load);

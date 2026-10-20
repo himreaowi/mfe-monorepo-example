@@ -1,13 +1,14 @@
 import { useCallback } from 'react';
-import { useApi } from '@org/use-api';
-import { useApiClient } from '@/services/http';
+import { requireApiClient, useApi } from '@org/use-api';
+import { useApiClient } from '@org/mf-runtime/remote';
 import { getCategories, getService, listServices } from '../api';
 import type { CatalogueQuery } from '../types/service';
 
 export function useServices({ q, category }: CatalogueQuery) {
   const http = useApiClient();
   const load = useCallback(
-    (signal: AbortSignal) => listServices(http, { q, category }, signal),
+    async (signal: AbortSignal) =>
+      listServices(requireApiClient(http), { q, category }, signal),
     [http, q, category],
   );
   return useApi(load);
@@ -16,7 +17,8 @@ export function useServices({ q, category }: CatalogueQuery) {
 export function useCategories() {
   const http = useApiClient();
   const load = useCallback(
-    (signal: AbortSignal) => getCategories(http, signal),
+    async (signal: AbortSignal) =>
+      getCategories(requireApiClient(http), signal),
     [http],
   );
   return useApi(load);
@@ -25,7 +27,8 @@ export function useCategories() {
 export function useService(slug: string) {
   const http = useApiClient();
   const load = useCallback(
-    (signal: AbortSignal) => getService(http, slug, signal),
+    async (signal: AbortSignal) =>
+      getService(requireApiClient(http), slug, signal),
     [http, slug],
   );
   return useApi(load);

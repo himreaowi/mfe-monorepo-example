@@ -10,7 +10,13 @@ const getMock = jest.mocked(getStaffMember);
 function renderDetail(id: string) {
   return render(
     <MemoryRouter>
-      <HostPropsProvider value={{ embedded: true, basePath: '/staff' }}>
+      <HostPropsProvider
+        value={{
+          embedded: true,
+          basePath: '/staff',
+          settings: { apiBaseUrl: 'https://api.test' },
+        }}
+      >
         <StaffDetail id={id} />
       </HostPropsProvider>
     </MemoryRouter>,

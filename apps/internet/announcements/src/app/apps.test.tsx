@@ -24,7 +24,13 @@ function renderEmbedded(url: string) {
         <Routes>
           <Route
             path="announcements/*"
-            element={<EmbeddedApp embedded basePath="/announcements" />}
+            element={
+              <EmbeddedApp
+                embedded
+                basePath="/announcements"
+                settings={{ apiBaseUrl: 'https://api.test' }}
+              />
+            }
           />
         </Routes>
       </MemoryRouter>

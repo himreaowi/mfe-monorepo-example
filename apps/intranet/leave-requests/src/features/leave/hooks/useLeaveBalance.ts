@@ -1,12 +1,13 @@
 import { useCallback } from 'react';
-import { useApi } from '@org/use-api';
-import { useApiClient } from '@/services/http';
+import { requireApiClient, useApi } from '@org/use-api';
+import { useApiClient } from '@org/mf-runtime/remote';
 import { getLeaveBalance } from '../api';
 
 export function useLeaveBalance() {
   const http = useApiClient();
   const load = useCallback(
-    (signal: AbortSignal) => getLeaveBalance(http, signal),
+    async (signal: AbortSignal) =>
+      getLeaveBalance(requireApiClient(http), signal),
     [http],
   );
   return useApi(load);

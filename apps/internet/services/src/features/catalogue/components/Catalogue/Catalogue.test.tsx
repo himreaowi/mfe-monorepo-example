@@ -12,7 +12,13 @@ const listMock = jest.mocked(listServices);
 function renderCatalogue(url = '/services') {
   return render(
     <MemoryRouter initialEntries={[url]}>
-      <HostPropsProvider value={{ embedded: true, basePath: '/services' }}>
+      <HostPropsProvider
+        value={{
+          embedded: true,
+          basePath: '/services',
+          settings: { apiBaseUrl: 'https://api.test' },
+        }}
+      >
         <Routes>
           <Route path="services/*" element={<Catalogue />} />
         </Routes>

@@ -17,6 +17,7 @@ function renderProfile() {
       value={{
         embedded: true,
         basePath: '/my-profile',
+        settings: { apiBaseUrl: 'https://api.test' },
         user: { id: 'mock-user-1', name: 'Dev User (mock)' },
       }}
     >
