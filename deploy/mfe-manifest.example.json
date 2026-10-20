@@ -21,9 +21,9 @@
     }
   },
   "auth": {
-    "sessionUrl": "/bff/session",
-    "loginUrl": "/bff/login",
-    "logoutUrl": "/bff/logout",
+    "sessionUrl": "/auth/session",
+    "loginUrl": "/auth/login",
+    "logoutUrl": "/auth/logout",
     "csrfHeaderName": "X-CSRF-Token"
   },
   "settings": {

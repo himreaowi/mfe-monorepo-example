@@ -8,9 +8,12 @@
 #   docker run -p 8080:8080 \
 #     -e MFE_CORS_ORIGINS_REGEX='^https://portal\.example\.sg$' staff-directory:<git sha>
 #
-# Shells additionally get the per-environment /mfe-manifest.json at deploy time (never baked
-# in): mount it at /etc/mfe/mfe-manifest.json, or pass MFE_MANIFEST_JSON. Same image for every
-# environment.
+# Shells additionally get their per-environment /mfe-manifest.json at deploy time (never baked
+# in), generated at container start from individual variables: API_UPSTREAM, AUTH_UPSTREAM and
+# REMOTE_<FEDERATION_NAME>_URL (docs/configuration.md; `docker run --env-file`). A complete
+# manifest can still be mounted at /etc/mfe/mfe-manifest.json or passed as MFE_MANIFEST_JSON.
+# nginx forwards <base path>/api to API_UPSTREAM and <base path>/auth to AUTH_UPSTREAM, so the
+# browser only talks to its own origin. Same image for every environment.
 
 ARG NODE_IMAGE=node:24-bookworm-slim
 ARG NGINX_IMAGE=nginxinc/nginx-unprivileged:1.29-alpine
@@ -51,7 +54,8 @@ RUN pnpm --filter "${APP}" run build \
     && printf 'set $mfe_base_path "%s";\n' "$BASE_PATH" > /out/mfe-base-path.inc \
     && if [ -n "$BASE_PATH" ]; then \
          printf 'location = / {\n    return 302 %s/;\n}\n' "$BASE_PATH" >> /out/mfe-base-path.inc; \
-       fi
+       fi \
+    && node deploy/write-shell-env.mjs "$APP_DIR" /out/mfe-shell.env
 
 # ---------------------------------------------------------------------------------------------
 # runtime: static files + nginx (non-root, port 8080)
@@ -64,22 +68,26 @@ FROM ${NGINX_IMAGE} AS runtime
 ENV NGINX_PORT=8080 \
     MFE_CORS_ORIGINS_REGEX='^$' \
     CSP_REMOTE_ORIGINS='' \
-    CSP_BFF_ORIGINS='' \
-    CSP_API_ORIGINS='' \
     CSP_VENDOR_ORIGINS='' \
     CSP_FRAME_SRC="'none'" \
     CSP_EXTRA='' \
     PERMISSIONS_POLICY='camera=(), microphone=(), geolocation=(), payment=()' \
-    MFE_MANIFEST_JSON=''
+    MFE_MANIFEST_JSON='' \
+    MFE_ENVIRONMENT='' \
+    API_UPSTREAM='' \
+    AUTH_UPSTREAM=''
 
-COPY deploy/nginx/default.conf.template deploy/nginx/security-headers.inc.template /etc/nginx/templates/
+COPY deploy/nginx/default.conf.template deploy/nginx/security-headers.inc.template deploy/nginx/proxy-common.inc.template /etc/nginx/templates/
 COPY --chmod=755 deploy/docker-entrypoint.d/40-mfe-manifest.sh /docker-entrypoint.d/
 COPY --from=build /out/html /usr/share/nginx/html
 COPY --from=build /out/mfe-base-path.inc /etc/nginx/mfe-base-path.inc
+# what the entrypoint needs to know about this shell: base path, remotes, sign-in (empty for a remote)
+COPY --from=build /out/mfe-shell.env /etc/nginx/mfe-shell.env
 
 USER root
 # the default server config of the image is replaced by default.conf.template;
-# /etc/mfe holds the per-environment mfe-manifest.json (mounted or written at start-up)
+# /etc/mfe holds the per-environment mfe-manifest.json and mfe-proxy.inc (generated at start-up
+# from the environment variables, or the manifest mounted read-only)
 RUN rm -f /etc/nginx/conf.d/default.conf \
     && mkdir -p /etc/mfe && chown 101:101 /etc/mfe
 USER 101
