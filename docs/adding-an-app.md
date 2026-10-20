@@ -31,7 +31,7 @@ known acronyms in capitals (`it-helpdesk` → "IT helpdesk"); `--title "Staff po
 ```
 apps/<zone>/<name>/                 new remote (package @org/<zone>-<name>)
   package.json                      nx.tags zone/type/access(/kind), mfe.port, mfe.federationName
-  rspack.config.js                  createRemoteConfig (reads mfe from package.json)
+  webpack.config.js                  createRemoteConfig (reads mfe from package.json)
   src/                              app/, features/demo, pages/, layouts/, components/, core/
     features/demo/                  api/, hooks/, types/, utils/, components/<Name>/ (one folder per component), index.ts (public API)
     features/demo/state/            only with --state: demoReducer.ts (+ test), DemoContext.tsx (+ test), used by ItemPicker + SelectionSummary

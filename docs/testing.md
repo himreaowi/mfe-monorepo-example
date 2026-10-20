@@ -1,12 +1,12 @@
 # Testing
 
-| Layer                 | Tool                                                         | Where                                                                  | Run                                                |
-| --------------------- | ------------------------------------------------------------ | ---------------------------------------------------------------------- | -------------------------------------------------- |
-| Unit / component      | Jest 30 + React Testing Library (jsdom)                      | `src/**/*.test.ts(x)` in every app and React package                   | `pnpm test` (all), `pnpm --filter <pkg> test`      |
-| Node / contract tests | `node --test`                                                | `tools/*`, `packages/rspack-config`, `vendor-kit`, `playwright-config` | part of `pnpm test`                                |
-| End-to-end (per zone) | Playwright (Chromium), desktop + 375 px                      | `apps/<zone>/shell-<zone>/e2e/`                                        | `pnpm e2e`, `pnpm e2e:<zone>`                      |
-| Accessibility         | axe-core (`@axe-core/playwright`), WCAG 2.2 AA, light + dark | `e2e/a11y.spec.ts` in each shell                                       | part of `pnpm e2e`                                 |
-| Static checks         | `pnpm check`, ESLint, `tsc`, Prettier                        | everywhere                                                             | `pnpm lint`, `pnpm typecheck`, `pnpm format:check` |
+| Layer                 | Tool                                                         | Where                                                                   | Run                                                |
+| --------------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------- | -------------------------------------------------- |
+| Unit / component      | Jest 30 + React Testing Library (jsdom)                      | `src/**/*.test.ts(x)` in every app and React package                    | `pnpm test` (all), `pnpm --filter <pkg> test`      |
+| Node / contract tests | `node --test`                                                | `tools/*`, `packages/webpack-config`, `vendor-kit`, `playwright-config` | part of `pnpm test`                                |
+| End-to-end (per zone) | Playwright (Chromium), desktop + 375 px                      | `apps/<zone>/shell-<zone>/e2e/`                                         | `pnpm e2e`, `pnpm e2e:<zone>`                      |
+| Accessibility         | axe-core (`@axe-core/playwright`), WCAG 2.2 AA, light + dark | `e2e/a11y.spec.ts` in each shell                                        | part of `pnpm e2e`                                 |
+| Static checks         | `pnpm check`, ESLint, `tsc`, Prettier                        | everywhere                                                              | `pnpm lint`, `pnpm typecheck`, `pnpm format:check` |
 
 ## Unit tests (Jest + React Testing Library)
 
@@ -97,14 +97,14 @@ never against a shared server) can start with the docblock `/** @jest-environmen
 ## Node and contract tests
 
 Code that runs in Node (configs, CLIs, generators) is tested with `node --test`, not Jest
-(`@rspack/core` is ESM-only, see [toolchain.md](toolchain.md)). These also hold the **contract
+(the webpack configs are plain ESM JavaScript, see [toolchain.md](toolchain.md)). These also hold the **contract
 tests** that keep generated or shared artefacts honest:
 
 | Package                      | Covers                                                                                                                                                                                                                                                                                                                    |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `tools/generators`           | generates both zones into a temp workspace (one shell per starter layout, `top` and `side`), checks files, metadata, registry, dev manifest; `check-apps`/`check-versions` pass                                                                                                                                           |
 | `tools/scripts`              | every guardrail rule with fixture workspaces; `list-apps` (incl. `--affected`); the `deploy/` templates; `validate-manifest`                                                                                                                                                                                              |
-| `packages/rspack-config`     | config shape (singletons, publicPath, HTML entry, CSS extraction in dev and prod, dev CSP, history fallback), real builds (readable `Component_class__hash` CSS module names salted per app, hashed `.css` per chunk in prod, unhashed `.css` + linked `.css.map` in dev with the same class names, absolute script URLs) |
+| `packages/webpack-config`    | config shape (singletons, publicPath, HTML entry, CSS extraction in dev and prod, dev CSP, history fallback), real builds (readable `Component_class__hash` CSS module names salted per app, hashed `.css` per chunk in prod, unhashed `.css` + linked `.css.map` in dev with the same class names, absolute script URLs) |
 | `packages/vendor-kit`        | `mount-contract.d.ts` is up to date with `mf-runtime`; the kit builds and zips                                                                                                                                                                                                                                            |
 | `packages/mf-runtime` (Jest) | the generated manifest validator is up to date with `mfe-manifest.schema.json`; remote CSS is left to the chunk loader (`remoteCssPlugin`)                                                                                                                                                                                |
 | `packages/playwright-config` | zone loading, config (projects, servers, CI), URL waiting, axe report formatting                                                                                                                                                                                                                                          |

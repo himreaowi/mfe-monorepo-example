@@ -25,7 +25,7 @@ upstreams nginx proxies to, the remotes' URLs (from which the container generate
 | Chromium | via Playwright (`@playwright/test` in the catalog)                            | e2e only: `pnpm --filter <shell> exec playwright install --with-deps chromium`                            |
 | Docker   | BuildKit (for `deploy/Dockerfile` cache mounts and `Dockerfile.dockerignore`) | image per app                                                                                             |
 
-No other global tools. Everything else (Nx, Rspack, TypeScript, Jest, ESLint) is a workspace
+No other global tools. Everything else (Nx, webpack, TypeScript, Jest, ESLint) is a workspace
 dependency installed by `pnpm install --frozen-lockfile`.
 
 ## Gates (in this order)
@@ -37,7 +37,7 @@ dependency installed by `pnpm install --frozen-lockfile`.
 | 3   | `pnpm lint`                           | ESLint incl. module boundaries (runs `pnpm check` again; skip 2 if you like)                             |
 | 4   | `pnpm typecheck`                      | TypeScript                                                                                               |
 | 5   | `pnpm test`                           | Jest + node tests ([testing.md](testing.md))                                                             |
-| 6   | `pnpm build` (or per app, see matrix) | Rspack production builds                                                                                 |
+| 6   | `pnpm build` (or per app, see matrix) | webpack production builds                                                                                |
 | 7   | `pnpm e2e:<zone>` (per affected zone) | Playwright e2e + axe WCAG 2.2 AA, light and dark ([testing.md](testing.md))                              |
 | (8) | `pnpm format:check`                   | Prettier (optional gate; recommended)                                                                    |
 
@@ -113,7 +113,7 @@ Source maps (`*.map`) are emitted next to the files; the nginx template does not
 (404). Upload them to the error tracker in the pipeline if you use one.
 
 They are **hidden, source-less maps** (`hidden-nosources-source-map`, set in
-`@org/rspack-config`): mappings and source file names only, no `sourcesContent`, and the bundles
+`@org/webpack-config`): mappings and source file names only, no `sourcesContent`, and the bundles
 have no `sourceMappingURL` comment. Why: the original sources contain development-only branches
 (e.g. `if (process.env.NODE_ENV !== 'production')` fallbacks to the mock vendor / mock API on
 `http://localhost:…`) that the minifier removes from the bundles, but a classic `source-map`

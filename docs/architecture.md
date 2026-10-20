@@ -10,7 +10,7 @@ manifest.
 | #   | Decision                                                                                                                       | Where it shows                                                    |
 | --- | ------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------- |
 | D1  | Monorepo: pnpm workspaces + Nx in package-based mode (Nx orchestrates; each app keeps its own `package.json` and build config) | `pnpm-workspace.yaml`, `nx.json`, `apps/*/*/package.json`         |
-| D2  | Rspack + Module Federation 2 (`@module-federation/enhanced`), remotes registered at runtime                                    | `@org/rspack-config`, `@org/mf-runtime`                           |
+| D2  | webpack 5 + Module Federation 2 (`@module-federation/enhanced`), remotes registered at runtime                                 | `@org/webpack-config`, `@org/mf-runtime`                          |
 | D3  | Vendors have no repo access: they deliver hosted builds against a published contract and the vendor kit                        | [external-modules.md](external-modules.md), `packages/vendor-kit` |
 | D4  | Dependency tiers; core libraries have one version for everyone (pnpm catalog), exceptions are justified and expire             | [adding-dependencies.md](adding-dependencies.md), `pnpm check`    |
 | D5  | No hybrid layer. Separate intranet and internet shells; public vs signed-in areas are route guards inside a shell              | `access:private` remotes, `<RequireAuth>`                         |
@@ -252,7 +252,7 @@ goes in an iframe. Details: [external-modules.md](external-modules.md).
 ```
 apps/<zone>/<name>/      apps (generated); shells hold the zone's e2e suite in e2e/
 packages/                shared code: ui, design-tokens, mf-runtime, auth, http-client, pwa,
-                         rspack-config, jest-config, playwright-config, eslint/prettier/tsconfig,
+                         webpack-config, jest-config, playwright-config, eslint/prettier/tsconfig,
                          vendor-kit
 tools/                   generators, scripts (check, apps, dev, e2e, validate-manifest, preview),
                          mock-api, mock-vendor (dev only; ports in root package.json mfe.tools)

@@ -15,13 +15,13 @@ APIs, manifest, vendor modules).
 
 ## Where code goes
 
-| What                   | Where                                                                                                                                                                                           |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A new app              | `pnpm gen:shell` / `pnpm gen:remote` ([adding-an-app.md](adding-an-app.md)); never copy an app folder                                                                                           |
-| Code used by 2+ apps   | a package in `packages/` (tag `type:package`), `workspace:*` dependency                                                                                                                         |
-| Code used by one app   | that app's `src/`                                                                                                                                                                               |
-| Build/test/lint config | the shared config packages (`@org/rspack-config`, `@org/jest-config`, `@org/playwright-config`, `@org/eslint-config`, `@org/tsconfig`, `@org/prettier-config`); apps keep one-line config files |
-| Repo tooling           | `tools/`                                                                                                                                                                                        |
+| What                   | Where                                                                                                                                                                                            |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| A new app              | `pnpm gen:shell` / `pnpm gen:remote` ([adding-an-app.md](adding-an-app.md)); never copy an app folder                                                                                            |
+| Code used by 2+ apps   | a package in `packages/` (tag `type:package`), `workspace:*` dependency                                                                                                                          |
+| Code used by one app   | that app's `src/`                                                                                                                                                                                |
+| Build/test/lint config | the shared config packages (`@org/webpack-config`, `@org/jest-config`, `@org/playwright-config`, `@org/eslint-config`, `@org/tsconfig`, `@org/prettier-config`); apps keep one-line config files |
+| Repo tooling           | `tools/`                                                                                                                                                                                         |
 
 Hard rules (enforced by `pnpm check` and ESLint, see [guardrails.md](guardrails.md)):
 
@@ -125,7 +125,7 @@ A remote's wiring is five files; everything else is features, pages and layouts:
 | File                 | Role                                                                                     |
 | -------------------- | ---------------------------------------------------------------------------------------- |
 | `package.json`       | name, Nx tags, `mfe.port` / `mfe.federationName` (read by the config and the tools)      |
-| `rspack.config.js`   | `createRemoteConfig` (exposes `./App` → `src/app/apps.tsx`, MF async startup)            |
+| `webpack.config.js`  | `createRemoteConfig` (exposes `./App` → `src/app/apps.tsx`, MF async startup)            |
 | `src/main.tsx`       | standalone entry: global styles + `<StandaloneApp />`                                    |
 | `src/app/apps.tsx`   | the exposed module: `createRemoteApp(…)`, standalone mock host props, optional providers |
 | `src/app/routes.tsx` | relative routes                                                                          |
