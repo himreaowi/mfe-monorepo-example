@@ -108,7 +108,7 @@ pnpm e2e:intranet                                                # zone e2e + ax
 ```
 
 Components: `pnpm storybook` shows every `@org/ui` component in light and dark
-(http://localhost:3192); `pnpm test:ui` runs axe and screenshot tests of all of them
+(http://localhost:3193); `pnpm test:ui` runs axe and screenshot tests of all of them
 ([packages/ui/README.md](../packages/ui/README.md)).
 
 `pnpm e2e:intranet` starts `pnpm dev:intranet` itself (or reuses it if it is already running),
@@ -153,7 +153,7 @@ CI runs the same gates ([devops-handoff.md](devops-handoff.md)).
 | `pnpm --filter <package> add <dep>`                                                                                                                       | add a dependency ([adding-dependencies.md](adding-dependencies.md))                                   |
 | `pnpm lint` / `typecheck` / `test` / `build`                                                                                                              | all projects (Nx, cached)                                                                             |
 | `pnpm e2e` / `pnpm e2e:<zone>`                                                                                                                            | zone e2e suites                                                                                       |
-| `pnpm storybook` / `pnpm build-storybook` / `pnpm test:ui`                                                                                                | `@org/ui` components (dev server on 3192 / static build / axe + screenshots)                          |
+| `pnpm storybook` / `pnpm build-storybook` / `pnpm test:ui`                                                                                                | `@org/ui` components (dev server on 3193 / static build / axe + screenshots)                          |
 | `pnpm -s apps [--zone=<zone>] [--affected --base=<sha>] [--json]`                                                                                         | list apps (CI matrix)                                                                                 |
 | `pnpm format`                                                                                                                                             | Prettier                                                                                              |
 
