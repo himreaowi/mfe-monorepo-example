@@ -6,7 +6,7 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { ZONES } from './zones.js';
+import { ZONES, shellBasePath } from './zones.js';
 import { DEP_FIELDS, loadApps, loadWorkspace } from './workspace.js';
 
 /**
@@ -18,6 +18,7 @@ import { DEP_FIELDS, loadApps, loadWorkspace } from './workspace.js';
  *   access: 'public' | 'private',
  *   kind: 'react' | 'external',
  *   port: number,
+ *   basePath?: string,
  *   federationName: string,
  *   path: string,
  *   distDir: string,
@@ -64,6 +65,10 @@ export function listApps({ root, zone }) {
         access: tagValue(tags, 'access') ?? 'public',
         kind: tagValue(tags, 'kind') === 'external' ? 'external' : 'react',
         port: app.pkg.mfe?.port,
+        // shells: where the shell is served (mfe.basePath, default "/")
+        ...(tagValue(tags, 'type') === 'shell'
+          ? { basePath: shellBasePath(app.pkg.mfe?.basePath) }
+          : {}),
         federationName: app.pkg.mfe?.federationName,
         path: app.dir,
         distDir: `${app.dir}/dist`,

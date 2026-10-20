@@ -12,6 +12,13 @@ export interface RegistryEntry {
 
 /** A registry entry plus where its dev server runs (from mfe-manifest.dev.json). */
 export interface ZoneRemote extends RegistryEntry {
+  /**
+   * URL path of the remote in the shell: the shell's base path + the remotes.json path
+   * (`/citizen/announcements`; `/announcements` for a shell at `/`).
+   */
+  path: string;
+  /** The remotes.json `path` (`/announcements`), relative to the shell's router. */
+  registryPath: string;
   /** `http://localhost:<port>/mf-manifest.json` */
   entry: string;
   /** `http://localhost:<port>` */
@@ -28,8 +35,19 @@ export interface Zone {
   zone: string;
   shellDir: string;
   packageName: string;
+  /** Shell name: its folder without `shell-` (`citizen`). */
+  name: string;
+  /** The shell's own dev server port (package.json `mfe.port`). */
   port: number;
-  /** `http://localhost:<shell port>` */
+  /** The zone's dev proxy port (3100 / 3200): the suite tests the shell through it. */
+  proxyPort: number;
+  /** `http://localhost:<proxy port>`: the Playwright `baseURL`. */
+  origin: string;
+  /** The shell's base path (package.json `mfe.basePath`): `/` or e.g. `/citizen`. */
+  basePath: string;
+  /** Path of the shell's home page: `/` or `/citizen/`. Use it instead of `'/'` in specs. */
+  home: string;
+  /** `<origin><home>`, e.g. `http://localhost:3200/citizen/`. */
   shellUrl: string;
   /** The dev manifest uses the mock sign-in (`"auth": { "mock": true }`). */
   authMock: boolean;
@@ -45,6 +63,17 @@ export interface Zone {
   waitFor: string[];
 }
 
+/** Dev proxy port + tools range per zone (mirrors `ZONES` in tools/scripts/src/zones.js). */
+export declare const ZONE_PORTS: {
+  readonly intranet: {
+    readonly proxy: 3100;
+    readonly tools: { readonly first: 3190; readonly last: 3199 };
+  };
+  readonly internet: {
+    readonly proxy: 3200;
+    readonly tools: { readonly first: 3290; readonly last: 3299 };
+  };
+};
 /** Tools port range per zone (mirrors `ZONES[zone].tools` in tools/scripts/src/zones.js). */
 export declare const ZONE_TOOL_RANGES: {
   readonly intranet: { readonly first: 3190; readonly last: 3199 };

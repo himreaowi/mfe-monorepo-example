@@ -49,6 +49,10 @@ function tempWorkspace() {
       }
     }
   }
+  // template state: no zone settings yet (a project's generated shells may have added some)
+  const rootPkg = JSON.parse(read(root, 'package.json'));
+  if (rootPkg.mfe) delete rootPkg.mfe.zones;
+  fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify(rootPkg));
   fs.mkdirSync(path.join(root, 'apps'));
   return root;
 }
@@ -84,7 +88,7 @@ describe('generators', () => {
 
   it('generates the intranet shell', async () => {
     const r = await generateShell({ root, zone: 'intranet' });
-    assert.equal(r.port, 3100);
+    assert.equal(r.port, 3101);
     assert.equal(r.layout, 'top');
     assert.equal(r.federationName, 'intranet_shell');
     const dir = 'apps/intranet/shell-intranet';
@@ -97,8 +101,9 @@ describe('generators', () => {
     ]);
     // mfe.devManifest: the extra content of the generated mfe-manifest.dev.json
     assert.deepEqual(pkg.mfe, {
-      port: 3100,
+      port: 3101,
       federationName: 'intranet_shell',
+      basePath: '/',
       devManifest: {
         auth: { mock: true },
         settings: { apiBaseUrl: 'http://localhost:3190/api' },
@@ -243,7 +248,10 @@ describe('generators', () => {
     // async startup (@org/rspack-config): one entry file, no import('./bootstrap') boundary
     assert.ok(!files.includes('src/bootstrap.tsx'));
     assert.doesNotMatch(read(root, `${dir}/src/main.tsx`), /import\(/);
-    assert.match(read(root, `${dir}/src/main.tsx`), /registerPwa\(\)/);
+    assert.match(
+      read(root, `${dir}/src/main.tsx`),
+      /registerPwa\(\{ basePath: BASE_PATH \}\)/,
+    );
     // shell-wide global styles: imported right after the design tokens; no header colours
     assert.match(
       read(root, `${dir}/src/main.tsx`),
@@ -290,8 +298,8 @@ describe('generators', () => {
       name: 'leave-requests',
       private: true,
     });
-    assert.equal(a.port, 3101);
-    assert.equal(b.port, 3102);
+    assert.equal(a.port, 3110);
+    assert.equal(b.port, 3111);
     assert.equal(a.federationName, 'intranet_staff_directory');
     const pkgA = readJson(root, 'apps/intranet/staff-directory/package.json');
     const pkgB = readJson(root, 'apps/intranet/leave-requests/package.json');
@@ -331,10 +339,10 @@ describe('generators', () => {
     ]);
     assert.deepEqual(readJson(root, `${shell}/mfe-manifest.dev.json`).remotes, {
       intranet_staff_directory: {
-        entry: 'http://localhost:3101/mf-manifest.json',
+        entry: 'http://localhost:3110/mf-manifest.json',
       },
       intranet_leave_requests: {
-        entry: 'http://localhost:3102/mf-manifest.json',
+        entry: 'http://localhost:3111/mf-manifest.json',
       },
     });
     assert.deepEqual(pkgA.nx.targets, {
@@ -536,7 +544,7 @@ describe('generators', () => {
       for (const f of listFiles(dir)) {
         assert.doesNotMatch(
           fs.readFileSync(path.join(dir, f), 'utf8'),
-          /__[A-Z][A-Z0-9_]*__/,
+          /__(?!MFE_)[A-Z][A-Z0-9_]*__/,
           `${app}/${f}`,
         );
         assert.ok(!f.endsWith('.tmpl'), f);
@@ -552,7 +560,7 @@ describe('generators', () => {
 
   it('generates the internet zone and an external adapter remote', async () => {
     const s = await generateShell({ root, zone: 'internet', layout: 'side' });
-    assert.equal(s.port, 3200);
+    assert.equal(s.port, 3201);
     assert.equal(s.layout, 'side');
     const shellLayout = read(
       root,
@@ -601,14 +609,14 @@ describe('generators', () => {
       zone: 'internet',
       name: 'services',
     });
-    assert.equal(r.port, 3201);
+    assert.equal(r.port, 3210);
     const x = await generateRemote({
       root,
       zone: 'internet',
       name: 'payments',
       external: true,
     });
-    assert.equal(x.port, 3202);
+    assert.equal(x.port, 3211);
     assert.equal(x.entry.kind, 'external');
     const pkg = readJson(root, 'apps/internet/payments/package.json');
     assert.deepEqual(pkg.nx.tags, [
@@ -766,7 +774,7 @@ describe('generators', () => {
       zone: 'internet',
       name: 'announcements',
     });
-    assert.equal(r.port, 3201);
+    assert.equal(r.port, 3210);
   });
 
   it('refuses existing names, stale registry entries and bad input', async () => {
@@ -837,7 +845,7 @@ describe('generators', () => {
         encoding: 'utf8',
       },
     );
-    assert.match(out, /Created apps\/internet\/shell-internet .*port 3200/);
+    assert.match(out, /Created apps\/internet\/shell-internet .*port 3201/);
     assert.match(out, /side starter layout in src\/layouts\/ShellLayout/);
     assert.match(
       read(
@@ -863,7 +871,7 @@ describe('generators', () => {
       { encoding: 'utf8' },
     );
     assert.match(remote, /"Your profile"/);
-    assert.match(remote, /port 3201, private/);
+    assert.match(remote, /port 3210, private/);
     assert.match(remote, /route \/my-profile\/\*/);
     let stderr = '';
     try {
@@ -880,11 +888,11 @@ describe('generators', () => {
       stderr = /** @type {any} */ (e).stderr;
       assert.equal(/** @type {any} */ (e).status, 1);
     }
-    assert.match(stderr, /^error: The intranet shell does not exist yet/);
+    assert.match(stderr, /^error: The intranet zone has no shell yet/);
     for (const [args, message] of /** @type {[string[], RegExp][]} */ ([
       [
         ['remote', 'internet', 'x2', '--layout', 'side'],
-        /^error: --layout applies to gen:shell only/,
+        /^error: --layout and --base-path apply to gen:shell only/,
       ],
       [
         ['shell', 'intranet', '--layout', 'left'],
@@ -903,5 +911,156 @@ describe('generators', () => {
       }
     }
     assert.doesNotMatch(stderr, /at .*\.js:\d+/);
+  });
+});
+
+describe('generators: several shells in a zone', () => {
+  /** @type {string} */
+  let root;
+  before(() => {
+    root = tempWorkspace();
+  });
+
+  it('named shells under base paths; the first one becomes the default shell', async () => {
+    const citizen = await generateShell({
+      root,
+      zone: 'internet',
+      name: 'citizen',
+      basePath: '/citizen',
+      title: 'Citizen portal',
+    });
+    assert.equal(citizen.port, 3201);
+    assert.equal(citizen.federationName, 'internet_shell_citizen');
+    assert.equal(citizen.packageName, '@org/shell-citizen');
+    assert.equal(citizen.defaultShell, true);
+    const business = await generateShell({
+      root,
+      zone: 'internet',
+      name: 'business',
+      basePath: '/business/',
+      layout: 'side',
+    });
+    assert.equal(business.port, 3202);
+    assert.equal(business.basePath, '/business');
+    assert.equal(business.title, 'Business shell');
+    assert.equal(business.defaultShell, false);
+    assert.equal(
+      readJson(root, 'package.json').mfe.zones.internet.defaultShell,
+      'citizen',
+    );
+    const pkg = readJson(root, 'apps/internet/shell-business/package.json');
+    assert.equal(pkg.mfe.basePath, '/business');
+    assert.match(
+      read(root, 'apps/internet/shell-business/rspack.config.js'),
+      /basePath: mfe\.basePath/,
+    );
+    assert.match(
+      read(root, 'apps/internet/shell-business/src/app/App.tsx'),
+      /<BrowserRouter basename=\{BASE_PATH\}>/,
+    );
+    assert.match(
+      read(root, 'apps/internet/shell-business/src/main.tsx'),
+      /loadMfeManifest\(\{ url: mfeManifestUrl\(BASE_PATH\) \}\)/,
+    );
+    assert.match(
+      read(root, 'apps/internet/shell-business/README.md'),
+      /http:\/\/localhost:3200\/business\//,
+    );
+    await assert.rejects(
+      generateShell({
+        root,
+        zone: 'internet',
+        name: 'xx',
+        basePath: '/citizen/x',
+      }),
+      /overlaps the internet shell "citizen"/,
+    );
+    await assert.rejects(
+      generateShell({ root, zone: 'internet', name: 'yy', basePath: 'Bad' }),
+      /Invalid --base-path/,
+    );
+    await assert.rejects(
+      generateShell({ root, zone: 'internet', name: 'Bad_Name' }),
+      /Invalid shell name/,
+    );
+  });
+
+  it('a remote names its shell(s) when the zone has several; one remote in two shells', async () => {
+    await assert.rejects(
+      generateRemote({ root, zone: 'internet', name: 'announcements' }),
+      /has 2 shells \(business, citizen\).*--shell/,
+    );
+    await assert.rejects(
+      generateRemote({
+        root,
+        zone: 'internet',
+        name: 'announcements',
+        shells: ['nope'],
+      }),
+      /--shell nope: no such internet shell/,
+    );
+    const shared = await generateRemote({
+      root,
+      zone: 'internet',
+      name: 'announcements',
+      shells: ['citizen,business'],
+    });
+    assert.equal(shared.port, 3210);
+    assert.deepEqual(
+      shared.shells.map((s) => s.url),
+      [
+        'http://localhost:3200/citizen/announcements',
+        'http://localhost:3200/business/announcements',
+      ],
+    );
+    const own = await generateRemote({
+      root,
+      zone: 'internet',
+      name: 'licences',
+      shells: ['business'],
+      external: true,
+    });
+    const names = (/** @type {string} */ shell) =>
+      readJson(root, `apps/internet/shell-${shell}/remotes.json`).remotes.map(
+        (/** @type {any} */ r) => r.name,
+      );
+    assert.deepEqual(names('citizen'), ['announcements']);
+    assert.deepEqual(names('business'), ['announcements', 'licences']);
+    // the vendor dev config only goes to the shells that list the adapter
+    assert.ok(
+      readJson(root, 'apps/internet/shell-business/package.json').mfe
+        .devManifest.remotes[own.federationName],
+    );
+    assert.equal(
+      readJson(root, 'apps/internet/shell-citizen/package.json').mfe.devManifest
+        .remotes,
+      undefined,
+    );
+    assert.match(
+      read(root, 'apps/internet/announcements/README.md'),
+      /http:\/\/localhost:3200\/citizen\/announcements/,
+    );
+    const r = await checkApps({ root });
+    assert.deepEqual(r.errors, []);
+    assert.deepEqual(r.warnings, []);
+  });
+
+  it('CLI: gen:shell <zone> <name> --base-path, gen:remote --shell (repeated)', () => {
+    const run = (/** @type {string[]} */ args) =>
+      execFileSync(process.execPath, [BIN, ...args, '--root', root], {
+        encoding: 'utf8',
+      });
+    const out = run(['shell', 'internet', 'agency', '--base-path', '/agency']);
+    assert.match(out, /base path \/agency, port 3203/);
+    const remote = run([
+      'remote',
+      'internet',
+      'notices',
+      '--shell',
+      'citizen',
+      '--shell',
+      'agency',
+    ]);
+    assert.match(remote, /Registered with shell-citizen, shell-agency/);
   });
 });

@@ -74,7 +74,14 @@ export type BffAuthConfig = {
  * The `auth` section of mfe-manifest.json. `{ "mock": true }` selects the dev-only mock client
  * (ignored by production builds, which then disable sign-in).
  */
-export type ManifestAuthConfig = Partial<BffAuthConfig> & { mock?: boolean };
+export type ManifestAuthConfig = Partial<BffAuthConfig> & {
+  mock?: boolean;
+  /**
+   * With `mock`: the fake user the mock signs in as (default "Dev User (mock)"), e.g. a
+   * Corppass-style business user for a business shell. Development builds only.
+   */
+  mockUser?: AuthUser;
+};
 
 export type SignInOptions = {
   /**

@@ -41,8 +41,8 @@ pnpm test
 
 ## 3. Create apps
 
-Each zone (`intranet`, `internet`) has one shell and any number of remotes. Create the shell
-first:
+Each zone (`intranet`, `internet`) has one or more shells and any number of remotes. Create
+the shell first:
 
 ```sh
 pnpm gen:shell intranet                                 # --layout side: sidebar starter layout
@@ -52,7 +52,17 @@ pnpm gen:remote intranet it-helpdesk --external         # adapter for a vendor m
 pnpm install
 ```
 
-Each remote gets the next free port (shell 3100, remotes 3101, 3102, …), a route in the shell
+A zone with several shells (each under its own base path, with its own layout and sign-in):
+
+```sh
+pnpm gen:shell internet citizen --base-path /citizen                  # / redirects here
+pnpm gen:shell internet business --base-path /business --layout side
+pnpm gen:remote internet announcements --shell citizen,business       # listed by both
+pnpm gen:remote internet licences --shell business
+```
+
+Each shell gets the next free shell port (3101, 3102, …), each remote the next free remote port
+(3110, 3111, …), a route in the shell
 (`/staff-directory/*`) and an entry in the shell's dev manifest. Details:
 [adding-an-app.md](adding-an-app.md).
 
@@ -62,7 +72,9 @@ Each remote gets the next free port (shell 3100, remotes 3101, 3102, …), a rou
 pnpm dev:intranet
 ```
 
-Open http://localhost:3100. The shell loads every remote from its own dev server at runtime.
+Open http://localhost:3100: the zone's dev proxy, which serves every shell of the zone under its
+base path (a zone with shells at `/citizen` and `/business` redirects `/` to the default one).
+The shell loads every remote from its own dev server at runtime.
 "Sign in" uses the development mock (no backend needed). The remotes' demo feature loads data
 from the zone's **mock API** (`tools/mock-api`, http://localhost:3190/api, started
 automatically; its URL is `settings.apiBaseUrl` in the shell's generated `mfe-manifest.dev.json`, from
@@ -70,13 +82,14 @@ automatically; its URL is `settings.apiBaseUrl` in the shell's generated `mfe-ma
 `it-helpdesk` mounts the mock vendor module (started automatically on port 3191). Stop with
 Ctrl+C.
 
-The other zone can run at the same time (`pnpm dev:internet`: shell on 3200, mock API 3290,
-mock vendor 3291): every zone has its own port range, tools included (3190–3199 / 3290–3299).
+The other zone can run at the same time (`pnpm dev:internet`: proxy on 3200, mock API 3290,
+mock vendor 3291): every zone has its own port range (proxy x00, shells x01–x09, remotes
+x10–x89, tools x90–x99).
 
 One remote on its own (standalone mode, mock host props):
 
 ```sh
-pnpm --filter @org/intranet-staff-directory dev        # http://localhost:3101
+pnpm --filter @org/intranet-staff-directory dev        # http://localhost:3110
 ```
 
 ## 5. Test
@@ -120,16 +133,16 @@ CI runs the same gates ([devops-handoff.md](devops-handoff.md)).
 
 ## Daily commands
 
-| Command                                                                                                           | What                                                                |
-| ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| `pnpm dev:<zone>`                                                                                                 | shell + every remote of the zone                                    |
-| `pnpm --filter <package> dev`                                                                                     | one app (`pnpm -s apps` lists package names)                        |
-| `pnpm gen:shell <zone> [--layout top\|side]` / `pnpm gen:remote <zone> <name> [--private] [--state] [--external]` | new apps (`--layout`: which starter layout the shell copies)        |
-| `pnpm --filter <package> add <dep>`                                                                               | add a dependency ([adding-dependencies.md](adding-dependencies.md)) |
-| `pnpm lint` / `typecheck` / `test` / `build`                                                                      | all projects (Nx, cached)                                           |
-| `pnpm e2e` / `pnpm e2e:<zone>`                                                                                    | zone e2e suites                                                     |
-| `pnpm -s apps [--zone=<zone>] [--affected --base=<sha>] [--json]`                                                 | list apps (CI matrix)                                               |
-| `pnpm format`                                                                                                     | Prettier                                                            |
+| Command                                                                                                                                                   | What                                                                                                  |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `pnpm dev:<zone>`                                                                                                                                         | every shell + remote of the zone, dev proxy on 3100 / 3200                                            |
+| `pnpm --filter <package> dev`                                                                                                                             | one app (`pnpm -s apps` lists package names)                                                          |
+| `pnpm gen:shell <zone> [<name>] [--base-path /x] [--layout top\|side]` / `pnpm gen:remote <zone> <name> [--shell <s>] [--private] [--state] [--external]` | new apps (`--layout`: which starter layout the shell copies; `--shell`: which shells list the remote) |
+| `pnpm --filter <package> add <dep>`                                                                                                                       | add a dependency ([adding-dependencies.md](adding-dependencies.md))                                   |
+| `pnpm lint` / `typecheck` / `test` / `build`                                                                                                              | all projects (Nx, cached)                                                                             |
+| `pnpm e2e` / `pnpm e2e:<zone>`                                                                                                                            | zone e2e suites                                                                                       |
+| `pnpm -s apps [--zone=<zone>] [--affected --base=<sha>] [--json]`                                                                                         | list apps (CI matrix)                                                                                 |
+| `pnpm format`                                                                                                                                             | Prettier                                                                                              |
 
 ## Next
 
@@ -175,5 +188,5 @@ but without the template's history; the first `git merge template/main` then nee
 | a remote shows "unavailable" in the shell                      | is its dev server running? `pnpm dev:<zone>` starts all; check the shell's `mfe-manifest.dev.json` port              |
 | changed `rspack.config.js` or a shared config, nothing happens | restart the dev server (Rspack does not reload config files)                                                         |
 | e2e: "Executable doesn't exist"                                | `pnpm --filter @org/shell-<zone> exec playwright install chromium`                                                   |
-| e2e: "Not responding after 180 s"                              | a port is taken by a stale server (`lsof -i :3101`) or a remote fails to compile (`pnpm dev:<zone>` shows why)       |
+| e2e: "Not responding after 180 s"                              | a port is taken by a stale server (`lsof -i :3110`) or a remote fails to compile (`pnpm dev:<zone>` shows why)       |
 | `pnpm check` fails                                             | every message names the fix; [guardrails.md](guardrails.md)                                                          |

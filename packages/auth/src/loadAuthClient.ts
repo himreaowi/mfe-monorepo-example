@@ -7,7 +7,7 @@ import type { AuthClient, ManifestAuthConfig } from './types';
  * | `auth`                                   | development build     | production build                  |
  * | ---------------------------------------- | --------------------- | --------------------------------- |
  * | missing                                  | `null` (disabled)     | `null` (disabled)                 |
- * | `{ "mock": true }`                       | mock client           | `null` + console error (disabled) |
+ * | `{ "mock": true, "mockUser"?: {…} }`     | mock client           | `null` + console error (disabled) |
  * | `{ sessionUrl, loginUrl, logoutUrl, … }` | BFF client            | BFF client                        |
  *
  * The mock module is imported dynamically inside a `process.env.NODE_ENV !== 'production'`
@@ -22,7 +22,9 @@ export async function loadAuthClient(
   if (config.mock) {
     if (process.env.NODE_ENV !== 'production') {
       const { createMockAuthClient } = await import('./mock');
-      return createMockAuthClient();
+      return createMockAuthClient(
+        config.mockUser ? { user: config.mockUser } : {},
+      );
     }
     console.error(
       '[auth] mfe-manifest.json has "auth": { "mock": true }, which production builds ignore. Sign-in is disabled; configure the BFF URLs (docs/auth-contract.md).',

@@ -73,6 +73,14 @@ export interface DevCspOptions {
 }
 
 export interface ShellOptions extends BaseOptions {
+  /**
+   * Where the shell is served: `/` (default) or a path like `/citizen` (package.json
+   * `mfe.basePath`). Sets `output.publicPath` and the index.html URLs (`/citizen/`), the web
+   * manifest link, `__MFE_BASE_PATH__` (router basename, manifest URL, service worker scope)
+   * and, in dev, the URLs the dev server answers (assets, `/citizen/mfe-manifest.json`, history
+   * fallback to `/citizen/index.html`, HMR socket `/citizen/ws`; `/` redirects to `/citizen/`).
+   */
+  basePath?: string;
   /** File served as /mfe-manifest.json by the dev server. Default `mfe-manifest.dev.json`; false = none. */
   devManifest?: string | false;
   /** Shells normally expose nothing. */
@@ -100,6 +108,10 @@ export declare function getLocalIdent(
   options: Record<string, unknown>,
 ): string;
 /** The dev servers' Content-Security-Policy value (see `BaseOptions.devCsp`). */
+/** `/`, or the path without trailing slash (`/citizen/` → `/citizen`). Throws on a malformed path. */
+export declare function normalizeShellBasePath(
+  basePath: string | undefined,
+): string;
 export declare function devContentSecurityPolicy(
   options?: DevCspOptions,
 ): string;
@@ -114,6 +126,7 @@ export declare function createBaseConfig(
     kind: 'shell' | 'remote';
     exposes?: Record<string, string>;
     devManifest?: string | false;
+    basePath?: string;
   },
   mode: 'development' | 'production',
 ): Configuration;

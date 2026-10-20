@@ -1,12 +1,14 @@
 // @ts-check
 /**
  * Validate a per-environment mfe-manifest.json before it is deployed (CLI:
- * bin/validate-manifest.js, `pnpm -s validate-manifest <file> [--zone=<zone>]`).
+ * bin/validate-manifest.js, `pnpm -s validate-manifest <file> [--zone=<zone>] [--shell=<name>]`).
  *
  * - the schema (`@org/mf-runtime` mfe-manifest.schema.json, via the precompiled validator the
  *   shells use at runtime, so CI and the browser agree)
- * - with --zone: every remote in the zone shell's remotes.json has an entry (otherwise its route
- *   shows "unavailable"); unknown remotes are warnings
+ * - with --zone: every remote in the shell's remotes.json has an entry (otherwise its route
+ *   shows "unavailable"); unknown remotes are warnings. The shell: `--shell=<name>`
+ *   (apps/<zone>/shell-<name>), required when the zone has several shells (each has its own
+ *   manifest)
  * - production rules: no `"auth": { "mock": true }`, https entries (http only for localhost)
  */
 import fs from 'node:fs';
@@ -38,13 +40,14 @@ function isLocal(url) {
 }
 
 /**
- * @param {{ root: string, file: string, zone?: string, allowMock?: boolean }} options
+ * @param {{ root: string, file: string, zone?: string, shell?: string, allowMock?: boolean }} options
  * @returns {Promise<{ errors: ManifestIssue[], warnings: ManifestIssue[] }>}
  */
 export async function validateManifestFile({
   root,
   file,
   zone,
+  shell,
   allowMock = false,
 }) {
   /** @type {ManifestIssue[]} */
@@ -95,12 +98,28 @@ export async function validateManifestFile({
     }
   }
 
-  if (zone) {
+  /** the zone's shell folders (shell-<name>) */
+  const zoneDir = path.join(root, 'apps', zone ?? '');
+  const shells =
+    zone && fs.existsSync(zoneDir)
+      ? fs
+          .readdirSync(zoneDir)
+          .filter((d) => d.startsWith('shell-'))
+          .map((d) => d.slice('shell-'.length))
+          .sort()
+      : [];
+  const shellName = shell ?? (shells.length === 1 ? shells[0] : zone);
+  if (zone && !shell && shells.length > 1) {
+    errors.push({
+      rule: 'zone',
+      message: `The ${zone} zone has ${shells.length} shells (${shells.join(', ')}), each with its own manifest: pass --shell=<name>.`,
+    });
+  } else if (zone) {
     const registryFile = path.join(
       root,
       'apps',
       zone,
-      `shell-${zone}`,
+      `shell-${shellName}`,
       'remotes.json',
     );
     if (!fs.existsSync(registryFile)) {
@@ -120,7 +139,7 @@ export async function validateManifestFile({
         if (!listed.has(name)) {
           errors.push({
             rule: 'remote-missing',
-            message: `remotes.${name} is missing: the ${zone} shell has a route for it (remotes.json), which would show "unavailable".`,
+            message: `remotes.${name} is missing: shell-${shellName} has a route for it (remotes.json), which would show "unavailable".`,
           });
         }
       }
@@ -128,7 +147,7 @@ export async function validateManifestFile({
         if (!registered.has(name)) {
           warnings.push({
             rule: 'remote-unknown',
-            message: `remotes.${name} is not in apps/${zone}/shell-${zone}/remotes.json: no route uses it.`,
+            message: `remotes.${name} is not in apps/${zone}/shell-${shellName}/remotes.json: no route uses it.`,
           });
         }
       }

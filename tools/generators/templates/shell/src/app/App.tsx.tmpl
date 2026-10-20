@@ -2,6 +2,7 @@ import { BrowserRouter, useRoutes } from 'react-router';
 import { AuthProvider, type AuthClient } from '@org/auth';
 import { MfeManifestProvider, type MfeManifest } from '@org/mf-runtime';
 import { ThemeProvider } from '@org/ui';
+import { BASE_PATH } from '@/core/constants/app';
 import { remotes } from './registry';
 import { createRoutes } from './routes';
 
@@ -30,7 +31,8 @@ export function App({ manifest, authClient }: AppProps) {
         csrfHeaderName={manifest.auth?.csrfHeaderName}
       >
         <MfeManifestProvider manifest={manifest}>
-          <BrowserRouter>
+          {/* below a base path (/citizen) every route and link is relative to it */}
+          <BrowserRouter basename={BASE_PATH}>
             <AppRoutes />
           </BrowserRouter>
         </MfeManifestProvider>

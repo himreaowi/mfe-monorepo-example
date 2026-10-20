@@ -4,14 +4,15 @@
 "use strict";
 export const validate = validate10;
 export default validate10;
-const schema11 = {"$schema":"http://json-schema.org/draft-07/schema#","$id":"https://schemas.org.example/mfe-manifest.schema.json","title":"MFE runtime manifest","description":"Served by each shell at /mfe-manifest.json and written per environment by DevOps. Lists the remotes the shell may load and runtime settings. One build runs in every environment.","type":"object","required":["remotes"],"additionalProperties":false,"properties":{"$schema":{"type":"string"},"remotes":{"description":"Remotes by Module Federation name (the remote's `name` in its rspack config).","type":"object","propertyNames":{"pattern":"^[A-Za-z_][A-Za-z0-9_]*$"},"additionalProperties":{"$ref":"#/definitions/remote"}},"auth":{"description":"Auth settings for the shell (@org/auth, backend session / BFF pattern, docs/auth-contract.md). Either the BFF endpoints, or { \"mock\": true } for local development (ignored by production builds). Omit to disable sign-in (private routes then stay closed).","type":"object","additionalProperties":false,"properties":{"mock":{"description":"Development builds only: use the in-browser mock auth client instead of a BFF.","type":"boolean"},"sessionUrl":{"description":"GET: 200 { user, csrfToken?, expiresAt? } when signed in, 401 when not. Called with credentials: 'include'.","$ref":"#/definitions/url"},"loginUrl":{"description":"Browser navigation target that starts sign-in (Singpass / SSO, backend-owned). Gets ?returnTo=<absolute URL>.","$ref":"#/definitions/url"},"logoutUrl":{"description":"POST with the CSRF header: ends the session. 204, or 200 { redirectUrl? }.","$ref":"#/definitions/url"},"csrfHeaderName":{"description":"Header carrying the session's csrfToken on state-changing requests. Default X-CSRF-Token.","type":"string","pattern":"^[A-Za-z0-9-]+$"},"returnToParam":{"description":"Query parameter for the return URL on loginUrl. Default returnTo.","type":"string","pattern":"^[A-Za-z0-9_.-]+$"},"timeoutMs":{"description":"Session request timeout. Default 10000.","type":"integer","minimum":1000,"maximum":60000}},"if":{"properties":{"mock":{"const":true}},"required":["mock"]},"then":{},"else":{"properties":{"sessionUrl":{},"loginUrl":{},"logoutUrl":{}},"required":["sessionUrl","loginUrl","logoutUrl"]}},"settings":{"description":"Free-form runtime settings (e.g. apiBaseUrl). Passed to every remote as host prop `settings`.","type":"object"}},"definitions":{"remote":{"type":"object","required":["entry"],"additionalProperties":false,"properties":{"entry":{"description":"URL of the remote's mf-manifest.json (preferred) or remoteEntry.js. Absolute http(s) URL or a root-relative path.","type":"string","pattern":"^(https?://[^\\s/]+)?/[^\\s]*\\.(json|js)(\\?[^\\s]*)?$"},"props":{"description":"Extra props passed to the remote's exposed component.","type":"object"}}},"url":{"description":"Absolute http(s) URL or root-relative path.","type":"string","pattern":"^(https?://[^\\s/]+)?/[^\\s]*$"}}};
+const schema11 = {"$schema":"http://json-schema.org/draft-07/schema#","$id":"https://schemas.org.example/mfe-manifest.schema.json","title":"MFE runtime manifest","description":"Served by each shell at /mfe-manifest.json and written per environment by DevOps. Lists the remotes the shell may load and runtime settings. One build runs in every environment.","type":"object","required":["remotes"],"additionalProperties":false,"properties":{"$schema":{"type":"string"},"remotes":{"description":"Remotes by Module Federation name (the remote's `name` in its rspack config).","type":"object","propertyNames":{"pattern":"^[A-Za-z_][A-Za-z0-9_]*$"},"additionalProperties":{"$ref":"#/definitions/remote"}},"auth":{"description":"Auth settings for the shell (@org/auth, backend session / BFF pattern, docs/auth-contract.md). Either the BFF endpoints, or { \"mock\": true } for local development (ignored by production builds). Omit to disable sign-in (private routes then stay closed).","type":"object","additionalProperties":false,"properties":{"mock":{"description":"Development builds only: use the in-browser mock auth client instead of a BFF.","type":"boolean"},"mockUser":{"description":"With mock: the fake user the dev mock signs in as (default \"Dev User (mock)\"), e.g. a Corppass-style business user for a business shell. Development builds only.","type":"object","additionalProperties":false,"required":["id"],"properties":{"id":{"type":"string","pattern":"\\S"},"name":{"type":"string"},"roles":{"type":"array","items":{"type":"string"}}}},"sessionUrl":{"description":"GET: 200 { user, csrfToken?, expiresAt? } when signed in, 401 when not. Called with credentials: 'include'.","$ref":"#/definitions/url"},"loginUrl":{"description":"Browser navigation target that starts sign-in (Singpass / SSO, backend-owned). Gets ?returnTo=<absolute URL>.","$ref":"#/definitions/url"},"logoutUrl":{"description":"POST with the CSRF header: ends the session. 204, or 200 { redirectUrl? }.","$ref":"#/definitions/url"},"csrfHeaderName":{"description":"Header carrying the session's csrfToken on state-changing requests. Default X-CSRF-Token.","type":"string","pattern":"^[A-Za-z0-9-]+$"},"returnToParam":{"description":"Query parameter for the return URL on loginUrl. Default returnTo.","type":"string","pattern":"^[A-Za-z0-9_.-]+$"},"timeoutMs":{"description":"Session request timeout. Default 10000.","type":"integer","minimum":1000,"maximum":60000}},"if":{"properties":{"mock":{"const":true}},"required":["mock"]},"then":{},"else":{"properties":{"sessionUrl":{},"loginUrl":{},"logoutUrl":{}},"required":["sessionUrl","loginUrl","logoutUrl"]}},"settings":{"description":"Free-form runtime settings (e.g. apiBaseUrl). Passed to every remote as host prop `settings`.","type":"object"}},"definitions":{"remote":{"type":"object","required":["entry"],"additionalProperties":false,"properties":{"entry":{"description":"URL of the remote's mf-manifest.json (preferred) or remoteEntry.js. Absolute http(s) URL or a root-relative path.","type":"string","pattern":"^(https?://[^\\s/]+)?/[^\\s]*\\.(json|js)(\\?[^\\s]*)?$"},"props":{"description":"Extra props passed to the remote's exposed component.","type":"object"}}},"url":{"description":"Absolute http(s) URL or root-relative path.","type":"string","pattern":"^(https?://[^\\s/]+)?/[^\\s]*$"}}};
 const schema12 = {"type":"object","required":["entry"],"additionalProperties":false,"properties":{"entry":{"description":"URL of the remote's mf-manifest.json (preferred) or remoteEntry.js. Absolute http(s) URL or a root-relative path.","type":"string","pattern":"^(https?://[^\\s/]+)?/[^\\s]*\\.(json|js)(\\?[^\\s]*)?$"},"props":{"description":"Extra props passed to the remote's exposed component.","type":"object"}}};
 const schema13 = {"description":"Absolute http(s) URL or root-relative path.","type":"string","pattern":"^(https?://[^\\s/]+)?/[^\\s]*$"};
 const pattern0 = new RegExp("^[A-Za-z_][A-Za-z0-9_]*$", "u");
 const pattern1 = new RegExp("^(https?://[^\\s/]+)?/[^\\s]*\\.(json|js)(\\?[^\\s]*)?$", "u");
-const pattern2 = new RegExp("^(https?://[^\\s/]+)?/[^\\s]*$", "u");
-const pattern5 = new RegExp("^[A-Za-z0-9-]+$", "u");
-const pattern6 = new RegExp("^[A-Za-z0-9_.-]+$", "u");
+const pattern2 = new RegExp("\\S", "u");
+const pattern3 = new RegExp("^(https?://[^\\s/]+)?/[^\\s]*$", "u");
+const pattern6 = new RegExp("^[A-Za-z0-9-]+$", "u");
+const pattern7 = new RegExp("^[A-Za-z0-9_.-]+$", "u");
 
 function validate10(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
 /*# sourceURL="https://schemas.org.example/mfe-manifest.schema.json" */;
@@ -259,7 +260,7 @@ errors++;
 }
 if(data5 && typeof data5 == "object" && !Array.isArray(data5)){
 for(const key4 in data5){
-if(!(((((((key4 === "mock") || (key4 === "sessionUrl")) || (key4 === "loginUrl")) || (key4 === "logoutUrl")) || (key4 === "csrfHeaderName")) || (key4 === "returnToParam")) || (key4 === "timeoutMs"))){
+if(!((((((((key4 === "mock") || (key4 === "mockUser")) || (key4 === "sessionUrl")) || (key4 === "loginUrl")) || (key4 === "logoutUrl")) || (key4 === "csrfHeaderName")) || (key4 === "returnToParam")) || (key4 === "timeoutMs"))){
 const err18 = {instancePath:instancePath+"/auth",schemaPath:"#/properties/auth/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key4},message:"must NOT have additional properties"};
 if(vErrors === null){
 vErrors = [err18];
@@ -282,11 +283,11 @@ vErrors.push(err19);
 errors++;
 }
 }
-if(data5.sessionUrl !== undefined){
-let data8 = data5.sessionUrl;
-if(typeof data8 === "string"){
-if(!pattern2.test(data8)){
-const err20 = {instancePath:instancePath+"/auth/sessionUrl",schemaPath:"#/definitions/url/pattern",keyword:"pattern",params:{pattern: "^(https?://[^\\s/]+)?/[^\\s]*$"},message:"must match pattern \""+"^(https?://[^\\s/]+)?/[^\\s]*$"+"\""};
+if(data5.mockUser !== undefined){
+let data8 = data5.mockUser;
+if(data8 && typeof data8 == "object" && !Array.isArray(data8)){
+if(data8.id === undefined){
+const err20 = {instancePath:instancePath+"/auth/mockUser",schemaPath:"#/properties/auth/properties/mockUser/required",keyword:"required",params:{missingProperty: "id"},message:"must have required property '"+"id"+"'"};
 if(vErrors === null){
 vErrors = [err20];
 }
@@ -295,9 +296,9 @@ vErrors.push(err20);
 }
 errors++;
 }
-}
-else {
-const err21 = {instancePath:instancePath+"/auth/sessionUrl",schemaPath:"#/definitions/url/type",keyword:"type",params:{type: "string"},message:"must be string"};
+for(const key5 in data8){
+if(!(((key5 === "id") || (key5 === "name")) || (key5 === "roles"))){
+const err21 = {instancePath:instancePath+"/auth/mockUser",schemaPath:"#/properties/auth/properties/mockUser/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key5},message:"must NOT have additional properties"};
 if(vErrors === null){
 vErrors = [err21];
 }
@@ -307,11 +308,11 @@ vErrors.push(err21);
 errors++;
 }
 }
-if(data5.loginUrl !== undefined){
-let data9 = data5.loginUrl;
+if(data8.id !== undefined){
+let data9 = data8.id;
 if(typeof data9 === "string"){
 if(!pattern2.test(data9)){
-const err22 = {instancePath:instancePath+"/auth/loginUrl",schemaPath:"#/definitions/url/pattern",keyword:"pattern",params:{pattern: "^(https?://[^\\s/]+)?/[^\\s]*$"},message:"must match pattern \""+"^(https?://[^\\s/]+)?/[^\\s]*$"+"\""};
+const err22 = {instancePath:instancePath+"/auth/mockUser/id",schemaPath:"#/properties/auth/properties/mockUser/properties/id/pattern",keyword:"pattern",params:{pattern: "\\S"},message:"must match pattern \""+"\\S"+"\""};
 if(vErrors === null){
 vErrors = [err22];
 }
@@ -322,7 +323,7 @@ errors++;
 }
 }
 else {
-const err23 = {instancePath:instancePath+"/auth/loginUrl",schemaPath:"#/definitions/url/type",keyword:"type",params:{type: "string"},message:"must be string"};
+const err23 = {instancePath:instancePath+"/auth/mockUser/id",schemaPath:"#/properties/auth/properties/mockUser/properties/id/type",keyword:"type",params:{type: "string"},message:"must be string"};
 if(vErrors === null){
 vErrors = [err23];
 }
@@ -332,11 +333,9 @@ vErrors.push(err23);
 errors++;
 }
 }
-if(data5.logoutUrl !== undefined){
-let data10 = data5.logoutUrl;
-if(typeof data10 === "string"){
-if(!pattern2.test(data10)){
-const err24 = {instancePath:instancePath+"/auth/logoutUrl",schemaPath:"#/definitions/url/pattern",keyword:"pattern",params:{pattern: "^(https?://[^\\s/]+)?/[^\\s]*$"},message:"must match pattern \""+"^(https?://[^\\s/]+)?/[^\\s]*$"+"\""};
+if(data8.name !== undefined){
+if(typeof data8.name !== "string"){
+const err24 = {instancePath:instancePath+"/auth/mockUser/name",schemaPath:"#/properties/auth/properties/mockUser/properties/name/type",keyword:"type",params:{type: "string"},message:"must be string"};
 if(vErrors === null){
 vErrors = [err24];
 }
@@ -346,8 +345,13 @@ vErrors.push(err24);
 errors++;
 }
 }
-else {
-const err25 = {instancePath:instancePath+"/auth/logoutUrl",schemaPath:"#/definitions/url/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(data8.roles !== undefined){
+let data11 = data8.roles;
+if(Array.isArray(data11)){
+const len0 = data11.length;
+for(let i0=0; i0<len0; i0++){
+if(typeof data11[i0] !== "string"){
+const err25 = {instancePath:instancePath+"/auth/mockUser/roles/" + i0,schemaPath:"#/properties/auth/properties/mockUser/properties/roles/items/type",keyword:"type",params:{type: "string"},message:"must be string"};
 if(vErrors === null){
 vErrors = [err25];
 }
@@ -357,11 +361,9 @@ vErrors.push(err25);
 errors++;
 }
 }
-if(data5.csrfHeaderName !== undefined){
-let data11 = data5.csrfHeaderName;
-if(typeof data11 === "string"){
-if(!pattern5.test(data11)){
-const err26 = {instancePath:instancePath+"/auth/csrfHeaderName",schemaPath:"#/properties/auth/properties/csrfHeaderName/pattern",keyword:"pattern",params:{pattern: "^[A-Za-z0-9-]+$"},message:"must match pattern \""+"^[A-Za-z0-9-]+$"+"\""};
+}
+else {
+const err26 = {instancePath:instancePath+"/auth/mockUser/roles",schemaPath:"#/properties/auth/properties/mockUser/properties/roles/type",keyword:"type",params:{type: "array"},message:"must be array"};
 if(vErrors === null){
 vErrors = [err26];
 }
@@ -371,8 +373,9 @@ vErrors.push(err26);
 errors++;
 }
 }
+}
 else {
-const err27 = {instancePath:instancePath+"/auth/csrfHeaderName",schemaPath:"#/properties/auth/properties/csrfHeaderName/type",keyword:"type",params:{type: "string"},message:"must be string"};
+const err27 = {instancePath:instancePath+"/auth/mockUser",schemaPath:"#/properties/auth/properties/mockUser/type",keyword:"type",params:{type: "object"},message:"must be object"};
 if(vErrors === null){
 vErrors = [err27];
 }
@@ -382,11 +385,11 @@ vErrors.push(err27);
 errors++;
 }
 }
-if(data5.returnToParam !== undefined){
-let data12 = data5.returnToParam;
-if(typeof data12 === "string"){
-if(!pattern6.test(data12)){
-const err28 = {instancePath:instancePath+"/auth/returnToParam",schemaPath:"#/properties/auth/properties/returnToParam/pattern",keyword:"pattern",params:{pattern: "^[A-Za-z0-9_.-]+$"},message:"must match pattern \""+"^[A-Za-z0-9_.-]+$"+"\""};
+if(data5.sessionUrl !== undefined){
+let data13 = data5.sessionUrl;
+if(typeof data13 === "string"){
+if(!pattern3.test(data13)){
+const err28 = {instancePath:instancePath+"/auth/sessionUrl",schemaPath:"#/definitions/url/pattern",keyword:"pattern",params:{pattern: "^(https?://[^\\s/]+)?/[^\\s]*$"},message:"must match pattern \""+"^(https?://[^\\s/]+)?/[^\\s]*$"+"\""};
 if(vErrors === null){
 vErrors = [err28];
 }
@@ -397,7 +400,7 @@ errors++;
 }
 }
 else {
-const err29 = {instancePath:instancePath+"/auth/returnToParam",schemaPath:"#/properties/auth/properties/returnToParam/type",keyword:"type",params:{type: "string"},message:"must be string"};
+const err29 = {instancePath:instancePath+"/auth/sessionUrl",schemaPath:"#/definitions/url/type",keyword:"type",params:{type: "string"},message:"must be string"};
 if(vErrors === null){
 vErrors = [err29];
 }
@@ -407,10 +410,11 @@ vErrors.push(err29);
 errors++;
 }
 }
-if(data5.timeoutMs !== undefined){
-let data13 = data5.timeoutMs;
-if(!(((typeof data13 == "number") && (!(data13 % 1) && !isNaN(data13))) && (isFinite(data13)))){
-const err30 = {instancePath:instancePath+"/auth/timeoutMs",schemaPath:"#/properties/auth/properties/timeoutMs/type",keyword:"type",params:{type: "integer"},message:"must be integer"};
+if(data5.loginUrl !== undefined){
+let data14 = data5.loginUrl;
+if(typeof data14 === "string"){
+if(!pattern3.test(data14)){
+const err30 = {instancePath:instancePath+"/auth/loginUrl",schemaPath:"#/definitions/url/pattern",keyword:"pattern",params:{pattern: "^(https?://[^\\s/]+)?/[^\\s]*$"},message:"must match pattern \""+"^(https?://[^\\s/]+)?/[^\\s]*$"+"\""};
 if(vErrors === null){
 vErrors = [err30];
 }
@@ -419,9 +423,9 @@ vErrors.push(err30);
 }
 errors++;
 }
-if((typeof data13 == "number") && (isFinite(data13))){
-if(data13 > 60000 || isNaN(data13)){
-const err31 = {instancePath:instancePath+"/auth/timeoutMs",schemaPath:"#/properties/auth/properties/timeoutMs/maximum",keyword:"maximum",params:{comparison: "<=", limit: 60000},message:"must be <= 60000"};
+}
+else {
+const err31 = {instancePath:instancePath+"/auth/loginUrl",schemaPath:"#/definitions/url/type",keyword:"type",params:{type: "string"},message:"must be string"};
 if(vErrors === null){
 vErrors = [err31];
 }
@@ -430,8 +434,12 @@ vErrors.push(err31);
 }
 errors++;
 }
-if(data13 < 1000 || isNaN(data13)){
-const err32 = {instancePath:instancePath+"/auth/timeoutMs",schemaPath:"#/properties/auth/properties/timeoutMs/minimum",keyword:"minimum",params:{comparison: ">=", limit: 1000},message:"must be >= 1000"};
+}
+if(data5.logoutUrl !== undefined){
+let data15 = data5.logoutUrl;
+if(typeof data15 === "string"){
+if(!pattern3.test(data15)){
+const err32 = {instancePath:instancePath+"/auth/logoutUrl",schemaPath:"#/definitions/url/pattern",keyword:"pattern",params:{pattern: "^(https?://[^\\s/]+)?/[^\\s]*$"},message:"must match pattern \""+"^(https?://[^\\s/]+)?/[^\\s]*$"+"\""};
 if(vErrors === null){
 vErrors = [err32];
 }
@@ -441,10 +449,8 @@ vErrors.push(err32);
 errors++;
 }
 }
-}
-}
 else {
-const err33 = {instancePath:instancePath+"/auth",schemaPath:"#/properties/auth/type",keyword:"type",params:{type: "object"},message:"must be object"};
+const err33 = {instancePath:instancePath+"/auth/logoutUrl",schemaPath:"#/definitions/url/type",keyword:"type",params:{type: "string"},message:"must be string"};
 if(vErrors === null){
 vErrors = [err33];
 }
@@ -454,10 +460,11 @@ vErrors.push(err33);
 errors++;
 }
 }
-if(data.settings !== undefined){
-let data14 = data.settings;
-if(!(data14 && typeof data14 == "object" && !Array.isArray(data14))){
-const err34 = {instancePath:instancePath+"/settings",schemaPath:"#/properties/settings/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(data5.csrfHeaderName !== undefined){
+let data16 = data5.csrfHeaderName;
+if(typeof data16 === "string"){
+if(!pattern6.test(data16)){
+const err34 = {instancePath:instancePath+"/auth/csrfHeaderName",schemaPath:"#/properties/auth/properties/csrfHeaderName/pattern",keyword:"pattern",params:{pattern: "^[A-Za-z0-9-]+$"},message:"must match pattern \""+"^[A-Za-z0-9-]+$"+"\""};
 if(vErrors === null){
 vErrors = [err34];
 }
@@ -467,14 +474,110 @@ vErrors.push(err34);
 errors++;
 }
 }
-}
 else {
-const err35 = {instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"};
+const err35 = {instancePath:instancePath+"/auth/csrfHeaderName",schemaPath:"#/properties/auth/properties/csrfHeaderName/type",keyword:"type",params:{type: "string"},message:"must be string"};
 if(vErrors === null){
 vErrors = [err35];
 }
 else {
 vErrors.push(err35);
+}
+errors++;
+}
+}
+if(data5.returnToParam !== undefined){
+let data17 = data5.returnToParam;
+if(typeof data17 === "string"){
+if(!pattern7.test(data17)){
+const err36 = {instancePath:instancePath+"/auth/returnToParam",schemaPath:"#/properties/auth/properties/returnToParam/pattern",keyword:"pattern",params:{pattern: "^[A-Za-z0-9_.-]+$"},message:"must match pattern \""+"^[A-Za-z0-9_.-]+$"+"\""};
+if(vErrors === null){
+vErrors = [err36];
+}
+else {
+vErrors.push(err36);
+}
+errors++;
+}
+}
+else {
+const err37 = {instancePath:instancePath+"/auth/returnToParam",schemaPath:"#/properties/auth/properties/returnToParam/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err37];
+}
+else {
+vErrors.push(err37);
+}
+errors++;
+}
+}
+if(data5.timeoutMs !== undefined){
+let data18 = data5.timeoutMs;
+if(!(((typeof data18 == "number") && (!(data18 % 1) && !isNaN(data18))) && (isFinite(data18)))){
+const err38 = {instancePath:instancePath+"/auth/timeoutMs",schemaPath:"#/properties/auth/properties/timeoutMs/type",keyword:"type",params:{type: "integer"},message:"must be integer"};
+if(vErrors === null){
+vErrors = [err38];
+}
+else {
+vErrors.push(err38);
+}
+errors++;
+}
+if((typeof data18 == "number") && (isFinite(data18))){
+if(data18 > 60000 || isNaN(data18)){
+const err39 = {instancePath:instancePath+"/auth/timeoutMs",schemaPath:"#/properties/auth/properties/timeoutMs/maximum",keyword:"maximum",params:{comparison: "<=", limit: 60000},message:"must be <= 60000"};
+if(vErrors === null){
+vErrors = [err39];
+}
+else {
+vErrors.push(err39);
+}
+errors++;
+}
+if(data18 < 1000 || isNaN(data18)){
+const err40 = {instancePath:instancePath+"/auth/timeoutMs",schemaPath:"#/properties/auth/properties/timeoutMs/minimum",keyword:"minimum",params:{comparison: ">=", limit: 1000},message:"must be >= 1000"};
+if(vErrors === null){
+vErrors = [err40];
+}
+else {
+vErrors.push(err40);
+}
+errors++;
+}
+}
+}
+}
+else {
+const err41 = {instancePath:instancePath+"/auth",schemaPath:"#/properties/auth/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err41];
+}
+else {
+vErrors.push(err41);
+}
+errors++;
+}
+}
+if(data.settings !== undefined){
+let data19 = data.settings;
+if(!(data19 && typeof data19 == "object" && !Array.isArray(data19))){
+const err42 = {instancePath:instancePath+"/settings",schemaPath:"#/properties/settings/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err42];
+}
+else {
+vErrors.push(err42);
+}
+errors++;
+}
+}
+}
+else {
+const err43 = {instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err43];
+}
+else {
+vErrors.push(err43);
 }
 errors++;
 }

@@ -7,12 +7,19 @@
 import fs from 'node:fs';
 import path from 'node:path';
 /**
- * Tools port range of each zone. Mirrors `ZONES[zone].tools` in tools/scripts/src/zones.js
- * (packages cannot import tools; a tools/scripts test keeps the two in sync).
+ * Dev proxy port and tools port range of each zone. Mirrors `ZONES[zone].proxy` / `.tools` in
+ * tools/scripts/src/zones.js (packages cannot import tools; a tools/scripts test keeps the two
+ * in sync).
  */
+export const ZONE_PORTS = /** @type {const} */ ({
+  intranet: { proxy: 3100, tools: { first: 3190, last: 3199 } },
+  internet: { proxy: 3200, tools: { first: 3290, last: 3299 } },
+});
+
+/** Tools port range of each zone (from ZONE_PORTS). */
 export const ZONE_TOOL_RANGES = /** @type {const} */ ({
-  intranet: { first: 3190, last: 3199 },
-  internet: { first: 3290, last: 3299 },
+  intranet: ZONE_PORTS.intranet.tools,
+  internet: ZONE_PORTS.internet.tools,
 });
 
 /**
@@ -119,7 +126,7 @@ function isLocal(url) {
 }
 
 /**
- * @param {string} shellDir absolute path of apps/<zone>/shell-<zone>
+ * @param {string} shellDir absolute path of apps/<zone>/shell-<name>
  * @returns {import('./zone.d.ts').Zone}
  */
 export function loadZone(shellDir) {
@@ -137,6 +144,18 @@ export function loadZone(shellDir) {
       `@org/playwright-config: ${shellDir}/package.json has no "mfe.port".`,
     );
   }
+  const ports = Object.hasOwn(ZONE_PORTS, zone)
+    ? ZONE_PORTS[/** @type {keyof typeof ZONE_PORTS} */ (zone)]
+    : undefined;
+  if (!ports) {
+    throw new Error(
+      `@org/playwright-config: unknown zone "${zone}" (${Object.keys(ZONE_PORTS).join(', ')}).`,
+    );
+  }
+  const basePath = String(pkg.mfe?.basePath ?? '/').replace(/\/+$/, '') || '/';
+  /** `/` or `/citizen/`: the shell's home page path. */
+  const home = basePath === '/' ? '/' : `${basePath}/`;
+  const origin = `http://localhost:${ports.proxy}`;
   const registry = readJson(path.join(shellDir, 'remotes.json'));
   const manifest = readJson(path.join(shellDir, 'mfe-manifest.dev.json'));
   /** @type {import('./zone.d.ts').ZoneRemote[]} */
@@ -152,6 +171,9 @@ export function loadZone(shellDir) {
       const vendor = dev.props?.vendor;
       return {
         ...entry,
+        // URL path in the shell (below its base path): what the page shows and links to
+        path: `${home}${entry.path.replace(/^\/+/, '')}`,
+        registryPath: entry.path,
         entry: dev.entry,
         origin,
         standaloneUrl: `${origin}/`,
@@ -174,8 +196,13 @@ export function loadZone(shellDir) {
     zone,
     shellDir,
     packageName: pkg.name,
+    name: path.basename(shellDir).replace(/^shell-/, ''),
     port,
-    shellUrl: `http://localhost:${port}`,
+    proxyPort: ports.proxy,
+    origin,
+    basePath,
+    home,
+    shellUrl: `${origin}${home}`,
     authMock: manifest.auth?.mock === true,
     apiBaseUrl,
     mockApi:

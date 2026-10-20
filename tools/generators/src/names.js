@@ -126,20 +126,47 @@ export function assertTitle(title) {
 }
 
 /**
- * Names derived for the zone's shell.
+ * Validate a shell name (kebab-case: folder `shell-<name>`, package `@org/shell-<name>`).
+ * @param {unknown} name
+ * @returns {asserts name is string}
+ */
+export function assertShellName(name) {
+  if (
+    typeof name !== 'string' ||
+    !REMOTE_NAME.test(name) ||
+    name.length < 2 ||
+    name.length > 30
+  ) {
+    throw new UsageError(
+      `Invalid shell name "${String(name)}". Use kebab-case, 2 to 30 characters (e.g. citizen, business).`,
+    );
+  }
+}
+
+/**
+ * Names derived for a shell. `name` defaults to the zone (`shell-intranet`, federation name
+ * `intranet_shell`, the zone's only shell); other shells are `shell-<name>` with federation
+ * name `<zone>_shell_<name>`.
  * @param {Zone} zone
- * @param {{ title?: string }} [opts] `title`: the `--title` override (default "Intranet shell")
+ * @param {{ name?: string, title?: string }} [opts] `title`: the `--title` override (default
+ *   "<Name> shell", e.g. "Intranet shell", "Business shell")
  */
 export function shellNames(zone, opts = {}) {
+  const name = opts.name ?? zone;
+  assertShellName(name);
   return {
     zone,
-    dirName: `shell-${zone}`,
-    packageName: `${SCOPE}/shell-${zone}`,
-    federationName: `${zone}_shell`,
+    name,
+    dirName: `shell-${name}`,
+    packageName: `${SCOPE}/shell-${name}`,
+    federationName:
+      name === zone
+        ? `${zone}_shell`
+        : `${zone}_shell_${name.replaceAll('-', '_')}`,
     title:
       opts.title !== undefined
         ? assertTitle(opts.title)
-        : `${titleFromName(zone)} shell`,
+        : `${titleFromName(name)} shell`,
   };
 }
 

@@ -139,9 +139,21 @@ The Dockerfile installs only that app and its workspace dependencies
 `dist/` into `nginxinc/nginx-unprivileged` (non-root, port 8080, `/healthz`). Pin both base
 images by digest in your registry.
 
+## Several shells per zone (one domain, base paths)
+
+A zone can have several shells (e.g. the internet zone: `citizen` at `/citizen` with Singpass,
+`business` at `/business` with Corppass), each its own deployable with its own base path
+(`mfe.basePath` in its package.json, `pnpm -s apps --json` lists it), manifest, CSP variables and
+BFF. Deploy one container per shell and route the paths on the domain's reverse proxy without
+rewriting them; `/` redirects to the zone's default shell (root package.json
+`mfe.zones.<zone>.defaultShell`). Each BFF scopes its session cookie to its shell
+(`Path=/citizen`, `Path=/business`, or distinct names). Details and an nginx example:
+[deploy/README.md](../deploy/README.md#several-shells-on-one-domain).
+
 ## One build, many environments: the manifest
 
-The shell fetches `/mfe-manifest.json` at start-up. It is never built in; per environment it
+The shell fetches `mfe-manifest.json` below its base path at start-up (`/mfe-manifest.json`, or
+`/citizen/mfe-manifest.json` for a shell with `mfe.basePath` `/citizen`). It is never built in; per environment it
 lists where each remote lives, the BFF endpoints, vendor module URLs and free-form settings.
 Example: [`deploy/mfe-manifest.example.json`](../deploy/mfe-manifest.example.json); schema:
 `packages/mf-runtime/src/manifest/mfe-manifest.schema.json`; field reference:
@@ -154,7 +166,10 @@ Example: [`deploy/mfe-manifest.example.json`](../deploy/mfe-manifest.example.jso
 
   ```sh
   pnpm -s validate-manifest intranet/prod.json --zone=intranet
+  pnpm -s validate-manifest internet/citizen/prod.json --zone=internet --shell=citizen
   ```
+
+  (`--shell=<name>` is required when the zone has several shells: each has its own manifest.)
 
   Fails on schema errors, on a remote the shell routes to but the manifest lacks, on
   `"auth": { "mock": true }` and on `http://` entries; warns on unknown remotes.

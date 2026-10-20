@@ -3,15 +3,31 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 /**
- * Zones and their dev-port ranges (single source for generators, checks, tools and e2e).
- * Apps: the shell takes the first port of its zone, remotes get the next free ones up to `last`.
- * `tools`: reserved for the zone's dev-only tool servers (mock API, mock vendor, …), so
- * `pnpm dev:intranet` and `pnpm dev:internet` can run at the same time. Which tool takes which
- * port of that range is declared in the root package.json (`mfe.tools`), not here.
+ * Zones and their dev-port plan (single source for generators, checks, the dev proxy, tools and
+ * e2e). Each zone owns a block of 100 ports:
+ * - `proxy` (x00): the zone's local dev proxy (`pnpm dev:<zone>`, src/zone-proxy.js). It routes
+ *   each shell's base path (`mfe.basePath`, `/` by default) to that shell's dev server, so every
+ *   shell of the zone is reached on one origin, like behind the production reverse proxy;
+ * - `shells` (x01-x09): one dev server per shell (a zone can have several shells, each with its
+ *   own base path, layout, sign-in config, manifest and remotes);
+ * - `remotes` (x10-x89): one dev server per remote (shells load them cross-origin);
+ * - `tools` (x90-x99): the zone's dev-only tool servers (mock API, mock vendor, …), so
+ *   `pnpm dev:intranet` and `pnpm dev:internet` can run at the same time. Which tool takes which
+ *   port of that range is declared in the root package.json (`mfe.tools`), not here.
  */
 export const ZONES = /** @type {const} */ ({
-  intranet: { first: 3100, last: 3189, tools: { first: 3190, last: 3199 } },
-  internet: { first: 3200, last: 3289, tools: { first: 3290, last: 3299 } },
+  intranet: {
+    proxy: 3100,
+    shells: { first: 3101, last: 3109 },
+    remotes: { first: 3110, last: 3189 },
+    tools: { first: 3190, last: 3199 },
+  },
+  internet: {
+    proxy: 3200,
+    shells: { first: 3201, last: 3209 },
+    remotes: { first: 3210, last: 3289 },
+    tools: { first: 3290, last: 3299 },
+  },
 });
 
 /** @typedef {keyof typeof ZONES} Zone */
@@ -117,3 +133,55 @@ export const APP_TAGS = /** @type {const} */ ({
 
 /** Federation names are JS identifiers. */
 export const FEDERATION_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
+
+/** Shell folders are `shell-<name>`; `<name>` (kebab-case) is the shell's name. */
+export const SHELL_DIR_PREFIX = 'shell-';
+
+/**
+ * A shell's base path: `/` or `/segment[/segment…]` (lowercase letters, digits, `-`), no
+ * trailing slash.
+ */
+export const BASE_PATH =
+  /^\/(?:[a-z0-9]+(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*)?$/;
+
+/**
+ * A shell's base path from its package.json `mfe.basePath` (default `/`), trailing slashes
+ * removed. Not validated (pnpm check does that, BASE_PATH).
+ * @param {unknown} value
+ * @returns {string}
+ */
+export function shellBasePath(value) {
+  if (value === undefined || value === null || value === '') return '/';
+  const text = String(value).replace(/\/+$/, '');
+  return text === '' ? '/' : text;
+}
+
+/**
+ * Do two base paths overlap (equal, or one inside the other)? `/` overlaps only `/`: the shell
+ * at `/` is the fallback for paths no other shell owns (the dev proxy and nginx pick the longest
+ * matching base path).
+ * @param {string} a
+ * @param {string} b
+ */
+export function basePathsOverlap(a, b) {
+  if (a === b) return true;
+  if (a === '/' || b === '/') return false;
+  return a.startsWith(`${b}/`) || b.startsWith(`${a}/`);
+}
+
+/**
+ * Per-zone settings in the root package.json:
+ *   "mfe": { "zones": { "<zone>": { "defaultShell": "<shell name>" } } }
+ * `defaultShell`: where the zone's `/` redirects (dev proxy, deploy example) when no shell has
+ * base path `/`. Not validated here (pnpm check does that).
+ * @param {string} [root]
+ * @returns {Record<string, { defaultShell?: unknown }>}
+ */
+export function readZoneSettings(root = WORKSPACE_ROOT) {
+  const file = path.join(root, 'package.json');
+  if (!fs.existsSync(file)) return {};
+  const zones = JSON.parse(fs.readFileSync(file, 'utf8')).mfe?.zones;
+  return typeof zones === 'object' && zones !== null && !Array.isArray(zones)
+    ? zones
+    : {};
+}

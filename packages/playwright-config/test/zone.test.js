@@ -82,7 +82,11 @@ describe('loadZone', () => {
     const { shellDir } = fixture();
     const zone = loadZone(shellDir);
     assert.equal(zone.zone, 'intranet');
-    assert.equal(zone.shellUrl, 'http://localhost:3100');
+    assert.equal(zone.shellUrl, 'http://localhost:3100/');
+    assert.equal(zone.origin, 'http://localhost:3100');
+    assert.equal(zone.home, '/');
+    assert.equal(zone.name, 'intranet');
+    assert.equal(zone.remotes[0].path, '/staff');
     assert.equal(zone.authMock, true);
     assert.equal(zone.apiBaseUrl, 'http://localhost:3190/api');
     assert.equal(zone.mockApi, true);
@@ -100,6 +104,20 @@ describe('loadZone', () => {
       'http://localhost:3191/mount.js',
       'http://localhost:3190/api/health',
     ]);
+  });
+
+  it('a shell below a base path: home, shell URL and remote paths through the dev proxy', () => {
+    const { shellDir } = fixture();
+    const pkgFile = path.join(shellDir, 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(pkgFile, 'utf8'));
+    pkg.mfe.basePath = '/staff-portal';
+    fs.writeFileSync(pkgFile, JSON.stringify(pkg));
+    const zone = loadZone(shellDir);
+    assert.equal(zone.basePath, '/staff-portal');
+    assert.equal(zone.home, '/staff-portal/');
+    assert.equal(zone.shellUrl, 'http://localhost:3100/staff-portal/');
+    assert.equal(zone.remotes[0].path, '/staff-portal/staff');
+    assert.equal(zone.remotes[0].registryPath, '/staff');
   });
 
   it('fails clearly when a registered remote has no dev manifest entry', () => {
@@ -157,7 +175,7 @@ describe('createZoneConfig', () => {
     const server = /** @type {any} */ (config.webServer);
     assert.equal(server.command, 'pnpm run dev:intranet');
     assert.equal(server.cwd, root);
-    assert.equal(server.url, 'http://localhost:3100');
+    assert.equal(server.url, 'http://localhost:3100/');
     assert.equal(server.reuseExistingServer, true);
     assert.equal(config.use?.baseURL, 'http://localhost:3100');
     assert.equal(config.retries, 0);

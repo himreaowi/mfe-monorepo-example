@@ -12,7 +12,7 @@ The __ZONE__ shell mounts it at `__ROUTE_PATH__/*` (entry in the shell's `remote
 | ---------------------------------------- | ---------------------------------------------------------------- |
 | `pnpm exec nx dev __PACKAGE_NAME__`      | Standalone on http://localhost:__PORT__ (mock host props) + the zone's mock API |
 | `pnpm --filter __PACKAGE_NAME__ dev`     | Standalone only (the demo's API calls fail without the mock API) |
-| `pnpm dev:__ZONE__` (repo root)          | Inside the shell: http://localhost:__SHELL_PORT____ROUTE_PATH__  |
+| `pnpm dev:__ZONE__` (repo root)          | Inside the shell: __SHELL_URL____ROUTE_PATH__ |
 | `pnpm --filter __PACKAGE_NAME__ build`   | Production build in `dist/` (`mf-manifest.json`, `remoteEntry.js`) |
 | `pnpm --filter __PACKAGE_NAME__ preview` | Serve `dist/` on port __PORT__ (CORS enabled)                    |
 | `lint` / `typecheck` / `test`            | ESLint, `tsc`, Jest                                              |

@@ -2,8 +2,8 @@
 /**
  * App generators.
  *
- *   pnpm gen:shell <zone> [--layout top|side] [--title "<text>"]   (--layout: starter layout to copy)
- *   pnpm gen:remote <zone> <name> [--private] [--state] [--external [--vendor-format <format>]] [--title "<text>"]
+ *   pnpm gen:shell <zone> [<name>] [--base-path /<path>] [--layout top|side] [--title "<text>"]
+ *   pnpm gen:remote <zone> <name> [--shell <shell>[,<shell>]] [--private] [--state] [--external [--vendor-format <format>]] [--title "<text>"]
  *
  * Apps live in apps/<zone>/<name>. Every app gets its own package.json (deps via `catalog:` /
  * `workspace:*`), Nx tags and a dev port from its zone's range.
@@ -11,7 +11,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { writeDevManifest } from '@org/scripts';
-import { toolPort } from '@org/scripts/zones';
+import {
+  BASE_PATH,
+  basePathsOverlap,
+  shellBasePath,
+  toolPort,
+} from '@org/scripts/zones';
 import {
   UsageError,
   ZONES,
@@ -24,9 +29,10 @@ import {
   REGISTRY_FILE,
   allocatePort,
   listAllApps,
+  listShells,
   readJson,
   readRegistry,
-  requireShellDir,
+  resolveShells,
 } from './workspace.js';
 import { renderLayers, writeFiles, writeJson } from './render.js';
 
@@ -213,9 +219,10 @@ function sorted(obj) {
  * @param {{
  *   packageName: string, description: string, tags: string[], port: number,
  *   federationName: string, extraDependencies?: Record<string, string>,
- *   nxTargets?: Record<string, unknown>, shell?: boolean,
+ *   nxTargets?: Record<string, unknown>, shell?: boolean, basePath?: string,
  *   devManifest?: Record<string, unknown>,
- * }} o `devManifest` (shells): extra content of the generated mfe-manifest.dev.json
+ * }} o `devManifest` (shells): extra content of the generated mfe-manifest.dev.json;
+ *   `basePath` (shells): where the shell is served
  */
 function appPackageJson(o) {
   const scripts = {
@@ -244,6 +251,7 @@ function appPackageJson(o) {
     mfe: {
       port: o.port,
       federationName: o.federationName,
+      ...(o.basePath ? { basePath: o.basePath } : {}),
       ...(o.devManifest ? { devManifest: o.devManifest } : {}),
     },
     dependencies: sorted({
@@ -279,17 +287,40 @@ function assertFree(root, dir, packageName) {
 }
 
 /**
- * Generate apps/<zone>/shell-<zone>.
- * @param {{ root: string, zone: string, title?: string, layout?: string }} options `layout`:
- * the starter layout copied into src/layouts/ShellLayout (`top` default, `side`)
- * @returns {Promise<{ dir: string, port: number, packageName: string, federationName: string, title: string, layout: ShellLayout }>}
+ * Generate apps/<zone>/shell-<name> (default name: the zone).
+ * @param {{ root: string, zone: string, name?: string, basePath?: string, title?: string, layout?: string }} options
+ *   `basePath`: where the shell is served (`/` default, e.g. `/citizen`; every shell of a zone
+ *   needs its own, none inside another); `layout`: the starter layout copied into
+ *   src/layouts/ShellLayout (`top` default, `side`)
+ * @returns {Promise<{ dir: string, port: number, packageName: string, federationName: string, title: string, layout: ShellLayout, basePath: string, defaultShell: boolean }>}
+ *   `defaultShell`: the root package.json now redirects the zone's `/` to this shell
  */
-export async function generateShell({ root, zone, title, layout = 'top' }) {
+export async function generateShell({
+  root,
+  zone,
+  name,
+  basePath: rawBasePath,
+  title,
+  layout = 'top',
+}) {
   assertZone(zone);
   assertShellLayout(layout);
-  const names = shellNames(zone, { title });
+  const names = shellNames(zone, { name, title });
+  const basePath = shellBasePath(rawBasePath);
+  if (!BASE_PATH.test(basePath)) {
+    throw new UsageError(
+      `Invalid --base-path "${rawBasePath}". Use "/" or a path like /citizen (lowercase letters, digits and "-" per segment).`,
+    );
+  }
   const dir = path.join(root, 'apps', zone, names.dirName);
   assertFree(root, dir, names.packageName);
+  const existing = listShells(root, zone);
+  const clash = existing.find((s) => basePathsOverlap(s.basePath, basePath));
+  if (clash) {
+    throw new UsageError(
+      `Base path ${basePath} overlaps the ${zone} shell "${clash.name}" (${clash.basePath}). Shells of a zone share one origin: pass --base-path /<another path>.`,
+    );
+  }
   const port = allocatePort(root, zone, { shell: true });
 
   const files = await renderLayers(['shell', `shell-layouts/${layout}`], dir, {
@@ -299,6 +330,10 @@ export async function generateShell({ root, zone, title, layout = 'top' }) {
     FEDERATION_NAME: names.federationName,
     PORT: port,
     DIR_NAME: names.dirName,
+    SHELL_NAME: names.name,
+    BASE_PATH: basePath,
+    SHELL_URL: shellUrl(zone, basePath),
+    BASE_PREFIX: basePath === '/' ? '' : `${basePath}/`,
     MOCK_API_URL: mockApiBaseUrl(zone, root),
     SHELL_LAYOUT: layout,
   });
@@ -307,17 +342,18 @@ export async function generateShell({ root, zone, title, layout = 'top' }) {
     path.join(dir, 'package.json'),
     appPackageJson({
       packageName: names.packageName,
-      description: `${names.title}: host app of the ${zone} zone`,
+      description: `${names.title}: host app of the ${zone} zone${basePath === '/' ? '' : ` at ${basePath}`}`,
       tags: [`zone:${zone}`, 'type:shell', 'access:public'],
       port,
       federationName: names.federationName,
+      basePath,
       extraDependencies: { '@org/pwa': 'workspace:*' },
       // `nx dev <shell>` / `pnpm dev:<zone>` also start the zone's dev-only mock API
       nxTargets: devToolTargets(zone),
       shell: true,
       // extra content of the generated mfe-manifest.dev.json (pnpm dev-manifest): dev-only mock
-      // sign-in (@org/auth) and the zone's mock API (tools/mock-api); production manifests list
-      // the BFF URLs and the real API instead
+      // sign-in (@org/auth; "mockUser" picks the fake user) and the zone's mock API
+      // (tools/mock-api); production manifests list the BFF URLs and the real API instead
       devManifest: {
         auth: { mock: true },
         settings: { apiBaseUrl: mockApiBaseUrl(zone, root) },
@@ -330,6 +366,24 @@ export async function generateShell({ root, zone, title, layout = 'top' }) {
     remotes: [],
   });
   writeDevManifest(root, dir);
+
+  // no shell at "/" in the zone: the zone's "/" (dev proxy, deploy example) redirects to the
+  // first shell below a base path, set in the root package.json (mfe.zones.<zone>.defaultShell)
+  let defaultShell = false;
+  if (basePath !== '/' && !existing.some((s) => s.basePath === '/')) {
+    const rootFile = path.join(root, 'package.json');
+    const rootPkg = readJson(rootFile);
+    if (rootPkg.mfe?.zones?.[zone]?.defaultShell === undefined) {
+      rootPkg.mfe ??= {};
+      rootPkg.mfe.zones ??= {};
+      rootPkg.mfe.zones[zone] = {
+        ...(rootPkg.mfe.zones[zone] ?? {}),
+        defaultShell: names.name,
+      };
+      await writeJson(rootFile, rootPkg);
+      defaultShell = true;
+    }
+  }
   return {
     dir,
     port,
@@ -337,24 +391,38 @@ export async function generateShell({ root, zone, title, layout = 'top' }) {
     federationName: names.federationName,
     title: names.title,
     layout,
+    basePath,
+    defaultShell,
   };
 }
 
 /**
- * Generate apps/<zone>/<name> and register it with the zone's shell.
+ * URL of a shell (through the zone's dev proxy), without trailing slash:
+ * `http://localhost:3100`, `http://localhost:3200/citizen`.
+ * @param {Zone} zone
+ * @param {string} basePath
+ */
+export function shellUrl(zone, basePath) {
+  return `http://localhost:${ZONES[zone].proxy}${basePath === '/' ? '' : basePath}`;
+}
+
+/**
+ * Generate apps/<zone>/<name> and register it with shells of its zone (`shells`: shell names;
+ * default: the zone's only shell, required when the zone has several).
  * @param {{
- *   root: string, zone: string, name: string, private?: boolean, external?: boolean,
- *   vendorFormat?: string, title?: string, state?: boolean,
+ *   root: string, zone: string, name: string, shells?: string[], private?: boolean,
+ *   external?: boolean, vendorFormat?: string, title?: string, state?: boolean,
  * }} options `vendorFormat` (only with `external`): format of the dev mock vendor config
  * (`esm` default, `web-component`, `script`); `title`: overrides the title derived from the name;
  * `state`: add the feature-state example (`features/demo/state/`: reducer + Context, used by
  * ItemPicker and SelectionSummary on the overview page; templates/remote-state)
- * @returns {Promise<{ dir: string, port: number, packageName: string, federationName: string, entry: RegistryEntry }>}
+ * @returns {Promise<{ dir: string, port: number, packageName: string, federationName: string, entry: RegistryEntry, shells: { name: string, url: string }[] }>}
  */
 export async function generateRemote({
   root,
   zone,
   name,
+  shells: shellOption = [],
   private: isPrivate = false,
   external = false,
   vendorFormat,
@@ -374,22 +442,24 @@ export async function generateRemote({
   const format = vendorFormat ?? 'esm';
   assertVendorFormat(format);
   const names = remoteNames(zone, name, { title });
-  const shellDir = requireShellDir(root, zone);
+  const shells = resolveShells(root, zone, shellOption);
   const dir = path.join(root, 'apps', zone, names.dirName);
   assertFree(root, dir, names.packageName);
 
-  const registry = readRegistry(shellDir);
-  if (
-    registry.remotes.some(
-      (r) =>
-        r.name === name ||
-        r.federationName === names.federationName ||
-        r.path === names.routePath,
-    )
-  ) {
-    throw new UsageError(
-      `${name} is already registered in apps/${zone}/${path.basename(shellDir)}/${REGISTRY_FILE}. Remove the stale entry first.`,
-    );
+  for (const shell of shells) {
+    const registry = readRegistry(shell.dir);
+    if (
+      registry.remotes.some(
+        (r) =>
+          r.name === name ||
+          r.federationName === names.federationName ||
+          r.path === names.routePath,
+      )
+    ) {
+      throw new UsageError(
+        `${name} is already registered in apps/${zone}/${path.basename(shell.dir)}/${REGISTRY_FILE}. Remove the stale entry first.`,
+      );
+    }
   }
   const port = allocatePort(root, zone);
   const access = isPrivate ? 'private' : 'public';
@@ -413,7 +483,7 @@ export async function generateRemote({
       ROUTE_PATH: names.routePath,
       PORT: port,
       ACCESS: access,
-      SHELL_PORT: ZONES[zone].first,
+      SHELL_URL: shellUrl(zone, shells[0].basePath),
       MOCK_API_URL: mockApiBaseUrl(zone, root),
       MOCK_VENDOR_PORT: toolPort(zone, 'mockVendor', root),
       MOCK_VENDOR_URL: vendor?.url ?? '',
@@ -454,23 +524,26 @@ export async function generateRemote({
     access,
     kind: external ? 'external' : 'react',
   };
-  registry.remotes.push(entry);
-  await writeJson(path.join(shellDir, REGISTRY_FILE), registry);
+  for (const shell of shells) {
+    const registry = readRegistry(shell.dir);
+    registry.remotes.push(entry);
+    await writeJson(path.join(shell.dir, REGISTRY_FILE), registry);
 
-  if (vendor) {
-    // per-environment vendor config; dev points at the zone's mock vendor (tools/mock-vendor):
-    // the shell's mfe.devManifest feeds the generated mfe-manifest.dev.json
-    const shellPkgFile = path.join(shellDir, 'package.json');
-    const shellPkg = readJson(shellPkgFile);
-    shellPkg.mfe ??= {};
-    shellPkg.mfe.devManifest ??= {};
-    shellPkg.mfe.devManifest.remotes ??= {};
-    shellPkg.mfe.devManifest.remotes[names.federationName] = {
-      props: { vendor },
-    };
-    await writeJson(shellPkgFile, shellPkg);
+    if (vendor) {
+      // per-environment vendor config; dev points at the zone's mock vendor (tools/mock-vendor):
+      // the shell's mfe.devManifest feeds the generated mfe-manifest.dev.json
+      const shellPkgFile = path.join(shell.dir, 'package.json');
+      const shellPkg = readJson(shellPkgFile);
+      shellPkg.mfe ??= {};
+      shellPkg.mfe.devManifest ??= {};
+      shellPkg.mfe.devManifest.remotes ??= {};
+      shellPkg.mfe.devManifest.remotes[names.federationName] = {
+        props: { vendor },
+      };
+      await writeJson(shellPkgFile, shellPkg);
+    }
+    writeDevManifest(root, shell.dir);
   }
-  writeDevManifest(root, shellDir);
 
   return {
     dir,
@@ -478,5 +551,9 @@ export async function generateRemote({
     packageName: names.packageName,
     federationName: names.federationName,
     entry,
+    shells: shells.map((s) => ({
+      name: s.name,
+      url: `${shellUrl(zone, s.basePath)}${names.routePath}`,
+    })),
   };
 }

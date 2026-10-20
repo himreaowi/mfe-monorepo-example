@@ -2,7 +2,7 @@
 /** Reading the workspace: existing apps, ports, the shell registry and dev manifest. */
 import fs from 'node:fs';
 import path from 'node:path';
-import { ZONES, UsageError, shellNames } from './names.js';
+import { ZONES, UsageError } from './names.js';
 
 /** @typedef {import('./names.js').Zone} Zone */
 
@@ -57,48 +57,86 @@ export function listAllApps(root) {
 }
 
 /**
- * Lowest free dev port of the zone, skipping the shell's port (the zone's first port).
+ * Lowest free dev port of the zone's shells range (x01-x09) or remotes range (x10-x89).
  * @param {string} root
  * @param {Zone} zone
  * @param {{ shell?: boolean }} [opts]
  * @returns {number}
  */
 export function allocatePort(root, zone, opts = {}) {
-  const { first, last } = ZONES[zone];
+  const { first, last } = opts.shell ? ZONES[zone].shells : ZONES[zone].remotes;
   const used = new Set(
     listAllApps(root)
       .map((a) => a.pkg?.mfe?.port)
       .filter((p) => Number.isInteger(p)),
   );
-  if (opts.shell) {
-    if (used.has(first)) {
-      throw new UsageError(
-        `Port ${first} (the ${zone} shell port) is already used by another app. Free it first.`,
-      );
-    }
-    return first;
-  }
-  for (let port = first + 1; port <= last; port += 1) {
+  for (let port = first; port <= last; port += 1) {
     if (!used.has(port)) return port;
   }
   throw new UsageError(
-    `No free dev port left in the ${zone} range ${first}-${last}.`,
+    `No free dev port left in the ${zone} ${opts.shell ? 'shells' : 'remotes'} range ${first}-${last}.`,
   );
 }
 
 /**
- * The zone's shell folder, or throw a helpful error if it was not generated yet.
+ * @typedef {{ name: string, dir: string, pkg: any, basePath: string }} ShellInfo
+ */
+
+/**
+ * The shells of a zone (apps/<zone>/shell-<name>), sorted by name.
  * @param {string} root
  * @param {Zone} zone
+ * @returns {ShellInfo[]}
  */
-export function requireShellDir(root, zone) {
-  const dir = path.join(root, 'apps', zone, shellNames(zone).dirName);
-  if (!fs.existsSync(path.join(dir, 'package.json'))) {
+export function listShells(root, zone) {
+  return listZoneApps(root, zone)
+    .filter((a) => path.basename(a.dir).startsWith('shell-'))
+    .map((a) => ({
+      name: path.basename(a.dir).slice('shell-'.length),
+      dir: a.dir,
+      pkg: a.pkg,
+      basePath: String(a.pkg?.mfe?.basePath ?? '/').replace(/\/+$/, '') || '/',
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
+ * The shells a new remote is registered with: `--shell` (names), or the zone's only shell.
+ * @param {string} root
+ * @param {Zone} zone
+ * @param {string[]} [names] `--shell` values (each may be comma-separated)
+ * @returns {ShellInfo[]}
+ */
+export function resolveShells(root, zone, names = []) {
+  const shells = listShells(root, zone);
+  if (shells.length === 0) {
     throw new UsageError(
-      `The ${zone} shell does not exist yet (expected apps/${zone}/${shellNames(zone).dirName}). Run "pnpm gen:shell ${zone}" first.`,
+      `The ${zone} zone has no shell yet. Run "pnpm gen:shell ${zone}" first.`,
     );
   }
-  return dir;
+  const wanted = [
+    ...new Set(
+      names
+        .flatMap((n) => n.split(','))
+        .map((n) => n.trim())
+        .filter(Boolean),
+    ),
+  ];
+  if (wanted.length === 0) {
+    if (shells.length === 1) return shells;
+    throw new UsageError(
+      `The ${zone} zone has ${shells.length} shells (${shells.map((s) => s.name).join(', ')}): say which shell(s) list the remote with --shell <name> (repeat it or comma-separate for several).`,
+    );
+  }
+  return wanted.map((name) => {
+    const shell = shells.find((s) => s.name === name);
+    if (!shell) {
+      throw new UsageError(
+        `--shell ${name}: no such ${zone} shell (${shells.map((s) => s.name).join(', ')}).`,
+      );
+    }
+    return shell;
+  });
 }
 
 /**

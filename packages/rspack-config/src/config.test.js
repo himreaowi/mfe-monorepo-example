@@ -147,6 +147,54 @@ describe('createShellConfig', () => {
     assert.deepEqual(mf.experiments, { asyncStartup: true });
   });
 
+  it('basePath: assets, index.html, manifest, history fallback, HMR socket below it', () => {
+    const sub = createShellConfig({
+      rootDir: fixture,
+      name: 'test_shell',
+      port: 3201,
+      basePath: '/citizen/',
+    })({ RSPACK_SERVE: true }, {});
+    const devServer = /** @type {any} */ (sub.devServer);
+    assert.equal(sub.output?.publicPath, '/citizen/');
+    assert.equal(devServer.historyApiFallback.index, '/citizen/index.html');
+    assert.equal(devServer.client.webSocketURL.pathname, '/citizen/ws');
+    assert.equal(devServer.webSocketServer.options.path, '/citizen/ws');
+    const define = pluginNamed(sub, 'DefinePlugin');
+    assert.equal(define._args[0].__MFE_BASE_PATH__, '"/citizen"');
+    const html = pluginNamed(sub, 'HtmlRspackPlugin');
+    const htmlOptions = html._args[0];
+    assert.equal(htmlOptions.publicPath, '/citizen/');
+    assert.match(
+      htmlOptions.templateParameters.manifestLink,
+      /href="\/citizen\/manifest\.webmanifest"/,
+    );
+    const middlewares = devServer.setupMiddlewares([], {});
+    assert.deepEqual(
+      middlewares.map((/** @type {any} */ m) => m.name),
+      ['mfe-base-path-redirect', 'mfe-dev-manifest'],
+    );
+    assert.equal(middlewares[1].path, '/citizen/mfe-manifest.json');
+    // the default stays at the origin root
+    assert.equal(
+      /** @type {any} */ (config.devServer).historyApiFallback.index,
+      '/index.html',
+    );
+    assert.equal(
+      /** @type {any} */ (config.devServer).webSocketServer,
+      undefined,
+    );
+    assert.throws(
+      () =>
+        createShellConfig({
+          rootDir: fixture,
+          name: 'test_shell',
+          port: 3201,
+          basePath: 'citizen',
+        })({ RSPACK_SERVE: true }, {}),
+      /Invalid basePath/,
+    );
+  });
+
   it("only injects the 'main' chunk into the HTML", () => {
     const html = pluginNamed(config, 'HtmlRspackPlugin');
     assert.deepEqual(html._args[0].chunks, ['main']);

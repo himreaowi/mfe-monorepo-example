@@ -4,7 +4,11 @@
  *
  * - every app lives at apps/<zone>/<name> and declares its Nx tags (zone, type, access) and a
  *   dev port (`mfe.port`) inside its zone's range; ports and federation names are unique
- * - at most one shell per zone, named shell-<zone>
+ * - shells live in shell-<name> folders and declare a base path (`mfe.basePath`, default `/`);
+ *   a zone can have several shells: their base paths are unique and never nest (at most one at
+ *   `/`), and a zone whose shells all sit below `/` names the shell `/` redirects to (root
+ *   package.json `mfe.zones.<zone>.defaultShell`)
+ * - ports follow the zone plan (src/zones.js): shells x01-x09, remotes x10-x89
  * - no app's package.json depends on another app (cross-zone deps reported as such)
  * - no app's source imports another app (by package name or by a relative path)
  * - each shell's remotes.json matches the remotes of its zone, and its generated
@@ -27,10 +31,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
   APP_TAGS,
+  BASE_PATH,
   FEDERATION_NAME,
+  SHELL_DIR_PREFIX,
   TOOL_NAME,
   TOOL_SLOTS,
   ZONES,
+  basePathsOverlap,
+  readZoneSettings,
+  shellBasePath,
 } from './zones.js';
 import { loadApps, loadWorkspace, readJson } from './workspace.js';
 import { devManifestStatus } from './dev-manifest.js';
@@ -59,6 +68,7 @@ const IMPORT_RE =
  *   access: string | undefined,
  *   port: unknown,
  *   federationName: unknown,
+ *   basePath: string,
  * }} AppInfo
  */
 
@@ -166,32 +176,57 @@ export async function checkApps({ root }) {
       }
     }
     const type = types[0];
-    if (type === 'shell' && dirName !== `shell-${zone}`) {
+    if (type === 'shell' && !dirName.startsWith(SHELL_DIR_PREFIX)) {
       err(
         'app-shell',
-        `${where}: a shell must be apps/${zone}/shell-${zone} (found apps/${zone}/${dirName}).`,
+        `${where}: a shell lives in apps/${zone}/shell-<name> (found apps/${zone}/${dirName}); pnpm gen:shell ${zone} <name> creates one.`,
       );
     }
-    if (type === 'remote' && dirName.startsWith('shell-')) {
+    if (type === 'remote' && dirName.startsWith(SHELL_DIR_PREFIX)) {
       err('app-shell', `${where}: "shell-*" folders are reserved for shells.`);
+    }
+    const rawBasePath = app.pkg.mfe?.basePath;
+    if (type === 'shell') {
+      if (
+        rawBasePath !== undefined &&
+        (typeof rawBasePath !== 'string' || !BASE_PATH.test(rawBasePath))
+      ) {
+        err(
+          'app-base-path',
+          `${where}: "mfe.basePath" must be "/" or a path like "/citizen" (lowercase letters, digits and "-" per segment, no trailing slash), found ${JSON.stringify(rawBasePath)}.`,
+        );
+      }
+    } else if (rawBasePath !== undefined) {
+      err(
+        'app-base-path',
+        `${where}: "mfe.basePath" is a shell setting; a remote is mounted below the path of each shell that lists it in remotes.json. Remove it.`,
+      );
     }
 
     const port = app.pkg.mfe?.port;
     const range = ZONES[/** @type {keyof typeof ZONES} */ (zone)];
+    const own = type === 'shell' ? range.shells : range.remotes;
+    const ownLabel = type === 'shell' ? 'shells' : 'remotes';
+    const plan = `${zone} ports: dev proxy ${range.proxy}, shells ${range.shells.first}-${range.shells.last}, remotes ${range.remotes.first}-${range.remotes.last}, tools ${range.tools.first}-${range.tools.last}`;
     if (!Number.isInteger(port)) {
       err(
         'app-port',
-        `${where}: missing "mfe": { "port": <number> } (${zone} range ${range.first}-${range.last}).`,
+        `${where}: missing "mfe": { "port": <number> } (${ownLabel} of the ${zone} zone use ${own.first}-${own.last}).`,
       );
     } else if (port >= range.tools.first && port <= range.tools.last) {
       err(
         'app-port',
-        `${where}: port ${port} is reserved for the ${zone} dev tools (${range.tools.first}-${range.tools.last}: mock API, mock vendor, root package.json mfe.tools). Apps use ${range.first}-${range.last}.`,
+        `${where}: port ${port} is reserved for the ${zone} dev tools (mock API, mock vendor, root package.json mfe.tools). ${plan}.`,
       );
-    } else if (port < range.first || port > range.last) {
+    } else if (port === range.proxy) {
       err(
         'app-port',
-        `${where}: port ${port} is outside the ${zone} range ${range.first}-${range.last}. Pick a free port in the range.`,
+        `${where}: port ${port} is the ${zone} dev proxy (pnpm dev:${zone} serves every shell there under its base path). ${plan}.`,
+      );
+    } else if (type && (port < own.first || port > own.last)) {
+      err(
+        'app-port',
+        `${where}: port ${port} is outside the ${zone} ${ownLabel} range ${own.first}-${own.last} (${plan}). Pick a free port in the range.`,
       );
     }
     const federationName = app.pkg.mfe?.federationName;
@@ -213,6 +248,7 @@ export async function checkApps({ root }) {
       access: accesses[0],
       port,
       federationName,
+      basePath: shellBasePath(rawBasePath),
     });
   }
 
@@ -255,12 +291,48 @@ export async function checkApps({ root }) {
     (name, list) =>
       `Package name ${name} is used by ${list.length} apps: ${names(list)}.`,
   );
+  // --- shells of a zone: base paths, default shell -------------------------------------------
+  const zoneSettings = readZoneSettings(root);
   for (const zone of Object.keys(ZONES)) {
     const shells = infos.filter((i) => i.zone === zone && i.type === 'shell');
-    if (shells.length > 1) {
+    for (let a = 0; a < shells.length; a += 1) {
+      for (let b = a + 1; b < shells.length; b += 1) {
+        const [x, y] = [shells[a], shells[b]];
+        if (basePathsOverlap(x.basePath, y.basePath)) {
+          err(
+            'app-base-path',
+            `${x.app.name} (base path ${x.basePath}) and ${y.app.name} (base path ${y.basePath}) overlap: shells of the ${zone} zone share one origin, so each needs its own base path and none may sit inside another (at most one at "/"). Change "mfe.basePath" in one of them.`,
+          );
+        }
+      }
+    }
+    const settings = Object.hasOwn(zoneSettings, zone)
+      ? zoneSettings[zone]
+      : undefined;
+    const defaultShell = settings?.defaultShell;
+    const shellNames = shells.map((i) =>
+      /** @type {string} */ (i.dirName).slice(SHELL_DIR_PREFIX.length),
+    );
+    const hasRoot = shells.some((i) => i.basePath === '/');
+    if (defaultShell !== undefined) {
+      if (
+        typeof defaultShell !== 'string' ||
+        !shellNames.includes(defaultShell)
+      ) {
+        err(
+          'zone-default-shell',
+          `Root package.json "mfe.zones.${zone}.defaultShell" is ${JSON.stringify(defaultShell)}, which is not a ${zone} shell (${shellNames.length ? shellNames.join(', ') : 'none yet'}). Use the shell's name (apps/${zone}/shell-<name>).`,
+        );
+      } else if (hasRoot) {
+        err(
+          'zone-default-shell',
+          `Root package.json "mfe.zones.${zone}.defaultShell" is set, but a ${zone} shell already sits at "/". Remove the setting (it only says where "/" redirects when no shell owns it).`,
+        );
+      }
+    } else if (shells.length > 0 && !hasRoot) {
       err(
-        'app-shell',
-        `Zone ${zone} has ${shells.length} shells: ${names(shells)}. One shell per zone.`,
+        'zone-default-shell',
+        `No ${zone} shell has base path "/": set where "/" redirects in the root package.json, "mfe": { "zones": { "${zone}": { "defaultShell": "<${shellNames.join(' | ')}>" } } }.`,
       );
     }
   }
@@ -337,6 +409,9 @@ export async function checkApps({ root }) {
   }
 
   // --- shell registries --------------------------------------------------------------------------
+  /** Remotes listed by at least one shell (a remote may be listed by several shells of its zone). */
+  /** @type {Set<string>} */
+  const registeredInZone = new Set();
   for (const shell of infos.filter((i) => i.type === 'shell')) {
     const shellDir = path.join(root, shell.app.dir);
     const registryFile = path.join(shellDir, 'remotes.json');
@@ -376,7 +451,7 @@ export async function checkApps({ root }) {
       if (target.zone !== shell.zone || target.type !== 'remote') {
         err(
           'registry',
-          `${label}: ${target.app.name} is a ${target.zone} ${target.type}; the ${shell.zone} shell can only register ${shell.zone} remotes.`,
+          `${label}: ${target.app.name} is a ${target.zone} ${target.type}; ${shell.app.name} (a ${shell.zone} shell) can only register ${shell.zone} remotes.`,
         );
       }
       if (target.access && entry.access !== target.access) {
@@ -392,17 +467,18 @@ export async function checkApps({ root }) {
         );
       }
     }
-    for (const remote of infos.filter(
-      (i) =>
-        i.zone === shell.zone &&
-        i.type === 'remote' &&
-        !registered.has(i.app.name),
-    )) {
-      warn(
-        'registry',
-        `${remote.app.name} (${remote.app.dir}) is not registered in ${relRegistry}, so the ${shell.zone} shell does not show it.`,
-      );
-    }
+    for (const name of registered) registeredInZone.add(name);
+  }
+  for (const remote of infos.filter(
+    (i) =>
+      i.type === 'remote' &&
+      !registeredInZone.has(i.app.name) &&
+      infos.some((s) => s.type === 'shell' && s.zone === i.zone),
+  )) {
+    warn(
+      'registry',
+      `${remote.app.name} (${remote.app.dir}) is not registered in the remotes.json of any ${remote.zone} shell, so no shell shows it.`,
+    );
   }
   // --- generated dev manifests ---------------------------------------------------------------
   for (const shell of infos.filter((i) => i.type === 'shell')) {

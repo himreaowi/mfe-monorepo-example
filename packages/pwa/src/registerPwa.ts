@@ -8,9 +8,15 @@ export type RegisterPwaOptions = {
    * in dev the dev server would answer /service-worker.js with index.html.
    */
   enabled?: boolean;
-  /** Service worker URL. Default `/service-worker.js` (emitted by PwaPlugin in production builds). */
+  /**
+   * Where the app is served (a shell's base path, `__MFE_BASE_PATH__`): `/` (default) or e.g.
+   * `/citizen`. The service worker is `<basePath>/service-worker.js` with scope `<basePath>/`,
+   * so two shells on one domain (`/citizen`, `/business`) never control each other's pages.
+   */
+  basePath?: string;
+  /** Service worker URL. Default `<basePath>/service-worker.js` (emitted by PwaPlugin in production builds). */
   swUrl?: string;
-  /** Registration scope. Default: the browser default (directory of swUrl). */
+  /** Registration scope. Default `<basePath>/` (below a base path), else the browser default. */
   scope?: string;
   /** Called when registration fails. Default: ignore (no SW in dev). */
   onError?: (error: unknown) => void;
@@ -22,10 +28,11 @@ export type RegisterPwaOptions = {
  * Remotes rendered inside a shell never register a service worker.
  */
 export function registerPwa(options: RegisterPwaOptions = {}): void {
+  const prefix = `${(options.basePath ?? '/').replace(/\/+$/, '')}/`;
   const {
     enabled = process.env.NODE_ENV === 'production',
-    swUrl = '/service-worker.js',
-    scope,
+    swUrl = `${prefix}service-worker.js`,
+    scope = prefix === '/' ? undefined : prefix,
     onError,
   } = options;
   if (

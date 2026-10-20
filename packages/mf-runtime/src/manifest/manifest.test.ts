@@ -6,6 +6,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   loadMfeManifest,
+  mfeManifestUrl,
   MfeManifestError,
   parseMfeManifest,
   resolveRemoteEntry,
@@ -41,6 +42,22 @@ function issuesOf(value: unknown): string[] {
 describe('validateMfeManifest', () => {
   it('accepts a full manifest', () => {
     expect(validateMfeManifest(valid)).toEqual({ ok: true, manifest: valid });
+  });
+
+  it('accepts a dev mock with a custom user, rejects a user without id', () => {
+    const auth = (mockUser: unknown) =>
+      validateMfeManifest({ remotes: {}, auth: { mock: true, mockUser } }).ok;
+    expect(auth({ id: 'b1', name: 'Biz (Acme)', roles: ['business'] })).toBe(
+      true,
+    );
+    expect(auth({ name: 'no id' })).toBe(false);
+  });
+
+  it('mfeManifestUrl: below the shell base path', () => {
+    expect(mfeManifestUrl()).toBe('/mfe-manifest.json');
+    expect(mfeManifestUrl('/')).toBe('/mfe-manifest.json');
+    expect(mfeManifestUrl('/citizen')).toBe('/citizen/mfe-manifest.json');
+    expect(mfeManifestUrl('/citizen/')).toBe('/citizen/mfe-manifest.json');
   });
 
   it('accepts a minimal manifest with no remotes', () => {

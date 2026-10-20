@@ -25,6 +25,25 @@ const { defaultGetLocalIdent } =
   );
 
 const FEDERATION_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
+/** Same rule as `BASE_PATH` in tools/scripts/src/zones.js (pnpm check). */
+const BASE_PATH =
+  /^\/(?:[a-z0-9]+(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*)?$/;
+
+/**
+ * A shell's base path: `/` or `/citizen` (no trailing slash).
+ * @param {string | undefined} basePath
+ * @returns {string}
+ */
+function normalizeShellBasePath(basePath) {
+  if (basePath === undefined || basePath === '' || basePath === '/') return '/';
+  const trimmed = basePath.replace(/\/+$/, '');
+  if (!BASE_PATH.test(trimmed)) {
+    throw new Error(
+      `[@org/rspack-config] Invalid basePath "${basePath}". Use "/" or a path like "/citizen" (lowercase letters, digits, "-").`,
+    );
+  }
+  return trimmed;
+}
 
 /** @typedef {import('@rspack/core').Configuration} Configuration */
 /** @typedef {import('./index.d.ts').BaseOptions} BaseOptions */
@@ -234,13 +253,14 @@ function devContentSecurityPolicy({ extraOrigins = [], frameSrc = [] } = {}) {
  * Serve `devManifest` (a JSON file in the app) as `/mfe-manifest.json` in development.
  * In production the file is written per environment by DevOps (never built in).
  * @param {string} file
+ * @param {string} [prefix] the shell's public path (`/` or `/citizen/`)
  * @returns {NonNullable<import('@rspack/dev-server').Configuration['setupMiddlewares']>}
  */
-function devManifestMiddleware(file) {
+function devManifestMiddleware(file, prefix = '/') {
   return (middlewares) => {
     middlewares.unshift({
       name: 'mfe-dev-manifest',
-      path: '/mfe-manifest.json',
+      path: `${prefix}mfe-manifest.json`,
       middleware: (
         /** @type {import('node:http').IncomingMessage} */ _req,
         /** @type {import('node:http').ServerResponse} */ res,
@@ -261,8 +281,37 @@ function devManifestMiddleware(file) {
 }
 
 /**
+ * Dev server of a shell below a base path: `/` (and the bare base path without slash) redirect
+ * to `<basePath>/`, so `http://localhost:<shell port>/` still opens the shell.
+ * @param {string} basePath e.g. `/citizen`
+ * @returns {(middlewares: any[]) => any[]}
+ */
+function basePathRedirectMiddleware(basePath) {
+  return (middlewares) => {
+    middlewares.unshift({
+      name: 'mfe-base-path-redirect',
+      middleware: (
+        /** @type {import('node:http').IncomingMessage} */ req,
+        /** @type {import('node:http').ServerResponse} */ res,
+        /** @type {() => void} */ next,
+      ) => {
+        const pathname = (req.url ?? '/').split('?')[0];
+        if (pathname === '/' || pathname === basePath) {
+          res.statusCode = 302;
+          res.setHeader('Location', `${basePath}/`);
+          res.end();
+          return;
+        }
+        next();
+      },
+    });
+    return middlewares;
+  };
+}
+
+/**
  * Shared base for shells and remotes.
- * @param {BaseOptions & { kind: 'shell' | 'remote', exposes?: Record<string, string>, pwa?: boolean, devManifest?: string | false }} options
+ * @param {BaseOptions & { kind: 'shell' | 'remote', exposes?: Record<string, string>, pwa?: boolean, devManifest?: string | false, basePath?: string }} options
  * @param {'development' | 'production'} mode
  * @returns {Configuration}
  */
@@ -281,7 +330,7 @@ function createBaseConfig(options, mode) {
     define = {},
     pwa = false,
     devManifest = false,
-    htmlPublicPath = '/',
+    basePath: rawBasePath,
     devCsp = true,
     productionSourceMap = 'hidden-nosources-source-map',
   } = options;
@@ -291,6 +340,11 @@ function createBaseConfig(options, mode) {
     );
   }
   assertFederationName(name);
+  // shells: `/` or e.g. `/citizen` (remotes are always served from their own origin root)
+  const basePath = kind === 'shell' ? normalizeShellBasePath(rawBasePath) : '/';
+  /** `/` or `/citizen/`: prefix of every URL the shell serves itself. */
+  const publicPrefix = basePath === '/' ? '/' : `${basePath}/`;
+  const { htmlPublicPath = publicPrefix } = options;
   if (!Number.isInteger(port)) {
     throw new Error(
       `[@org/rspack-config] port must be an integer (got ${port}).`,
@@ -337,12 +391,14 @@ function createBaseConfig(options, mode) {
       publicPath: htmlPublicPath,
       templateParameters: {
         manifestLink: pwa
-          ? '<link rel="manifest" href="/manifest.webmanifest" />'
+          ? `<link rel="manifest" href="${publicPrefix}manifest.webmanifest" />`
           : '',
       },
     }),
     new rspack.DefinePlugin({
       __MFE_NAME__: JSON.stringify(name),
+      // the shell's base path (`/`, `/citizen`): router basename, manifest URL, SW scope
+      __MFE_BASE_PATH__: JSON.stringify(basePath),
       ...Object.fromEntries(
         Object.entries(define).map(([k, v]) => [k, JSON.stringify(v)]),
       ),
@@ -406,9 +462,10 @@ function createBaseConfig(options, mode) {
     entry: { main: entry },
     output: {
       path: path.join(rootDir, 'dist'),
-      // Shell: '/', so deep links (/apps/x/route-1) load chunks from the origin root.
-      // Remote: 'auto', so chunks resolve against the remote's own origin (from mf-manifest).
-      publicPath: kind === 'shell' ? '/' : 'auto',
+      // Shell: its base path ('/' or '/citizen/'), so deep links (/citizen/apps/x/route-1)
+      // load chunks from the shell's folder. Remote: 'auto', so chunks resolve against the
+      // remote's own origin (from mf-manifest).
+      publicPath: kind === 'shell' ? publicPrefix : 'auto',
       uniqueName: name,
       filename: isDev ? '[name].js' : '[name].[contenthash:8].js',
       chunkFilename: isDev ? '[name].js' : '[name].[contenthash:8].js',
@@ -455,7 +512,7 @@ function createBaseConfig(options, mode) {
       // hot-update manifest of a build that failed) must stay a 404: answered with index.html,
       // HMR fails on the JSON and stops updating instead of falling back to a full reload.
       historyApiFallback: {
-        index: '/index.html',
+        index: `${publicPrefix}index.html`,
         disableDotRule: true,
         htmlAcceptHeaders: ['text/html'],
       },
@@ -473,13 +530,46 @@ function createBaseConfig(options, mode) {
             }
           : {}),
       },
-      client: { overlay: { errors: true, warnings: false } },
-      static: hasPublicDir ? { directory: publicDirAbs } : false,
-      ...(devManifest
+      client: {
+        overlay: { errors: true, warnings: false },
+        // below a base path the HMR socket is too (`/citizen/ws`), so the zone's dev proxy
+        // routes it to this shell; host and port follow the page (proxy or direct)
+        ...(basePath === '/'
+          ? {}
+          : { webSocketURL: { pathname: `${publicPrefix}ws` } }),
+      },
+      ...(basePath === '/'
+        ? {}
+        : {
+            webSocketServer: {
+              type: 'ws',
+              options: { path: `${publicPrefix}ws` },
+            },
+          }),
+      static: hasPublicDir
         ? {
-            setupMiddlewares: devManifestMiddleware(
-              path.resolve(rootDir, devManifest),
-            ),
+            directory: publicDirAbs,
+            ...(basePath === '/' ? {} : { publicPath: basePath }),
+          }
+        : false,
+      ...(devManifest || basePath !== '/'
+        ? {
+            setupMiddlewares: (
+              /** @type {any[]} */ middlewares,
+              /** @type {any} */ server,
+            ) => {
+              let list = middlewares;
+              if (devManifest) {
+                list = devManifestMiddleware(
+                  path.resolve(rootDir, devManifest),
+                  publicPrefix,
+                )(list, server);
+              }
+              if (basePath !== '/') {
+                list = basePathRedirectMiddleware(basePath)(list);
+              }
+              return list;
+            },
           }
         : {}),
     },
@@ -488,7 +578,7 @@ function createBaseConfig(options, mode) {
 }
 
 /**
- * Shell (host) config: publicPath '/', no exposes, dev manifest served at /mfe-manifest.json,
+ * Shell (host) config: publicPath = its base path ('/' default), no exposes, dev manifest served at /mfe-manifest.json,
  * PWA (Workbox) in production.
  * @param {ShellOptions} options
  * @returns {ConfigFunction}
@@ -503,6 +593,7 @@ function createShellConfig(options) {
         exposes: options.exposes ?? {},
         pwa: options.pwa ?? true,
         devManifest: options.devManifest ?? 'mfe-manifest.dev.json',
+        basePath: options.basePath,
       },
       mode,
     );
@@ -539,6 +630,7 @@ export {
   devContentSecurityPolicy,
   getLocalIdent,
   installedVersion,
+  normalizeShellBasePath,
   LOCAL_IDENT_NAME,
   TIER1_SINGLETONS,
 };

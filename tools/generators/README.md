@@ -10,10 +10,16 @@ pnpm install
 pnpm dev:<zone>
 ```
 
-| Generator    | Creates                                                                                          | Package              | Federation name | Port                                            |
-| ------------ | ------------------------------------------------------------------------------------------------ | -------------------- | --------------- | ----------------------------------------------- |
-| `gen:shell`  | `apps/<zone>/shell-<zone>` (incl. the zone's e2e suite in `e2e/`)                                | `@org/shell-<zone>`  | `<zone>_shell`  | first of the zone (3100/3200)                   |
-| `gen:remote` | `apps/<zone>/<name>` + entry in the shell's `remotes.json` (regenerates `mfe-manifest.dev.json`) | `@org/<zone>-<name>` | `<zone>_<name>` | lowest free in the zone (3101–3189 / 3201–3289) |
+| Generator    | Creates                                                                                                                                  | Package              | Federation name                                          | Port                                            |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------- | -------------------------------------------------------- | ----------------------------------------------- |
+| `gen:shell`  | `apps/<zone>/shell-<name>` (name default: the zone; `--base-path`, default `/`; incl. its e2e suite in `e2e/`)                           | `@org/shell-<name>`  | `<zone>_shell` (name = zone), else `<zone>_shell_<name>` | lowest free shell port (3101–3109 / 3201–3209)  |
+| `gen:remote` | `apps/<zone>/<name>` + entry in the `remotes.json` of the zone's shell, or of each `--shell` (regenerates their `mfe-manifest.dev.json`) | `@org/<zone>-<name>` | `<zone>_<name>`                                          | lowest free remote port (3110–3189 / 3210–3289) |
+
+Several shells per zone: `pnpm gen:shell internet citizen --base-path /citizen`, then
+`pnpm gen:shell internet business --base-path /business --layout side`; the first shell below a
+base path (no shell at `/`) becomes the zone's default shell in the root `package.json`
+(`mfe.zones.<zone>.defaultShell`). `pnpm gen:remote` then needs `--shell <name>` (repeatable or
+comma-separated: `--shell citizen,business`).
 
 - **Titles** (nav label, `<h1>`, `APP_TITLE`) are derived from the name in **sentence case**,
   with a short list of acronyms kept in capitals (`TITLE_ACRONYMS` in `src/names.js`: IT, HR,

@@ -51,6 +51,8 @@ if (!Number.isInteger(port)) {
   );
   process.exit(2);
 }
+// a shell built for a base path (mfe.basePath, e.g. /citizen) is served below it
+const basePath = String(pkg.mfe?.basePath ?? '/').replace(/\/+$/, '');
 const distDir = path.resolve(cwd, values.dir ?? 'dist');
 if (!fs.existsSync(path.join(distDir, 'index.html'))) {
   console.error(
@@ -85,6 +87,18 @@ const server = http.createServer((req, res) => {
   } catch {
     res.writeHead(400).end();
     return;
+  }
+  if (basePath) {
+    if (pathname === '/' || pathname === basePath) {
+      res.writeHead(302, { Location: `${basePath}/` }).end();
+      return;
+    }
+    if (!pathname.startsWith(`${basePath}/`)) {
+      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      res.end(`Not found: this shell is served below ${basePath}/.`);
+      return;
+    }
+    pathname = pathname.slice(basePath.length);
   }
   if (pathname === '/mfe-manifest.json') {
     if (fs.existsSync(manifestFile)) {

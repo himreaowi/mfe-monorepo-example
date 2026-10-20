@@ -6,6 +6,9 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { describe, it } from 'node:test';
 import {
+  BASE_PATH,
+  basePathsOverlap,
+  shellBasePath,
   TOOL_SLOTS,
   ZONES,
   allToolPorts,
@@ -14,6 +17,28 @@ import {
 } from '../src/zones.js';
 
 describe('zones', () => {
+  it('port plan: proxy x00, shells x01-x09, remotes x10-x89, tools x90-x99', () => {
+    for (const z of Object.values(ZONES)) {
+      assert.equal(z.shells.first, z.proxy + 1);
+      assert.equal(z.remotes.first, z.shells.last + 1);
+      assert.equal(z.tools.first, z.remotes.last + 1);
+    }
+  });
+
+  it('base paths: normalised, overlap rules', () => {
+    assert.equal(shellBasePath(undefined), '/');
+    assert.equal(shellBasePath('/citizen/'), '/citizen');
+    assert.ok(BASE_PATH.test('/'));
+    assert.ok(BASE_PATH.test('/business/eservices'));
+    assert.ok(!BASE_PATH.test('/Citizen'));
+    assert.ok(!BASE_PATH.test('/citizen/'));
+    assert.ok(basePathsOverlap('/a', '/a'));
+    assert.ok(basePathsOverlap('/a', '/a/b'));
+    assert.ok(!basePathsOverlap('/a', '/ab'));
+    assert.ok(!basePathsOverlap('/', '/a'));
+    assert.ok(basePathsOverlap('/', '/'));
+  });
+
   it('per-zone tool ports sit in the zone tools range, outside the app range', () => {
     assert.equal(toolPort('intranet', 'mockApi'), 3190);
     assert.equal(toolPort('intranet', 'mockVendor'), 3191);
@@ -23,14 +48,14 @@ describe('zones', () => {
       for (const tool of /** @type {const} */ (['mockApi', 'mockVendor'])) {
         const port = toolPort(/** @type {any} */ (zone), tool);
         assert.ok(port >= range.tools.first && port <= range.tools.last);
-        assert.ok(port > range.last);
+        assert.ok(port > range.remotes.last);
       }
     }
     assert.deepEqual(allToolPorts('mockVendor'), [3191, 3291]);
   });
 
   it('no two zones share a port', () => {
-    const ranges = Object.values(ZONES).map((z) => [z.first, z.tools.last]);
+    const ranges = Object.values(ZONES).map((z) => [z.proxy, z.tools.last]);
     const [a, b] = ranges;
     assert.ok(a[1] < b[0] || b[1] < a[0]);
   });
@@ -71,8 +96,17 @@ describe('zones', () => {
       import.meta.dirname,
       '../../../packages/playwright-config/src/zone.js',
     );
-    const { TOOL_PORTS, ZONE_TOOL_RANGES } = await import(
+    const { TOOL_PORTS, ZONE_TOOL_RANGES, ZONE_PORTS } = await import(
       pathToFileURL(file).href
+    );
+    assert.deepEqual(
+      ZONE_PORTS,
+      Object.fromEntries(
+        Object.entries(ZONES).map(([zone, z]) => [
+          zone,
+          { proxy: z.proxy, tools: { ...z.tools } },
+        ]),
+      ),
     );
     assert.deepEqual(
       ZONE_TOOL_RANGES,

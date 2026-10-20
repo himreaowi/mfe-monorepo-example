@@ -23,6 +23,15 @@ describe('registerPwa', () => {
     expect(register).toHaveBeenCalledWith('/service-worker.js', undefined);
   });
 
+  it('below a base path: <basePath>/service-worker.js, scoped to <basePath>/', async () => {
+    register.mockResolvedValue({});
+    registerPwa({ enabled: true, basePath: '/citizen' });
+    await Promise.resolve();
+    expect(register).toHaveBeenCalledWith('/citizen/service-worker.js', {
+      scope: '/citizen/',
+    });
+  });
+
   it('reports registration failures to onError instead of throwing', async () => {
     const error = new Error('404');
     register.mockRejectedValue(error);
