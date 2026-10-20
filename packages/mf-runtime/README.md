@@ -85,8 +85,8 @@ unit test fails if the generated file is stale.
 ## Remote side (`@org/mf-runtime/remote`)
 
 ```tsx
-// src/app/apps.tsx
-export const { EmbeddedApp, StandaloneApp } = createRemoteApp({
+// src/app/apps.tsx: the exposed module ('./App'); default export = the embedded app
+const { EmbeddedApp, StandaloneApp } = createRemoteApp({
   routes: [
     { index: true, element: <Navigate to="route-1" replace /> },
     { path: 'route-1', element: <Route1 /> },
@@ -99,8 +99,8 @@ export const { EmbeddedApp, StandaloneApp } = createRemoteApp({
   StandaloneLayout,
 });
 
-// src/app/RemoteApp.tsx (exposed as './App')
-export { EmbeddedApp as default } from './apps';
+export default EmbeddedApp;
+export { StandaloneApp };
 
 // src/main.tsx (standalone only)
 import '@org/design-tokens/global.scss';

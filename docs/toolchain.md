@@ -314,7 +314,8 @@ true })` before loading again. Verified in the browser: the remote's `mf-manifes
 - Shell `main.tsx` catches a failing `/mfe-manifest.json` and renders `StartupError`
   (connection-required message when offline) instead of a blank page.
 - Remote templates test that the exposed module's import graph never reaches
-  `@org/design-tokens/global.scss` or `registerPwa`.
+  `@org/design-tokens/global.scss` or `registerPwa` (`scanExposedModule` from
+  `@org/jest-config/exposed-module`, in `src/app/apps.test.tsx`).
 - Template placeholders are `__TOKEN__`; a token directly followed by `_` (`__ZONE___alpha`) needs
   the non-greedy token pattern in `render.js`.
 - Prettier 3 `getFileInfo` resolves config files by default. In a temp workspace without

@@ -22,7 +22,7 @@ export default createRemoteConfig({
   rootDir: import.meta.dirname,
   name: 'intranet_staff_directory',
   port: 3101,
-  // exposes defaults to { './App': './src/app/RemoteApp.tsx' }
+  // exposes defaults to { './App': './src/app/apps.tsx' }
 });
 ```
 
@@ -36,7 +36,7 @@ imports.
 |                     | Shell (`createShellConfig`)                                               | Remote (`createRemoteConfig`)                 |
 | ------------------- | ------------------------------------------------------------------------- | --------------------------------------------- |
 | `output.publicPath` | `/` (deep links load chunks from the root)                                | `auto` (chunks load from the remote's origin) |
-| MF `exposes`        | none                                                                      | `./App` → `./src/app/RemoteApp.tsx`           |
+| MF `exposes`        | none                                                                      | `./App` → `./src/app/apps.tsx`                |
 | MF `remotes`        | none: registered at runtime from `/mfe-manifest.json` (`@org/mf-runtime`) | none                                          |
 | Dev manifest        | `mfe-manifest.dev.json` served as `/mfe-manifest.json`                    | n/a                                           |
 | PWA (production)    | `PwaPlugin` from `@org/pwa/build` (Workbox `generateSW`)                  | off (option `pwa: true`)                      |

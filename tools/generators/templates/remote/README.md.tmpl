@@ -19,9 +19,10 @@ The __ZONE__ shell mounts it at `__ROUTE_PATH__/*` (entry in the shell's `remote
 
 ## Rules
 
-- `src/app/RemoteApp.tsx` is the exposed module (`./App`). It must **not** import global styles
-  (`@org/design-tokens/global.scss`) or register a service worker: the shell owns the page. Only
-  `src/main.tsx` (standalone) does that.
+- `src/app/apps.tsx` is the exposed module (`./App`, default export = the embedded app). Nothing
+  it reaches may import global styles (`@org/design-tokens/global.scss`) or register a service
+  worker: the shell owns the page. Only `src/main.tsx` (standalone) does that; `apps.test.tsx`
+  checks it.
 - Routes in `src/app/routes.tsx` are relative. Link between pages with `useRemotePath()` from
   `@org/mf-runtime/remote` (gives `__ROUTE_PATH__/details` in the shell, `/details` standalone).
 - Never import another remote or a shell (`pnpm check` and ESLint module boundaries fail).
@@ -29,8 +30,8 @@ The __ZONE__ shell mounts it at `__ROUTE_PATH__/*` (entry in the shell's `remote
 
 ## Data: the API pattern
 
-`settings.apiBaseUrl` (host prop from the shell's `mfe-manifest.json`; `standaloneProps` in
-standalone dev) is the API base URL; in development it is the zone's mock API
+`settings.apiBaseUrl` (host prop from the shell's `mfe-manifest.json`; in standalone dev the
+`standaloneProps` in `src/app/apps.tsx`) is the API base URL; in development it is the zone's mock API
 (`tools/mock-api`, `__MOCK_API_URL__`). The demo feature shows the whole chain, copy it for real
 features:
 
@@ -47,7 +48,7 @@ features:
 ```
 src/
   main.tsx            standalone entry only: global styles + <StandaloneApp />
-  app/                RemoteApp (exposed), apps (createRemoteApp), routes, standaloneProps
+  app/                apps (exposed ./App: createRemoteApp + standalone props), routes
   components/         ModeBadge/
   features/demo/      sample feature (host props, counter, links, items from the API + form)
     api/ hooks/ types/ utils/

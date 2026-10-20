@@ -33,17 +33,17 @@ Hard rules (enforced by `pnpm check` and ESLint, see [guardrails.md](guardrails.
 
 ## Layers inside an app
 
-| Layer                  | Role                                                                                                |
-| ---------------------- | --------------------------------------------------------------------------------------------------- |
-| `src/main.tsx`         | Entry. Shell: global styles, PWA, manifest, auth client, render. Remote: standalone entry only      |
-| `src/app/`             | Wiring: providers, routes, registry (shell); `RemoteApp` (exposed `./App`), `apps`, routes (remote) |
-| `src/features/<name>/` | Domain UI (`components/<Name>/`) + `api/` / `hooks/` / `types/` / `utils/`, public `index.ts`       |
-| `src/pages/`           | Thin route containers that compose features                                                         |
-| `src/components/`      | UI primitives of this app, one folder per component (shared ones go to `@org/ui`)                   |
-| `src/layouts/`         | Chrome, owned by the app: `ShellLayout` (shell), `StandaloneLayout` (remote), one folder each       |
-| `src/core/`            | Constants (`routePaths`, `apiRoutes`, `app`), types, small utils (no parallel `lib/`)               |
-| `src/styles/`          | Shell only: `shell.scss`, shell-wide global styles (empty by default)                               |
-| `src/services/`        | App-wide infra (`http` client)                                                                      |
+| Layer                  | Role                                                                                           |
+| ---------------------- | ---------------------------------------------------------------------------------------------- |
+| `src/main.tsx`         | Entry. Shell: global styles, PWA, manifest, auth client, render. Remote: standalone entry only |
+| `src/app/`             | Wiring: providers, routes, registry (shell); `apps` (exposed `./App`), routes (remote)         |
+| `src/features/<name>/` | Domain UI (`components/<Name>/`) + `api/` / `hooks/` / `types/` / `utils/`, public `index.ts`  |
+| `src/pages/`           | Thin route containers that compose features                                                    |
+| `src/components/`      | UI primitives of this app, one folder per component (shared ones go to `@org/ui`)              |
+| `src/layouts/`         | Chrome, owned by the app: `ShellLayout` (shell), `StandaloneLayout` (remote), one folder each  |
+| `src/core/`            | Constants (`routePaths`, `apiRoutes`, `app`), types, small utils (no parallel `lib/`)          |
+| `src/styles/`          | Shell only: `shell.scss`, shell-wide global styles (empty by default)                          |
+| `src/services/`        | App-wide infra (`http` client)                                                                 |
 
 **Rule of thumb:** pages compose, features own domain data, components stay presentational,
 core holds constants, services own HTTP.
@@ -113,16 +113,18 @@ shell's `features/welcome` and `features/startup` and its `layouts/ShellLayout`,
 
 ## Remotes
 
-- `src/app/RemoteApp.tsx` (exposed `./App`) must not import global styles
-  (`@org/design-tokens/global.scss`) or register a service worker; a unit test walks its import
-  graph to enforce this.
+- `src/app/apps.tsx` is the exposed module (`./App`): its default export is the embedded app,
+  its named `StandaloneApp` is rendered by `src/main.tsx`, and it holds the standalone mock host
+  props. Nothing it reaches may import global styles (`@org/design-tokens/global.scss`) or
+  register a service worker; `apps.test.tsx` walks its import graph to enforce this
+  (`scanExposedModule` from `@org/jest-config/exposed-module`).
 - Routes are relative (they match below the shell's `/<remote>/*` and from `/` standalone).
   Links between pages use `useRemotePath()` from `@org/mf-runtime/remote`, never hardcoded
   absolute paths.
 - Read host data from `useHostProps()` (`user`, `settings`, `basePath`, manifest `props`).
   `useAuth()` from `@org/auth` gives the shell's session (`csrfToken`, `refresh()` after a 401).
 - Both modes must keep working: embedded in the shell and standalone with
-  `standaloneProps` (mock host props).
+  `standaloneProps` (mock host props in `src/app/apps.tsx`).
 
 ## Shells
 

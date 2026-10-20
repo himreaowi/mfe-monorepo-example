@@ -80,7 +80,7 @@ export interface ShellOptions extends BaseOptions {
 }
 
 export interface RemoteOptions extends BaseOptions {
-  /** Exposed modules. Default `{ './App': './src/app/RemoteApp.tsx' }`. */
+  /** Exposed modules. Default `{ './App': './src/app/apps.tsx' }`. */
   exposes?: Record<string, string>;
 }
 

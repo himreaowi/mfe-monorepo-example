@@ -30,11 +30,11 @@ several tests of a feature goes to `features/<feature>/__fixtures__/`.
 
 What the generated apps test, as examples to follow:
 
-| App              | Tests                                                                                                                                                                                                                 |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Shell            | routes (home, `/<remote>/*` mounts `<RemoteApp>`, 404) with `@org/mf-runtime` mocked; `RemotePage` (private remote not rendered before sign-in, `user` host prop); nav; startup error; http client                    |
-| Remote           | `EmbeddedApp` below a shell-like splat route (host props, links get the mount path) and `StandaloneApp` (mock host props, own chrome); the exposed module's import graph never reaches global styles or `registerPwa` |
-| External adapter | `ExternalModuleHost` with `<ExternalModule>` stubbed (manifest config, sub-path, theme, minimal user, `onNavigate` through the router, vendor events); `utils/vendorConfig` dev fallback                              |
+| App              | Tests                                                                                                                                                                                                                                                    |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Shell            | routes (home, `/<remote>/*` mounts `<RemoteApp>`, 404) with `@org/mf-runtime` mocked; `RemotePage` (private remote not rendered before sign-in, `user` host prop); nav; startup error; http client                                                       |
+| Remote           | `EmbeddedApp` below a shell-like splat route (host props, links get the mount path) and `StandaloneApp` (mock host props, own chrome); the exposed module's (`apps.tsx`) import graph never reaches global styles or `registerPwa` (`scanExposedModule`) |
+| External adapter | `ExternalModuleHost` with `<ExternalModule>` stubbed (manifest config, sub-path, theme, minimal user, `onNavigate` through the router, vendor events); `utils/vendorConfig` dev fallback                                                                 |
 
 Rules:
 

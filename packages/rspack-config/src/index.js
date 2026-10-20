@@ -483,7 +483,7 @@ function createRemoteConfig(options) {
       {
         ...options,
         kind: 'remote',
-        exposes: options.exposes ?? { './App': './src/app/RemoteApp.tsx' },
+        exposes: options.exposes ?? { './App': './src/app/apps.tsx' },
         pwa: options.pwa ?? false,
         devManifest: false,
       },

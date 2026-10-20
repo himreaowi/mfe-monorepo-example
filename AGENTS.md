@@ -28,7 +28,7 @@ Instructions for AI coding agents (and humans) working in this monorepo. Details
 - No environment URLs or config in code or build: runtime config comes from
   `mfe-manifest.json` (`settings`, remote `props`). No tokens or secrets in the browser (BFF
   pattern, [docs/auth-contract.md](docs/auth-contract.md)).
-- Remotes: the exposed `src/app/RemoteApp.tsx` must not import global styles or register a
+- Remotes: the exposed `src/app/apps.tsx` (and what it imports) must not import global styles or register a
   service worker; links use `useRemotePath()`; keep standalone mode working.
 - No hardcoded API or app paths in components (`apiRoutes`, `routePaths`); no API calls in
   component `useEffect` (use `features/*/api` + `features/*/hooks`).

@@ -62,7 +62,7 @@ standalone mode and the axe scans cover it with no test changes.
    `features/demo` and its tests when you no longer need them.
 3. Adjust `remotes.json` (`title`, `path`) if the defaults do not fit. Keep `name`,
    `federationName`, `package` and `access` in sync with the remote (`pnpm check` verifies).
-4. Mock host props for standalone mode: `src/app/standaloneProps.ts`.
+4. Mock host props for standalone mode: `standaloneProps` in `src/app/apps.tsx`.
 5. Tests: unit tests next to the code; feature flows as `apps/<zone>/shell-<zone>/e2e/<name>.spec.ts`
    ([testing.md](testing.md)).
 6. Dependencies: [adding-dependencies.md](adding-dependencies.md) (catalog vs app-local).

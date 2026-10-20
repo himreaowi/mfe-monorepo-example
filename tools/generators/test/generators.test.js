@@ -333,7 +333,7 @@ describe('generators', () => {
     });
     // standalone: the mock API in development only (dropped from production bundles)
     assert.match(
-      read(root, 'apps/intranet/staff-directory/src/app/standaloneProps.ts'),
+      read(root, 'apps/intranet/staff-directory/src/app/apps.tsx'),
       /process\.env\.NODE_ENV !== 'production'\s*\?\s*\{ apiBaseUrl: 'http:\/\/localhost:3190\/api' \}/,
     );
   });
@@ -375,10 +375,9 @@ describe('generators', () => {
     const dir = 'apps/intranet/staff-directory';
     const files = listFiles(path.join(root, dir));
     for (const f of [
-      'src/app/RemoteApp.tsx',
       'src/app/apps.tsx',
+      'src/app/apps.test.tsx',
       'src/app/routes.tsx',
-      'src/app/standaloneProps.ts',
       'src/components/ModeBadge/ModeBadge.tsx',
       'src/components/ModeBadge/ModeBadge.test.tsx',
       'src/features/demo/index.ts',
@@ -410,13 +409,18 @@ describe('generators', () => {
       assert.ok(files.includes(f), `missing ${f}`);
     }
     assert.match(read(root, `${dir}/rspack.config.js`), /createRemoteConfig/);
-    for (const f of ['src/app/RemoteApp.tsx', 'src/app/apps.tsx']) {
-      assert.doesNotMatch(read(root, `${dir}/${f}`), /global\.scss/);
+    // the exposed module is src/app/apps.tsx (no RemoteApp.tsx / standaloneProps.ts)
+    for (const f of ['src/app/RemoteApp.tsx', 'src/app/standaloneProps.ts']) {
+      assert.ok(!files.includes(f), `${f} should not exist`);
     }
+    assert.doesNotMatch(read(root, `${dir}/src/app/apps.tsx`), /global\.scss/);
     assert.match(read(root, `${dir}/src/main.tsx`), /global\.scss/);
+    const apps = read(root, `${dir}/src/app/apps.tsx`);
+    assert.match(apps, /^export default EmbeddedApp;$/m);
+    assert.match(apps, /^export \{ StandaloneApp \};$/m);
     assert.match(
-      read(root, `${dir}/src/app/RemoteApp.tsx`),
-      /EmbeddedApp as default/,
+      read(root, `${dir}/src/app/apps.test.tsx`),
+      /scanExposedModule\(/,
     );
   });
 

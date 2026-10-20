@@ -227,7 +227,7 @@ describe('createRemoteConfig', () => {
     })({ RSPACK_BUILD: true }, {});
     assert.equal(config.output?.publicPath, 'auto');
     assert.deepEqual(mfOptions(config).exposes, {
-      './App': './src/app/RemoteApp.tsx',
+      './App': './src/app/apps.tsx',
     });
     assert.equal(pluginNamed(config, 'PwaPlugin'), undefined);
     assert.ok(pluginNamed(config, 'CssExtractRspackPlugin'));

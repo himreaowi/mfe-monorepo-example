@@ -57,7 +57,7 @@ every remote as a host prop (`useHostProps().user`), which is all most remotes n
 works for external modules. Remotes never render their own `AuthProvider`.
 
 Running standalone, a remote has no provider: `useAuth()` returns `status: 'disabled'` and the
-mock `user` comes from `standaloneProps`.
+mock `user` comes from `standaloneProps` (in the remote's `src/app/apps.tsx`).
 
 ## Why a singleton, and props as well
 
