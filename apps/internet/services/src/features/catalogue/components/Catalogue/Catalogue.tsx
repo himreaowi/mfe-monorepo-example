@@ -1,27 +1,34 @@
 import { useId } from 'react';
-import { useSearchParams } from 'react-router';
 import { RemoteFallback } from '@org/ui';
-import { useCategories, useServices } from '../../hooks/useCatalogue';
-import { useDebouncedValue } from '../../hooks/useDebouncedValue';
+import type { ApiResult } from '@org/use-api';
+import type { CatalogueQuery, CatalogueResult } from '../../types/service';
 import { ServiceCard } from '../ServiceCard/ServiceCard';
 import styles from './Catalogue.module.scss';
 
-/** Services catalogue with search and a category filter (query kept in the URL). */
-export function Catalogue() {
-  const [params, setParams] = useSearchParams();
-  const q = params.get('q') ?? '';
-  const category = params.get('category') ?? '';
-  const services = useServices({ q: useDebouncedValue(q), category });
-  const categories = useCategories();
+export type CatalogueProps = {
+  /** Search text and topic (the page keeps them in the URL: `?q=&category=`). */
+  query: CatalogueQuery;
+  /** The user changed the search text or the topic. */
+  onQueryChange: (key: keyof CatalogueQuery, value: string) => void;
+  /** From `useServices()`, called by the page. */
+  services: ApiResult<CatalogueResult>;
+  /** From `useCategories()`, called by the page. */
+  categories: ApiResult<string[]>;
+};
+
+/**
+ * Services catalogue with search and a category filter. Displays only: the page reads the
+ * query from the URL, loads the services and the topics and passes them down
+ * (docs/coding-conventions.md "Data fetching").
+ */
+export function Catalogue({
+  query: { q, category },
+  onQueryChange,
+  services,
+  categories,
+}: CatalogueProps) {
   const searchId = useId();
   const categoryId = useId();
-
-  const update = (key: 'q' | 'category', value: string) => {
-    const next = new URLSearchParams(params);
-    if (value) next.set(key, value);
-    else next.delete(key);
-    setParams(next, { replace: true });
-  };
 
   const count =
     services.status === 'success'
@@ -49,7 +56,7 @@ export function Catalogue() {
             type="search"
             value={q}
             autoComplete="off"
-            onChange={(event) => update('q', event.target.value)}
+            onChange={(event) => onQueryChange('q', event.target.value)}
           />
         </div>
         <div className={styles.field}>
@@ -57,7 +64,7 @@ export function Catalogue() {
           <select
             id={categoryId}
             value={category}
-            onChange={(event) => update('category', event.target.value)}
+            onChange={(event) => onQueryChange('category', event.target.value)}
           >
             <option value="">All topics</option>
             {categories.status === 'success'

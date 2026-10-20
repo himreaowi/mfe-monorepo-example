@@ -1,15 +1,22 @@
 import { Link } from 'react-router';
 import { useRemotePath } from '@org/mf-runtime/remote';
 import { RemoteFallback } from '@org/ui';
+import type { ApiResult } from '@org/use-api';
 import { routePaths } from '@/core/constants/routePaths';
 import { formatFee } from '@/core/utils/formatMoney';
-import { useService } from '../../hooks/useCatalogue';
+import type { Service } from '../../types/service';
 import styles from './ServiceDetail.module.scss';
 
-/** One service: what it is, who can use it, what you need, the steps, fee and timing. */
-export function ServiceDetail({ slug }: { slug: string }) {
+/**
+ * One service: what it is, who can use it, what you need, the steps, fee and timing. Displays
+ * only: the page loads it (`useService(slug)`; `null` = unknown slug) and passes the result down.
+ */
+export function ServiceDetail({
+  service,
+}: {
+  service: ApiResult<Service | null>;
+}) {
   const toPath = useRemotePath();
-  const service = useService(slug);
   const back = (
     <p>
       <Link className={styles.back} to={toPath(routePaths.catalogue)}>

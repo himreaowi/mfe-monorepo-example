@@ -1,38 +1,30 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
-import { getService } from '../../api/catalogueApi';
-import { ServiceDetail } from './ServiceDetail';
+import type { ApiResult } from '@org/use-api';
 import { dogLicence } from '../../__fixtures__/services';
+import type { Service } from '../../types/service';
+import { ServiceDetail } from './ServiceDetail';
 
-jest.mock('../../api/catalogueApi');
-const getMock = jest.mocked(getService);
-
-function renderDetail() {
+// A display component: the page loads the service and passes the result in.
+function renderDetail(service: ApiResult<Service | null>) {
   return render(
     <MemoryRouter>
-      <HostPropsProvider
-        value={{
-          embedded: true,
-          basePath: '/services',
-          settings: { apiBaseUrl: 'https://api.test' },
-        }}
-      >
-        <ServiceDetail slug="renew-dog-licence" />
+      <HostPropsProvider value={{ embedded: true, basePath: '/services' }}>
+        <ServiceDetail service={service} />
       </HostPropsProvider>
     </MemoryRouter>,
   );
 }
 
+const reload = jest.fn();
+
 describe('ServiceDetail', () => {
-  it('shows what the service is, who can use it, what you need and the steps', async () => {
-    getMock.mockResolvedValue(dogLicence);
-    renderDetail();
+  it('shows what the service is, who can use it, what you need and the steps', () => {
+    renderDetail({ status: 'success', data: dogLicence, reload });
     expect(
-      await screen.findByRole('heading', {
-        level: 1,
-        name: 'Renew a dog licence',
-      }),
+      screen.getByRole('heading', { level: 1, name: 'Renew a dog licence' }),
     ).toBeInTheDocument();
     expect(screen.getByText('SGD 15.00')).toBeInTheDocument();
     expect(
@@ -46,17 +38,26 @@ describe('ServiceDetail', () => {
     ).toHaveAttribute('href', '/services');
   });
 
+  it('shows loading', () => {
+    renderDetail({ status: 'loading', reload });
+    expect(screen.getByRole('status')).toHaveTextContent('Loading…');
+  });
+
   it('handles unknown services and errors', async () => {
-    getMock.mockResolvedValueOnce(null);
-    const { unmount } = renderDetail();
+    const { unmount } = renderDetail({ status: 'success', data: null, reload });
     expect(
-      await screen.findByRole('heading', { name: 'Service not found' }),
+      screen.getByRole('heading', { name: 'Service not found' }),
     ).toBeInTheDocument();
     unmount();
-    getMock.mockRejectedValueOnce(new Error('500 Internal Server Error'));
-    renderDetail();
-    expect(await screen.findByRole('alert')).toHaveTextContent(
+    renderDetail({
+      status: 'error',
+      error: new Error('500 Internal Server Error'),
+      reload,
+    });
+    expect(screen.getByRole('alert')).toHaveTextContent(
       '500 Internal Server Error',
     );
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(reload).toHaveBeenCalledTimes(1);
   });
 });
