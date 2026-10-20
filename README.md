@@ -24,10 +24,23 @@ section.
 
 Remote routes are below each shell's base path: `/citizen/announcements`, `/business/announcements`.
 
+### The three portals
+
+| Portal          | URL (after `pnpm dev:<zone>`)  | Zone     | Sign-in (dev mock, "Sign in" button)                                  |
+| --------------- | ------------------------------ | -------- | --------------------------------------------------------------------- |
+| Staff Portal    | http://localhost:3100/         | intranet | `Dev User (mock)`, role `user` (the template default)                 |
+| Citizen Portal  | http://localhost:3200/citizen  | internet | `Dev User (mock)`, role `user` (the template default, Singpass-style) |
+| Business Portal | http://localhost:3200/business | internet | `Lim Wei Ling (Acme Trading Pte Ltd)`, role `business-admin`          |
+
+The internet zone is one origin: `http://localhost:3200/` redirects to the Citizen Portal. Each
+portal keeps its own session. Private pages (Leave requests, My profile, Business licences)
+ask for the sign-in first.
+
 ```sh
 nvm use && corepack enable && pnpm install
 pnpm dev:intranet     # Staff Portal  http://localhost:3100 (+ mock API :3190, example vendor :3192)
 pnpm dev:internet     # http://localhost:3200: Citizen Portal /citizen/, Business Portal /business/ (+ mock API :3290, example vendor :3292)
+pnpm storybook        # @org/ui component library, http://localhost:3193 (stop with Ctrl-C)
 pnpm e2e              # every shell (Staff, Citizen, Business), one after the other: feature specs + generated specs + axe (light + dark)
 ```
 
@@ -38,10 +51,10 @@ mock, per shell: the Citizen Portal signs in the default (Singpass-style) mock u
 Portal a Corppass-style business user (`mfe.devManifest.auth.mockUser` in
 `apps/internet/shell-business/package.json`), each with its own session.
 
-| Zone     | Dev proxy | Shells     | Remotes   | Dev tools (root `package.json` `mfe.tools`, read with `toolPort`)                  |
-| -------- | --------- | ---------- | --------- | ---------------------------------------------------------------------------------- |
-| intranet | 3100      | 3101       | 3110–3112 | 3190 mock API (`tools/mock-api`), 3192 Acme Service Desk (`tools/example-vendors`) |
-| internet | 3200      | 3201, 3202 | 3210–3214 | 3290 mock API, 3292 Bright Payments                                                |
+| Zone     | Dev proxy | Shells     | Remotes   | Dev tools (root `package.json` `mfe.tools`, read with `toolPort`)                                  |
+| -------- | --------- | ---------- | --------- | -------------------------------------------------------------------------------------------------- |
+| intranet | 3100      | 3101       | 3110–3112 | 3190 mock API (`tools/mock-api`), 3192 Acme Service Desk (`tools/example-vendors`), 3193 Storybook |
+| internet | 3200      | 3201, 3202 | 3210–3214 | 3290 mock API, 3292 Bright Payments                                                                |
 
 The internet zone has two shells on one origin: `/` redirects to the Citizen Portal (root
 `package.json` `mfe.zones.internet.defaultShell`).
@@ -168,7 +181,7 @@ pnpm e2e:intranet          # e2e + axe WCAG 2.2 AA (after: pnpm --filter @org/sh
 | `pnpm -s apps [--zone=<z>] [--affected --base=<sha>] [--json\|--matrix]`                                                        | apps as data for CI matrices                                                                                                                                                                                  |
 | `pnpm -s validate-manifest <file> [--zone=<z>]`                                                                                 | check a per-environment `mfe-manifest.json`                                                                                                                                                                   |
 | `pnpm dev-manifest`                                                                                                             | regenerate each shell's `mfe-manifest.dev.json` from `remotes.json`, the remotes' ports and the shell's `mfe.devManifest` (dev scripts, `pnpm e2e` and the generators also do; `pnpm check` fails when stale) |
-| `pnpm storybook` / `pnpm build-storybook`                                                                                       | Storybook 10 of `@org/ui` (dev only, tools port :3192); static build to `packages/ui/storybook-static`                                                                                                        |
+| `pnpm storybook` / `pnpm build-storybook`                                                                                       | Storybook 10 of `@org/ui` (dev only, tools port :3193); static build to `packages/ui/storybook-static`                                                                                                        |
 | `pnpm test:ui` / `pnpm test:ui:update`                                                                                          | `@org/ui` axe (WCAG 2.2 AA) + screenshot tests of every story, light and dark                                                                                                                                 |
 | `pnpm format` / `pnpm format:check`                                                                                             | Prettier                                                                                                                                                                                                      |
 
