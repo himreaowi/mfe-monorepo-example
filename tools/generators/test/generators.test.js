@@ -95,7 +95,19 @@ describe('generators', () => {
       'type:shell',
       'access:public',
     ]);
-    assert.deepEqual(pkg.mfe, { port: 3100, federationName: 'intranet_shell' });
+    // mfe.devManifest: the extra content of the generated mfe-manifest.dev.json
+    assert.deepEqual(pkg.mfe, {
+      port: 3100,
+      federationName: 'intranet_shell',
+      devManifest: {
+        auth: { mock: true },
+        settings: { apiBaseUrl: 'http://localhost:3190/api' },
+      },
+    });
+    assert.equal(
+      pkg.scripts.dev,
+      'mfe-dev-manifest --shell-dir . && rspack dev',
+    );
     assert.deepEqual(Object.keys(pkg.scripts), [
       'dev',
       'build',
@@ -565,6 +577,16 @@ describe('generators', () => {
       format: 'esm',
       config: { title: 'Payments (mock vendor)' },
     });
+    // the vendor props come from the shell's package.json mfe.devManifest (the file is generated)
+    assert.deepEqual(
+      readJson(root, 'apps/internet/shell-internet/package.json').mfe
+        .devManifest.remotes.internet_payments,
+      { props: { vendor: dev.remotes.internet_payments.props.vendor } },
+    );
+    assert.equal(
+      readJson(root, 'apps/internet/payments/package.json').scripts.dev,
+      'rspack dev',
+    );
     assert.equal(dev.remotes.internet_services.props, undefined);
     assert.equal(dev.settings.apiBaseUrl, 'http://localhost:3290/api');
     const fallback = read(

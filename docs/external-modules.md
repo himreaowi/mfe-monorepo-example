@@ -81,7 +81,8 @@ mfe-manifest.json (per environment, DevOps):
   the shell theme, the user (reduced to `{ id, name, roles }`) and wires `onNavigate` to the
   shell router. `onEvent`/`onError` go to a demo panel: replace with real handling.
 - **The vendor URL is never in a build**: it comes from the manifest. Development: the shell's
-  `mfe-manifest.dev.json` points at the mock vendor and `utils/vendorConfig.ts` falls back to it when no
+  generated `mfe-manifest.dev.json` points at the mock vendor (from `mfe.devManifest` in the
+  shell's `package.json`) and `utils/vendorConfig.ts` falls back to it when no
   config is set (standalone). Both are dropped from production builds (verified by grep; a
   development build contains the URL).
 
@@ -189,8 +190,9 @@ Not generated; build it inside an adapter remote when needed:
 4. The vendor builds and tests with the **test host** (`node test-host/serve.mjs`), then delivers:
    versioned HTTPS URL per environment, SRI hash, origin list, release notes, support contact.
 5. **Create the adapter**: `pnpm gen:remote <zone> <name> --external [--private]`, `pnpm install`.
-   Put the vendor's test URL (or keep the mock) in the shell's `mfe-manifest.dev.json`
-   `props.vendor`, and run `pnpm dev:<zone>`.
+   Put the vendor's test URL (or keep the mock) in the shell's `package.json`
+   `mfe.devManifest.remotes.<federationName>.props.vendor` and run `pnpm dev:<zone>` (it
+   regenerates `mfe-manifest.dev.json`).
 6. **Review** against `CHECKLIST.md`: contract behaviour, no globals/global CSS, CSP, errors,
    WCAG 2.2 AA (keyboard, contrast in light and dark, screen reader), performance.
 7. **DevOps**: per environment, `props.vendor` (`url`, `integrity`, `config`) in the shell's

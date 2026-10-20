@@ -102,7 +102,7 @@ apps/
 └── [zone]/
     ├── shell-[zone]/              # host: routes from remotes.json, e2e/ suite
     │   ├── remotes.json           # registry (gen:remote)
-    │   ├── mfe-manifest.dev.json  # dev manifest (prod: per environment, DevOps)
+    │   ├── mfe-manifest.dev.json  # generated dev manifest (pnpm dev-manifest; prod: per environment, DevOps)
     │   ├── e2e/                   # zone e2e + a11y suite
     │   └── src/
     └── [remote]/                  # remote (or --external adapter)

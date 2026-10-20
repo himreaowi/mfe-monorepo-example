@@ -2,7 +2,7 @@
   "name": "@org/scripts",
   "version": "0.1.0",
   "private": true,
-  "description": "Repo guardrails (check-versions, check-apps), list-apps (CI matrix, affected apps), e2e runner and the mfe-preview static server",
+  "description": "Repo guardrails (check-versions, check-apps), dev manifest generator, list-apps (CI matrix, affected apps), e2e runner and the mfe-preview static server",
   "type": "module",
   "exports": {
     ".": "./src/index.js",
@@ -15,7 +15,8 @@
     "mfe-dev": "./bin/dev.js",
     "mfe-e2e": "./bin/e2e.js",
     "mfe-apps": "./bin/list-apps.js",
-    "mfe-validate-manifest": "./bin/validate-manifest.js"
+    "mfe-validate-manifest": "./bin/validate-manifest.js",
+    "mfe-dev-manifest": "./bin/dev-manifest.js"
   },
   "scripts": {
     "lint": "eslint .",

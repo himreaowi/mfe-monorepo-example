@@ -20,8 +20,6 @@ import { ZONES, UsageError, shellNames } from './names.js';
 
 /** File in the shell that lists its remotes (nav + routes). Managed by gen:remote. */
 export const REGISTRY_FILE = 'remotes.json';
-/** File in the shell served as /mfe-manifest.json by the dev server. */
-export const DEV_MANIFEST_FILE = 'mfe-manifest.dev.json';
 
 /**
  * @param {string} file
@@ -114,17 +112,5 @@ export function readRegistry(shellDir) {
   if (!Array.isArray(json.remotes)) {
     throw new UsageError(`${file}: "remotes" must be an array.`);
   }
-  return json;
-}
-
-/**
- * @param {string} shellDir
- * @returns {{ remotes: Record<string, { entry: string, props?: Record<string, unknown> }> } & Record<string, unknown>}
- */
-export function readDevManifest(shellDir) {
-  const file = path.join(shellDir, DEV_MANIFEST_FILE);
-  if (!fs.existsSync(file)) return { remotes: {} };
-  const json = readJson(file);
-  json.remotes ??= {};
   return json;
 }

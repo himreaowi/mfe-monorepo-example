@@ -59,18 +59,18 @@ Instructions for AI coding agents (and humans) working in this monorepo. Details
 
 ## Quick pointers
 
-| Concern                       | Location                                                                         |
-| ----------------------------- | -------------------------------------------------------------------------------- |
-| Generators + templates        | `tools/generators/`                                                              |
-| Guardrails (`pnpm check`)     | `tools/scripts/src/check-*.js`, [docs/guardrails.md](docs/guardrails.md)         |
-| Shell registry / dev manifest | `apps/<zone>/shell-<zone>/remotes.json`, `mfe-manifest.dev.json`                 |
-| Manifest schema               | `packages/mf-runtime/src/manifest/mfe-manifest.schema.json`                      |
-| Host props (remote side)      | `@org/mf-runtime/remote` (`useHostProps`, `useRemotePath`, `createRemoteApp`)    |
-| Auth                          | `@org/auth`, [docs/auth-contract.md](docs/auth-contract.md)                      |
-| Vendor modules                | `@org/mf-runtime/external`, [docs/external-modules.md](docs/external-modules.md) |
-| Dev mocks (per zone)          | `tools/mock-api` (`settings.apiBaseUrl`), `tools/mock-vendor`                    |
-| Build config                  | `@org/rspack-config` (apps keep a one-line `rspack.config.js`)                   |
-| Tests                         | [docs/testing.md](docs/testing.md)                                               |
-| Versions / gotchas            | [docs/toolchain.md](docs/toolchain.md)                                           |
-| Deploy                        | `deploy/`, [docs/devops-handoff.md](docs/devops-handoff.md)                      |
-| Spec Kit                      | `.specify/`, `.cursor/skills/speckit-*`, feature specs in `specs/`               |
+| Concern                       | Location                                                                                                                                            |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Generators + templates        | `tools/generators/`                                                                                                                                 |
+| Guardrails (`pnpm check`)     | `tools/scripts/src/check-*.js`, [docs/guardrails.md](docs/guardrails.md)                                                                            |
+| Shell registry / dev manifest | `apps/<zone>/shell-<zone>/remotes.json`; `mfe-manifest.dev.json` is generated (`pnpm dev-manifest`) from it + ports + the shell's `mfe.devManifest` |
+| Manifest schema               | `packages/mf-runtime/src/manifest/mfe-manifest.schema.json`                                                                                         |
+| Host props (remote side)      | `@org/mf-runtime/remote` (`useHostProps`, `useRemotePath`, `createRemoteApp`)                                                                       |
+| Auth                          | `@org/auth`, [docs/auth-contract.md](docs/auth-contract.md)                                                                                         |
+| Vendor modules                | `@org/mf-runtime/external`, [docs/external-modules.md](docs/external-modules.md)                                                                    |
+| Dev mocks (per zone)          | `tools/mock-api` (`settings.apiBaseUrl`), `tools/mock-vendor`                                                                                       |
+| Build config                  | `@org/rspack-config` (apps keep a one-line `rspack.config.js`)                                                                                      |
+| Tests                         | [docs/testing.md](docs/testing.md)                                                                                                                  |
+| Versions / gotchas            | [docs/toolchain.md](docs/toolchain.md)                                                                                                              |
+| Deploy                        | `deploy/`, [docs/devops-handoff.md](docs/devops-handoff.md)                                                                                         |
+| Spec Kit                      | `.specify/`, `.cursor/skills/speckit-*`, feature specs in `specs/`                                                                                  |

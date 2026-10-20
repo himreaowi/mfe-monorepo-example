@@ -7,7 +7,8 @@
  * - at most one shell per zone, named shell-<zone>
  * - no app's package.json depends on another app (cross-zone deps reported as such)
  * - no app's source imports another app (by package name or by a relative path)
- * - each shell's remotes.json / mfe-manifest.dev.json match the remotes of its zone
+ * - each shell's remotes.json matches the remotes of its zone, and its generated
+ *   mfe-manifest.dev.json is up to date (src/dev-manifest.js)
  * - the dev tool servers declared in the root package.json (`mfe.tools`) have unique offsets
  *   inside the zones' tools range and name existing workspace packages
  * - component layout (docs/coding-conventions.md "One folder per component"): components live in
@@ -28,6 +29,7 @@ import {
   ZONES,
 } from './zones.js';
 import { loadApps, loadWorkspace, readJson } from './workspace.js';
+import { devManifestStatus } from './dev-manifest.js';
 
 /** @typedef {import('./check-versions.js').Issue} Issue */
 /** @typedef {import('./workspace.js').WorkspacePackage} WorkspacePackage */
@@ -234,7 +236,7 @@ export async function checkApps({ root }) {
     (i) => (Number.isInteger(i.port) ? i.port : undefined),
     'app-port-duplicate',
     (port, list) =>
-      `Dev port ${port} is used by ${list.length} apps: ${names(list)}. Each app needs its own port; change "mfe.port" of all but one (and the shell's mfe-manifest.dev.json entry).`,
+      `Dev port ${port} is used by ${list.length} apps: ${names(list)}. Each app needs its own port; change "mfe.port" of all but one (then pnpm dev-manifest regenerates the shell's mfe-manifest.dev.json).`,
   );
   unique(
     (i) =>
@@ -334,7 +336,6 @@ export async function checkApps({ root }) {
   for (const shell of infos.filter((i) => i.type === 'shell')) {
     const shellDir = path.join(root, shell.app.dir);
     const registryFile = path.join(shellDir, 'remotes.json');
-    const manifestFile = path.join(shellDir, 'mfe-manifest.dev.json');
     const relRegistry = `${shell.app.dir}/remotes.json`;
     if (!fs.existsSync(registryFile)) {
       err(
@@ -353,18 +354,6 @@ export async function checkApps({ root }) {
         `${relRegistry} is not valid JSON: ${/** @type {Error} */ (e).message}`,
       );
       continue;
-    }
-    /** @type {any} */
-    let manifest = { remotes: {} };
-    if (fs.existsSync(manifestFile)) {
-      try {
-        manifest = readJson(manifestFile);
-      } catch (e) {
-        err(
-          'registry',
-          `${shell.app.dir}/mfe-manifest.dev.json is not valid JSON: ${/** @type {Error} */ (e).message}`,
-        );
-      }
     }
     const entries = Array.isArray(registry.remotes) ? registry.remotes : [];
     /** @type {Set<string>} */
@@ -398,12 +387,6 @@ export async function checkApps({ root }) {
           `${label}: federationName "${entry.federationName}" but ${target.app.name} has mfe.federationName "${String(target.federationName)}".`,
         );
       }
-      if (!manifest.remotes?.[entry.federationName]) {
-        warn(
-          'registry',
-          `${label}: no entry "${entry.federationName}" in ${shell.app.dir}/mfe-manifest.dev.json, so it cannot load in dev.`,
-        );
-      }
     }
     for (const remote of infos.filter(
       (i) =>
@@ -417,6 +400,36 @@ export async function checkApps({ root }) {
       );
     }
   }
+  // --- generated dev manifests ---------------------------------------------------------------
+  for (const shell of infos.filter((i) => i.type === 'shell')) {
+    const shellDir = path.join(root, shell.app.dir);
+    if (!fs.existsSync(path.join(shellDir, 'remotes.json'))) continue;
+    const devManifest = shell.app.pkg.mfe?.devManifest;
+    if (
+      devManifest !== undefined &&
+      (typeof devManifest !== 'object' ||
+        devManifest === null ||
+        Array.isArray(devManifest) ||
+        ('remotes' in devManifest &&
+          (typeof devManifest.remotes !== 'object' ||
+            devManifest.remotes === null ||
+            Array.isArray(devManifest.remotes))))
+    ) {
+      err(
+        'dev-manifest',
+        `${shell.app.file}: "mfe.devManifest" must be an object like { "auth": { "mock": true }, "settings": { … }, "remotes": { "<federationName>": { "props": { … } } } }.`,
+      );
+      continue;
+    }
+    const status = devManifestStatus(root, shellDir);
+    if (status.upToDate) continue;
+    const file = `${shell.app.dir}/mfe-manifest.dev.json`;
+    err(
+      'dev-manifest',
+      `${file} ${status.missing ? 'is missing' : status.invalid ? `is not valid JSON (${status.invalid})` : 'is out of date'}. It is generated from remotes.json, the remotes' package.json "mfe.port" and the shell's package.json "mfe.devManifest" (auth, settings, per-remote dev props): run pnpm dev-manifest (the shell's dev script, pnpm e2e and the generators also do). Do not edit it by hand; put extra dev props in "mfe.devManifest" of ${shell.app.file}.`,
+    );
+  }
+
   for (const zone of Object.keys(ZONES)) {
     const hasRemote = infos.some((i) => i.zone === zone && i.type === 'remote');
     const hasShell = infos.some((i) => i.zone === zone && i.type === 'shell');

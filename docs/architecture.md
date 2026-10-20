@@ -179,8 +179,9 @@ Example: a vendor's demo server for the `payments` adapter in the internet zone.
    `apps/internet/payments/package.json`, next to the mock API entry):
    `{ "projects": ["@org/example-vendor"], "target": "serve:internet" }`. `pnpm dev:internet`
    (and the e2e `webServer`) then starts it once.
-5. Point the dev manifest at it (`mfe-manifest.dev.json`, e.g. the adapter's `props.vendor.url`
-   `http://localhost:3292/mount.js`). The e2e global setup already waits for local vendor
+5. Point the dev manifest at it: in the shell's `package.json` `mfe.devManifest` (e.g. the
+   adapter's `remotes.<federationName>.props.vendor.url` `http://localhost:3292/mount.js`), then
+   `pnpm dev-manifest` (the generated `mfe-manifest.dev.json` is never edited by hand). The e2e global setup already waits for local vendor
    URLs; for any other endpoint pass `createZoneConfig({ extraHealthUrls: [...] })` in the
    shell's `playwright.config.ts`.
 6. `pnpm install && pnpm check`: a duplicate or out-of-range offset, or a `package` that does not

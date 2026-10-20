@@ -32,13 +32,14 @@ in the build):
 `format`: `esm` | `web-component` (+ `tagName`) | `script` (+ `global`) | `mf` (+ `remoteName`).
 `config` is passed to the vendor as `props.config`.
 
-In development the shell's `mfe-manifest.dev.json` points at the zone's **mock vendor**
+In development the shell's generated `mfe-manifest.dev.json` points at the zone's **mock vendor**
 (`tools/mock-vendor`, `__MOCK_VENDOR_URL__`, format `__VENDOR_FORMAT__`: a neutral demo widget),
 and `src/features/external/utils/vendorConfig.ts` falls back to it when no config is set (standalone
 mode). Production builds contain neither. Generated with another format:
 `pnpm gen:remote __ZONE__ <name> --external --vendor-format esm|web-component|script`.
-When the real vendor delivers, replace `props.vendor` (URL, format, `config`) in the dev
-manifest and per environment; the generic e2e checks keep working, the mock-vendor-only check
+When the real vendor delivers, replace `props.vendor` (URL, format, `config`) in the shell's
+`package.json` (`mfe.devManifest.remotes.__FEDERATION_NAME__.props.vendor`, then
+`pnpm dev-manifest`) and per environment; the generic e2e checks keep working, the mock-vendor-only check
 skips itself.
 
 ## Commands

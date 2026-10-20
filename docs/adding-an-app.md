@@ -35,7 +35,8 @@ apps/<zone>/<name>/                 new remote (package @org/<zone>-<name>)
     features/demo/                  api/, hooks/, types/, utils/, components/<Name>/ (one folder per component), index.ts
 apps/<zone>/shell-<zone>/
   remotes.json                      + { name, title, path, federationName, package, access, kind }
-  mfe-manifest.dev.json             + "<federationName>": { "entry": "http://localhost:<port>/mf-manifest.json" }
+  mfe-manifest.dev.json             regenerated: + "<federationName>": { "entry": "http://localhost:<port>/mf-manifest.json" }
+  package.json (external only)      mfe.devManifest.remotes.<federationName>.props.vendor (the dev mock vendor)
 ```
 
 | Derived value   | Example (`internet my-profile`)                                    |
@@ -103,7 +104,7 @@ platform team review.
 ## Removing or renaming an app
 
 There is no generator for this. To remove a remote: delete `apps/<zone>/<name>`, remove its
-entry from the shell's `remotes.json` and `mfe-manifest.dev.json`, run `pnpm install` and
-`pnpm check`, and ask DevOps to remove it from the environment manifests (after the shell
+entry from the shell's `remotes.json` (and from `mfe.devManifest.remotes` in the shell's
+`package.json`, if any), run `pnpm dev-manifest`, `pnpm install` and `pnpm check`, and ask DevOps to remove it from the environment manifests (after the shell
 without the route is deployed). Renaming = generating the new remote, moving the code, and
 removing the old one (the federation name is part of the runtime contract).

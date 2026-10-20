@@ -36,10 +36,12 @@ describe('check-apps', () => {
       ...validApps(),
       'intranet/leave': app('leave', { port: 3101, access: 'private' }),
     });
-    assert.deepEqual(rules(r.errors), ['app-port-duplicate']);
-    assert.match(r.errors[0].message, /Dev port 3101 is used by 2 apps/);
-    assert.match(r.errors[0].message, /@org\/intranet-leave/);
-    assert.match(r.errors[0].message, /@org\/intranet-staff/);
+    // the dev manifest still has the old port: regenerated after the fix
+    assert.deepEqual(rules(r.errors), ['app-port-duplicate', 'dev-manifest']);
+    const duplicate = r.errors.find((e) => e.rule === 'app-port-duplicate');
+    assert.match(duplicate?.message ?? '', /Dev port 3101 is used by 2 apps/);
+    assert.match(duplicate?.message ?? '', /@org\/intranet-leave/);
+    assert.match(duplicate?.message ?? '', /@org\/intranet-staff/);
   });
 
   it('fails on a port outside the zone range or missing', async () => {
@@ -47,10 +49,10 @@ describe('check-apps', () => {
       ...validApps(),
       'intranet/staff': app('staff', { port: 3290 }),
     });
-    assert.deepEqual(rules(r.errors), ['app-port']);
+    assert.deepEqual(rules(r.errors), ['app-port', 'dev-manifest']);
     assert.match(r.errors[0].message, /outside the intranet range 3100-3189/);
     r = await run({ ...validApps(), 'intranet/staff': app('staff', {}) });
-    assert.deepEqual(rules(r.errors), ['app-port']);
+    assert.deepEqual(rules(r.errors), ['app-port', 'dev-manifest']);
   });
 
   it('fails on a port in the zone range reserved for dev tools', async () => {
@@ -58,7 +60,7 @@ describe('check-apps', () => {
       ...validApps(),
       'intranet/staff': app('staff', { port: 3191 }),
     });
-    assert.deepEqual(rules(r.errors), ['app-port']);
+    assert.deepEqual(rules(r.errors), ['app-port', 'dev-manifest']);
     assert.match(
       r.errors[0].message,
       /port 3191 is reserved for the intranet dev tools \(3190-3199/,
@@ -339,9 +341,88 @@ describe('check-apps', () => {
       ],
     };
     const r = await run(validApps(), files);
-    assert.deepEqual(rules(r.errors), ['registry', 'registry', 'registry']);
-    // leave not registered; internet_services missing from the intranet dev manifest
-    assert.deepEqual(rules(r.warnings), ['registry', 'registry']);
+    assert.deepEqual(rules(r.errors), [
+      // the registry changed, the committed dev manifest did not
+      'dev-manifest',
+      'registry',
+      'registry',
+      'registry',
+    ]);
+    // leave not registered
+    assert.deepEqual(rules(r.warnings), ['registry']);
+  });
+
+  describe('generated dev manifest (mfe-manifest.dev.json)', () => {
+    const vendor = { url: 'http://localhost:3191/mount.js', format: 'esm' };
+    /** @param {Record<string, unknown>} devManifest */
+    const shellWith = (devManifest) => {
+      const shell = app('shell', { type: 'shell', port: 3100 });
+      return { ...shell, mfe: { ...shell.mfe, devManifest } };
+    };
+    const devManifest = {
+      auth: { mock: true },
+      settings: { apiBaseUrl: 'http://localhost:3190/api' },
+      remotes: { intranet_staff: { props: { vendor } } },
+    };
+
+    it('passes when the file is what the generator writes (ports, registry order, mfe.devManifest)', async () => {
+      /** @type {Record<string, object>} */
+      const files = validRegistries();
+      files['apps/intranet/shell-intranet/mfe-manifest.dev.json'] = {
+        remotes: {
+          intranet_staff: {
+            entry: 'http://localhost:3101/mf-manifest.json',
+            props: { vendor },
+          },
+          intranet_leave: { entry: 'http://localhost:3102/mf-manifest.json' },
+        },
+        auth: { mock: true },
+        settings: { apiBaseUrl: 'http://localhost:3190/api' },
+      };
+      const r = await run(
+        { ...validApps(), 'intranet/shell-intranet': shellWith(devManifest) },
+        files,
+      );
+      assert.deepEqual(r.errors, []);
+    });
+
+    it('fails when a remote port changed, the file is missing or edited by hand', async () => {
+      const moved = await run({
+        ...validApps(),
+        'intranet/leave': app('leave', { port: 3105, access: 'private' }),
+      });
+      assert.deepEqual(rules(moved.errors), ['dev-manifest']);
+      assert.match(
+        moved.errors[0].message,
+        /shell-intranet\/mfe-manifest\.dev\.json is out of date\. It is generated from remotes\.json.*run pnpm dev-manifest/,
+      );
+      const files = validRegistries();
+      delete (
+        /** @type {Record<string, unknown>} */ (files)[
+          'apps/internet/shell-internet/mfe-manifest.dev.json'
+        ]
+      );
+      const missing = await run(validApps(), files);
+      assert.deepEqual(rules(missing.errors), ['dev-manifest']);
+      assert.match(missing.errors[0].message, /is missing/);
+      const edited = await run({
+        ...validApps(),
+        // dev props must come from mfe.devManifest, not from the file
+        'intranet/shell-intranet': shellWith(devManifest),
+      });
+      assert.deepEqual(rules(edited.errors), ['dev-manifest']);
+    });
+
+    it('fails on a malformed mfe.devManifest', async () => {
+      const r = await run({
+        ...validApps(),
+        'intranet/shell-intranet': shellWith(
+          /** @type {any} */ ({ remotes: [] }),
+        ),
+      });
+      assert.deepEqual(rules(r.errors), ['dev-manifest']);
+      assert.match(r.errors[0].message, /"mfe\.devManifest" must be an object/);
+    });
   });
 
   describe('dev tool servers (root package.json mfe.tools)', () => {

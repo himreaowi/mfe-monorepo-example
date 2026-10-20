@@ -14,3 +14,12 @@ export {
   GLOBAL_FILES,
 } from './apps.js';
 export { validateManifestFile } from './manifest.js';
+export {
+  DEV_MANIFEST_FILE,
+  REGISTRY_FILE,
+  buildDevManifest,
+  devManifestStatus,
+  formatDevManifest,
+  shellDirs,
+  writeDevManifest,
+} from './dev-manifest.js';

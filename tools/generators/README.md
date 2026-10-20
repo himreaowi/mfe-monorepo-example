@@ -10,10 +10,10 @@ pnpm install
 pnpm dev:<zone>
 ```
 
-| Generator    | Creates                                                                                | Package              | Federation name | Port                                            |
-| ------------ | -------------------------------------------------------------------------------------- | -------------------- | --------------- | ----------------------------------------------- |
-| `gen:shell`  | `apps/<zone>/shell-<zone>` (incl. the zone's e2e suite in `e2e/`)                      | `@org/shell-<zone>`  | `<zone>_shell`  | first of the zone (3100/3200)                   |
-| `gen:remote` | `apps/<zone>/<name>` + entry in the shell's `remotes.json` and `mfe-manifest.dev.json` | `@org/<zone>-<name>` | `<zone>_<name>` | lowest free in the zone (3101–3189 / 3201–3289) |
+| Generator    | Creates                                                                                          | Package              | Federation name | Port                                            |
+| ------------ | ------------------------------------------------------------------------------------------------ | -------------------- | --------------- | ----------------------------------------------- |
+| `gen:shell`  | `apps/<zone>/shell-<zone>` (incl. the zone's e2e suite in `e2e/`)                                | `@org/shell-<zone>`  | `<zone>_shell`  | first of the zone (3100/3200)                   |
+| `gen:remote` | `apps/<zone>/<name>` + entry in the shell's `remotes.json` (regenerates `mfe-manifest.dev.json`) | `@org/<zone>-<name>` | `<zone>_<name>` | lowest free in the zone (3101–3189 / 3201–3289) |
 
 - **Titles** (nav label, `<h1>`, `APP_TITLE`) are derived from the name in **sentence case**,
   with a short list of acronyms kept in capitals (`TITLE_ACRONYMS` in `src/names.js`: IT, HR,
@@ -40,7 +40,8 @@ pnpm dev:<zone>
   wraps its route in `<RequireAuth>` (`@org/auth`): signed-out users get a sign-in prompt and the
   remote is not downloaded before sign-in. Every remote receives host prop `user`.
 - Shells always render `<AuthProvider>`; the client comes from the manifest's `auth` section
-  (`mfe-manifest.dev.json` gets `"auth": { "mock": true }`, the dev-only mock sign-in). See
+  (the shell's `package.json` `mfe.devManifest` has `"auth": { "mock": true }`, the dev-only mock
+  sign-in, and `settings.apiBaseUrl` → the zone's mock API). See
   `docs/auth-contract.md`.
 - `--external`: an **adapter remote** for a vendor module (tag `kind:external`, registry
   `"kind": "external"`). `src/features/external/components/ExternalModuleHost/` renders
