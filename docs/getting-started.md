@@ -200,6 +200,6 @@ but without the template's history; the first `git merge template/main` then nee
 | `ERR_PNPM_IGNORED_BUILDS` after adding a dependency             | the package has an install script: decide in `allowBuilds` (`pnpm-workspace.yaml`), see [toolchain.md](toolchain.md) |
 | a remote shows "unavailable" in the shell                       | is its dev server running? `pnpm dev:<zone>` starts all; check the shell's `mfe-manifest.dev.json` port              |
 | changed `webpack.config.js` or a shared config, nothing happens | restart the dev server (webpack-dev-server does not reload config files)                                             |
-| e2e: "Executable doesn't exist"                                 | `pnpm --filter @org/shell-<zone> exec playwright install chromium`                                                   |
+| e2e: "Executable doesn't exist"                                 | `pnpm --filter @org/shell-<name> exec playwright install chromium`                                                   |
 | e2e: "Not responding after 180 s"                               | a port is taken by a stale server (`lsof -i :3110`) or a remote fails to compile (`pnpm dev:<zone>` shows why)       |
 | `pnpm check` fails                                              | every message names the fix; [guardrails.md](guardrails.md)                                                          |

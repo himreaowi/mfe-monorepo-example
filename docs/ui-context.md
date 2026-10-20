@@ -59,7 +59,7 @@ _TODO: product-specific theme UX (e.g. high-contrast theme), if any._
 
 ## Layout: the shell owns it
 
-Each shell owns its layout: `apps/<zone>/shell-<zone>/src/layouts/ShellLayout/` is ordinary
+Each shell owns its layout: `apps/<zone>/shell-<name>/src/layouts/ShellLayout/` is ordinary
 code of that shell (`ShellLayout.tsx`, `ShellLayout.module.scss`, `ShellLayout.test.tsx`). `pnpm gen:shell <zone> [--layout top|side]` copies a **starter** there once; after
 that there is no layout option anywhere: the team edits the files. `@org/ui` gives building
 blocks only (`SkipLink`, `Brand`, `ThemeToggle`, `useMenuDisclosure`, `useFitLayout`, …), so

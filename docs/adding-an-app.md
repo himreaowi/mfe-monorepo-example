@@ -35,7 +35,7 @@ apps/<zone>/<name>/                 new remote (package @org/<zone>-<name>)
   src/                              app/, features/demo, pages/, layouts/, components/, core/
     features/demo/                  api/, hooks/, types/, utils/, components/<Name>/ (one folder per component), index.ts (public API)
     features/demo/state/            only with --state: demoReducer.ts (+ test), DemoContext.tsx (+ test), used by ItemPicker + SelectionSummary
-apps/<zone>/shell-<zone>/
+apps/<zone>/shell-<name>/
   remotes.json                      + { name, title, path, federationName, package, access, kind }
   mfe-manifest.dev.json             regenerated: + "<federationName>": { "entry": "http://localhost:<port>/mf-manifest.json" }
   package.json (external only)      mfe.devManifest.remotes.<federationName>.props.vendor (the dev mock vendor)
@@ -66,7 +66,7 @@ standalone mode and the axe scans cover it with no test changes.
 3. Adjust `remotes.json` (`title`, `path`) if the defaults do not fit. Keep `name`,
    `federationName`, `package` and `access` in sync with the remote (`pnpm check` verifies).
 4. Mock host props for standalone mode: `standaloneProps` in `src/app/apps.tsx`.
-5. Tests: unit tests next to the code; feature flows as `apps/<zone>/shell-<zone>/e2e/<name>.spec.ts`
+5. Tests: unit tests next to the code; feature flows as `apps/<zone>/shell-<name>/e2e/<name>.spec.ts`
    ([testing.md](testing.md)).
 6. Dependencies: [adding-dependencies.md](adding-dependencies.md) (catalog vs app-local).
 7. Gates: `pnpm check && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm e2e:<zone>`.
