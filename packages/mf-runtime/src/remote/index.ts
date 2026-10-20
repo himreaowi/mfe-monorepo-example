@@ -2,8 +2,10 @@
 export {
   createRemoteApp,
   type CreateRemoteAppOptions,
+  type ProviderComponent,
   type RemoteAppParts,
 } from './createRemoteApp';
+export { useApiClient } from './useApiClient';
 export {
   HostPropsProvider,
   useHostProps,

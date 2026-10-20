@@ -3,13 +3,14 @@
  * App generators.
  *
  *   pnpm gen:shell <zone> [--layout top|side] [--title "<text>"]   (--layout: starter layout to copy)
- *   pnpm gen:remote <zone> <name> [--private] [--external [--vendor-format <format>]] [--title "<text>"]
+ *   pnpm gen:remote <zone> <name> [--private] [--state] [--external [--vendor-format <format>]] [--title "<text>"]
  *
  * Apps live in apps/<zone>/<name>. Every app gets its own package.json (deps via `catalog:` /
  * `workspace:*`), Nx tags and a dev port from its zone's range.
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { writeDevManifest } from '@org/scripts';
 import { toolPort } from '@org/scripts/zones';
 import {
   UsageError,
@@ -20,11 +21,10 @@ import {
   shellNames,
 } from './names.js';
 import {
-  DEV_MANIFEST_FILE,
   REGISTRY_FILE,
   allocatePort,
   listAllApps,
-  readDevManifest,
+  readJson,
   readRegistry,
   requireShellDir,
 } from './workspace.js';
@@ -214,11 +214,15 @@ function sorted(obj) {
  *   packageName: string, description: string, tags: string[], port: number,
  *   federationName: string, extraDependencies?: Record<string, string>,
  *   nxTargets?: Record<string, unknown>, shell?: boolean,
- * }} o
+ *   devManifest?: Record<string, unknown>,
+ * }} o `devManifest` (shells): extra content of the generated mfe-manifest.dev.json
  */
 function appPackageJson(o) {
   const scripts = {
-    dev: 'rspack dev',
+    // a shell regenerates its mfe-manifest.dev.json first (remotes.json + remote ports)
+    dev: o.shell
+      ? 'mfe-dev-manifest --shell-dir . && rspack dev'
+      : 'rspack dev',
     build: 'rspack build',
     preview: 'mfe-preview',
     lint: 'eslint .',
@@ -237,7 +241,11 @@ function appPackageJson(o) {
     type: 'module',
     scripts,
     nx: o.nxTargets ? { tags: o.tags, targets: o.nxTargets } : { tags: o.tags },
-    mfe: { port: o.port, federationName: o.federationName },
+    mfe: {
+      port: o.port,
+      federationName: o.federationName,
+      ...(o.devManifest ? { devManifest: o.devManifest } : {}),
+    },
     dependencies: sorted({
       ...APP_DEPENDENCIES,
       ...(o.extraDependencies ?? {}),
@@ -307,6 +315,13 @@ export async function generateShell({ root, zone, title, layout = 'top' }) {
       // `nx dev <shell>` / `pnpm dev:<zone>` also start the zone's dev-only mock API
       nxTargets: devToolTargets(zone),
       shell: true,
+      // extra content of the generated mfe-manifest.dev.json (pnpm dev-manifest): dev-only mock
+      // sign-in (@org/auth) and the zone's mock API (tools/mock-api); production manifests list
+      // the BFF URLs and the real API instead
+      devManifest: {
+        auth: { mock: true },
+        settings: { apiBaseUrl: mockApiBaseUrl(zone, root) },
+      },
     }),
   );
   await writeJson(path.join(dir, REGISTRY_FILE), {
@@ -314,13 +329,7 @@ export async function generateShell({ root, zone, title, layout = 'top' }) {
       'Remotes of this shell (nav + routes). Managed by `pnpm gen:remote`; edit title/path by hand if needed. URLs per environment live in mfe-manifest.json, not here.',
     remotes: [],
   });
-  await writeJson(path.join(dir, DEV_MANIFEST_FILE), {
-    remotes: {},
-    // dev-only mock sign-in (@org/auth); production manifests list the BFF URLs instead
-    auth: { mock: true },
-    // dev-only mock API (tools/mock-api); production manifests point at the real API
-    settings: { apiBaseUrl: mockApiBaseUrl(zone, root) },
-  });
+  writeDevManifest(root, dir);
   return {
     dir,
     port,
@@ -335,9 +344,11 @@ export async function generateShell({ root, zone, title, layout = 'top' }) {
  * Generate apps/<zone>/<name> and register it with the zone's shell.
  * @param {{
  *   root: string, zone: string, name: string, private?: boolean, external?: boolean,
- *   vendorFormat?: string, title?: string,
+ *   vendorFormat?: string, title?: string, state?: boolean,
  * }} options `vendorFormat` (only with `external`): format of the dev mock vendor config
- * (`esm` default, `web-component`, `script`); `title`: overrides the title derived from the name
+ * (`esm` default, `web-component`, `script`); `title`: overrides the title derived from the name;
+ * `state`: add the feature-state example (`features/demo/state/`: reducer + Context, used by
+ * ItemPicker and SelectionSummary on the overview page; templates/remote-state)
  * @returns {Promise<{ dir: string, port: number, packageName: string, federationName: string, entry: RegistryEntry }>}
  */
 export async function generateRemote({
@@ -348,9 +359,15 @@ export async function generateRemote({
   external = false,
   vendorFormat,
   title,
+  state = false,
 }) {
   assertZone(zone);
   assertRemoteName(name);
+  if (state && external) {
+    throw new UsageError(
+      '--state adds feature state to the demo feature of a React remote; an --external adapter has none (the vendor owns its state).',
+    );
+  }
   if (vendorFormat !== undefined && !external) {
     throw new UsageError('--vendor-format only applies to --external remotes.');
   }
@@ -381,7 +398,11 @@ export async function generateRemote({
     : undefined;
 
   const rendered = await renderLayers(
-    external ? ['remote', 'external'] : ['remote'],
+    external
+      ? ['remote', 'external']
+      : state
+        ? ['remote', 'remote-state']
+        : ['remote'],
     dir,
     {
       ZONE: zone,
@@ -436,13 +457,20 @@ export async function generateRemote({
   registry.remotes.push(entry);
   await writeJson(path.join(shellDir, REGISTRY_FILE), registry);
 
-  const manifest = readDevManifest(shellDir);
-  manifest.remotes[names.federationName] = {
-    entry: `http://localhost:${port}/mf-manifest.json`,
-    // per-environment vendor config; dev points at the zone's mock vendor (tools/mock-vendor)
-    ...(vendor ? { props: { vendor } } : {}),
-  };
-  await writeJson(path.join(shellDir, DEV_MANIFEST_FILE), manifest);
+  if (vendor) {
+    // per-environment vendor config; dev points at the zone's mock vendor (tools/mock-vendor):
+    // the shell's mfe.devManifest feeds the generated mfe-manifest.dev.json
+    const shellPkgFile = path.join(shellDir, 'package.json');
+    const shellPkg = readJson(shellPkgFile);
+    shellPkg.mfe ??= {};
+    shellPkg.mfe.devManifest ??= {};
+    shellPkg.mfe.devManifest.remotes ??= {};
+    shellPkg.mfe.devManifest.remotes[names.federationName] = {
+      props: { vendor },
+    };
+    await writeJson(shellPkgFile, shellPkg);
+  }
+  writeDevManifest(root, shellDir);
 
   return {
     dir,

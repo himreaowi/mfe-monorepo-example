@@ -23,6 +23,14 @@ response (e.g. a 422 `{ "message", "errors": { "<field>": "<message>" } }`), `un
 is empty or not JSON. `joinUrl(base, path)`. `defineApiRoutes(obj)`
 (typed identity helper).
 
+`createApiClient(settings, { fetch? })`: the apps' client, base URL from
+`settings.apiBaseUrl` (mfe-manifest.json), `credentials: 'include'`; `apiBaseUrlFrom(settings)`.
+React apps call `useApiClient()` instead (`@org/mf-runtime/remote` in a remote, settings from
+host props; `@org/mf-runtime` in a shell, settings from the loaded manifest). It lives in
+`@org/mf-runtime` because that package owns host props and the manifest context; this package
+stays framework-free (no React) and depends on nothing, so `@org/mf-runtime` → `@org/http-client`
+cannot form a cycle.
+
 No bearer-token option: auth is a backend session (BFF, cookies), so the browser never handles
 tokens. Use `credentials: 'include'` for a cross-origin BFF.
 

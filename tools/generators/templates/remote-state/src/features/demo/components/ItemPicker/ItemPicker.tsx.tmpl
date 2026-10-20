@@ -1,0 +1,28 @@
+import { useDemoDispatch, useDemoState } from '../../state/DemoContext';
+import type { Item } from '../../types/item';
+import styles from './ItemPicker.module.scss';
+
+/**
+ * Checkboxes to select items. The items come from the page (API data, props); which ones are
+ * selected is feature state (DemoContext), shared with SelectionSummary.
+ */
+export function ItemPicker({ items }: { items: Item[] }) {
+  const { selectedIds } = useDemoState();
+  const dispatch = useDemoDispatch();
+  if (items.length === 0) return null;
+  return (
+    <fieldset className={styles.picker} data-testid="item-picker">
+      <legend className={styles.legend}>Select items</legend>
+      {items.map((item) => (
+        <label key={item.id} className={styles.option}>
+          <input
+            type="checkbox"
+            checked={selectedIds.includes(item.id)}
+            onChange={() => dispatch({ type: 'itemToggled', id: item.id })}
+          />
+          {item.name}
+        </label>
+      ))}
+    </fieldset>
+  );
+}

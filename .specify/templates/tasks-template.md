@@ -21,12 +21,13 @@ description: 'Task list template for feature implementation'
 ## Path Conventions
 
 - Apps: `apps/<zone>/<name>/src/` (canonical layout: `app/`, `features/`,
-  `pages/`, `layouts/`, `components/`, `core/`, `services/`, `main.tsx`,
-  `bootstrap.tsx`); shared code: `packages/<name>/src/`
+  `pages/`, `layouts/`, `components/`, `core/`, `services/`,
+  `main.tsx`); shared code: `packages/<name>/src/`
 - New apps: a setup task runs the generator (`pnpm gen:shell <zone>`,
   `pnpm gen:remote <zone> <name> [--private] [--external]`) and `pnpm install`;
   never copy an app folder
-- Shells: routes come from `remotes.json`; dev URLs from `mfe-manifest.dev.json`;
+- Shells: routes come from `remotes.json`; dev URLs from the generated `mfe-manifest.dev.json`
+  (`pnpm dev-manifest`, extra dev props in the shell's package.json `mfe.devManifest`);
   production URLs are per-environment manifest changes for DevOps (list them)
 - Remotes: tasks cover standalone and embedded behaviour; no imports of other
   remotes or shells

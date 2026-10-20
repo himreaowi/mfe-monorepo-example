@@ -21,10 +21,15 @@ copied from the `__SHELL_LAYOUT__` starter, `--layout`).
 - `remotes.json` is the **registry**: one entry per remote (`name`, `title`, `path`,
   `federationName`, `package`, `access`, `kind`). The nav and the routes (`<path>/*` →
   `<RemoteApp>`) are built from it. `pnpm gen:remote __ZONE__ <name>` adds entries.
-- `mfe-manifest.dev.json` is served as `/mfe-manifest.json` by the dev server. It points each
-  remote at its dev server (`http://localhost:<port>/mf-manifest.json`) and
-  `settings.apiBaseUrl` at the zone's dev-only mock API (`__MOCK_API_URL__`, `tools/mock-api`);
-  the shell passes `settings` to every remote.
+- `mfe-manifest.dev.json` is served as `/mfe-manifest.json` by the dev server. It is
+  **generated** (`pnpm dev-manifest` at the repo root; this shell's `dev` script, `pnpm e2e` and
+  the generators run it too), never edited by hand: each remote of `remotes.json` points at its
+  dev server (`http://localhost:<its package.json mfe.port>/mf-manifest.json`); everything else
+  comes from `mfe.devManifest` in this shell's `package.json`: `auth` (`{ "mock": true }`),
+  `settings.apiBaseUrl` (the zone's dev-only mock API, `__MOCK_API_URL__`, `tools/mock-api`) and
+  per-remote dev `props` (`remotes.<federationName>.props`, e.g. an adapter's `vendor`).
+  `pnpm check` fails when the file is out of date. The shell passes `settings` to every remote. Shell code that calls an API uses
+  `useApiClient()` from `@org/mf-runtime` (same base URL, `credentials: 'include'`).
 - In production the shell fetches `/mfe-manifest.json` at startup. It is **not** built in: DevOps
   writes one per environment next to `index.html` (same shape, real URLs). One build serves every
   environment.
@@ -34,7 +39,7 @@ copied from the `__SHELL_LAYOUT__` starter, `--layout`).
 
 ## Auth
 
-`src/bootstrap.tsx` creates the auth client from the manifest's `auth` section
+`src/main.tsx` creates the auth client from the manifest's `auth` section
 (`loadAuthClient` from `@org/auth`) and `App` wraps everything in `<AuthProvider>` (always; auth
 is optional per environment):
 
@@ -80,7 +85,7 @@ plus `UserMenu` from `@org/auth`.
   (`RemoteNav` takes `orientation="vertical"` for a sidebar). When to choose which:
   `docs/ui-context.md` "Navigation: top or side" at the repo root.
 - **Shell-wide styles** (fonts, a page token override for the whole shell):
-  `src/styles/shell.scss`, imported in `src/bootstrap.tsx` after `@org/design-tokens/global.scss`.
+  `src/styles/shell.scss`, imported in `src/main.tsx` after `@org/design-tokens/global.scss`.
 - **e2e contract**: the generated header tests find the layout through a few hooks the starter
   sets (`data-testid` `main-header` with `data-layout` and `data-nav-placement`,
   `header-brand`, `header-menu-button`, `header-panel`; the "Menu" button; the `<nav>` named
@@ -116,8 +121,7 @@ spec or project:
 ```
 e2e/                  zone e2e suite (Playwright + axe), helpers.ts reads remotes.json
 src/
-  main.tsx            import('./bootstrap') (shared singletons are negotiated first)
-  bootstrap.tsx       global styles, PWA, load + validate /mfe-manifest.json, render
+  main.tsx            entry: global styles, PWA, load + validate /mfe-manifest.json, render
   styles/shell.scss   shell-wide global styles (empty by default)
   app/                App (providers + router), routes, registry typing
   components/         RemoteNav/
@@ -127,5 +131,4 @@ src/
   layouts/            ShellLayout/ (this shell's own layout: structure, colours, tests)
   pages/              HomePage, RemotePage, NotFoundPage
   core/               constants, types
-  services/           http client (base URL from manifest settings)
 ```

@@ -2,7 +2,7 @@ import { useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useMenuDisclosure } from '../useMenuDisclosure';
+import { useMenuDisclosure } from '../useMenuDisclosure/useMenuDisclosure';
 import {
   FIT_HYSTERESIS_PX,
   decideFitLayout,

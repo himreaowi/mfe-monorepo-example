@@ -30,11 +30,11 @@ several tests of a feature goes to `features/<feature>/__fixtures__/`.
 
 What the generated apps test, as examples to follow:
 
-| App              | Tests                                                                                                                                                                                                                 |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Shell            | routes (home, `/<remote>/*` mounts `<RemoteApp>`, 404) with `@org/mf-runtime` mocked; `RemotePage` (private remote not rendered before sign-in, `user` host prop); nav; startup error; http client                    |
-| Remote           | `EmbeddedApp` below a shell-like splat route (host props, links get the mount path) and `StandaloneApp` (mock host props, own chrome); the exposed module's import graph never reaches global styles or `registerPwa` |
-| External adapter | `ExternalModuleHost` with `<ExternalModule>` stubbed (manifest config, sub-path, theme, minimal user, `onNavigate` through the router, vendor events); `utils/vendorConfig` dev fallback                              |
+| App              | Tests                                                                                                                                                                                                                                                    |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Shell            | routes (home, `/<remote>/*` mounts `<RemoteApp>`, 404) with `@org/mf-runtime` mocked; `RemotePage` (private remote not rendered before sign-in, `user` host prop); nav; startup error; http client                                                       |
+| Remote           | `EmbeddedApp` below a shell-like splat route (host props, links get the mount path) and `StandaloneApp` (mock host props, own chrome); the exposed module's (`apps.tsx`) import graph never reaches global styles or `registerPwa` (`scanExposedModule`) |
+| External adapter | `ExternalModuleHost` with `<ExternalModule>` stubbed (manifest config, sub-path, theme, minimal user, `onNavigate` through the router, vendor events); `utils/vendorConfig` dev fallback                                                                 |
 
 Rules:
 
@@ -56,12 +56,12 @@ jsdom implements no Fetch API: in a plain `jest-environment-jsdom`, `fetch`, `He
 
 Recommended split (the generated remote's `features/demo` does exactly this):
 
-| Layer                     | How to test                                                                                                                          |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `features/*/api/` (pure)  | real `@org/http-client` + a fake fetch: `createFakeFetch` from `@org/jest-config/fetch`; assert URLs, bodies, parsed results, errors |
-| `features/*/hooks/`, UI   | `jest.mock('../api')` (or pass a stubbed client): render states (loading, data, empty, error, retry) without HTTP                    |
-| `services/http.ts`        | base URL resolution (`http.url(apiRoutes…)`), no request                                                                             |
-| Real API / mock API flows | e2e (`tools/mock-api` runs with `pnpm dev:<zone>`)                                                                                   |
+| Layer                     | How to test                                                                                                                                 |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `features/*/api/` (pure)  | real `@org/http-client` + a fake fetch: `createFakeFetch` from `@org/jest-config/fetch`; assert URLs, bodies, parsed results, errors        |
+| `features/*/hooks/`       | `jest.mock('../api/itemsApi')` + `renderHook` inside `HostPropsProvider` (`settings.apiBaseUrl`): loading, data, error, retry, unconfigured |
+| feature components        | props only (pages fetch, components display): render each state from props, assert callbacks; no API mock needed                            |
+| Real API / mock API flows | e2e (`tools/mock-api` runs with `pnpm dev:<zone>`)                                                                                          |
 
 ```ts
 import { createFakeFetch } from '@org/jest-config/fetch';
@@ -100,17 +100,17 @@ Code that runs in Node (configs, CLIs, generators) is tested with `node --test`,
 (`@rspack/core` is ESM-only, see [toolchain.md](toolchain.md)). These also hold the **contract
 tests** that keep generated or shared artefacts honest:
 
-| Package                      | Covers                                                                                                                                                                                                                                                                      |
-| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `tools/generators`           | generates both zones into a temp workspace (one shell per starter layout, `top` and `side`), checks files, metadata, registry, dev manifest; `check-apps`/`check-versions` pass                                                                                             |
-| `tools/scripts`              | every guardrail rule with fixture workspaces; `list-apps` (incl. `--affected`); the `deploy/` templates; `validate-manifest`                                                                                                                                                |
-| `packages/rspack-config`     | config shape (singletons, publicPath, HTML entry, CSS extraction in dev and prod, dev CSP, history fallback), real builds (CSS module salting, hashed `.css` per chunk in prod, unhashed `.css` + linked `.css.map` in dev with the same class names, absolute script URLs) |
-| `packages/vendor-kit`        | `mount-contract.d.ts` is up to date with `mf-runtime`; the kit builds and zips                                                                                                                                                                                              |
-| `packages/mf-runtime` (Jest) | the generated manifest validator is up to date with `mfe-manifest.schema.json`; remote CSS is left to the chunk loader (`remoteCssPlugin`)                                                                                                                                  |
-| `packages/playwright-config` | zone loading, config (projects, servers, CI), URL waiting, axe report formatting                                                                                                                                                                                            |
-| `packages/jest-config`       | the fake fetch helpers                                                                                                                                                                                                                                                      |
-| `tools/mock-vendor`          | the mock vendor implements the mount contract (esm, web-component, script), styles via a constructable stylesheet                                                                                                                                                           |
-| `tools/mock-api`             | health, items (list/filter/create, 422), reset, CORS for localhost with credentials, per-zone ports                                                                                                                                                                         |
+| Package                      | Covers                                                                                                                                                                                                                                                                                                                    |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tools/generators`           | generates both zones into a temp workspace (one shell per starter layout, `top` and `side`), checks files, metadata, registry, dev manifest; `check-apps`/`check-versions` pass                                                                                                                                           |
+| `tools/scripts`              | every guardrail rule with fixture workspaces; `list-apps` (incl. `--affected`); the `deploy/` templates; `validate-manifest`                                                                                                                                                                                              |
+| `packages/rspack-config`     | config shape (singletons, publicPath, HTML entry, CSS extraction in dev and prod, dev CSP, history fallback), real builds (readable `Component_class__hash` CSS module names salted per app, hashed `.css` per chunk in prod, unhashed `.css` + linked `.css.map` in dev with the same class names, absolute script URLs) |
+| `packages/vendor-kit`        | `mount-contract.d.ts` is up to date with `mf-runtime`; the kit builds and zips                                                                                                                                                                                                                                            |
+| `packages/mf-runtime` (Jest) | the generated manifest validator is up to date with `mfe-manifest.schema.json`; remote CSS is left to the chunk loader (`remoteCssPlugin`)                                                                                                                                                                                |
+| `packages/playwright-config` | zone loading, config (projects, servers, CI), URL waiting, axe report formatting                                                                                                                                                                                                                                          |
+| `packages/jest-config`       | the fake fetch helpers                                                                                                                                                                                                                                                                                                    |
+| `tools/mock-vendor`          | the mock vendor implements the mount contract (esm, web-component, script), styles via a constructable stylesheet                                                                                                                                                                                                         |
+| `tools/mock-api`             | health, items (list/filter/create, 422), reset, CORS for localhost with credentials, per-zone ports                                                                                                                                                                                                                       |
 
 ## End-to-end tests (Playwright)
 
@@ -229,7 +229,8 @@ method? }`, or a RegExp tested against `"<status> <METHOD> <url>"`. `consoleErro
   are reachable with normal locators.
 - Data: the suite runs against dev servers and mocks (mock sign-in, mock API, mock vendor). Use
   `page.route()` to stub error cases; do not depend on shared test environments.
-- A real BFF or vendor in `mfe-manifest.dev.json` turns the mock-specific checks into skips
+- A real BFF or vendor in the dev manifest (the shell's `package.json` `mfe.devManifest`, then
+  `pnpm dev-manifest`) turns the mock-specific checks into skips
   (`zone.authMock`, `remote.mockVendor`), not failures.
 
 ## Accessibility

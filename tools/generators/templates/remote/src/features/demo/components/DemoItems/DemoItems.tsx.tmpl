@@ -1,16 +1,34 @@
 import { Button } from '@org/ui';
-import { useItems } from '../../hooks/useItems';
-import { AddItemForm } from '../AddItemForm';
+import type { CreateItemResult } from '../../hooks/useCreateItem';
+import type { ItemsState } from '../../hooks/useItems';
+import type { Item, ItemDraft } from '../../types/item';
+import { AddItemForm } from '../AddItemForm/AddItemForm';
 import styles from './DemoItems.module.scss';
 
+export type DemoItemsProps = {
+  /** From `useItems()`, called by the page. */
+  state: ItemsState;
+  /** Load again after an error (`useItems().reload`). */
+  onRetry: () => void;
+  /** Send a new item (`useCreateItem()`, called by the page). */
+  onCreate: (draft: ItemDraft) => Promise<CreateItemResult>;
+  /** A new item was created: show it (`useItems().add`). */
+  onCreated: (item: Item) => void;
+};
+
 /**
- * Example of the data-fetching pattern: apiRoutes → services/http (base URL from
- * settings.apiBaseUrl) → api/ → hooks/ → this component, which only renders states.
+ * Displays the items and the "Add item" form. It fetches nothing: the page calls the feature's
+ * data hooks (`useItems`, `useCreateItem`) and passes data and callbacks down, so every API call
+ * of a page is visible in one place (docs/coding-conventions.md "Data fetching"). The chain:
+ * apiRoutes → useApiClient() → api/ → hooks/ → page → this component.
  * In development the data comes from the zone's mock API (tools/mock-api).
  */
-export function DemoItems() {
-  const { state, reload, add } = useItems();
-
+export function DemoItems({
+  state,
+  onRetry,
+  onCreate,
+  onCreated,
+}: DemoItemsProps) {
   return (
     <section
       className={styles.items}
@@ -34,7 +52,7 @@ export function DemoItems() {
       {state.status === 'error' ? (
         <div className={styles.error} role="alert">
           <p>{state.message}</p>
-          <Button variant="secondary" onClick={reload}>
+          <Button variant="secondary" onClick={onRetry}>
             Try again
           </Button>
         </div>
@@ -55,7 +73,7 @@ export function DemoItems() {
               ))}
             </ul>
           )}
-          <AddItemForm onCreated={add} />
+          <AddItemForm onCreate={onCreate} onCreated={onCreated} />
         </>
       ) : null}
     </section>

@@ -35,5 +35,24 @@ const http = createHttpClient({ baseUrl: 'http://api.test/api', fetch });
 jest.fn().mockResolvedValue(jsonResponse({ message: 'x' }, { status: 500 }));
 ```
 
-See [docs/testing.md](../../docs/testing.md#testing-api-code-jsdom-has-no-fetch). Tests:
-`pnpm --filter @org/jest-config test` (node --test).
+See [docs/testing.md](../../docs/testing.md#testing-api-code-jsdom-has-no-fetch).
+
+## Exposed-module guard
+
+A remote's exposed module (`src/app/apps.tsx`) must never reach global styles or the service
+worker registration (the shell owns the page). Every generated remote checks it in
+`src/app/apps.test.tsx`:
+
+```ts
+import { scanExposedModule } from '@org/jest-config/exposed-module';
+
+const { files, violations } = scanExposedModule(
+  path.join(__dirname, 'apps.tsx'),
+);
+expect(violations).toEqual([]); // no @org/design-tokens/global.scss, no registerPwa
+```
+
+It follows relative and `@/` imports (stylesheets included). Options: `srcDir` (target of `@/`,
+default `src/`), `forbidden` (patterns).
+
+Tests: `pnpm --filter @org/jest-config test` (node --test).

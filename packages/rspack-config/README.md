@@ -22,7 +22,7 @@ export default createRemoteConfig({
   rootDir: import.meta.dirname,
   name: 'intranet_staff_directory',
   port: 3101,
-  // exposes defaults to { './App': './src/app/RemoteApp.tsx' }
+  // exposes defaults to { './App': './src/app/apps.tsx' }
 });
 ```
 
@@ -36,15 +36,16 @@ imports.
 |                     | Shell (`createShellConfig`)                                               | Remote (`createRemoteConfig`)                 |
 | ------------------- | ------------------------------------------------------------------------- | --------------------------------------------- |
 | `output.publicPath` | `/` (deep links load chunks from the root)                                | `auto` (chunks load from the remote's origin) |
-| MF `exposes`        | none                                                                      | `./App` → `./src/app/RemoteApp.tsx`           |
+| MF `exposes`        | none                                                                      | `./App` → `./src/app/apps.tsx`                |
 | MF `remotes`        | none: registered at runtime from `/mfe-manifest.json` (`@org/mf-runtime`) | none                                          |
 | Dev manifest        | `mfe-manifest.dev.json` served as `/mfe-manifest.json`                    | n/a                                           |
 | PWA (production)    | `PwaPlugin` from `@org/pwa/build` (Workbox `generateSW`)                  | off (option `pwa: true`)                      |
 
 Shared by both:
 
-- Entry `./src/main.tsx` (which must `import('./bootstrap')` so shared singletons are negotiated
-  before React loads). `HtmlRspackPlugin` with `chunks: ['main']`; template `public/index.html` or
+- Entry `./src/main.tsx`, which imports React and renders directly: Module Federation runs with
+  `experiments: { asyncStartup: true }`, so the shared singletons are negotiated before the entry
+  module runs (no `import('./bootstrap')` boundary file). `HtmlRspackPlugin` with `chunks: ['main']`; template `public/index.html` or
   the package default (`templates/index.html`).
 - TS/TSX via `builtin:swc-loader` (automatic JSX runtime).
 - SCSS/CSS via sass-loader + css-loader + **`CssExtractRspackPlugin` in development and
@@ -55,8 +56,10 @@ Shared by both:
   `RemoteFallback`). No `<style>` elements, so the CSP has no `style-src 'unsafe-inline'`. CSS
   hot reload in development re-fetches the changed stylesheets (no page reload; adding or
   removing a class reloads the page). Why dev = prod and why not native CSS: docs/toolchain.md.
-  CSS Modules: `[hash:base64:8]` in both modes (same class names in dev and prod), **hash salted
-  with the federation name** so two apps never produce the same class name.
+  CSS Modules: readable `[name]_[local]__[hash:base64:5]` in both modes (same class names in dev
+  and prod), `[name]` = the component's file name without `.module` (`getLocalIdent`):
+  `Button.module.scss` `.button` → `Button_button__x3Yb1`. The **hash is salted with the
+  federation name** so two apps never produce the same class name.
 - **Dev server CSP** (`devCsp`, default on): the production rules (no `'unsafe-inline'` /
   `'unsafe-eval'`, `frame-src 'none'`, …) with any `http://localhost:*` origin and the HMR
   websockets allowed (`devContentSecurityPolicy()`). `devCsp: { extraOrigins: [...] }` when the

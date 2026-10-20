@@ -2,7 +2,7 @@
   "name": "@org/jest-config",
   "version": "0.1.0",
   "private": true,
-  "description": "Shared Jest 30 preset: jsdom (+ Fetch API classes), SWC transform, Testing Library setup, fake fetch",
+  "description": "Shared Jest 30 preset: jsdom (+ Fetch API classes), SWC transform, Testing Library setup, fake fetch, exposed-module guard",
   "type": "module",
   "exports": {
     ".": "./index.js",
@@ -11,6 +11,10 @@
     "./fetch": {
       "types": "./fetch.d.ts",
       "default": "./fetch.cjs"
+    },
+    "./exposed-module": {
+      "types": "./exposed-module.d.ts",
+      "default": "./exposed-module.cjs"
     }
   },
   "files": [
@@ -19,7 +23,9 @@
     "setup.cjs",
     "jsdom-environment.cjs",
     "fetch.cjs",
-    "fetch.d.ts"
+    "fetch.d.ts",
+    "exposed-module.cjs",
+    "exposed-module.d.ts"
   ],
   "types": "./index.d.ts",
   "scripts": {

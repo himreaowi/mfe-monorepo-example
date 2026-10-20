@@ -7,3 +7,8 @@ export {
   type HttpRequestOptions,
 } from './httpClient';
 export { defineApiRoutes } from './apiRoutes';
+export {
+  apiBaseUrlFrom,
+  createApiClient,
+  type ApiClientOptions,
+} from './apiClient';

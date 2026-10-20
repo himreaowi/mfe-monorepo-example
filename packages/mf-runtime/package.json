@@ -2,7 +2,7 @@
   "name": "@org/mf-runtime",
   "version": "0.1.0",
   "private": true,
-  "description": "Module Federation runtime glue: mfe-manifest loader + schema, initRemotes, <RemoteApp> (host), createRemoteApp / host props (remote), mount contract + <ExternalModule> (external)",
+  "description": "Module Federation runtime glue: mfe-manifest loader + schema, initRemotes, <RemoteApp> (host), createRemoteApp / host props / useApiClient (remote), mount contract + <ExternalModule> (external)",
   "type": "module",
   "sideEffects": false,
   "exports": {
@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@module-federation/enhanced": "catalog:",
+    "@org/http-client": "workspace:*",
     "@org/ui": "workspace:*"
   },
   "peerDependencies": {

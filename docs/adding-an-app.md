@@ -5,7 +5,7 @@ set the metadata the guardrails check, and register remotes with their zone's sh
 
 ```sh
 pnpm gen:shell <zone> [--layout top|side] [--title "<text>"]   # zone: intranet | internet
-pnpm gen:remote <zone> <name> [--private] [--external [--vendor-format esm|web-component|script]] [--title "<text>"]
+pnpm gen:remote <zone> <name> [--private] [--state] [--external [--vendor-format esm|web-component|script]] [--title "<text>"]
                                                         # name: kebab-case, e.g. leave-requests
 pnpm install                                            # links the new app
 ```
@@ -31,11 +31,13 @@ known acronyms in capitals (`it-helpdesk` → "IT helpdesk"); `--title "Staff po
 apps/<zone>/<name>/                 new remote (package @org/<zone>-<name>)
   package.json                      nx.tags zone/type/access(/kind), mfe.port, mfe.federationName
   rspack.config.js                  createRemoteConfig (reads mfe from package.json)
-  src/                              app/, features/demo, pages/, layouts/, components/, core/, services/
-    features/demo/                  api/, hooks/, types/, utils/, components/<Name>/ (one folder per component), index.ts
+  src/                              app/, features/demo, pages/, layouts/, components/, core/
+    features/demo/                  api/, hooks/, types/, utils/, components/<Name>/ (one folder per component), index.ts (public API)
+    features/demo/state/            only with --state: demoReducer.ts (+ test), DemoContext.tsx (+ test), used by ItemPicker + SelectionSummary
 apps/<zone>/shell-<zone>/
   remotes.json                      + { name, title, path, federationName, package, access, kind }
-  mfe-manifest.dev.json             + "<federationName>": { "entry": "http://localhost:<port>/mf-manifest.json" }
+  mfe-manifest.dev.json             regenerated: + "<federationName>": { "entry": "http://localhost:<port>/mf-manifest.json" }
+  package.json (external only)      mfe.devManifest.remotes.<federationName>.props.vendor (the dev mock vendor)
 ```
 
 | Derived value   | Example (`internet my-profile`)                                    |
@@ -62,7 +64,7 @@ standalone mode and the axe scans cover it with no test changes.
    `features/demo` and its tests when you no longer need them.
 3. Adjust `remotes.json` (`title`, `path`) if the defaults do not fit. Keep `name`,
    `federationName`, `package` and `access` in sync with the remote (`pnpm check` verifies).
-4. Mock host props for standalone mode: `src/app/standaloneProps.ts`.
+4. Mock host props for standalone mode: `standaloneProps` in `src/app/apps.tsx`.
 5. Tests: unit tests next to the code; feature flows as `apps/<zone>/shell-<zone>/e2e/<name>.spec.ts`
    ([testing.md](testing.md)).
 6. Dependencies: [adding-dependencies.md](adding-dependencies.md) (catalog vs app-local).
@@ -90,7 +92,7 @@ e2e suite (`e2e/`, `playwright.config.ts`). There is exactly one shell per zone.
 
 The shell owns its layout: `--layout top|side` (default `top`) picks which **starter** is copied
 into `src/layouts/ShellLayout/` (`ShellLayout.tsx`, `ShellLayout.module.scss`,
-`ShellLayout.test.tsx`, `index.ts`): the remotes nav in the header row (`top`) or in a sidebar
+`ShellLayout.test.tsx`): the remotes nav in the header row (`top`) or in a sidebar
 left of the content (`side`; many remotes, internal tools). On phones both put it behind the
 "Menu" button. After that the files are the shell's own code and there is no layout option:
 restyle the header in `ShellLayout.module.scss` ("HEADER COLOURS"), change the structure in
@@ -103,7 +105,7 @@ platform team review.
 ## Removing or renaming an app
 
 There is no generator for this. To remove a remote: delete `apps/<zone>/<name>`, remove its
-entry from the shell's `remotes.json` and `mfe-manifest.dev.json`, run `pnpm install` and
-`pnpm check`, and ask DevOps to remove it from the environment manifests (after the shell
+entry from the shell's `remotes.json` (and from `mfe.devManifest.remotes` in the shell's
+`package.json`, if any), run `pnpm dev-manifest`, `pnpm install` and `pnpm check`, and ask DevOps to remove it from the environment manifests (after the shell
 without the route is deployed). Renaming = generating the new remote, moving the code, and
 removing the old one (the federation name is part of the runtime contract).

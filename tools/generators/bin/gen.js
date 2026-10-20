@@ -2,7 +2,7 @@
 // @ts-check
 /**
  * CLI:  gen.js shell <zone> [--layout top|side] [--title "<text>"]
- *       gen.js remote <zone> <name> [--private] [--external [--vendor-format <f>]] [--title "<text>"]
+ *       gen.js remote <zone> <name> [--private] [--state] [--external [--vendor-format <f>]] [--title "<text>"]
  * Root scripts: `pnpm gen:shell <zone>`, `pnpm gen:remote <zone> <name> [flags]`.
  */
 import path from 'node:path';
@@ -11,13 +11,16 @@ import { UsageError, generateRemote, generateShell } from '../src/index.js';
 
 const USAGE = `Usage:
   pnpm gen:shell <zone> [--layout top|side] [--title "<text>"]   zone: intranet | internet
-  pnpm gen:remote <zone> <name> [--private] [--external [--vendor-format <format>]] [--title "<text>"]
+  pnpm gen:remote <zone> <name> [--private] [--state] [--external [--vendor-format <format>]] [--title "<text>"]
 
 Options:
   --layout top|side       gen:shell: the starter layout copied into the shell (its own code
                           afterwards): top (default, nav in the header row) or side (nav in a
                           sidebar left of the content); phones: Menu button
   --private               remote needs a signed-in user (tag access:private, marked in the shell registry)
+  --state                 add the feature-state example: features/demo/state/ (reducer + test,
+                          Context with Provider and hooks), used by two components on the
+                          overview page (docs/coding-conventions.md "State management")
   --external              adapter remote for an external/vendor module (tag kind:external)
   --vendor-format <f>     with --external: format of the dev mock vendor config:
                           esm (default) | web-component | script
@@ -34,6 +37,7 @@ async function main() {
     options: {
       private: { type: 'boolean', default: false },
       external: { type: 'boolean', default: false },
+      state: { type: 'boolean', default: false },
       'vendor-format': { type: 'string' },
       title: { type: 'string' },
       layout: { type: 'string' },
@@ -54,6 +58,7 @@ async function main() {
     if (
       name !== undefined ||
       values.private ||
+      values.state ||
       values.external ||
       values['vendor-format'] !== undefined
     ) {
@@ -94,6 +99,7 @@ async function main() {
       external: values.external,
       vendorFormat: values['vendor-format'],
       title: values.title,
+      state: values.state,
     });
     console.log(
       `Created ${path.relative(root, r.dir)} (${r.packageName}, "${r.entry.title}", federation name ${r.federationName}, port ${r.port}, ${r.entry.access}${r.entry.kind === 'external' ? ', external' : ''}).`,

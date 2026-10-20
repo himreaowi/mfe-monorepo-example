@@ -33,21 +33,21 @@ Hard rules (enforced by `pnpm check` and ESLint, see [guardrails.md](guardrails.
 
 ## Layers inside an app
 
-| Layer                  | Role                                                                                                |
-| ---------------------- | --------------------------------------------------------------------------------------------------- |
-| `src/main.tsx`         | `import('./bootstrap')` only (Module Federation negotiates the shared singletons first)             |
-| `src/bootstrap.tsx`    | Shell: global styles, PWA, manifest, auth client, render. Remote: standalone entry only             |
-| `src/app/`             | Wiring: providers, routes, registry (shell); `RemoteApp` (exposed `./App`), `apps`, routes (remote) |
-| `src/features/<name>/` | Domain UI (`components/<Name>/`) + `api/` / `hooks/` / `types/` / `utils/`, public `index.ts`       |
-| `src/pages/`           | Thin route containers that compose features                                                         |
-| `src/components/`      | UI primitives of this app, one folder per component (shared ones go to `@org/ui`)                   |
-| `src/layouts/`         | Chrome, owned by the app: `ShellLayout` (shell), `StandaloneLayout` (remote), one folder each       |
-| `src/core/`            | Constants (`routePaths`, `apiRoutes`, `app`), types, small utils (no parallel `lib/`)               |
-| `src/styles/`          | Shell only: `shell.scss`, shell-wide global styles (empty by default)                               |
-| `src/services/`        | App-wide infra (`http` client)                                                                      |
+| Layer                  | Role                                                                                              |
+| ---------------------- | ------------------------------------------------------------------------------------------------- |
+| `src/main.tsx`         | Entry. Shell: global styles, PWA, manifest, auth client, render. Remote: standalone entry only    |
+| `src/app/`             | Wiring: providers, routes, registry (shell); `apps` (exposed `./App`), routes (remote)            |
+| `src/features/<name>/` | Domain UI (`components/<Name>/`) + `api/` / `hooks/` / `types/` / `utils/`, public `index.ts`     |
+| `src/pages/`           | Route containers: call the features' data hooks, pass data down, compose feature components       |
+| `src/components/`      | UI primitives of this app, one folder per component (shared ones go to `@org/ui`)                 |
+| `src/layouts/`         | Chrome, owned by the app: `ShellLayout` (shell), `StandaloneLayout` (remote), one folder each     |
+| `src/core/`            | Constants (`routePaths`, `apiRoutes`, `app`), types, small utils (no parallel `lib/`)             |
+| `src/styles/`          | Shell only: `shell.scss`, shell-wide global styles (empty by default)                             |
+| `src/services/`        | Optional app-wide infra. Not generated: the API client is `useApiClient()` from `@org/mf-runtime` |
 
-**Rule of thumb:** pages compose, features own domain data, components stay presentational,
-core holds constants, services own HTTP.
+**Rule of thumb:** pages fetch and compose, features own domain logic and data hooks, components
+stay presentational,
+core holds constants, `api/` modules own the requests (through `useApiClient()`).
 
 New capability: `features/<name>/` (types → api → hooks → UI) → thin `pages/` entry → route in
 `app/routes.tsx` using `routePaths`.
@@ -64,12 +64,11 @@ src/features/<feature>/
     <ComponentName>/
       <ComponentName>.tsx
       <ComponentName>.module.scss       only if it has styles; never shared between components
-      <ComponentName>.test.tsx          every component has a test
-      index.ts                          export { ComponentName } from './ComponentName';
+      <ComponentName>.test.tsx          every component has a test (no index.ts: import the file)
       types.ts                          optional: props types, if non-trivial
       <SubComponent>.tsx                optional: private parts used only by this component
   __fixtures__/                         test data shared by several tests (or utils/testData.ts)
-  index.ts                              the feature's public API
+  index.ts                              the feature's public API (the only barrel)
 ```
 
 Why:
@@ -80,12 +79,18 @@ Why:
 - **Missing tests are visible**: a folder without `<Name>.test.tsx` stands out in review (and
   `pnpm check` reports it, rule `component-test`).
 - **Scales with sub-components**: when a component grows, its private parts (`<SubComponent>.tsx`)
-  go into its folder instead of crowding `components/`; only `index.ts` is public.
+  go into its folder instead of crowding `components/`; other features see only the feature's
+  `index.ts`.
 
 Rules:
 
-- Import a component through its folder (`'../StaffCard'`, `'./components/StaffCard'`), not its
-  file. Other features and pages import the feature's `index.ts` only.
+- **No barrel files.** Import a component from its file (`'../StaffCard/StaffCard'`,
+  `'@/components/ModeBadge/ModeBadge'`, `'../api/itemsApi'`); component, layout, page and
+  provider folders have no `index.ts`. The one exception is the feature's public API,
+  `features/<feature>/index.ts`: other features, pages and `app/` import a feature through it
+  only. Why: one name per thing (the editor's "go to definition" and search land on the
+  component, not on a re-export), no file that only forwards, no accidental import cycles
+  through a barrel. `pnpm check` reports other `index.ts` files (rule `barrel-file`).
 - A `.module.scss` is imported only from its own folder (the component and its private
   sub-parts). Shared values come from tokens (`var(--…)` from `@org/design-tokens`). When two
   components really share a style, decide case by case: duplicate a few declarations (simplest,
@@ -94,9 +99,10 @@ Rules:
   components, `@use`d by each module). Never let a component's styles reach into a child
   component's markup (`.panel a { … }` styles the children too and depends on CSS order).
 - `layouts/` follows the same rule as `components/`: `ShellLayout/{ShellLayout.tsx,
-ShellLayout.module.scss, ShellLayout.test.tsx, index.ts}` (small private parts of the layout
+ShellLayout.module.scss, ShellLayout.test.tsx}` (small private parts of the layout
   may sit in the same folder). A layout is real code (the shell's header, nav, disclosure), so
-  it has its own test. `pages/` use one folder per page (`HomePage/HomePage.tsx` + `index.ts`)
+  it has its own test. `pages/` use one folder per page (`HomePage/HomePage.tsx`, imported as
+  `@/pages/HomePage/HomePage`)
   without a test requirement of their own (routes and app tests cover them).
 - **Where test data goes**: data used by one test stays in that test file. Data shared by several
   tests of a feature goes to `features/<feature>/__fixtures__/<name>.ts` (or
@@ -114,16 +120,31 @@ shell's `features/welcome` and `features/startup` and its `layouts/ShellLayout`,
 
 ## Remotes
 
-- `src/app/RemoteApp.tsx` (exposed `./App`) must not import global styles
-  (`@org/design-tokens/global.scss`) or register a service worker; a unit test walks its import
-  graph to enforce this.
+A remote's wiring is five files; everything else is features, pages and layouts:
+
+| File                 | Role                                                                                     |
+| -------------------- | ---------------------------------------------------------------------------------------- |
+| `package.json`       | name, Nx tags, `mfe.port` / `mfe.federationName` (read by the config and the tools)      |
+| `rspack.config.js`   | `createRemoteConfig` (exposes `./App` → `src/app/apps.tsx`, MF async startup)            |
+| `src/main.tsx`       | standalone entry: global styles + `<StandaloneApp />`                                    |
+| `src/app/apps.tsx`   | the exposed module: `createRemoteApp(…)`, standalone mock host props, optional providers |
+| `src/app/routes.tsx` | relative routes                                                                          |
+
+The API client is `useApiClient()` from `@org/mf-runtime/remote` (no per-app file) and the
+shell's dev manifest entry is generated (`pnpm dev-manifest`).
+
+- `src/app/apps.tsx` is the exposed module (`./App`): its default export is the embedded app,
+  its named `StandaloneApp` is rendered by `src/main.tsx`, and it holds the standalone mock host
+  props. Nothing it reaches may import global styles (`@org/design-tokens/global.scss`) or
+  register a service worker; `apps.test.tsx` walks its import graph to enforce this
+  (`scanExposedModule` from `@org/jest-config/exposed-module`).
 - Routes are relative (they match below the shell's `/<remote>/*` and from `/` standalone).
   Links between pages use `useRemotePath()` from `@org/mf-runtime/remote`, never hardcoded
   absolute paths.
 - Read host data from `useHostProps()` (`user`, `settings`, `basePath`, manifest `props`).
   `useAuth()` from `@org/auth` gives the shell's session (`csrfToken`, `refresh()` after a 401).
 - Both modes must keep working: embedded in the shell and standalone with
-  `standaloneProps` (mock host props).
+  `standaloneProps` (mock host props in `src/app/apps.tsx`).
 
 ## Shells
 
@@ -137,16 +158,74 @@ shell's `features/welcome` and `features/startup` and its `layouts/ShellLayout`,
 ## Data fetching
 
 - Do **not** hardcode API paths in components: define them in `core/constants/apiRoutes.ts`
-  (`defineApiRoutes`) and call them through the app's `services/http.ts`
-  (`createHttpClient` from `@org/http-client`, base URL from `settings.apiBaseUrl`).
+  (`defineApiRoutes`) and call them through `useApiClient()`: from `@org/mf-runtime/remote` in a
+  remote (base URL from host props `settings.apiBaseUrl`), from `@org/mf-runtime` in a shell
+  (base URL from the loaded manifest's `settings.apiBaseUrl`). Both use `createApiClient` from
+  `@org/http-client` (`credentials: 'include'`) and return `undefined` when no API is
+  configured. No per-app `services/http.ts`.
 - Do **not** hardcode app paths: use `routePaths` / `useRemotePath()`.
 - Do **not** call APIs in a component's `useEffect`. Use `features/<feature>/api/` (pure request
   functions) + `features/<feature>/hooks/` (loading / success / error, abort on unmount or
-  dependency change). Components render from hooks/props.
+  dependency change).
+- **Page-level data fetching.** Pages (`src/pages/<Name>Page/`) call the feature's data hooks
+  (exported from the feature's `index.ts`) and pass the data, and callbacks such as `reload` or
+  `onCreate`, down as props. Feature components only display: they never call a data hook or
+  `useApiClient()` themselves (a form keeps its own UI state: field values, errors, "sending").
+  Why: every API call of a page is visible in one file, so two components quietly loading the
+  same list, or a list loaded again on every navigation inside the page, show up in review;
+  components are easy to test (props in, markup out, no API mocks) and to reuse with other
+  data. A component deep in the tree gets its data through props or `children` composition
+  (`<Demo><DemoItems state={…} /></Demo>`); UI state shared by many components of a feature may live in a
+  feature Context, but API data is still loaded by the page. There is
+  no query cache (no TanStack Query): when two pages need the same data, each page loads it.
+  Generated example: `pages/OverviewPage` calls `useItems()` and `useCreateItem()`, `DemoItems`
+  and `AddItemForm` only display.
 - Cookies, not tokens: requests to the BFF/API use the session cookie
   (`credentials: 'include'` when cross-origin) and send the CSRF header on state-changing
   requests ([auth-contract.md](auth-contract.md)). On 401 call `useAuth().refresh()`.
 - Normalise response shapes in `api/` so hooks and components do not branch on transport details.
+
+## State management
+
+React only: `useState`, `useReducer` and Context. No Redux, Zustand, MobX or other state
+library (none is in the catalog; adding one is a platform decision, not a feature decision).
+Pick the smallest place that works:
+
+| The state is…                                                         | Put it in                                                                                                      | Example                                                         |
+| --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| used by one component                                                 | `useState` (or `useReducer`) in that component                                                                 | a form's field values, an open/closed toggle                    |
+| data from the API                                                     | the feature's data hook, called by the page ([Data fetching](#data-fetching)); **never copied into a Context** | `useItems()` in `OverviewPage`                                  |
+| UI state shared by several components of one feature                  | a **feature Context** in `features/<name>/state/` (below)                                                      | selected items: a picker sets them, a summary shows them        |
+| needed by every page of the remote                                    | an **app-level Context** in `src/state/` (same shape), passed to `createRemoteApp({ providers })`              | a remote-wide preference, a draft kept across pages             |
+| owned by the shell (user, theme, settings)                            | host props (`useHostProps()`), `useAuth()`, `useTheme()`: never one remote reading another remote's state      | `useHostProps().user`                                           |
+| shareable or bookmarkable (filters, search, sort, page, selected tab) | URL search params (`useSearchParams()` from `react-router`)                                                    | `?q=ada&dept=hr`: back button, reload and a pasted link keep it |
+
+Feature (or app-level) state is a pure reducer plus a Context, one folder:
+
+```
+features/<name>/state/
+  <name>Reducer.ts         state type, action union, initial state, pure reducer (no React, no API)
+  <name>Reducer.test.ts    required (pnpm check rule state-test)
+  <Name>Context.tsx        <NameProvider> (useReducer) + useNameState() + useNameDispatch()
+  <Name>Context.test.tsx   the hooks under the provider, and the error outside it
+```
+
+- **Two contexts**, one for the state and one for `dispatch`: components that only dispatch
+  (a button) do not re-render on every state change.
+- **The hooks throw a clear error outside the provider** (`useNameState() must be used inside
+<NameProvider>`), so a missing provider fails at once instead of rendering stale defaults.
+- **Actions describe what happened** (`{ type: 'itemToggled', id }`), the reducer decides the
+  new state; switch on `action.type` with a `never` check so a new action cannot be forgotten.
+- Put the provider as low as possible: around the page (or the part of it) that uses the state.
+  State needed by every page goes into `src/state/` and is passed to
+  `createRemoteApp({ routes, providers: [AppProvider] })` (`@org/mf-runtime/remote`), which
+  wraps the routes in both modes (embedded and standalone, inside the router and the host
+  props).
+- Everything a component needs from outside comes in through props, hooks of the feature or
+  the host; never `window` globals, never another remote's modules.
+- Generated example: `pnpm gen:remote <zone> <name> --state` adds `features/demo/state/`
+  (`demoReducer.ts`, `DemoContext.tsx` and their tests) with `ItemPicker` (sets the selection)
+  and `SelectionSummary` (shows and clears it) on the overview page.
 
 ## TypeScript
 
@@ -225,14 +304,14 @@ Package names: apps `@org/<zone>-<name>` / `@org/shell-<zone>` (generated); shar
 - CSS Modules (`*.module.scss`) in the component's folder, one per component, never shared
   ([One folder per component](#one-folder-per-component)); tokens (`var(--…)`) for colours,
   spacing, radius, shadow. No hardcoded colours on themeable surfaces; both themes must pass contrast.
-- Global styles only in the shell (and a remote's standalone bootstrap). The shell's own global
+- Global styles only in the shell (and a remote's standalone entry, `src/main.tsx`). The shell's own global
   rules live in `src/styles/shell.scss` (imported after `@org/design-tokens/global.scss`). The
   header colours are not global: they are in the shell's own
   `src/layouts/ShellLayout/ShellLayout.module.scss`
   ([ui-context.md](ui-context.md#header-colours)). Remotes never set custom properties for the
   whole page (`:root`, `html`, `body`, `[data-theme]`; `pnpm check` rule `remote-global-tokens`).
 - Never select another package's CSS Module class names (e.g. `@org/ui`'s `.skipLink`): they
-  are hashed per build and per app. Pass a `className` to the building block, or use tokens.
+  carry a per-app hash (`SkipLink_skipLink__x3Yb1`). Pass a `className` to the building block, or use tokens.
 - See [ui-context.md](ui-context.md).
 
 ## Testing
@@ -261,5 +340,7 @@ Package names: apps `@org/<zone>-<name>` / `@org/shell-<zone>` (generated); shar
 - Undocumented globals for host/embed detection (use `useHostProps().embedded`).
 - One `.module.scss` shared by several components, component files loose in `components/` or a
   feature root, a component without a test.
+- A global store library (Redux, …), API data copied into a Context, filters kept in state
+  when they belong in the URL, a Context hook that silently works without its provider.
 - Expanding scope beyond the requested change; prefer small, incremental changes.
 - Commits only when asked; never commit secrets.

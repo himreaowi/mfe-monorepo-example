@@ -1,0 +1,34 @@
+/**
+ * UI state of the demo feature shared by several of its components (ItemPicker changes it,
+ * SelectionSummary shows it). A pure function: no React, no API calls, easy to test
+ * (demoReducer.test.ts). API data is NOT copied in here: the page loads it with the feature's
+ * data hooks and passes it down (docs/coding-conventions.md "State management").
+ */
+export type DemoState = {
+  /** Ids of the items the user selected. */
+  selectedIds: number[];
+};
+
+export type DemoAction =
+  | { type: 'itemToggled'; id: number }
+  | { type: 'selectionCleared' };
+
+export const initialDemoState: DemoState = { selectedIds: [] };
+
+export function demoReducer(state: DemoState, action: DemoAction): DemoState {
+  switch (action.type) {
+    case 'itemToggled':
+      return {
+        selectedIds: state.selectedIds.includes(action.id)
+          ? state.selectedIds.filter((id) => id !== action.id)
+          : [...state.selectedIds, action.id],
+      };
+    case 'selectionCleared':
+      return state.selectedIds.length === 0 ? state : initialDemoState;
+    default: {
+      // a new action type must be handled above (compile error otherwise)
+      const unknown: never = action;
+      return unknown;
+    }
+  }
+}

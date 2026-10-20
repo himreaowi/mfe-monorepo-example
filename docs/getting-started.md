@@ -65,7 +65,8 @@ pnpm dev:intranet
 Open http://localhost:3100. The shell loads every remote from its own dev server at runtime.
 "Sign in" uses the development mock (no backend needed). The remotes' demo feature loads data
 from the zone's **mock API** (`tools/mock-api`, http://localhost:3190/api, started
-automatically; its URL is `settings.apiBaseUrl` in the shell's `mfe-manifest.dev.json`).
+automatically; its URL is `settings.apiBaseUrl` in the shell's generated `mfe-manifest.dev.json`, from
+`mfe.devManifest` in the shell's `package.json`).
 `it-helpdesk` mounts the mock vendor module (started automatically on port 3191). Stop with
 Ctrl+C.
 
@@ -119,16 +120,16 @@ CI runs the same gates ([devops-handoff.md](devops-handoff.md)).
 
 ## Daily commands
 
-| Command                                                                                                 | What                                                                |
-| ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| `pnpm dev:<zone>`                                                                                       | shell + every remote of the zone                                    |
-| `pnpm --filter <package> dev`                                                                           | one app (`pnpm -s apps` lists package names)                        |
-| `pnpm gen:shell <zone> [--layout top\|side]` / `pnpm gen:remote <zone> <name> [--private] [--external]` | new apps (`--layout`: which starter layout the shell copies)        |
-| `pnpm --filter <package> add <dep>`                                                                     | add a dependency ([adding-dependencies.md](adding-dependencies.md)) |
-| `pnpm lint` / `typecheck` / `test` / `build`                                                            | all projects (Nx, cached)                                           |
-| `pnpm e2e` / `pnpm e2e:<zone>`                                                                          | zone e2e suites                                                     |
-| `pnpm -s apps [--zone=<zone>] [--affected --base=<sha>] [--json]`                                       | list apps (CI matrix)                                               |
-| `pnpm format`                                                                                           | Prettier                                                            |
+| Command                                                                                                           | What                                                                |
+| ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `pnpm dev:<zone>`                                                                                                 | shell + every remote of the zone                                    |
+| `pnpm --filter <package> dev`                                                                                     | one app (`pnpm -s apps` lists package names)                        |
+| `pnpm gen:shell <zone> [--layout top\|side]` / `pnpm gen:remote <zone> <name> [--private] [--state] [--external]` | new apps (`--layout`: which starter layout the shell copies)        |
+| `pnpm --filter <package> add <dep>`                                                                               | add a dependency ([adding-dependencies.md](adding-dependencies.md)) |
+| `pnpm lint` / `typecheck` / `test` / `build`                                                                      | all projects (Nx, cached)                                           |
+| `pnpm e2e` / `pnpm e2e:<zone>`                                                                                    | zone e2e suites                                                     |
+| `pnpm -s apps [--zone=<zone>] [--affected --base=<sha>] [--json]`                                                 | list apps (CI matrix)                                               |
+| `pnpm format`                                                                                                     | Prettier                                                            |
 
 ## Next
 

@@ -129,8 +129,14 @@ tier-1 singleton.
 - `rspack dev` does not reload the config file when it changes. Restart the dev server after
   editing `rspack.config.*` or the shared config. A stale server showed exactly the two-router
   failure above.
-- The bootstrap pattern (`index.js` → `import('./bootstrap')`) is still required so shared
-  singletons are negotiated before React is imported.
+- The spike used the bootstrap pattern (`main.tsx` → `import('./bootstrap')`) so shared
+  singletons are negotiated before React is imported. Since v3 the config sets Module
+  Federation's `experiments: { asyncStartup: true }` instead: the runtime awaits the shared-scope
+  negotiation before the entry module runs, so `src/main.tsx` imports React and renders directly
+  (one file). Verified with Rspack 2.2.9 + `@module-federation/enhanced` 2.9.2 in `rspack dev`
+  and in production builds: shell, remotes embedded and standalone, every tier-1 package
+  (`react`, `react-dom`, `react-router`, `@org/ui`, `@org/auth`) loaded once from the shell
+  (`__FEDERATION__` share scope), a remote's `useAuth()` reads the shell's session.
 
 ### Jest (for A8)
 
@@ -181,10 +187,20 @@ tier-1 singleton.
   every day loaded CSS differently from production (a remote's CSS arrived with its JS instead
   of from its origin through the chunk loader, failures could not happen, `<style>` elements
   were fine), so CSS-loading and CSP bugs only showed up after a production build. Now the
-  loaders, the CSS Modules options (`[hash:base64:8]`, salted with the federation name) and the
-  remote CSS path are identical; class names are the same in dev and prod (checked by a real
-  build in the rspack-config tests). The price: class names in dev are hashes too (DevTools
-  maps them back to the `.module.scss` through the CSS source maps).
+  loaders, the CSS Modules options and the remote CSS path are identical; class names are the
+  same in dev and prod (checked by a real build in the rspack-config tests).
+- **Readable CSS Module class names, dev and prod:** `localIdentName:
+'[name]_[local]__[hash:base64:5]'` with a small `getLocalIdent` (exported by
+  `@org/rspack-config`) that makes `[name]` the file name without `.module.scss`
+  (css-loader's own `[name]` is `Button.module`, printed as `Button-module`), so
+  `Button.module.scss` `.button` → `Button_button__x3Yb1`. DevTools and production markup show
+  which component a class belongs to; the hash is still css-loader's (resource path + class
+  name) and `localIdentHashSalt` stays the federation name, so two apps never produce the same
+  class name for the same file and class (e.g. both remotes' `ModeBadge_badge__…` differ). The
+  5-character hash keeps names short; the component prefix plus the salt make a clash
+  practically impossible. Nothing may select these names (they still change with the hash); tests
+  run with `identity-obj-proxy` (`styles.button` is `'button'`) and e2e uses roles and test ids,
+  never class names.
 - **CSS hot reload with extracted CSS.** The extract loader adds a small HMR handler to every
   stylesheet module: on a change it re-fetches the page's `<link rel="stylesheet">` files with a
   `?<timestamp>` query (for CSS Modules all of them, the old link is removed when the new one has
@@ -222,7 +238,8 @@ tier-1 singleton.
 - Rule `type: 'javascript/auto'` is set on the SCSS/CSS rules, so Rspack's native CSS handling
   does not process them a second time.
 - `css-loader` `modules.localIdentHashSalt = <federation name>` gives each app different hashes
-  for the same file + class (checked by a real build in the rspack-config tests).
+  for the same file + class, `Widget_widget__<hash>` with another hash per app (checked by a
+  real build in the rspack-config tests).
 - sass-loader compresses CSS in production mode (`padding:4px`, not `padding: 4px`).
 - MF `dts: false`: the DTS plugin would otherwise try to generate/consume remote types (slow,
   needs a TS server). Remote types come from the contract instead.
@@ -305,10 +322,11 @@ true })` before loading again. Verified in the browser: the remote's `mf-manifes
 - `rspack preview` is not used: `pnpm preview` runs `mfe-preview` (`@org/scripts`), a small static
   server with CORS and SPA fallback on the app's port. A shell needs a `mfe-manifest.json`
   (`--manifest <file>` or a copy in `dist/`), as in production.
-- Shell `bootstrap.tsx` catches a failing `/mfe-manifest.json` and renders `StartupError`
+- Shell `main.tsx` catches a failing `/mfe-manifest.json` and renders `StartupError`
   (connection-required message when offline) instead of a blank page.
 - Remote templates test that the exposed module's import graph never reaches
-  `@org/design-tokens/global.scss` or `registerPwa`.
+  `@org/design-tokens/global.scss` or `registerPwa` (`scanExposedModule` from
+  `@org/jest-config/exposed-module`, in `src/app/apps.test.tsx`).
 - Template placeholders are `__TOKEN__`; a token directly followed by `_` (`__ZONE___alpha`) needs
   the non-greedy token pattern in `render.js`.
 - Prettier 3 `getFileInfo` resolves config files by default. In a temp workspace without
@@ -516,9 +534,10 @@ answered 503 showed `RemoteFallback` (then rendered styled after "Try again").
   `868.<hash>.css`); only one of them is ever requested.
 - **Rspack's CSS chunk error has an escaped newline**, a literal backslash-n before the URL:
   `Loading CSS chunk 362 failed.\n(<url>)`. `RemoteApp` cuts the fallback reason there.
-- **`mf-manifest.json` lists the remote's standalone `bootstrap` chunk (with `global.scss`) as
-  async assets of the expose.** It is never requested through the expose; only an explicit
-  `preloadRemote({ resourceCategory: 'all' })` would preload it.
+- **The remote's standalone entry is not an asset of the expose.** With the old
+  `import('./bootstrap')` split, `mf-manifest.json` listed the standalone `bootstrap` chunk (with
+  `global.scss`) as async assets of the expose. Since the entry is one synchronous `main.tsx`
+  (async startup), the expose lists only its own JS/CSS; `global.scss` is only in `main.*.css`.
 - Constructable stylesheets (`adoptedStyleSheets`) are not subject to `style-src`; the mock
   vendor and the vendor kit examples use them. React `style` props are set through the CSSOM
   (`element.style`) and are allowed; only `<style>` elements and `style="…"` attributes in HTML

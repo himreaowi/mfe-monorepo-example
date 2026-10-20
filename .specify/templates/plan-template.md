@@ -102,24 +102,24 @@ apps/
 └── [zone]/
     ├── shell-[zone]/              # host: routes from remotes.json, e2e/ suite
     │   ├── remotes.json           # registry (gen:remote)
-    │   ├── mfe-manifest.dev.json  # dev manifest (prod: per environment, DevOps)
+    │   ├── mfe-manifest.dev.json  # generated dev manifest (pnpm dev-manifest; prod: per environment, DevOps)
     │   ├── e2e/                   # zone e2e + a11y suite
     │   └── src/
     └── [remote]/                  # remote (or --external adapter)
         └── src/
-            ├── app/               # RemoteApp (exposed ./App), apps, routes
+            ├── app/               # apps (exposed ./App), routes
             ├── features/[feature]/
             │   ├── api/
             │   ├── hooks/
             │   ├── types/
             │   ├── utils/
-            │   ├── components/[Component]/  # [Component].tsx, .module.scss, .test.tsx, index.ts
+            │   ├── components/[Component]/  # [Component].tsx, .module.scss, .test.tsx (no index.ts)
             │   ├── __fixtures__/            # shared test data
-            │   └── index.ts
+            │   └── index.ts       # the feature's public API (the only barrel)
             ├── pages/
             ├── components/[Component]/
             ├── core/constants/    # routePaths, apiRoutes
-            └── services/
+            └── services/          # optional (API client: useApiClient() from @org/mf-runtime)
 packages/
 └── [package]/                     # shared code (type:package), e.g. ui, mf-runtime
 ```

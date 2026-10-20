@@ -14,13 +14,16 @@ export type SharedConfig = Record<
 export interface BaseOptions {
   /** App directory (absolute). Use `import.meta.dirname` in rspack.config.js. */
   rootDir: string;
-  /** Module Federation name, a JS identifier, unique across all apps (e.g. `intranet_staff`). Also salts CSS Module class names. */
+  /** Module Federation name, a JS identifier, unique across all apps (e.g. `intranet_staff`). Also salts the hash of CSS Module class names. */
   name: string;
   /** Dev server port (intranet 3100–3189, internet 3200–3289; see tools/scripts/src/zones.js). */
   port: number;
   /** Force a mode. Default: from the Rspack CLI (`rspack dev` → development, `rspack build` → production). */
   mode?: 'development' | 'production';
-  /** Entry module. Default `./src/main.tsx` (which does `import('./bootstrap')`). */
+  /**
+   * Entry module. Default `./src/main.tsx`. Module Federation starts asynchronously
+   * (`experiments.asyncStartup`), so the entry imports React and renders directly.
+   */
   entry?: string;
   /** HTML title. Default: name. */
   title?: string;
@@ -77,7 +80,7 @@ export interface ShellOptions extends BaseOptions {
 }
 
 export interface RemoteOptions extends BaseOptions {
-  /** Exposed modules. Default `{ './App': './src/app/RemoteApp.tsx' }`. */
+  /** Exposed modules. Default `{ './App': './src/app/apps.tsx' }`. */
   exposes?: Record<string, string>;
 }
 
@@ -87,6 +90,15 @@ export type ConfigFunction = (
 ) => Configuration;
 
 export declare const TIER1_SINGLETONS: string[];
+/** CSS Module class name pattern: `[name]_[local]__[hash:base64:5]` (dev and prod). */
+export declare const LOCAL_IDENT_NAME: string;
+/** css-loader `getLocalIdent`: `[name]` = file name without `.module.scss` (`Button_button__x3Yb1`). */
+export declare function getLocalIdent(
+  loaderContext: { resourcePath: string },
+  localIdentName: string,
+  localName: string,
+  options: Record<string, unknown>,
+): string;
 /** The dev servers' Content-Security-Policy value (see `BaseOptions.devCsp`). */
 export declare function devContentSecurityPolicy(
   options?: DevCspOptions,

@@ -18,6 +18,11 @@ import * as sass from 'sass';
 import { TIER1_SINGLETONS } from './tier1.js';
 
 const require = createRequire(import.meta.url);
+/** css-loader's own class name function (css-loader ships no type declarations). */
+const { defaultGetLocalIdent } =
+  /** @type {{ defaultGetLocalIdent: (loaderContext: any, localIdentName: string, localName: string, options: any) => string }} */ (
+    require(require.resolve('css-loader'))
+  );
 
 const FEDERATION_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
@@ -124,9 +129,10 @@ function resolveMode(env, argv, explicit) {
  * - development: unhashed `[name].css` with linked `.css.map` files; the extract loader adds a
  *   small HMR handler, so an edited stylesheet is swapped by re-fetching its <link> (no reload).
  * - production: `[name].[contenthash:8].css`, no CSS source maps.
- * CSS Module class names are `[hash:base64:8]` in both modes (identical class names in dev and
- * prod), salted with the federation name so two apps never generate the same class name for
- * e.g. `Button.module.scss` `.button`.
+ * CSS Module class names are readable and identical in both modes: `<Component>_<class>__<hash>`
+ * (`Button.module.scss` `.button` → `Button_button__x3Yb1`, see `getLocalIdent`), the hash
+ * salted with the federation name so two apps never generate the same class name for the same
+ * file and class.
  * @param {{ name: string, isDev: boolean, modules: boolean }} o
  */
 function styleLoaders({ name, isDev, modules }) {
@@ -142,7 +148,8 @@ function styleLoaders({ name, isDev, modules }) {
           ? {
               namedExport: false,
               exportLocalsConvention: 'as-is',
-              localIdentName: '[hash:base64:8]',
+              localIdentName: LOCAL_IDENT_NAME,
+              getLocalIdent,
               localIdentHashSalt: name,
             }
           : false,
@@ -153,6 +160,38 @@ function styleLoaders({ name, isDev, modules }) {
       options: { implementation: sass, api: 'modern', sourceMap: isDev },
     },
   ];
+}
+
+/**
+ * CSS Module class names: `[name]_[local]__[hash:base64:5]` in development AND production, where
+ * `[name]` is the stylesheet's component name without `.module` (see `getLocalIdent`).
+ */
+const LOCAL_IDENT_NAME = '[name]_[local]__[hash:base64:5]';
+
+/**
+ * css-loader `getLocalIdent`: like the default, but `[name]` is the file name without
+ * `.module.scss` / `.module.css` (css-loader's `[name]` would be `Button.module`, and the dot
+ * becomes `-`), so `Button.module.scss` `.button` → `Button_button__x3Yb1`. The hash
+ * (resource path + class name, salted with `localIdentHashSalt` = the federation name) is
+ * css-loader's own.
+ * @param {any} loaderContext
+ * @param {string} localIdentName
+ * @param {string} localName
+ * @param {any} options
+ * @returns {string}
+ */
+function getLocalIdent(loaderContext, localIdentName, localName, options) {
+  const component = path
+    .basename(loaderContext.resourcePath)
+    .replace(/(\.module)?\.s?css$/, '');
+  return defaultGetLocalIdent(
+    loaderContext,
+    localIdentName
+      .replace(/\[name\]/gi, component)
+      .replace(/\[local\]/gi, localName),
+    localName,
+    options,
+  );
 }
 
 /** Local dev origins: every dev server, mock API and mock vendor runs on localhost. */
@@ -317,6 +356,10 @@ function createBaseConfig(options, mode) {
       shared,
       manifest: true,
       dts: false,
+      // Async startup: the runtime negotiates the shared singletons (react, react-dom,
+      // react-router, @org/ui, @org/auth) before the entry module runs, so `src/main.tsx` can
+      // import React directly (no `import('./bootstrap')` boundary file).
+      experiments: { asyncStartup: true },
     }),
   ];
 
@@ -479,7 +522,7 @@ function createRemoteConfig(options) {
       {
         ...options,
         kind: 'remote',
-        exposes: options.exposes ?? { './App': './src/app/RemoteApp.tsx' },
+        exposes: options.exposes ?? { './App': './src/app/apps.tsx' },
         pwa: options.pwa ?? false,
         devManifest: false,
       },
@@ -494,6 +537,8 @@ export {
   createBaseConfig,
   createSharedConfig,
   devContentSecurityPolicy,
+  getLocalIdent,
   installedVersion,
+  LOCAL_IDENT_NAME,
   TIER1_SINGLETONS,
 };

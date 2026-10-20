@@ -6,7 +6,7 @@ build-time remotes (`loadRemote.tsx`, `FederatedRemoteApp`, `HostPropsContext`).
 ## Shell side (`@org/mf-runtime`)
 
 ```tsx
-// src/bootstrap.tsx (after `import('./bootstrap')` in main.tsx)
+// src/main.tsx (the entry; MF async startup negotiated the shared singletons already)
 import {
   initRemotes,
   loadMfeManifest,
@@ -36,6 +36,7 @@ root.render(
 | `remoteCssPlugin` / `registerRemoteCssPlugin()`                          | MF runtime plugin: removes `.css` from the preloads MF starts for `loadRemote`, so a remote's extracted CSS is loaded only by the remote's own chunk loader, which awaits each `<link>` (no unstyled flash) and rejects on a failed one (→ `RemoteFallback`). See docs/toolchain.md "CSS extraction" |
 | `<RemoteApp name module? basePath? props? retries? loading? onError? />` | Error boundary + Suspense + `loadRemote('<name>/<module>')`. Failure → `RemoteFallback` (from `@org/ui`) with "Try again" (re-registers the remote, then loads again); `retries` automatic attempts first (default 1). Unknown name → fallback without a request                                     |
 | `MfeManifestProvider`, `useMfeManifest()`                                | Gives `<RemoteApp>` per-remote `props` and `settings`                                                                                                                                                                                                                                                |
+| `useApiClient()`                                                         | The shell's API client (`@org/http-client` `createApiClient`): base URL from the manifest's `settings.apiBaseUrl`, `credentials: 'include'`; `undefined` without one                                                                                                                                 |
 | `mfe-manifest.schema.json`                                               | `@org/mf-runtime/mfe-manifest.schema.json`, for DevOps/CI validation of per-env manifests                                                                                                                                                                                                            |
 
 The remote receives `HostProps`:
@@ -85,8 +86,8 @@ unit test fails if the generated file is stale.
 ## Remote side (`@org/mf-runtime/remote`)
 
 ```tsx
-// src/app/apps.tsx
-export const { EmbeddedApp, StandaloneApp } = createRemoteApp({
+// src/app/apps.tsx: the exposed module ('./App'); default export = the embedded app
+const { EmbeddedApp, StandaloneApp } = createRemoteApp({
   routes: [
     { index: true, element: <Navigate to="route-1" replace /> },
     { path: 'route-1', element: <Route1 /> },
@@ -97,12 +98,14 @@ export const { EmbeddedApp, StandaloneApp } = createRemoteApp({
   },
   // the remote's own chrome for standalone mode (generated: src/layouts/StandaloneLayout)
   StandaloneLayout,
+  // optional: app-level providers (remote-wide Context state), in both modes, outermost first
+  providers: [AppStateProvider],
 });
 
-// src/app/RemoteApp.tsx (exposed as './App')
-export { EmbeddedApp as default } from './apps';
+export default EmbeddedApp;
+export { StandaloneApp };
 
-// src/bootstrap.tsx (standalone only)
+// src/main.tsx (standalone only)
 import '@org/design-tokens/global.scss';
 createRoot(el).render(<StandaloneApp />);
 ```
@@ -112,9 +115,18 @@ createRoot(el).render(<StandaloneApp />);
 | Router           | The shell's router (react-router is a shared singleton). Routes are relative and match below the shell's splat mount. No router around it → own `BrowserRouter basename={basePath}` | Own `BrowserRouter`, routes match from `/`             |
 | Theme            | `ThemeProvider` passes through to the shell's provider (shared `@org/ui`), or follows `<html>` if `@org/ui` is not shared. Never owns the document theme                            | `ThemeProvider` owns the document theme                |
 | Host props       | From the shell (`embedded: true`, `basePath`, `settings`, `user`, …)                                                                                                                | `standaloneProps` + `embedded: false`, `basePath: '/'` |
-| Global styles/SW | None (the shell has them)                                                                                                                                                           | Imported/registered by the standalone bootstrap        |
+| Global styles/SW | None (the shell has them)                                                                                                                                                           | Imported/registered by the standalone `src/main.tsx`   |
 
+- `createRemoteApp({ routes, standaloneProps?, StandaloneLayout?, providers? })`: `providers`
+  (one component or a list, outermost first) wrap the routes in both modes, inside the router
+  and the host props (they may use `useHostProps()`, `useNavigate()`); standalone they wrap the
+  `StandaloneLayout` too. For remote-wide state (`src/state/`, docs/coding-conventions.md
+  "State management").
 - `useHostProps()`: the host props.
+- `useApiClient()`: the remote's API client (`createApiClient` from `@org/http-client`): base URL
+  from host props `settings.apiBaseUrl`, `credentials: 'include'`, memoised per base URL;
+  `undefined` when the environment has no `settings.apiBaseUrl`. Use it in feature hooks; no
+  per-remote `services/http.ts`.
 - `useRemotePath()(to)`: absolute path inside the remote (`/apps/staff/route-2` embedded,
   `/route-2` standalone). Use it for links between remote pages: relative links inside a splat
   route are easy to get wrong.

@@ -36,10 +36,12 @@ describe('check-apps', () => {
       ...validApps(),
       'intranet/leave': app('leave', { port: 3101, access: 'private' }),
     });
-    assert.deepEqual(rules(r.errors), ['app-port-duplicate']);
-    assert.match(r.errors[0].message, /Dev port 3101 is used by 2 apps/);
-    assert.match(r.errors[0].message, /@org\/intranet-leave/);
-    assert.match(r.errors[0].message, /@org\/intranet-staff/);
+    // the dev manifest still has the old port: regenerated after the fix
+    assert.deepEqual(rules(r.errors), ['app-port-duplicate', 'dev-manifest']);
+    const duplicate = r.errors.find((e) => e.rule === 'app-port-duplicate');
+    assert.match(duplicate?.message ?? '', /Dev port 3101 is used by 2 apps/);
+    assert.match(duplicate?.message ?? '', /@org\/intranet-leave/);
+    assert.match(duplicate?.message ?? '', /@org\/intranet-staff/);
   });
 
   it('fails on a port outside the zone range or missing', async () => {
@@ -47,10 +49,10 @@ describe('check-apps', () => {
       ...validApps(),
       'intranet/staff': app('staff', { port: 3290 }),
     });
-    assert.deepEqual(rules(r.errors), ['app-port']);
+    assert.deepEqual(rules(r.errors), ['app-port', 'dev-manifest']);
     assert.match(r.errors[0].message, /outside the intranet range 3100-3189/);
     r = await run({ ...validApps(), 'intranet/staff': app('staff', {}) });
-    assert.deepEqual(rules(r.errors), ['app-port']);
+    assert.deepEqual(rules(r.errors), ['app-port', 'dev-manifest']);
   });
 
   it('fails on a port in the zone range reserved for dev tools', async () => {
@@ -58,7 +60,7 @@ describe('check-apps', () => {
       ...validApps(),
       'intranet/staff': app('staff', { port: 3191 }),
     });
-    assert.deepEqual(rules(r.errors), ['app-port']);
+    assert.deepEqual(rules(r.errors), ['app-port', 'dev-manifest']);
     assert.match(
       r.errors[0].message,
       /port 3191 is reserved for the intranet dev tools \(3190-3199/,
@@ -196,7 +198,6 @@ describe('check-apps', () => {
       [`${dir}/${name}/${name}.tsx`]: `import styles from './${name}.module.scss';\nexport const ${name} = () => styles;\n`,
       [`${dir}/${name}/${name}.module.scss`]: '.a { color: red; }\n',
       [`${dir}/${name}/${name}.test.tsx`]: '',
-      [`${dir}/${name}/index.ts`]: `export { ${name} } from './${name}';\n`,
     });
 
     it('passes on folder-per-component features and app components', async () => {
@@ -211,10 +212,9 @@ describe('check-apps', () => {
         // a private sub-part may use its component's styles (same folder)
         [`${staff}/features/staff/components/StaffSearch/SearchField.tsx`]:
           "import styles from './StaffSearch.module.scss';\nexport const F = () => styles;\n",
-        [`${staff}/features/staff/components/index.ts`]:
-          "export * from './StaffCard';\n",
+        // the feature's public API is the only index.ts
         [`${staff}/features/staff/index.ts`]:
-          "export { StaffSearch } from './components/StaffSearch';\n",
+          "export { StaffSearch } from './components/StaffSearch/StaffSearch';\n",
         [`${staff}/features/staff/__fixtures__/staff.ts`]:
           'export const a = 1;\n',
         [`${staff}/features/staff/utils/format.ts`]: 'export const b = 1;\n',
@@ -224,7 +224,7 @@ describe('check-apps', () => {
       assert.deepEqual(r.errors, []);
     });
 
-    it('fails on loose component files, misnamed folders and missing index/test', async () => {
+    it('fails on loose component files, misnamed folders and missing tests', async () => {
       const r = await run(validApps(), {
         ...validRegistries(),
         [`${staff}/features/staff/StaffCard.tsx`]: '',
@@ -238,10 +238,9 @@ describe('check-apps', () => {
         [`${staff}/layouts/StandaloneLayout.tsx`]: '',
         'apps/intranet/shell-intranet/src/layouts/ShellLayout/ShellLayout.tsx':
           '',
-        'apps/intranet/shell-intranet/src/layouts/ShellLayout/index.ts': '',
       });
       assert.deepEqual(rules(r.errors).sort(), [
-        ...Array(9).fill('component-folder'),
+        ...Array(8).fill('component-folder'),
         'component-test',
         'component-test',
       ]);
@@ -252,7 +251,6 @@ describe('check-apps', () => {
         /apps\/intranet\/staff\/src\/features\/staff\/components\/StaffList\/StaffList\.tsx/,
       );
       assert.match(text, /__fixtures__\/ \(or utils\/\)/);
-      assert.match(text, /components\/Detail\/: missing index\.ts/);
       assert.match(text, /components\/Detail\/: missing Detail\.test\.tsx/);
       assert.match(text, /src\/components\/Badge\/Badge\.tsx/);
       assert.match(
@@ -262,6 +260,56 @@ describe('check-apps', () => {
       assert.match(
         text,
         /layouts\/ShellLayout\/: missing ShellLayout\.test\.tsx/,
+      );
+    });
+
+    it('state/ folders need a reducer test', async () => {
+      const shell = 'apps/intranet/shell-intranet/src';
+      const r = await run(validApps(), {
+        ...validRegistries(),
+        // ok: feature state and app-level state with their reducer tests
+        [`${staff}/features/staff/state/staffReducer.ts`]: '',
+        [`${staff}/features/staff/state/staffReducer.test.ts`]: '',
+        [`${staff}/features/staff/state/StaffContext.tsx`]: '',
+        [`${staff}/state/appReducer.ts`]: '',
+        [`${staff}/state/appReducer.test.ts`]: '',
+        // missing tests
+        [`${staff}/features/leave/state/leaveReducer.ts`]: '',
+        [`${staff}/features/leave/state/LeaveContext.tsx`]: '',
+        [`${shell}/state/ShellContext.tsx`]: '',
+      });
+      assert.deepEqual(rules(r.errors), ['state-test', 'state-test']);
+      const text = r.errors.map((e) => e.message).join('\n');
+      assert.match(
+        text,
+        /features\/leave\/state\/: .*\(leaveReducer\.test\.ts\)/,
+      );
+      assert.match(
+        text,
+        /shell-intranet\/src\/state\/: .*<name>Reducer\.ts \+ <name>Reducer\.test\.ts/,
+      );
+    });
+
+    it('fails on index.ts barrels outside a feature root', async () => {
+      const r = await run(validApps(), {
+        ...validRegistries(),
+        ...ok(`${staff}/features/staff/components`, 'StaffCard'),
+        ...ok(`${staff}/components`, 'Badge'),
+        ...ok('apps/intranet/shell-intranet/src/layouts', 'ShellLayout'),
+        [`${staff}/features/staff/index.ts`]:
+          "export { StaffCard } from './components/StaffCard/StaffCard';\n",
+        [`${staff}/features/staff/components/StaffCard/index.ts`]: '',
+        [`${staff}/features/staff/components/index.ts`]: '',
+        [`${staff}/features/staff/api/index.ts`]: '',
+        [`${staff}/components/Badge/index.tsx`]: '',
+        [`${staff}/pages/HomePage/index.ts`]: '',
+        'apps/intranet/shell-intranet/src/layouts/ShellLayout/index.ts': '',
+        [`${staff}/providers/index.ts`]: '',
+      });
+      assert.deepEqual(rules(r.errors), Array(7).fill('barrel-file'));
+      assert.match(
+        r.errors[0].message,
+        /no index\.ts barrels\. Import from the file itself/,
       );
     });
 
@@ -301,13 +349,11 @@ describe('check-apps', () => {
           "import styles from './Card.module.scss';\nexport const Card = () => styles;\n",
         [`${staff}/components/Card/Card.test.tsx`]:
           "document.documentElement.style.setProperty('--color-bg', 'red');\n",
-        [`${staff}/components/Card/index.ts`]:
-          "export { Card } from './Card';\n",
         // page-wide: :root / html / body / [data-theme], also nested or in @media, or from script
         [`${staff}/styles/global.scss`]: ':root { --color-surface: red; }\n',
         [`${staff}/features/x/components/X/X.module.scss`]:
           "@media (min-width: 1px) {\n  :global(html[data-theme='dark']) {\n    --color-accent: red;\n  }\n}\n",
-        [`${staff}/bootstrap.tsx`]:
+        [`${staff}/main.tsx`]:
           "document.documentElement.style.setProperty('--color-bg', 'red');\n",
       });
       assert.deepEqual(rules(r.errors).sort(), [
@@ -323,7 +369,7 @@ describe('check-apps', () => {
       assert.match(text, /X\.module\.scss sets --color-accent on/);
       assert.match(
         text,
-        /staff\/src\/bootstrap\.tsx sets --color-bg on the document/,
+        /staff\/src\/main\.tsx sets --color-bg on the document/,
       );
       assert.match(text, /restyle the shell's layout/);
     });
@@ -339,9 +385,88 @@ describe('check-apps', () => {
       ],
     };
     const r = await run(validApps(), files);
-    assert.deepEqual(rules(r.errors), ['registry', 'registry', 'registry']);
-    // leave not registered; internet_services missing from the intranet dev manifest
-    assert.deepEqual(rules(r.warnings), ['registry', 'registry']);
+    assert.deepEqual(rules(r.errors), [
+      // the registry changed, the committed dev manifest did not
+      'dev-manifest',
+      'registry',
+      'registry',
+      'registry',
+    ]);
+    // leave not registered
+    assert.deepEqual(rules(r.warnings), ['registry']);
+  });
+
+  describe('generated dev manifest (mfe-manifest.dev.json)', () => {
+    const vendor = { url: 'http://localhost:3191/mount.js', format: 'esm' };
+    /** @param {Record<string, unknown>} devManifest */
+    const shellWith = (devManifest) => {
+      const shell = app('shell', { type: 'shell', port: 3100 });
+      return { ...shell, mfe: { ...shell.mfe, devManifest } };
+    };
+    const devManifest = {
+      auth: { mock: true },
+      settings: { apiBaseUrl: 'http://localhost:3190/api' },
+      remotes: { intranet_staff: { props: { vendor } } },
+    };
+
+    it('passes when the file is what the generator writes (ports, registry order, mfe.devManifest)', async () => {
+      /** @type {Record<string, object>} */
+      const files = validRegistries();
+      files['apps/intranet/shell-intranet/mfe-manifest.dev.json'] = {
+        remotes: {
+          intranet_staff: {
+            entry: 'http://localhost:3101/mf-manifest.json',
+            props: { vendor },
+          },
+          intranet_leave: { entry: 'http://localhost:3102/mf-manifest.json' },
+        },
+        auth: { mock: true },
+        settings: { apiBaseUrl: 'http://localhost:3190/api' },
+      };
+      const r = await run(
+        { ...validApps(), 'intranet/shell-intranet': shellWith(devManifest) },
+        files,
+      );
+      assert.deepEqual(r.errors, []);
+    });
+
+    it('fails when a remote port changed, the file is missing or edited by hand', async () => {
+      const moved = await run({
+        ...validApps(),
+        'intranet/leave': app('leave', { port: 3105, access: 'private' }),
+      });
+      assert.deepEqual(rules(moved.errors), ['dev-manifest']);
+      assert.match(
+        moved.errors[0].message,
+        /shell-intranet\/mfe-manifest\.dev\.json is out of date\. It is generated from remotes\.json.*run pnpm dev-manifest/,
+      );
+      const files = validRegistries();
+      delete (
+        /** @type {Record<string, unknown>} */ (files)[
+          'apps/internet/shell-internet/mfe-manifest.dev.json'
+        ]
+      );
+      const missing = await run(validApps(), files);
+      assert.deepEqual(rules(missing.errors), ['dev-manifest']);
+      assert.match(missing.errors[0].message, /is missing/);
+      const edited = await run({
+        ...validApps(),
+        // dev props must come from mfe.devManifest, not from the file
+        'intranet/shell-intranet': shellWith(devManifest),
+      });
+      assert.deepEqual(rules(edited.errors), ['dev-manifest']);
+    });
+
+    it('fails on a malformed mfe.devManifest', async () => {
+      const r = await run({
+        ...validApps(),
+        'intranet/shell-intranet': shellWith(
+          /** @type {any} */ ({ remotes: [] }),
+        ),
+      });
+      assert.deepEqual(rules(r.errors), ['dev-manifest']);
+      assert.match(r.errors[0].message, /"mfe\.devManifest" must be an object/);
+    });
   });
 
   describe('dev tool servers (root package.json mfe.tools)', () => {

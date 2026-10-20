@@ -95,7 +95,19 @@ describe('generators', () => {
       'type:shell',
       'access:public',
     ]);
-    assert.deepEqual(pkg.mfe, { port: 3100, federationName: 'intranet_shell' });
+    // mfe.devManifest: the extra content of the generated mfe-manifest.dev.json
+    assert.deepEqual(pkg.mfe, {
+      port: 3100,
+      federationName: 'intranet_shell',
+      devManifest: {
+        auth: { mock: true },
+        settings: { apiBaseUrl: 'http://localhost:3190/api' },
+      },
+    });
+    assert.equal(
+      pkg.scripts.dev,
+      'mfe-dev-manifest --shell-dir . && rspack dev',
+    );
     assert.deepEqual(Object.keys(pkg.scripts), [
       'dev',
       'build',
@@ -155,20 +167,17 @@ describe('generators', () => {
       'e2e/a11y.spec.ts',
       'public/index.html',
       'src/main.tsx',
-      'src/bootstrap.tsx',
       'src/styles/shell.scss',
       'src/app/App.tsx',
       'src/app/routes.tsx',
       'src/components/RemoteNav/RemoteNav.tsx',
       'src/features/welcome/components/Welcome/Welcome.tsx',
       'src/features/welcome/components/Welcome/Welcome.test.tsx',
-      'src/features/welcome/components/Welcome/index.ts',
       'src/features/startup/components/StartupError/StartupError.tsx',
       'src/layouts/ShellLayout/ShellLayout.tsx',
       'src/pages/HomePage/HomePage.tsx',
       'src/pages/RemotePage/RemotePage.tsx',
       'src/core/constants/routePaths.ts',
-      'src/services/http.ts',
     ]) {
       assert.ok(files.includes(f), `missing ${f}`);
     }
@@ -178,7 +187,6 @@ describe('generators', () => {
       'ShellLayout.tsx',
       'ShellLayout.module.scss',
       'ShellLayout.test.tsx',
-      'index.ts',
     ]) {
       assert.ok(files.includes(`src/layouts/ShellLayout/${f}`), `missing ${f}`);
     }
@@ -230,10 +238,15 @@ describe('generators', () => {
     assert.match(read(root, `${dir}/e2e/helpers.ts`), /data-nav-placement/);
     assert.match(read(root, `${dir}/e2e/shell.spec.ts`), /expectSidebar/);
     assert.match(read(root, `${dir}/rspack.config.js`), /createShellConfig/);
-    assert.match(read(root, `${dir}/src/bootstrap.tsx`), /registerPwa\(\)/);
+    // the API client comes from @org/mf-runtime (useApiClient), no per-app services/http.ts
+    assert.ok(!files.some((f) => f.startsWith('src/services/')));
+    // async startup (@org/rspack-config): one entry file, no import('./bootstrap') boundary
+    assert.ok(!files.includes('src/bootstrap.tsx'));
+    assert.doesNotMatch(read(root, `${dir}/src/main.tsx`), /import\(/);
+    assert.match(read(root, `${dir}/src/main.tsx`), /registerPwa\(\)/);
     // shell-wide global styles: imported right after the design tokens; no header colours
     assert.match(
-      read(root, `${dir}/src/bootstrap.tsx`),
+      read(root, `${dir}/src/main.tsx`),
       /^import '@org\/design-tokens\/global\.scss';\n(?:\/\/.*\n)*import '\.\/styles\/shell\.scss';$/m,
     );
     const shellStyles = read(root, `${dir}/src/styles/shell.scss`);
@@ -246,9 +259,9 @@ describe('generators', () => {
     ]) {
       assert.doesNotMatch(text, /MainLayout|useNavPlacement/);
     }
-    assert.match(read(root, `${dir}/src/bootstrap.tsx`), /loadMfeManifest/);
+    assert.match(read(root, `${dir}/src/main.tsx`), /loadMfeManifest/);
     assert.match(
-      read(root, `${dir}/src/bootstrap.tsx`),
+      read(root, `${dir}/src/main.tsx`),
       /loadAuthClient\(manifest\.auth\)/,
     );
     assert.match(read(root, `${dir}/src/app/App.tsx`), /<AuthProvider/);
@@ -331,7 +344,7 @@ describe('generators', () => {
     });
     // standalone: the mock API in development only (dropped from production bundles)
     assert.match(
-      read(root, 'apps/intranet/staff-directory/src/app/standaloneProps.ts'),
+      read(root, 'apps/intranet/staff-directory/src/app/apps.tsx'),
       /process\.env\.NODE_ENV !== 'production'\s*\?\s*\{ apiBaseUrl: 'http:\/\/localhost:3190\/api' \}/,
     );
   });
@@ -369,21 +382,74 @@ describe('generators', () => {
     assert.ok(!fs.existsSync(path.join(root, 'apps/intranet/bad-title')));
   });
 
+  it('--state: feature state example (reducer + Context) used by two components', async () => {
+    await assert.rejects(
+      generateRemote({
+        root,
+        zone: 'intranet',
+        name: 'no-state',
+        external: true,
+        state: true,
+      }),
+      /--state adds feature state to the demo feature of a React remote/,
+    );
+    await generateRemote({
+      root,
+      zone: 'intranet',
+      name: 'team-board',
+      state: true,
+    });
+    const dir = 'apps/intranet/team-board';
+    const files = listFiles(path.join(root, dir));
+    for (const f of [
+      'src/features/demo/state/demoReducer.ts',
+      'src/features/demo/state/demoReducer.test.ts',
+      'src/features/demo/state/DemoContext.tsx',
+      'src/features/demo/state/DemoContext.test.tsx',
+      'src/features/demo/components/ItemPicker/ItemPicker.tsx',
+      'src/features/demo/components/ItemPicker/ItemPicker.test.tsx',
+      'src/features/demo/components/SelectionSummary/SelectionSummary.tsx',
+      'src/features/demo/components/SelectionSummary/SelectionSummary.test.tsx',
+    ]) {
+      assert.ok(files.includes(f), `missing ${f}`);
+    }
+    const context = read(
+      root,
+      `${dir}/src/features/demo/state/DemoContext.tsx`,
+    );
+    // separate state and dispatch contexts; hooks throw outside the provider
+    assert.match(context, /const DemoStateContext = createContext/);
+    assert.match(context, /const DemoDispatchContext = createContext/);
+    assert.match(context, /must be used inside <DemoProvider>/);
+    assert.match(
+      read(root, `${dir}/src/pages/OverviewPage/OverviewPage.tsx`),
+      /<DemoProvider>/,
+    );
+    assert.match(
+      read(root, `${dir}/src/features/demo/index.ts`),
+      /export \{ DemoProvider \}/,
+    );
+    // without --state there is no state/ folder
+    assert.ok(
+      !listFiles(path.join(root, 'apps/intranet/staff-directory')).some((f) =>
+        f.includes('/state/'),
+      ),
+    );
+  });
+
   it('remote layout: exposed module never imports global styles', () => {
     const dir = 'apps/intranet/staff-directory';
     const files = listFiles(path.join(root, dir));
     for (const f of [
-      'src/app/RemoteApp.tsx',
       'src/app/apps.tsx',
+      'src/app/apps.test.tsx',
       'src/app/routes.tsx',
-      'src/app/standaloneProps.ts',
       'src/components/ModeBadge/ModeBadge.tsx',
       'src/components/ModeBadge/ModeBadge.test.tsx',
       'src/features/demo/index.ts',
       'src/features/demo/components/Demo/Demo.tsx',
       'src/features/demo/components/Demo/Demo.module.scss',
       'src/features/demo/components/Demo/Demo.test.tsx',
-      'src/features/demo/components/Demo/index.ts',
       'src/features/demo/components/DemoDetails/DemoDetails.tsx',
       'src/features/demo/components/DemoDetails/DemoDetails.test.tsx',
       'src/features/demo/utils/validation.ts',
@@ -398,24 +464,64 @@ describe('generators', () => {
       'src/layouts/StandaloneLayout/StandaloneLayout.tsx',
       'src/layouts/StandaloneLayout/StandaloneLayout.module.scss',
       'src/layouts/StandaloneLayout/StandaloneLayout.test.tsx',
-      'src/layouts/StandaloneLayout/index.ts',
       'src/pages/OverviewPage/OverviewPage.tsx',
       'src/pages/DetailsPage/DetailsPage.tsx',
       'src/core/constants/apiRoutes.ts',
-      'src/services/http.ts',
       'public/index.html',
     ]) {
       assert.ok(files.includes(f), `missing ${f}`);
     }
     assert.match(read(root, `${dir}/rspack.config.js`), /createRemoteConfig/);
-    for (const f of ['src/app/RemoteApp.tsx', 'src/app/apps.tsx']) {
-      assert.doesNotMatch(read(root, `${dir}/${f}`), /global\.scss/);
-    }
-    assert.match(read(root, `${dir}/src/bootstrap.tsx`), /global\.scss/);
-    assert.match(
-      read(root, `${dir}/src/app/RemoteApp.tsx`),
-      /EmbeddedApp as default/,
+    assert.ok(!files.some((f) => f.startsWith('src/services/')));
+    // page-level data fetching: the page calls the hooks, the components only display
+    const overview = read(
+      root,
+      `${dir}/src/pages/OverviewPage/OverviewPage.tsx`,
     );
+    assert.match(overview, /useItems\(\)/);
+    assert.match(overview, /useCreateItem\(\)/);
+    for (const c of ['Demo', 'DemoItems', 'AddItemForm', 'DemoDetails']) {
+      assert.doesNotMatch(
+        read(root, `${dir}/src/features/demo/components/${c}/${c}.tsx`),
+        /=\s*use(Items|CreateItem|ApiClient)\(/,
+        c,
+      );
+    }
+    assert.match(
+      read(root, `${dir}/src/features/demo/hooks/useItems.ts`),
+      /import \{ useApiClient \} from '@org\/mf-runtime\/remote';/,
+    );
+    // the exposed module is src/app/apps.tsx (no RemoteApp.tsx / standaloneProps.ts)
+    for (const f of ['src/app/RemoteApp.tsx', 'src/app/standaloneProps.ts']) {
+      assert.ok(!files.includes(f), `${f} should not exist`);
+    }
+    assert.doesNotMatch(read(root, `${dir}/src/app/apps.tsx`), /global\.scss/);
+    assert.match(read(root, `${dir}/src/main.tsx`), /global\.scss/);
+    const apps = read(root, `${dir}/src/app/apps.tsx`);
+    assert.match(apps, /^export default EmbeddedApp;$/m);
+    assert.match(apps, /^export \{ StandaloneApp \};$/m);
+    assert.match(
+      read(root, `${dir}/src/app/apps.test.tsx`),
+      /scanExposedModule\(/,
+    );
+  });
+
+  it('no index.ts barrels except a feature root (the feature public API)', () => {
+    for (const app of [
+      'shell-intranet',
+      'staff-directory',
+      'leave-requests',
+      'it-helpdesk',
+    ]) {
+      const dir = path.join(root, 'apps', 'intranet', app);
+      const barrels = listFiles(dir).filter((f) =>
+        /(^|\/)index\.tsx?$/.test(f),
+      );
+      for (const f of barrels) {
+        assert.match(f, /^src\/features\/[^/]+\/index\.ts$/, `${app}/${f}`);
+      }
+      assert.ok(barrels.length > 0, `${app} has a feature public API`);
+    }
   });
 
   it('substitutes every template token', () => {
@@ -424,6 +530,7 @@ describe('generators', () => {
       'staff-directory',
       'leave-requests',
       'it-helpdesk',
+      'team-board',
     ]) {
       const dir = path.join(root, 'apps', 'intranet', app);
       for (const f of listFiles(dir)) {
@@ -554,6 +661,16 @@ describe('generators', () => {
       format: 'esm',
       config: { title: 'Payments (mock vendor)' },
     });
+    // the vendor props come from the shell's package.json mfe.devManifest (the file is generated)
+    assert.deepEqual(
+      readJson(root, 'apps/internet/shell-internet/package.json').mfe
+        .devManifest.remotes.internet_payments,
+      { props: { vendor: dev.remotes.internet_payments.props.vendor } },
+    );
+    assert.equal(
+      readJson(root, 'apps/internet/payments/package.json').scripts.dev,
+      'rspack dev',
+    );
     assert.equal(dev.remotes.internet_services.props, undefined);
     assert.equal(dev.settings.apiBaseUrl, 'http://localhost:3290/api');
     const fallback = read(

@@ -7,13 +7,18 @@
  * - at most one shell per zone, named shell-<zone>
  * - no app's package.json depends on another app (cross-zone deps reported as such)
  * - no app's source imports another app (by package name or by a relative path)
- * - each shell's remotes.json / mfe-manifest.dev.json match the remotes of its zone
+ * - each shell's remotes.json matches the remotes of its zone, and its generated
+ *   mfe-manifest.dev.json is up to date (src/dev-manifest.js)
  * - the dev tool servers declared in the root package.json (`mfe.tools`) have unique offsets
  *   inside the zones' tools range and name existing workspace packages
  * - component layout (docs/coding-conventions.md "One folder per component"): components live in
  *   `features/<feature>/components/<Name>/`, `src/components/<Name>/` or `src/layouts/<Name>/`
- *   with `<Name>.tsx`, `<Name>.test.tsx` and `index.ts`; a CSS module is imported only from its
- *   own folder
+ *   with `<Name>.tsx` and `<Name>.test.tsx`; a CSS module is imported only from its own folder
+ * - state folders (`src/features/<feature>/state/`, app-level `src/state/`) hold a tested
+ *   reducer: at least one `<name>Reducer.test.ts`
+ * - no barrel files: the only `index.ts` in an app is a feature's public API
+ *   (`src/features/<feature>/index.ts`); everything else is imported from its file
+ *   (`@/components/Card/Card`)
  * - remotes never set CSS custom properties page-wide (`:root`, `html`, `body`, `[data-theme]`,
  *   `document.documentElement.style.setProperty('--…')`): that would restyle the shell's layout
  *   and every other remote
@@ -28,6 +33,7 @@ import {
   ZONES,
 } from './zones.js';
 import { loadApps, loadWorkspace, readJson } from './workspace.js';
+import { devManifestStatus } from './dev-manifest.js';
 
 /** @typedef {import('./check-versions.js').Issue} Issue */
 /** @typedef {import('./workspace.js').WorkspacePackage} WorkspacePackage */
@@ -234,7 +240,7 @@ export async function checkApps({ root }) {
     (i) => (Number.isInteger(i.port) ? i.port : undefined),
     'app-port-duplicate',
     (port, list) =>
-      `Dev port ${port} is used by ${list.length} apps: ${names(list)}. Each app needs its own port; change "mfe.port" of all but one (and the shell's mfe-manifest.dev.json entry).`,
+      `Dev port ${port} is used by ${list.length} apps: ${names(list)}. Each app needs its own port; change "mfe.port" of all but one (then pnpm dev-manifest regenerates the shell's mfe-manifest.dev.json).`,
   );
   unique(
     (i) =>
@@ -334,7 +340,6 @@ export async function checkApps({ root }) {
   for (const shell of infos.filter((i) => i.type === 'shell')) {
     const shellDir = path.join(root, shell.app.dir);
     const registryFile = path.join(shellDir, 'remotes.json');
-    const manifestFile = path.join(shellDir, 'mfe-manifest.dev.json');
     const relRegistry = `${shell.app.dir}/remotes.json`;
     if (!fs.existsSync(registryFile)) {
       err(
@@ -353,18 +358,6 @@ export async function checkApps({ root }) {
         `${relRegistry} is not valid JSON: ${/** @type {Error} */ (e).message}`,
       );
       continue;
-    }
-    /** @type {any} */
-    let manifest = { remotes: {} };
-    if (fs.existsSync(manifestFile)) {
-      try {
-        manifest = readJson(manifestFile);
-      } catch (e) {
-        err(
-          'registry',
-          `${shell.app.dir}/mfe-manifest.dev.json is not valid JSON: ${/** @type {Error} */ (e).message}`,
-        );
-      }
     }
     const entries = Array.isArray(registry.remotes) ? registry.remotes : [];
     /** @type {Set<string>} */
@@ -398,12 +391,6 @@ export async function checkApps({ root }) {
           `${label}: federationName "${entry.federationName}" but ${target.app.name} has mfe.federationName "${String(target.federationName)}".`,
         );
       }
-      if (!manifest.remotes?.[entry.federationName]) {
-        warn(
-          'registry',
-          `${label}: no entry "${entry.federationName}" in ${shell.app.dir}/mfe-manifest.dev.json, so it cannot load in dev.`,
-        );
-      }
     }
     for (const remote of infos.filter(
       (i) =>
@@ -417,6 +404,36 @@ export async function checkApps({ root }) {
       );
     }
   }
+  // --- generated dev manifests ---------------------------------------------------------------
+  for (const shell of infos.filter((i) => i.type === 'shell')) {
+    const shellDir = path.join(root, shell.app.dir);
+    if (!fs.existsSync(path.join(shellDir, 'remotes.json'))) continue;
+    const devManifest = shell.app.pkg.mfe?.devManifest;
+    if (
+      devManifest !== undefined &&
+      (typeof devManifest !== 'object' ||
+        devManifest === null ||
+        Array.isArray(devManifest) ||
+        ('remotes' in devManifest &&
+          (typeof devManifest.remotes !== 'object' ||
+            devManifest.remotes === null ||
+            Array.isArray(devManifest.remotes))))
+    ) {
+      err(
+        'dev-manifest',
+        `${shell.app.file}: "mfe.devManifest" must be an object like { "auth": { "mock": true }, "settings": { … }, "remotes": { "<federationName>": { "props": { … } } } }.`,
+      );
+      continue;
+    }
+    const status = devManifestStatus(root, shellDir);
+    if (status.upToDate) continue;
+    const file = `${shell.app.dir}/mfe-manifest.dev.json`;
+    err(
+      'dev-manifest',
+      `${file} ${status.missing ? 'is missing' : status.invalid ? `is not valid JSON (${status.invalid})` : 'is out of date'}. It is generated from remotes.json, the remotes' package.json "mfe.port" and the shell's package.json "mfe.devManifest" (auth, settings, per-remote dev props): run pnpm dev-manifest (the shell's dev script, pnpm e2e and the generators also do). Do not edit it by hand; put extra dev props in "mfe.devManifest" of ${shell.app.file}.`,
+    );
+  }
+
   for (const zone of Object.keys(ZONES)) {
     const hasRemote = infos.some((i) => i.zone === zone && i.type === 'remote');
     const hasShell = infos.some((i) => i.zone === zone && i.type === 'shell');
@@ -457,7 +474,7 @@ function entries(dir) {
 }
 
 /**
- * One folder per component: `components/<Name>/{<Name>.tsx, <Name>.test.tsx, index.ts}` inside
+ * One folder per component: `components/<Name>/{<Name>.tsx, <Name>.test.tsx}` inside
  * `src/components/`, `src/layouts/` (the shell's ShellLayout, a remote's StandaloneLayout) and
  * every `src/features/<feature>/components/`; no component or style files
  * loose in a feature root or a components/ folder; a CSS module is private to its folder (no
@@ -488,7 +505,7 @@ function checkComponentLayout(root, appDir, err) {
         const base = file.name.replace(/\.(test\.)?tsx$|\.module\.s?css$/, '');
         err(
           'component-folder',
-          `${rel(path.join(featureDir, file.name))}: components and their styles live in features/${feature.name}/components/<Name>/ (move it to components/${base}/${file.name}). The feature root keeps only api/, hooks/, types/, utils/, components/ and index.ts. See ${LAYOUT_DOC}.`,
+          `${rel(path.join(featureDir, file.name))}: components and their styles live in features/${feature.name}/components/<Name>/ (move it to components/${base}/${file.name}). The feature root keeps only api/, hooks/, state/, types/, utils/, components/ and index.ts. See ${LAYOUT_DOC}.`,
         );
       }
     }
@@ -496,7 +513,7 @@ function checkComponentLayout(root, appDir, err) {
   for (const dir of componentDirs) {
     for (const item of entries(dir)) {
       const where = rel(path.join(dir, item.name));
-      if (item.isFile() && /^index\.tsx?$/.test(item.name)) continue; // optional barrel
+      if (item.isFile() && /^index\.tsx?$/.test(item.name)) continue; // barrel-file rule
       if (item.isFile()) {
         const base = item.name.replace(
           /\.(test\.)?[jt]sx?$|\.module\.s?css$|\.s?css$/,
@@ -504,7 +521,7 @@ function checkComponentLayout(root, appDir, err) {
         );
         err(
           'component-folder',
-          `${where}: one folder per component; move it to ${rel(dir)}/${base}/${item.name} (with ${base}.test.tsx and an index.ts re-export). Shared test data goes to the feature's __fixtures__/. See ${LAYOUT_DOC}.`,
+          `${where}: one folder per component; move it to ${rel(dir)}/${base}/${item.name} (with ${base}.test.tsx). Shared test data goes to the feature's __fixtures__/. See ${LAYOUT_DOC}.`,
         );
         continue;
       }
@@ -527,12 +544,6 @@ function checkComponentLayout(root, appDir, err) {
         );
         continue;
       }
-      if (!has('index.ts') && !has('index.tsx')) {
-        err(
-          'component-folder',
-          `${where}/: missing index.ts (export { ${name} } from './${name}';). Import the component through its folder.`,
-        );
-      }
       if (!has(`${name}.test.tsx`)) {
         err(
           'component-test',
@@ -540,6 +551,39 @@ function checkComponentLayout(root, appDir, err) {
         );
       }
     }
+  }
+
+  // state folders hold a reducer with its test (docs/coding-conventions.md "State management")
+  const stateDirs = [
+    path.join(src, 'state'),
+    ...entries(path.join(src, 'features'))
+      .filter((feature) => feature.isDirectory())
+      .map((feature) => path.join(src, 'features', feature.name, 'state')),
+  ].filter((dir) => fs.existsSync(dir));
+  for (const dir of stateDirs) {
+    const files = entries(dir)
+      .filter((f) => f.isFile())
+      .map((f) => f.name);
+    if (files.some((f) => /Reducer\.test\.tsx?$/.test(f))) continue;
+    const reducer = files.find((f) => /Reducer\.tsx?$/.test(f));
+    err(
+      'state-test',
+      `${rel(dir)}/: a state/ folder holds a pure reducer and its test (${reducer ? reducer.replace(/\.tsx?$/, '.test.ts') : '<name>Reducer.ts + <name>Reducer.test.ts'}) next to the <Name>Context.tsx that provides it. See docs/coding-conventions.md ("State management").`,
+    );
+  }
+
+  // no barrel files: index.ts only as a feature's public API (src/features/<feature>/index.ts)
+  for (const file of sourceFiles(appDir)) {
+    if (!/^index\.tsx?$/.test(path.basename(file))) continue;
+    const parent = path.dirname(file);
+    const isFeatureApi =
+      path.dirname(parent) === path.join(src, 'features') &&
+      path.basename(file) === 'index.ts';
+    if (isFeatureApi) continue;
+    err(
+      'barrel-file',
+      `${rel(file)}: no index.ts barrels. Import from the file itself (e.g. '@/components/Card/Card', '../api/itemsApi'); the only index.ts in an app is a feature's public API, src/features/<feature>/index.ts. See ${LAYOUT_DOC}.`,
+    );
   }
 
   // CSS modules are private to their folder

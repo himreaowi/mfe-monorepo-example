@@ -10,10 +10,10 @@ pnpm install
 pnpm dev:<zone>
 ```
 
-| Generator    | Creates                                                                                | Package              | Federation name | Port                                            |
-| ------------ | -------------------------------------------------------------------------------------- | -------------------- | --------------- | ----------------------------------------------- |
-| `gen:shell`  | `apps/<zone>/shell-<zone>` (incl. the zone's e2e suite in `e2e/`)                      | `@org/shell-<zone>`  | `<zone>_shell`  | first of the zone (3100/3200)                   |
-| `gen:remote` | `apps/<zone>/<name>` + entry in the shell's `remotes.json` and `mfe-manifest.dev.json` | `@org/<zone>-<name>` | `<zone>_<name>` | lowest free in the zone (3101–3189 / 3201–3289) |
+| Generator    | Creates                                                                                          | Package              | Federation name | Port                                            |
+| ------------ | ------------------------------------------------------------------------------------------------ | -------------------- | --------------- | ----------------------------------------------- |
+| `gen:shell`  | `apps/<zone>/shell-<zone>` (incl. the zone's e2e suite in `e2e/`)                                | `@org/shell-<zone>`  | `<zone>_shell`  | first of the zone (3100/3200)                   |
+| `gen:remote` | `apps/<zone>/<name>` + entry in the shell's `remotes.json` (regenerates `mfe-manifest.dev.json`) | `@org/<zone>-<name>` | `<zone>_<name>` | lowest free in the zone (3101–3189 / 3201–3289) |
 
 - **Titles** (nav label, `<h1>`, `APP_TITLE`) are derived from the name in **sentence case**,
   with a short list of acronyms kept in capitals (`TITLE_ACRONYMS` in `src/names.js`: IT, HR,
@@ -25,7 +25,7 @@ pnpm dev:<zone>
 - **`--layout top|side`** (`gen:shell`, default `top`): which **starter layout** is copied into
   the shell as its own code: `templates/shell-layouts/<layout>/` →
   `src/layouts/ShellLayout/{ShellLayout.tsx, ShellLayout.module.scss, ShellLayout.test.tsx}`
-  (`index.ts` comes from the shell template). `top`: remotes nav in the header row; `side`: a
+  `top`: remotes nav in the header row; `side`: a
   sticky top bar and the nav in a sidebar left of the content. On narrow screens both fold the
   nav behind "Menu" (the side starter as a drawer). After generation there is no layout option
   anywhere: the team edits the files (colours in the "HEADER COLOURS" block of
@@ -40,8 +40,14 @@ pnpm dev:<zone>
   wraps its route in `<RequireAuth>` (`@org/auth`): signed-out users get a sign-in prompt and the
   remote is not downloaded before sign-in. Every remote receives host prop `user`.
 - Shells always render `<AuthProvider>`; the client comes from the manifest's `auth` section
-  (`mfe-manifest.dev.json` gets `"auth": { "mock": true }`, the dev-only mock sign-in). See
+  (the shell's `package.json` `mfe.devManifest` has `"auth": { "mock": true }`, the dev-only mock
+  sign-in, and `settings.apiBaseUrl` → the zone's mock API). See
   `docs/auth-contract.md`.
+- `--state` (`gen:remote`, not with `--external`): adds the **feature-state example** from
+  `templates/remote-state/`: `src/features/demo/state/` (`demoReducer.ts` + test,
+  `DemoContext.tsx` with `DemoProvider`, `useDemoState()`, `useDemoDispatch()` + test) and two
+  components that share it on the overview page (`ItemPicker` sets the selected items,
+  `SelectionSummary` shows and clears them). See docs/coding-conventions.md "State management".
 - `--external`: an **adapter remote** for a vendor module (tag `kind:external`, registry
   `"kind": "external"`). `src/features/external/components/ExternalModuleHost/` renders
   `<ExternalModule>` (`@org/mf-runtime/external`) configured from the remote's manifest
@@ -60,10 +66,11 @@ pnpm dev:<zone>
   come from the zone's tools range and the root `package.json` `mfe.tools` (`toolPort()` in
   `tools/scripts/src/zones.js`), so `pnpm dev:intranet` and `pnpm dev:internet` run side by side.
 - The remote's demo feature (`src/features/demo`) loads `/items` from that API through
-  `@org/http-client` (api/ → hooks/ → components) and has an "Add item" form with the
+  `useApiClient()` (api/ → hooks/ → the page, which passes data down → display-only components) and has an "Add item" form with the
   validate-on-submit / error-summary pattern (docs/coding-conventions.md).
 - Every generated feature uses **one folder per component** (docs/coding-conventions.md):
-  `features/<feature>/components/<Name>/{<Name>.tsx, <Name>.module.scss, <Name>.test.tsx, index.ts}`,
+  `features/<feature>/components/<Name>/{<Name>.tsx, <Name>.module.scss, <Name>.test.tsx}` (no
+  `index.ts`: imports name the file; a feature's `index.ts` is its public API),
   non-component code in `api/`, `hooks/`, `types/`, `utils/`. Remote: `features/demo`
   (`Demo`, `DemoDetails`, `DemoItems`, `AddItemForm`; `utils/validation.ts`). Shell:
   `features/welcome` (`Welcome`), `features/startup` (`StartupError`) and
@@ -71,7 +78,7 @@ pnpm dev:<zone>
   `features/external` (`ExternalModuleHost`; `utils/vendorConfig.ts`). `pnpm check` keeps it
   that way.
 - Shells get `src/styles/shell.scss`, the shell's own global stylesheet (empty by default, for
-  fonts or a shell-wide token override), imported in `src/bootstrap.tsx` right after
+  fonts or a shell-wide token override), imported in `src/main.tsx` right after
   `@org/design-tokens/global.scss`. The header colours are not there: they are in the copied
   `ShellLayout.module.scss`. Remotes get their own small `src/layouts/StandaloneLayout/`
   (standalone mode only) and must not set page-wide custom properties (`pnpm check` rule
@@ -91,7 +98,7 @@ pnpm dev:<zone>
 - Generated files are formatted with the repo's Prettier config.
 
 Templates live in `templates/shell`, `templates/shell-layouts/top|side` (an overlay on `shell`:
-the starter layout), `templates/remote` and `templates/external` (an overlay on `remote`). Files end in `.tmpl` (so the repo's tools ignore them) and use `__TOKEN__` placeholders
+the starter layout), `templates/remote`, `templates/remote-state` (an overlay on `remote` for `--state`) and `templates/external` (an overlay on `remote`). Files end in `.tmpl` (so the repo's tools ignore them) and use `__TOKEN__` placeholders
 (`__ZONE__`, `__NAME__`, `__APP_TITLE__`, `__SHELL_LAYOUT__`, `__PACKAGE_NAME__`, `__FEDERATION_NAME__`,
 `__ROUTE_PATH__`, `__PORT__`, `__SHELL_PORT__`, `__ACCESS__`, `__DIR_NAME__`, `__MOCK_API_URL__`,
 `__MOCK_VENDOR_PORT__`, `__MOCK_VENDOR_URL__`, `__MOCK_VENDOR_CONFIG__` (JSON),

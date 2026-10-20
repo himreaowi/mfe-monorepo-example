@@ -5,7 +5,7 @@ PWA support ported from starter-mfe.
 ## Browser (`@org/pwa`)
 
 - `registerPwa({ swUrl?, scope?, onError? })`: registers `/service-worker.js` after `load`. Call it
-  only in the entry that owns the page (shell bootstrap, or a remote's standalone bootstrap). A
+  only in the entry that owns the page (the shell's `src/main.tsx`, or a remote's standalone `src/main.tsx`). A
   remote rendered inside a shell never registers a service worker.
 - `useOnlineStatus()`: `true`/`false` from `navigator.onLine` + `online`/`offline` events.
 

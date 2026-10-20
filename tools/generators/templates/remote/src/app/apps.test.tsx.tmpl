@@ -1,12 +1,14 @@
+import path from 'node:path';
 import { render, screen } from '@testing-library/react';
+import { scanExposedModule } from '@org/jest-config/exposed-module';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { ThemeProvider } from '@org/ui';
-import { listItems } from '@/features/demo/api';
-import { EmbeddedApp, StandaloneApp } from './apps';
+import { listItems } from '@/features/demo/api/itemsApi';
+import EmbeddedApp, { StandaloneApp } from './apps';
 
 // the demo feature loads items from the API: no HTTP in unit tests
-jest.mock('@/features/demo/api', () => ({
-  ...jest.requireActual('@/features/demo/api'),
+jest.mock('@/features/demo/api/itemsApi', () => ({
+  ...jest.requireActual('@/features/demo/api/itemsApi'),
   listItems: jest.fn().mockResolvedValue([]),
 }));
 
@@ -48,8 +50,21 @@ describe('__APP_TITLE__ remote', () => {
     expect(
       screen.getByRole('button', { name: 'Use dark theme' }),
     ).toBeInTheDocument();
-    // standaloneProps point the demo at the mock API in development
+    // the standalone host props point the demo at the mock API in development
     expect(await screen.findByText('No items yet.')).toBeInTheDocument();
     expect(jest.mocked(listItems)).toHaveBeenCalled();
+  });
+
+  it('exposed module: nothing it reaches imports global styles or registers a service worker', () => {
+    const { files, violations } = scanExposedModule(
+      path.join(__dirname, 'apps.tsx'),
+    );
+    expect(violations).toEqual([]);
+    // the walk reached the feature components (features/<name>/components/<Name>/<Name>.tsx)
+    expect(
+      files.some((file) =>
+        /[\\/]features[\\/][^\\/]+[\\/]components[\\/]/.test(file),
+      ),
+    ).toBe(true);
   });
 });
