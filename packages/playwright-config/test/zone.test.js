@@ -78,6 +78,18 @@ function fixture() {
 }
 
 describe('loadZone', () => {
+  it('a relative apiBaseUrl is the zone proxy: health is waited for through it', () => {
+    const { shellDir } = fixture();
+    const file = path.join(shellDir, 'mfe-manifest.dev.json');
+    const manifest = JSON.parse(fs.readFileSync(file, 'utf8'));
+    manifest.settings.apiBaseUrl = '/api';
+    fs.writeFileSync(file, JSON.stringify(manifest));
+    const zone = loadZone(shellDir);
+    assert.equal(zone.apiBaseUrl, '/api');
+    assert.equal(zone.mockApi, true);
+    assert.ok(zone.waitFor.includes('http://localhost:3100/api/health'));
+  });
+
   it('reads port, registry and dev manifest', () => {
     const { shellDir } = fixture();
     const zone = loadZone(shellDir);

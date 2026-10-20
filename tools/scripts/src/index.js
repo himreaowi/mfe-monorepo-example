@@ -1,6 +1,19 @@
 // @ts-check
 export { checkVersions, validateExceptions, today } from './check-versions.js';
 export { checkApps } from './check-apps.js';
+export { checkEnv, documentedVariables } from './check-env.js';
+export {
+  ENV_EXAMPLE_FILE,
+  ENV_FILE,
+  ENV_VARIABLES,
+  loadShellEnv,
+  readEnvFile,
+  renderShellEnvExample,
+  renderZoneEnvExample,
+  syncZoneEnvExample,
+  remotePropsVariable,
+  remoteUrlVariable,
+} from './env.js';
 export { loadWorkspace, loadApps, DEP_FIELDS } from './workspace.js';
 export {
   ZONES,
@@ -15,6 +28,7 @@ export {
 export {
   defaultShell,
   routeShell,
+  shellUpstreams,
   startZoneProxy,
   zoneShells,
 } from './zone-proxy.js';

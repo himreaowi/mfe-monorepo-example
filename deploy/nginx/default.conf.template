@@ -11,6 +11,12 @@
 # in front can route /citizen/ and /business/ to two shell containers on one domain without
 # rewriting paths (deploy/README.md, "Several shells on one domain").
 #
+# Same-origin API and sign-in: the browser only calls <base>/api/... and <base>/auth/... on the
+# shell's own origin (no CORS, no API host in the browser or the manifest). The matching locations
+# are written at container start into /etc/mfe/mfe-proxy.inc by docker-entrypoint.d/40-mfe-manifest.sh
+# from API_UPSTREAM / AUTH_UPSTREAM and included below, with the settings of proxy-common.inc.
+# They use `location ^~`, so no static-file rule below can catch a path like /citizen/api/x.json.
+#
 # Caching rule of thumb: anything that names other files (index.html, mfe-manifest.json,
 # mf-manifest.json, remoteEntry.js, service-worker.js) is revalidated on every request; files
 # with a content hash in their name never change and are cached for a year.
@@ -23,6 +29,13 @@ map $http_origin $mfe_cors_origin {
     "~${MFE_CORS_ORIGINS_REGEX}" $http_origin;
 }
 
+# X-Forwarded-Proto for the proxied API / BFF: keep what the TLS-terminating gateway in front of
+# this container sent, else the scheme of this connection.
+map $http_x_forwarded_proto $mfe_forwarded_proto {
+    default $http_x_forwarded_proto;
+    "" $scheme;
+}
+
 server {
     listen ${NGINX_PORT};
     server_name _;
@@ -30,6 +43,8 @@ server {
     index index.html;
 
     include /etc/nginx/mfe-base-path.inc;
+    # <base>/api and <base>/auth proxy locations (empty for a remote)
+    include /etc/mfe/mfe-proxy.inc;
 
     server_tokens off;
     charset utf-8;
@@ -51,8 +66,9 @@ server {
     }
 
     # Per-environment runtime config of a shell (remotes, auth/BFF URLs, settings), served below
-    # the shell's base path (/mfe-manifest.json, /citizen/mfe-manifest.json). Written by DevOps
-    # per environment: mounted at /etc/mfe/mfe-manifest.json or MFE_MANIFEST_JSON.
+    # the shell's base path (/mfe-manifest.json, /citizen/mfe-manifest.json). Generated at start
+    # from API_UPSTREAM, AUTH_UPSTREAM and REMOTE_<NAME>_URL (40-mfe-manifest.sh), or supplied
+    # complete: mounted at /etc/mfe/mfe-manifest.json or MFE_MANIFEST_JSON.
     location ~ ^/(?:[a-z0-9/-]+/)?mfe-manifest\.json$ {
         root /etc/mfe;
         default_type application/json;

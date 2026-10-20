@@ -191,7 +191,12 @@ export function loadZone(shellDir) {
     typeof manifest.settings?.apiBaseUrl === 'string'
       ? manifest.settings.apiBaseUrl
       : undefined;
-  const apiHealthUrl = localHealthUrl(apiBaseUrl);
+  // A root-relative base (`/citizen/api`) is the zone proxy's same-origin API proxy: wait for
+  // its `/health` through the proxy (any answer below 500; the proxy answers 502 while the
+  // upstream, by default the mock API, is not up yet).
+  const apiHealthUrl = apiBaseUrl?.startsWith('/')
+    ? `${origin}${apiBaseUrl.replace(/\/+$/, '')}/health`
+    : localHealthUrl(apiBaseUrl);
   return {
     zone,
     shellDir,
@@ -207,7 +212,8 @@ export function loadZone(shellDir) {
     apiBaseUrl,
     mockApi:
       apiBaseUrl !== undefined &&
-      MOCK_API_ORIGINS.some((origin) => apiBaseUrl.startsWith(`${origin}/`)),
+      (apiBaseUrl.startsWith('/') ||
+        MOCK_API_ORIGINS.some((origin) => apiBaseUrl.startsWith(`${origin}/`))),
     remotes,
     // everything the suite needs besides the shell: remote dev servers, local vendors and the
     // local API's health URL (settings.apiBaseUrl, e.g. the mock API)

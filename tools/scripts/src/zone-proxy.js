@@ -11,17 +11,25 @@
  *   `<basePath>/ws`) are forwarded unchanged, so the shell dev servers' strict CSP and every
  *   header pass through (the page's origin is the proxy; remotes and tools stay on their own
  *   localhost ports, which the dev CSP allows).
- * No dependency: node:http + node:net.
+ * - `<basePath>/api/…` and `<basePath>/auth/…` (`/api`, `/auth` for the shell at `/`) are the
+ *   same-origin proxy of production (deploy/nginx): the prefix is stripped and the rest goes to
+ *   the shell's `API_UPSTREAM` / `AUTH_UPSTREAM` (from the zone/shell `.env`, src/env.js; the
+ *   API default is the zone's mock API; no default for auth, dev uses the mock sign-in). The
+ *   browser therefore only ever talks to the proxy origin, in dev as in production.
+ * No dependency: node:http + node:https + node:net.
  */
 import http from 'node:http';
+import https from 'node:https';
 import net from 'node:net';
 import path from 'node:path';
+import { loadShellEnv } from './env.js';
 import { loadApps } from './workspace.js';
 import {
   SHELL_DIR_PREFIX,
   ZONES,
   readZoneSettings,
   shellBasePath,
+  toolPort,
 } from './zones.js';
 
 /**
@@ -48,6 +56,108 @@ export function zoneShells(root, zone) {
       port: app.pkg.mfe.port,
       basePath: shellBasePath(app.pkg.mfe?.basePath),
     }));
+}
+
+/** Request timeout towards an API / auth upstream (nginx: proxy_read_timeout). */
+const UPSTREAM_TIMEOUT_MS = 60_000;
+
+/**
+ * The upstreams of a shell's `<base>/api` and `<base>/auth`: `API_UPSTREAM` / `AUTH_UPSTREAM`
+ * from the environment and .env files (src/env.js); `api` defaults to the zone's mock API.
+ * @param {string} root
+ * @param {string} zone
+ * @param {ZoneShell} shell
+ * @param {NodeJS.ProcessEnv} [env]
+ * @returns {{ api?: string, auth?: string }}
+ */
+export function shellUpstreams(root, zone, shell, env = process.env) {
+  const { values } = loadShellEnv({
+    root,
+    zone,
+    shellDir: path.join(root, shell.dir),
+    env,
+  });
+  /** @type {string | undefined} */
+  let api = values.API_UPSTREAM?.trim();
+  if (!api) {
+    try {
+      api = `http://localhost:${toolPort(/** @type {keyof typeof ZONES} */ (zone), 'mockApi', root)}/api`;
+    } catch {
+      api = undefined;
+    }
+  }
+  return { api, auth: values.AUTH_UPSTREAM?.trim() || undefined };
+}
+
+/**
+ * Is `pathname` below `<prefix>`? (`/citizen/api`, `/citizen/api/x`; not `/citizen/apis`)
+ * @param {string} pathname
+ * @param {string} prefix
+ */
+function below(pathname, prefix) {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
+
+/**
+ * Forward a request to an upstream URL like nginx `proxy_pass <upstream>/;` does: `rest` (the
+ * path below the stripped prefix) is appended to the upstream's own path. Cookies and every other
+ * header pass; Host becomes the upstream's, X-Forwarded-* describe the browser's request.
+ * @param {http.IncomingMessage} req
+ * @param {http.ServerResponse} res
+ * @param {{ upstream: string, rest: string, query: string, prefix: string, label: string }} target
+ */
+function forwardToUpstream(req, res, target) {
+  const { upstream, rest, query, prefix, label } = target;
+  let url;
+  try {
+    url = new URL(upstream);
+  } catch {
+    res.writeHead(502, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end(`${label} is not a valid URL: ${upstream}\n`);
+    return;
+  }
+  const client = url.protocol === 'https:' ? https : http;
+  const forwardedFor = [
+    req.headers['x-forwarded-for'],
+    req.socket.remoteAddress,
+  ]
+    .filter(Boolean)
+    .join(', ');
+  const outgoing = client.request(
+    {
+      protocol: url.protocol,
+      hostname: url.hostname,
+      port: url.port || undefined,
+      method: req.method,
+      path: `${url.pathname.replace(/\/+$/, '')}${rest}${query}`,
+      headers: {
+        ...req.headers,
+        host: url.host,
+        'x-forwarded-for': forwardedFor,
+        'x-forwarded-proto': req.headers['x-forwarded-proto'] ?? 'http',
+        'x-forwarded-host': req.headers.host,
+        'x-forwarded-prefix': prefix,
+      },
+      timeout: UPSTREAM_TIMEOUT_MS,
+    },
+    (upRes) => {
+      res.writeHead(upRes.statusCode ?? 502, {
+        ...upRes.headers,
+        'cache-control': 'no-store',
+      });
+      upRes.pipe(res);
+    },
+  );
+  outgoing.on('timeout', () => outgoing.destroy(new Error('timed out')));
+  outgoing.on('error', (error) => {
+    if (res.headersSent) {
+      res.destroy();
+      return;
+    }
+    res.writeHead(502, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end(`${label} (${upstream}) did not answer: ${error.message}\n`);
+  });
+  req.pipe(outgoing);
 }
 
 /**
@@ -92,6 +202,7 @@ export function routeShell(shells, pathname) {
  *   port?: number,
  *   host?: string,
  *   log?: (line: string) => void,
+ *   env?: NodeJS.ProcessEnv,
  * }} options
  * @returns {Promise<{ server: http.Server, shells: ZoneShell[], port: number, close: () => Promise<void> }>}
  */
@@ -103,6 +214,13 @@ export async function startZoneProxy(options) {
   const shells = zoneShells(root, zone);
   const settings = readZoneSettings(root)[zone];
   const home = defaultShell(shells, settings);
+  /** @type {Map<string, { api?: string, auth?: string }>} */
+  const upstreams = new Map(
+    shells.map((s) => [
+      s.packageName,
+      shellUpstreams(root, zone, s, options.env),
+    ]),
+  );
 
   const server = http.createServer((req, res) => {
     const url = req.url ?? '/';
@@ -121,6 +239,34 @@ export async function startZoneProxy(options) {
           'none'
         }.\n`,
       );
+      return;
+    }
+    // same-origin API / sign-in proxy of the shell (nginx does this in production)
+    const stem = shell.basePath === '/' ? '' : shell.basePath;
+    for (const [segment, variable] of /** @type {const} */ ([
+      ['api', 'API_UPSTREAM'],
+      ['auth', 'AUTH_UPSTREAM'],
+    ])) {
+      const prefix = `${stem}/${segment}`;
+      if (!below(pathname, prefix)) continue;
+      const target = upstreams.get(shell.packageName)?.[segment];
+      if (!target) {
+        res.writeHead(502, { 'Content-Type': 'text/plain; charset=utf-8' });
+        res.end(
+          segment === 'auth'
+            ? `${prefix}: no ${variable} for ${shell.packageName} (dev uses the mock sign-in; set ${variable} in the shell's or the zone's .env to proxy a BFF).\n`
+            : `${prefix}: no ${variable} for ${shell.packageName} and the zone has no mock API (set ${variable} in the shell's or the zone's .env).\n`,
+        );
+        return;
+      }
+      const query = url.includes('?') ? url.slice(url.indexOf('?')) : '';
+      forwardToUpstream(req, res, {
+        upstream: target,
+        rest: pathname.slice(prefix.length),
+        query,
+        prefix,
+        label: variable,
+      });
       return;
     }
     const upstream = http.request(
@@ -178,7 +324,10 @@ export async function startZoneProxy(options) {
   log(
     `${zone} dev proxy on http://localhost:${port}: ${
       shells
-        .map((s) => `${s.basePath} → ${s.packageName} (:${s.port})`)
+        .map((s) => {
+          const u = upstreams.get(s.packageName);
+          return `${s.basePath} → ${s.packageName} (:${s.port}; ${s.basePath === '/' ? '' : s.basePath}/api → ${u?.api ?? 'none'}${u?.auth ? `, ${s.basePath === '/' ? '' : s.basePath}/auth → ${u.auth}` : ''})`;
+        })
         .join(', ') || 'no shells'
     }${home && home.basePath !== '/' ? `; / → ${home.basePath}/` : ''}`,
   );

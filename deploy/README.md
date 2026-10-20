@@ -3,25 +3,41 @@
 Shared hosting templates for **every** app (shells and remotes): change caching, headers or CSP
 once here. How the pipeline uses them: [docs/devops-handoff.md](../docs/devops-handoff.md).
 
-| File                                     | What                                                                                                               |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `Dockerfile`                             | multi-stage: installs and builds one app (`--build-arg APP=<package>`), serves `dist/` with non-root nginx on 8080 |
-| `Dockerfile.dockerignore`                | build context filter (BuildKit picks it up next to the Dockerfile)                                                 |
-| `nginx/default.conf.template`            | SPA fallback, caching (no-cache for entry files, immutable for hashed chunks), CORS allow-list, `/healthz`         |
-| `nginx/security-headers.inc.template`    | CSP with placeholders (remotes, BFF, APIs, vendors, frames; no `'unsafe-inline'`) + security headers               |
-| `docker-entrypoint.d/40-mfe-manifest.sh` | writes `MFE_MANIFEST_JSON` to `/etc/mfe/mfe-manifest.json` at start-up (or mount the file there)                   |
-| `mfe-manifest.example.json`              | example per-environment manifest of the intranet shell (validated by `pnpm -s validate-manifest`)                  |
-| `nginx/zone-router.example.conf`         | example reverse proxy for several shells on one domain (`/citizen`, `/business`, `/` → default shell)              |
+| File                                     | What                                                                                                                                 |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `Dockerfile`                             | multi-stage: installs and builds one app (`--build-arg APP=<package>`), serves `dist/` with non-root nginx on 8080                   |
+| `Dockerfile.dockerignore`                | build context filter (BuildKit picks it up next to the Dockerfile)                                                                   |
+| `nginx/default.conf.template`            | SPA fallback, caching (no-cache for entry files, immutable for hashed chunks), CORS allow-list, `/healthz`                           |
+| `nginx/security-headers.inc.template`    | CSP with placeholders (remotes, vendors, frames; API and BFF are same-origin; no `'unsafe-inline'`) + security headers               |
+| `nginx/proxy-common.inc.template`        | settings of the same-origin `<base>/api` and `<base>/auth` proxy (headers, timeouts, no caching)                                     |
+| `docker-entrypoint.d/40-mfe-manifest.sh` | generates `/etc/mfe/mfe-manifest.json` and the proxy locations from `API_UPSTREAM`, `AUTH_UPSTREAM`, `REMOTE_<NAME>_URL`; fails fast |
+| `write-shell-env.mjs`                    | build step: records the shell's base path, remotes and sign-in for the entrypoint script                                             |
+| `mfe-manifest.example.json`              | example per-environment manifest of the intranet shell (validated by `pnpm -s validate-manifest`)                                    |
+| `nginx/zone-router.example.conf`         | example reverse proxy for several shells on one domain (`/citizen`, `/business`, `/` → default shell)                                |
 
 ```sh
 docker build -f deploy/Dockerfile --build-arg APP=@org/shell-intranet -t shell-intranet .
-docker run --rm -p 8080:8080 \
-  -v "$PWD/deploy/mfe-manifest.example.json:/etc/mfe/mfe-manifest.json:ro" \
-  -e CSP_REMOTE_ORIGINS="https://staff-directory.portal.example.sg" \
-  shell-intranet
+docker run --rm -p 8080:8080 --env-file apps/intranet/.env shell-intranet
 ```
 
-Environment variables and their defaults: top of `Dockerfile`; meaning: the devops handoff.
+`apps/intranet/.env` (copy of the committed `.env.example`, git-ignored) holds, for example:
+
+```sh
+API_UPSTREAM=https://api.uat.example.sg/v1
+AUTH_UPSTREAM=https://bff.uat.example.sg
+REMOTE_INTRANET_STAFF_DIRECTORY_URL=https://staff-directory.portal.example.sg/mf-manifest.json
+REMOTE_INTRANET_LEAVE_REQUESTS_URL=https://leave-requests.portal.example.sg/mf-manifest.json
+CSP_REMOTE_ORIGINS=https://staff-directory.portal.example.sg https://leave-requests.portal.example.sg
+```
+
+The container generates the manifest (relative `/api`, `/auth/...` URLs plus the remotes' entry
+URLs) and proxies `/api/...` to `API_UPSTREAM` and `/auth/...` to `AUTH_UPSTREAM` (for a shell with
+base path `/citizen`: `/citizen/api`, `/citizen/auth`); the browser never sees the upstream hosts.
+A complete manifest can still be mounted instead
+(`-v "$PWD/deploy/mfe-manifest.example.json:/etc/mfe/mfe-manifest.json:ro"`) or passed as
+`MFE_MANIFEST_JSON`. Variables: [docs/configuration.md](../docs/configuration.md); defaults: top of
+the `Dockerfile`; the rest of the meaning: the devops handoff. In pipelines use one Azure DevOps
+variable group per zone/shell and environment (`internet-citizen-uat`, ...) instead of a file.
 
 ## Several shells on one domain
 
@@ -36,11 +52,13 @@ behind the domain's reverse proxy / ingress:
   `/` redirects to `/citizen/`; the service worker is scoped to `/citizen/`;
 - the reverse proxy routes each base path to its container **without rewriting the path** and
   redirects `/` to the default shell: [`nginx/zone-router.example.conf`](nginx/zone-router.example.conf);
-- each container has its own environment: its own `mfe-manifest.json` (remotes, `auth` = its own
-  BFF, settings) and its own CSP variables, so the business shell only allows the origins it uses;
+- each container has its own environment (an `--env-file` / variable group per shell): its own
+  `API_UPSTREAM` and `AUTH_UPSTREAM` (so `/citizen/api` and `/business/api` can reach different
+  backends, and `/citizen/auth` / `/business/auth` their own BFF), its remotes' `REMOTE_..._URL`
+  and its own CSP variables, so the business shell only allows the origins it uses;
 - sessions: each shell's BFF scopes its session cookie to the shell (`Path=/citizen` /
   `Path=/business`, or distinct cookie names) and the shell's `loginUrl` / `sessionUrl` point at
-  it, so a Singpass session of `/citizen` is never sent to `/business` (Corppass) and the other way
+  its `<base>/auth/...`, so a Singpass session of `/citizen` is never sent to `/business` (Corppass) and the other way
   round;
 - remotes listed by both shells (e.g. `announcements`) are deployed once; add both shells' origin
   (here the same domain) to the remote's `MFE_CORS_ORIGINS_REGEX`.
@@ -63,4 +81,7 @@ CORS allow-list already cover).
 The base-path handling (html/<base path>/, `mfe-base-path.inc`, the zone router example) is
 covered by the same static tests and by `pnpm dev:<zone>`'s dev proxy, which routes the same way.
 **No Docker image was built and `nginx -t` was not run** (neither is installed on the template
-authors' machine): build the image once in your environment before relying on it.
+authors' machine): build the image once in your environment before relying on it. The entrypoint script is run with
+`sh` in the unit tests (generated manifest validated with the real validator, generated proxy
+locations asserted, failure messages) and the nginx templates are asserted statically; the
+combined config has not been loaded by nginx, so run `nginx -t` in the built image once.

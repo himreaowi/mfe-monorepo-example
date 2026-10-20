@@ -56,11 +56,11 @@ splat: `/apps/staff/route-1` under `apps/staff/*` gives `/apps/staff`.
     "intranet_leave": { "entry": "/remotes/leave/mf-manifest.json" }
   },
   "auth": {
-    "sessionUrl": "/bff/session",
-    "loginUrl": "/bff/login",
-    "logoutUrl": "/bff/logout"
+    "sessionUrl": "/auth/session",
+    "loginUrl": "/auth/login",
+    "logoutUrl": "/auth/logout"
   },
-  "settings": { "apiBaseUrl": "https://api.example.com" }
+  "settings": { "apiBaseUrl": "/api" }
 }
 ```
 
