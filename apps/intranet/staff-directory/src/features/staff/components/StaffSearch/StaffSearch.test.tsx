@@ -1,114 +1,103 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
+import { MemoryRouter } from 'react-router';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
-import { getDepartments, searchStaff } from '../../api/staffApi';
+import type { ApiResult } from '@org/use-api';
 import { ann } from '../../__fixtures__/staff';
-import { StaffSearch } from './StaffSearch';
+import type { StaffSearchResult } from '../../types/staff';
+import { StaffSearch, type StaffSearchProps } from './StaffSearch';
 
-jest.mock('../../api/staffApi');
+const reload = jest.fn();
+const departments: ApiResult<string[]> = {
+  status: 'success',
+  data: ['Finance', 'Technology'],
+  reload,
+};
+const found = (items = [ann]): ApiResult<StaffSearchResult> => ({
+  status: 'success',
+  data: { items, total: items.length, departments: [] },
+  reload,
+});
 
-const searchMock = jest.mocked(searchStaff);
-const departmentsMock = jest.mocked(getDepartments);
-
-function Location() {
-  return <span data-testid="location">{useLocation().search}</span>;
-}
-
-function renderSearch(url = '/staff') {
-  return render(
-    <MemoryRouter initialEntries={[url]}>
-      <HostPropsProvider
-        value={{
-          embedded: true,
-          basePath: '/staff',
-          settings: { apiBaseUrl: 'https://api.test' },
-        }}
-      >
-        <Routes>
-          <Route
-            path="staff/*"
-            element={
-              <>
-                <StaffSearch />
-                <Location />
-              </>
-            }
-          />
-        </Routes>
+// A display component: query, data and callbacks come in as props (the page owns them).
+function renderSearch(props: Partial<StaffSearchProps> = {}) {
+  const all: StaffSearchProps = {
+    query: { q: '', department: '' },
+    onQueryChange: jest.fn(),
+    search: found(),
+    departments,
+    ...props,
+  };
+  render(
+    <MemoryRouter>
+      <HostPropsProvider value={{ embedded: true, basePath: '/staff' }}>
+        <StaffSearch {...all} />
       </HostPropsProvider>
     </MemoryRouter>,
   );
+  return all;
 }
 
-beforeEach(() => {
-  searchMock.mockReset();
-  departmentsMock.mockResolvedValue(['Finance', 'Technology']);
-});
+beforeEach(() => reload.mockReset());
 
 describe('StaffSearch', () => {
-  it('lists staff with links below the mount and announces the count', async () => {
-    searchMock.mockResolvedValue({ items: [ann], total: 1, departments: [] });
+  it('lists staff with links below the mount and announces the count', () => {
     renderSearch();
     expect(
       screen.getByRole('heading', { level: 1, name: 'Staff directory' }),
     ).toBeInTheDocument();
-    expect(
-      await screen.findByRole('link', { name: 'Ann Lee' }),
-    ).toHaveAttribute('href', '/staff/s-1');
+    expect(screen.getByRole('link', { name: 'Ann Lee' })).toHaveAttribute(
+      'href',
+      '/staff/s-1',
+    );
     expect(screen.getByTestId('staff-count')).toHaveTextContent(
       '1 person found',
     );
   });
 
-  it('searches as you type and keeps the query in the URL', async () => {
-    searchMock.mockResolvedValue({ items: [], total: 0, departments: [] });
-    renderSearch();
-    await userEvent.type(
-      screen.getByRole('searchbox', { name: 'Search staff' }),
+  it('shows the query and reports changes to the page', async () => {
+    const { onQueryChange } = renderSearch({
+      query: { q: 'secu', department: 'Finance' },
+    });
+    expect(screen.getByRole('searchbox', { name: 'Search staff' })).toHaveValue(
       'secu',
     );
-    expect(screen.getByTestId('location')).toHaveTextContent('?q=secu');
-    await waitFor(() =>
-      expect(searchMock).toHaveBeenLastCalledWith(
-        expect.anything(),
-        { q: 'secu', department: '' },
-        expect.any(AbortSignal),
-      ),
+    const select = screen.getByRole('combobox', { name: 'Department' });
+    expect(select).toHaveValue('Finance');
+    await userEvent.type(
+      screen.getByRole('searchbox', { name: 'Search staff' }),
+      'r',
     );
-    expect(await screen.findByText(/No one matches/)).toBeInTheDocument();
+    expect(onQueryChange).toHaveBeenLastCalledWith('q', 'secur');
+    await userEvent.selectOptions(select, 'Technology');
+    expect(onQueryChange).toHaveBeenLastCalledWith('department', 'Technology');
+  });
+
+  it('shows "Searching…" while loading', () => {
+    renderSearch({ search: { status: 'loading', reload } });
+    expect(screen.getByTestId('staff-count')).toHaveTextContent('Searching…');
+  });
+
+  it('says when no one matches', () => {
+    renderSearch({ search: found([]) });
+    expect(screen.getByText(/No one matches/)).toBeInTheDocument();
     expect(screen.getByTestId('staff-count')).toHaveTextContent(
       '0 people found',
     );
   });
 
-  it('filters by department from the URL and the select', async () => {
-    searchMock.mockResolvedValue({ items: [ann], total: 1, departments: [] });
-    renderSearch('/staff?department=Finance');
-    const select = screen.getByRole('combobox', { name: 'Department' });
-    await screen.findByRole('option', { name: 'Technology' });
-    expect(select).toHaveValue('Finance');
-    await userEvent.selectOptions(select, 'Technology');
-    expect(screen.getByTestId('location')).toHaveTextContent(
-      '?department=Technology',
-    );
-    await waitFor(() =>
-      expect(searchMock).toHaveBeenLastCalledWith(
-        expect.anything(),
-        { q: '', department: 'Technology' },
-        expect.any(AbortSignal),
-      ),
-    );
-  });
-
   it('shows an error with a working "Try again"', async () => {
-    searchMock.mockRejectedValueOnce(new Error('503 Service Unavailable'));
-    searchMock.mockResolvedValue({ items: [ann], total: 1, departments: [] });
-    renderSearch();
-    expect(await screen.findByRole('alert')).toHaveTextContent(
+    renderSearch({
+      search: {
+        status: 'error',
+        error: new Error('503 Service Unavailable'),
+        reload,
+      },
+    });
+    expect(screen.getByRole('alert')).toHaveTextContent(
       '503 Service Unavailable',
     );
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
-    expect(await screen.findByRole('link', { name: 'Ann Lee' })).toBeVisible();
+    expect(reload).toHaveBeenCalledTimes(1);
   });
 });

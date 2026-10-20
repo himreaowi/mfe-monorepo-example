@@ -1,47 +1,42 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
-import { getStaffMember } from '../../api/staffApi';
+import type { ApiResult } from '@org/use-api';
+import type { StaffMember } from '../../types/staff';
 import { StaffDetail } from './StaffDetail';
 
-jest.mock('../../api/staffApi');
-const getMock = jest.mocked(getStaffMember);
+const priya: StaffMember = {
+  id: 's-2',
+  name: 'Priya Nair',
+  jobTitle: 'Security Engineer',
+  department: 'Technology',
+  location: 'Level 3',
+  email: 'priya.nair@example.org',
+  phone: '+65 6555 1106',
+  skills: ['Security', 'Identity'],
+  startDate: '2020-01-01',
+  manager: { id: 's-1', name: 'Oliver Chan' },
+  directReports: [],
+};
+const reload = jest.fn();
 
-function renderDetail(id: string) {
+// A display component: the page loads the person and passes the result in (no API here).
+function renderDetail(member: ApiResult<StaffMember | null>) {
   return render(
     <MemoryRouter>
-      <HostPropsProvider
-        value={{
-          embedded: true,
-          basePath: '/staff',
-          settings: { apiBaseUrl: 'https://api.test' },
-        }}
-      >
-        <StaffDetail id={id} />
+      <HostPropsProvider value={{ embedded: true, basePath: '/staff' }}>
+        <StaffDetail member={member} />
       </HostPropsProvider>
     </MemoryRouter>,
   );
 }
 
 describe('StaffDetail', () => {
-  it('shows contact details, manager and skills', async () => {
-    getMock.mockResolvedValue({
-      id: 's-2',
-      name: 'Priya Nair',
-      jobTitle: 'Security Engineer',
-      department: 'Technology',
-      location: 'Level 3',
-      email: 'priya.nair@example.org',
-      phone: '+65 6555 1106',
-      skills: ['Security', 'Identity'],
-      startDate: '2020-01-01',
-      manager: { id: 's-1', name: 'Oliver Chan' },
-      directReports: [],
-    });
-    renderDetail('s-2');
-    expect(screen.getByRole('status')).toHaveTextContent('Loading');
+  it('shows contact details, manager and skills', () => {
+    renderDetail({ status: 'success', data: priya, reload });
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Priya Nair' }),
+      screen.getByRole('heading', { level: 1, name: 'Priya Nair' }),
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Oliver Chan' })).toHaveAttribute(
       'href',
@@ -58,11 +53,28 @@ describe('StaffDetail', () => {
     ).toHaveAttribute('href', '/staff');
   });
 
-  it('says so when the person does not exist', async () => {
-    getMock.mockResolvedValue(null);
-    renderDetail('nobody');
+  it('shows loading', () => {
+    renderDetail({ status: 'loading', reload });
+    expect(screen.getByRole('status')).toHaveTextContent('Loading');
+  });
+
+  it('says so when the person does not exist', () => {
+    renderDetail({ status: 'success', data: null, reload });
     expect(
-      await screen.findByRole('heading', { name: 'Staff member not found' }),
+      screen.getByRole('heading', { name: 'Staff member not found' }),
     ).toBeInTheDocument();
+  });
+
+  it('offers a retry when the person cannot be loaded', async () => {
+    renderDetail({
+      status: 'error',
+      error: new Error('502 Bad Gateway'),
+      reload,
+    });
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Could not load this staff member',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(reload).toHaveBeenCalledTimes(1);
   });
 });

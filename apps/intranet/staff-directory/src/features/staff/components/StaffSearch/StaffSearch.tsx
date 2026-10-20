@@ -1,32 +1,34 @@
 import { useId } from 'react';
-import { useSearchParams } from 'react-router';
 import { RemoteFallback } from '@org/ui';
-import { useDebouncedValue } from '../../hooks/useDebouncedValue';
-import { useDepartments } from '../../hooks/useDepartments';
-import { useStaffSearch } from '../../hooks/useStaffSearch';
+import type { ApiResult } from '@org/use-api';
+import type { StaffSearchQuery, StaffSearchResult } from '../../types/staff';
 import { StaffCard } from '../StaffCard/StaffCard';
 import styles from './StaffSearch.module.scss';
 
+export type StaffSearchProps = {
+  /** Search text and department (the page keeps them in the URL: `?q=&department=`). */
+  query: StaffSearchQuery;
+  /** The user changed the search text or the department. */
+  onQueryChange: (key: keyof StaffSearchQuery, value: string) => void;
+  /** From `useStaffSearch()`, called by the page. */
+  search: ApiResult<StaffSearchResult>;
+  /** From `useDepartments()`, called by the page. */
+  departments: ApiResult<string[]>;
+};
+
 /**
- * Staff list with search and a department filter. The query lives in the URL (`?q=&department=`),
- * so results survive a reload and the back button; requests start 250 ms after typing stops.
+ * Staff list with search and a department filter. Displays only: the page reads the query
+ * from the URL, loads the results and the departments and passes them down
+ * (docs/coding-conventions.md "Data fetching").
  */
-export function StaffSearch() {
-  const [params, setParams] = useSearchParams();
-  const q = params.get('q') ?? '';
-  const department = params.get('department') ?? '';
-  const debouncedQ = useDebouncedValue(q);
-  const search = useStaffSearch({ q: debouncedQ, department });
-  const departments = useDepartments();
+export function StaffSearch({
+  query: { q, department },
+  onQueryChange,
+  search,
+  departments,
+}: StaffSearchProps) {
   const searchId = useId();
   const departmentId = useId();
-
-  const update = (key: 'q' | 'department', value: string) => {
-    const next = new URLSearchParams(params);
-    if (value) next.set(key, value);
-    else next.delete(key);
-    setParams(next, { replace: true });
-  };
 
   const count =
     search.status === 'success'
@@ -54,7 +56,7 @@ export function StaffSearch() {
             type="search"
             value={q}
             autoComplete="off"
-            onChange={(event) => update('q', event.target.value)}
+            onChange={(event) => onQueryChange('q', event.target.value)}
           />
         </div>
         <div className={styles.field}>
@@ -62,7 +64,9 @@ export function StaffSearch() {
           <select
             id={departmentId}
             value={department}
-            onChange={(event) => update('department', event.target.value)}
+            onChange={(event) =>
+              onQueryChange('department', event.target.value)
+            }
           >
             <option value="">All departments</option>
             {departments.status === 'success'

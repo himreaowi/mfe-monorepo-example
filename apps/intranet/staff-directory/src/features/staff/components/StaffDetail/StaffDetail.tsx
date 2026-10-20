@@ -1,9 +1,9 @@
 import { Link } from 'react-router';
 import { useRemotePath } from '@org/mf-runtime/remote';
 import { RemoteFallback } from '@org/ui';
+import type { ApiResult } from '@org/use-api';
 import { routePaths, staffPath } from '@/core/constants/routePaths';
-import { useStaffMember } from '../../hooks/useStaffMember';
-import type { StaffLink } from '../../types/staff';
+import type { StaffLink, StaffMember } from '../../types/staff';
 import styles from './StaffDetail.module.scss';
 
 function PersonLink({ person }: { person: StaffLink }) {
@@ -11,10 +11,16 @@ function PersonLink({ person }: { person: StaffLink }) {
   return <Link to={toPath(staffPath(person.id))}>{person.name}</Link>;
 }
 
-/** One staff member: contact details, manager, direct reports, skills. */
-export function StaffDetail({ id }: { id: string }) {
+/**
+ * One staff member: contact details, manager, direct reports, skills. Displays only: the page
+ * loads the person (`useStaffMember(id)`; `null` = unknown id) and passes the result down.
+ */
+export function StaffDetail({
+  member,
+}: {
+  member: ApiResult<StaffMember | null>;
+}) {
   const toPath = useRemotePath();
-  const member = useStaffMember(id);
   const back = (
     <p>
       <Link className={styles.back} to={toPath(routePaths.list)}>
