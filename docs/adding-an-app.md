@@ -4,8 +4,8 @@ Apps are only created with the generators. They write the app from templates, pi
 set the metadata the guardrails check, and register remotes with their zone's shell.
 
 ```sh
-pnpm gen:shell <zone> [--layout top|side] [--title "<text>"]   # zone: intranet | internet
-pnpm gen:remote <zone> <name> [--private] [--state] [--external [--vendor-format esm|web-component|script]] [--title "<text>"]
+pnpm gen:shell <zone> [<name>] [--base-path /<path>] [--layout top|side] [--title "<text>"]   # zone: intranet | internet
+pnpm gen:remote <zone> <name> [--shell <shell>[,<shell>]] [--private] [--state] [--external [--vendor-format esm|web-component|script]] [--title "<text>"]
                                                         # name: kebab-case, e.g. leave-requests
 pnpm install                                            # links the new app
 ```
@@ -16,7 +16,8 @@ The generators never overwrite: an existing folder, package name or registry ent
 
 | You need                                                       | Command                                                                              |
 | -------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| The zone's host app (once per zone)                            | `pnpm gen:shell intranet` (`--layout side`: start from the sidebar layout)           |
+| The zone's host app                                            | `pnpm gen:shell intranet` (`--layout side`: start from the sidebar layout)           |
+| Another host app in the zone (own path, layout, sign-in)       | `pnpm gen:shell internet business --base-path /business --layout side`               |
 | A feature area everyone can open                               | `pnpm gen:remote intranet staff-directory`                                           |
 | A feature area for signed-in users only                        | `pnpm gen:remote internet my-profile --private`                                      |
 | UI built by a vendor / another framework / another React major | `pnpm gen:remote internet payments --external` (add `--private` if it needs sign-in) |
@@ -40,14 +41,14 @@ apps/<zone>/shell-<zone>/
   package.json (external only)      mfe.devManifest.remotes.<federationName>.props.vendor (the dev mock vendor)
 ```
 
-| Derived value   | Example (`internet my-profile`)                                    |
-| --------------- | ------------------------------------------------------------------ |
-| Folder          | `apps/internet/my-profile`                                         |
-| Package         | `@org/internet-my-profile`                                         |
-| Federation name | `internet_my_profile`                                              |
-| Route           | `/my-profile/*` in `shell-internet`                                |
-| Nav title       | `My profile` (sentence case; `--title "…"` or edit `remotes.json`) |
-| Dev port        | lowest free in 3201–3289 (3290–3299: dev tools)                    |
+| Derived value   | Example (`internet my-profile`)                                                        |
+| --------------- | -------------------------------------------------------------------------------------- |
+| Folder          | `apps/internet/my-profile`                                                             |
+| Package         | `@org/internet-my-profile`                                                             |
+| Federation name | `internet_my_profile`                                                                  |
+| Route           | `/my-profile/*` in `shell-internet`                                                    |
+| Nav title       | `My profile` (sentence case; `--title "…"` or edit `remotes.json`)                     |
+| Dev port        | lowest free remote port, 3210–3289 (3200 proxy, 3201–3209 shells, 3290–3299 dev tools) |
 
 The zone's e2e suite picks the new remote up from `remotes.json`: deep links, private guard,
 standalone mode and the axe scans cover it with no test changes.
@@ -87,8 +88,16 @@ A new app needs, per environment ([devops-handoff.md](devops-handoff.md)):
 
 ## Shells
 
-`pnpm gen:shell <zone>` creates `apps/<zone>/shell-<zone>` on the zone's first port (3100 / 3200) with an empty registry, a dev manifest with the mock sign-in, the PWA setup and the zone's
-e2e suite (`e2e/`, `playwright.config.ts`). There is exactly one shell per zone.
+`pnpm gen:shell <zone> [<name>] [--base-path /<path>]` creates `apps/<zone>/shell-<name>` (default
+name: the zone) on the next free shell port (3101 / 3201, …) with an empty registry, a dev
+manifest with the mock sign-in, the PWA setup and the shell's e2e suite (`e2e/`,
+`playwright.config.ts`, run through the zone's dev proxy below the base path). A zone can have
+several shells, each with its own base path (unique, not nested, at most one at `/`); the first
+shell below a base path in a zone without a `/` shell becomes the zone's default shell (root
+`package.json` `mfe.zones.<zone>.defaultShell`, where `/` redirects). With several shells,
+`pnpm gen:remote` needs `--shell` (repeat it or comma-separate to list the remote in several
+shells; never across zones). Per-shell dev sign-in: `mfe.devManifest.auth.mockUser`
+(`{ "id", "name", "roles" }`) in the shell's `package.json`.
 
 The shell owns its layout: `--layout top|side` (default `top`) picks which **starter** is copied
 into `src/layouts/ShellLayout/` (`ShellLayout.tsx`, `ShellLayout.module.scss`,

@@ -1,8 +1,9 @@
 # mfe-monorepo-template
 
 Template monorepo for **React microfrontends**: pnpm workspaces + Nx (package-based), Rspack +
-Module Federation 2, React 19, TypeScript. Two zones (intranet, internet), each with one shell
-that loads its remotes at runtime from a per-environment manifest. Shared UI, auth (BFF
+Module Federation 2, React 19, TypeScript. Two zones (intranet, internet), each with one or more shells
+(each under its own base path, e.g. `/citizen` and `/business`) that load their remotes at
+runtime from a per-environment manifest. Shared UI, auth (BFF
 pattern), runtime glue, build/test configs and guardrails live in `packages/`; apps are created
 with generators.
 
@@ -16,7 +17,7 @@ pnpm gen:shell intranet
 pnpm gen:remote intranet staff-directory
 pnpm gen:remote intranet leave-requests --private
 pnpm install
-pnpm dev:intranet          # http://localhost:3100
+pnpm dev:intranet          # http://localhost:3100 (the zone's dev proxy)
 pnpm e2e:intranet          # e2e + axe WCAG 2.2 AA (after: pnpm --filter @org/shell-intranet exec playwright install chromium)
 ```
 
@@ -43,18 +44,18 @@ pnpm e2e:intranet          # e2e + axe WCAG 2.2 AA (after: pnpm --filter @org/sh
 
 ## Commands
 
-| Command                                                                                                     | What                                                                                                                                                                                                          |
-| ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm gen:shell <zone> [--layout top\|side] [--title "<text>"]`                                             | create `apps/<zone>/shell-<zone>` (zone: `intranet`, `internet`; `--layout`: starter layout copied into the shell)                                                                                            |
-| `pnpm gen:remote <zone> <name> [--private] [--state] [--external [--vendor-format <f>]] [--title "<text>"]` | create a remote and register it with the zone's shell (`--state`: feature-state example)                                                                                                                      |
-| `pnpm dev:intranet` / `pnpm dev:internet`                                                                   | shell + every remote of the zone + its mock API (+ mock vendor); both zones can run at once; Ctrl-C stops all with one line                                                                                   |
-| `pnpm check`                                                                                                | guardrails: dependency tiers, app metadata, cross-app imports                                                                                                                                                 |
-| `pnpm lint` / `pnpm typecheck` / `pnpm test` / `pnpm build`                                                 | all projects (Nx, cached)                                                                                                                                                                                     |
-| `pnpm e2e` / `pnpm e2e:<zone>`                                                                              | zone e2e suites (Playwright + axe, light + dark, desktop + 375 px)                                                                                                                                            |
-| `pnpm -s apps [--zone=<z>] [--affected --base=<sha>] [--json\|--matrix]`                                    | apps as data for CI matrices                                                                                                                                                                                  |
-| `pnpm -s validate-manifest <file> [--zone=<z>]`                                                             | check a per-environment `mfe-manifest.json`                                                                                                                                                                   |
-| `pnpm dev-manifest`                                                                                         | regenerate each shell's `mfe-manifest.dev.json` from `remotes.json`, the remotes' ports and the shell's `mfe.devManifest` (dev scripts, `pnpm e2e` and the generators also do; `pnpm check` fails when stale) |
-| `pnpm format` / `pnpm format:check`                                                                         | Prettier                                                                                                                                                                                                      |
+| Command                                                                                                                         | What                                                                                                                                                                                                          |
+| ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm gen:shell <zone> [<name>] [--base-path /<path>] [--layout top\|side] [--title "<text>"]`                                  | create `apps/<zone>/shell-<name>` (default name: the zone; zone: `intranet`, `internet`; `--base-path`: where it is served, several shells per zone; `--layout`: starter layout copied into the shell)        |
+| `pnpm gen:remote <zone> <name> [--shell <s>[,<s>]] [--private] [--state] [--external [--vendor-format <f>]] [--title "<text>"]` | create a remote and register it with the zone's shell, or the `--shell`s named (required with several shells; `--state`: feature-state example)                                                               |
+| `pnpm dev:intranet` / `pnpm dev:internet`                                                                                       | every shell + remote of the zone + its mock API (+ mock vendor), all shells on the zone port (3100 / 3200) through a dev proxy; both zones can run at once; Ctrl-C stops all with one line                    |
+| `pnpm check`                                                                                                                    | guardrails: dependency tiers, app metadata, cross-app imports                                                                                                                                                 |
+| `pnpm lint` / `pnpm typecheck` / `pnpm test` / `pnpm build`                                                                     | all projects (Nx, cached)                                                                                                                                                                                     |
+| `pnpm e2e` / `pnpm e2e:<zone>`                                                                                                  | zone e2e suites (Playwright + axe, light + dark, desktop + 375 px)                                                                                                                                            |
+| `pnpm -s apps [--zone=<z>] [--affected --base=<sha>] [--json\|--matrix]`                                                        | apps as data for CI matrices                                                                                                                                                                                  |
+| `pnpm -s validate-manifest <file> [--zone=<z>]`                                                                                 | check a per-environment `mfe-manifest.json`                                                                                                                                                                   |
+| `pnpm dev-manifest`                                                                                                             | regenerate each shell's `mfe-manifest.dev.json` from `remotes.json`, the remotes' ports and the shell's `mfe.devManifest` (dev scripts, `pnpm e2e` and the generators also do; `pnpm check` fails when stale) |
+| `pnpm format` / `pnpm format:check`                                                                                             | Prettier                                                                                                                                                                                                      |
 
 ## Layout
 

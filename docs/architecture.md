@@ -105,14 +105,45 @@ the dev servers send the same rules (localhost origins), so a `<style>` element 
 
 ## Zones
 
-|           | intranet                                                                            | internet                                                       |
-| --------- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| Shell     | `apps/intranet/shell-intranet`                                                      | `apps/internet/shell-internet`                                 |
-| Dev ports | 3100 (shell), 3101–3189 apps; 3190–3199 dev tools (mock API 3190, mock vendor 3191) | 3200 (shell), 3201–3289 apps; 3290–3299 dev tools (3290, 3291) |
-| Users     | staff (SSO via the BFF)                                                             | public + signed-in citizens (Singpass via the BFF)             |
-| Sharing   | only `packages/*`                                                                   | only `packages/*`                                              |
+|             | intranet                                                    | internet                                                    |
+| ----------- | ----------------------------------------------------------- | ----------------------------------------------------------- |
+| Shells      | `apps/intranet/shell-<name>` (e.g. `shell-intranet` at `/`) | `apps/internet/shell-<name>` (e.g. `/citizen`, `/business`) |
+| Dev proxy   | 3100 (every shell of the zone under its base path)          | 3200                                                        |
+| Shell ports | 3101–3109                                                   | 3201–3209                                                   |
+| Remotes     | 3110–3189                                                   | 3210–3289                                                   |
+| Dev tools   | 3190–3199 (mock API 3190, mock vendor 3191)                 | 3290–3299 (3290, 3291)                                      |
+| Users       | staff (SSO via the BFF)                                     | public + signed-in citizens (Singpass via the BFF)          |
+| Sharing     | only `packages/*`                                           | only `packages/*`                                           |
 
-Zones never share remotes, and remotes never import remotes or shells. Enforced by
+Zones never share remotes, and remotes never import remotes or shells. Inside a zone, a remote
+can be listed by several shells.
+
+### Several shells per zone
+
+A zone has one or more shells. Each shell is its own app with its own **base path**
+(`package.json` `mfe.basePath`, default `/`), layout, sign-in config (its manifest's `auth`),
+manifest and remotes (`remotes.json`). Example: the internet zone with `shell-citizen` at
+`/citizen` (Singpass, top layout) and `shell-business` at `/business` (Corppass, side layout),
+both listing `announcements`. Rules (`pnpm check`): base paths are unique in a zone and never
+nest (at most one shell at `/`); when no shell sits at `/`, the root `package.json` names the
+shell `/` redirects to:
+
+```json
+"mfe": { "zones": { "internet": { "defaultShell": "citizen" } } }
+```
+
+The base path is everywhere the shell builds a URL: the router `basename` (routes, nav links
+and the remotes' `basePath` host prop stay relative to it), `output.publicPath` and index.html
+(`/citizen/main.<hash>.js`), the manifest (`/citizen/mfe-manifest.json`), the service worker
+(`/citizen/service-worker.js`, scope `/citizen/`) and the web manifest. In development,
+`pnpm dev:<zone>` starts every shell on its own port plus a small **dev proxy** on the zone port
+(`tools/scripts/src/zone-proxy.js`, no dependency) that routes each base path (HTTP and the HMR
+websocket `<base path>/ws`) to its shell and redirects `/` to the default shell, so all shells
+share one origin as in production; the shells' strict dev CSP passes through unchanged. The dev
+mock sign-in is per shell too: `mfe.devManifest.auth.mockUser` picks the fake user (e.g. a
+Corppass business user), with its own session. Production: one container per shell behind the
+domain's reverse proxy, each BFF scoping its cookie to its path
+([deploy/README.md](../deploy/README.md#several-shells-on-one-domain)). Enforced by
 `pnpm check` (check-apps) and ESLint (Nx module boundaries); see [guardrails.md](guardrails.md).
 
 ### Dev tool servers

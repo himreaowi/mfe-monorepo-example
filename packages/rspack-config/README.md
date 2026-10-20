@@ -10,7 +10,8 @@ import { createShellConfig } from '@org/rspack-config';
 export default createShellConfig({
   rootDir: import.meta.dirname,
   name: 'intranet_shell',
-  port: 3100,
+  port: 3101,
+  basePath: '/', // or e.g. '/citizen' (package.json mfe.basePath): publicPath, index.html, manifest, SW, dev server
 });
 ```
 
