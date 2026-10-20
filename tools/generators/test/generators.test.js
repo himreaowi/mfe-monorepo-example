@@ -382,6 +382,61 @@ describe('generators', () => {
     assert.ok(!fs.existsSync(path.join(root, 'apps/intranet/bad-title')));
   });
 
+  it('--state: feature state example (reducer + Context) used by two components', async () => {
+    await assert.rejects(
+      generateRemote({
+        root,
+        zone: 'intranet',
+        name: 'no-state',
+        external: true,
+        state: true,
+      }),
+      /--state adds feature state to the demo feature of a React remote/,
+    );
+    await generateRemote({
+      root,
+      zone: 'intranet',
+      name: 'team-board',
+      state: true,
+    });
+    const dir = 'apps/intranet/team-board';
+    const files = listFiles(path.join(root, dir));
+    for (const f of [
+      'src/features/demo/state/demoReducer.ts',
+      'src/features/demo/state/demoReducer.test.ts',
+      'src/features/demo/state/DemoContext.tsx',
+      'src/features/demo/state/DemoContext.test.tsx',
+      'src/features/demo/components/ItemPicker/ItemPicker.tsx',
+      'src/features/demo/components/ItemPicker/ItemPicker.test.tsx',
+      'src/features/demo/components/SelectionSummary/SelectionSummary.tsx',
+      'src/features/demo/components/SelectionSummary/SelectionSummary.test.tsx',
+    ]) {
+      assert.ok(files.includes(f), `missing ${f}`);
+    }
+    const context = read(
+      root,
+      `${dir}/src/features/demo/state/DemoContext.tsx`,
+    );
+    // separate state and dispatch contexts; hooks throw outside the provider
+    assert.match(context, /const DemoStateContext = createContext/);
+    assert.match(context, /const DemoDispatchContext = createContext/);
+    assert.match(context, /must be used inside <DemoProvider>/);
+    assert.match(
+      read(root, `${dir}/src/pages/OverviewPage/OverviewPage.tsx`),
+      /<DemoProvider>/,
+    );
+    assert.match(
+      read(root, `${dir}/src/features/demo/index.ts`),
+      /export \{ DemoProvider \}/,
+    );
+    // without --state there is no state/ folder
+    assert.ok(
+      !listFiles(path.join(root, 'apps/intranet/staff-directory')).some((f) =>
+        f.includes('/state/'),
+      ),
+    );
+  });
+
   it('remote layout: exposed module never imports global styles', () => {
     const dir = 'apps/intranet/staff-directory';
     const files = listFiles(path.join(root, dir));
@@ -475,6 +530,7 @@ describe('generators', () => {
       'staff-directory',
       'leave-requests',
       'it-helpdesk',
+      'team-board',
     ]) {
       const dir = path.join(root, 'apps', 'intranet', app);
       for (const f of listFiles(dir)) {

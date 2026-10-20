@@ -5,7 +5,7 @@ set the metadata the guardrails check, and register remotes with their zone's sh
 
 ```sh
 pnpm gen:shell <zone> [--layout top|side] [--title "<text>"]   # zone: intranet | internet
-pnpm gen:remote <zone> <name> [--private] [--external [--vendor-format esm|web-component|script]] [--title "<text>"]
+pnpm gen:remote <zone> <name> [--private] [--state] [--external [--vendor-format esm|web-component|script]] [--title "<text>"]
                                                         # name: kebab-case, e.g. leave-requests
 pnpm install                                            # links the new app
 ```
@@ -33,6 +33,7 @@ apps/<zone>/<name>/                 new remote (package @org/<zone>-<name>)
   rspack.config.js                  createRemoteConfig (reads mfe from package.json)
   src/                              app/, features/demo, pages/, layouts/, components/, core/
     features/demo/                  api/, hooks/, types/, utils/, components/<Name>/ (one folder per component), index.ts (public API)
+    features/demo/state/            only with --state: demoReducer.ts (+ test), DemoContext.tsx (+ test), used by ItemPicker + SelectionSummary
 apps/<zone>/shell-<zone>/
   remotes.json                      + { name, title, path, federationName, package, access, kind }
   mfe-manifest.dev.json             regenerated: + "<federationName>": { "entry": "http://localhost:<port>/mf-manifest.json" }

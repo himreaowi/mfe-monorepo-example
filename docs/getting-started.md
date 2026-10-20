@@ -120,16 +120,16 @@ CI runs the same gates ([devops-handoff.md](devops-handoff.md)).
 
 ## Daily commands
 
-| Command                                                                                                 | What                                                                |
-| ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| `pnpm dev:<zone>`                                                                                       | shell + every remote of the zone                                    |
-| `pnpm --filter <package> dev`                                                                           | one app (`pnpm -s apps` lists package names)                        |
-| `pnpm gen:shell <zone> [--layout top\|side]` / `pnpm gen:remote <zone> <name> [--private] [--external]` | new apps (`--layout`: which starter layout the shell copies)        |
-| `pnpm --filter <package> add <dep>`                                                                     | add a dependency ([adding-dependencies.md](adding-dependencies.md)) |
-| `pnpm lint` / `typecheck` / `test` / `build`                                                            | all projects (Nx, cached)                                           |
-| `pnpm e2e` / `pnpm e2e:<zone>`                                                                          | zone e2e suites                                                     |
-| `pnpm -s apps [--zone=<zone>] [--affected --base=<sha>] [--json]`                                       | list apps (CI matrix)                                               |
-| `pnpm format`                                                                                           | Prettier                                                            |
+| Command                                                                                                           | What                                                                |
+| ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `pnpm dev:<zone>`                                                                                                 | shell + every remote of the zone                                    |
+| `pnpm --filter <package> dev`                                                                                     | one app (`pnpm -s apps` lists package names)                        |
+| `pnpm gen:shell <zone> [--layout top\|side]` / `pnpm gen:remote <zone> <name> [--private] [--state] [--external]` | new apps (`--layout`: which starter layout the shell copies)        |
+| `pnpm --filter <package> add <dep>`                                                                               | add a dependency ([adding-dependencies.md](adding-dependencies.md)) |
+| `pnpm lint` / `typecheck` / `test` / `build`                                                                      | all projects (Nx, cached)                                           |
+| `pnpm e2e` / `pnpm e2e:<zone>`                                                                                    | zone e2e suites                                                     |
+| `pnpm -s apps [--zone=<zone>] [--affected --base=<sha>] [--json]`                                                 | list apps (CI matrix)                                               |
+| `pnpm format`                                                                                                     | Prettier                                                            |
 
 ## Next
 

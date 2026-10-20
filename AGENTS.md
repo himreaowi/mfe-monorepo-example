@@ -7,7 +7,8 @@ Instructions for AI coding agents (and humans) working in this monorepo. Details
 
 1. [docs/architecture.md](docs/architecture.md): zones, shells vs remotes, runtime manifest,
    decisions D1–D8.
-2. [docs/coding-conventions.md](docs/coding-conventions.md): where code goes, data fetching.
+2. [docs/coding-conventions.md](docs/coding-conventions.md): where code goes, data fetching,
+   state management.
 3. [docs/ui-context.md](docs/ui-context.md) before UI, token, theme or component work.
 4. [docs/project-overview.md](docs/project-overview.md) for product intent;
    [.specify/memory/constitution.md](.specify/memory/constitution.md) for principles.
@@ -16,7 +17,7 @@ Instructions for AI coding agents (and humans) working in this monorepo. Details
 
 ## Must follow
 
-- Create apps only with `pnpm gen:shell <zone> [--layout top|side]` (`--layout`: starter layout copied into the shell) / `pnpm gen:remote <zone> <name> [--private]
+- Create apps only with `pnpm gen:shell <zone> [--layout top|side]` (`--layout`: starter layout copied into the shell) / `pnpm gen:remote <zone> <name> [--private] [--state]
 [--external [--vendor-format esm|web-component|script]] [--title "<text>"]`, then
   `pnpm install`. Never copy an app folder.
 - A shell never imports a remote; a remote never imports another remote or a shell; zones

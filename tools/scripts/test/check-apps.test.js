@@ -263,6 +263,33 @@ describe('check-apps', () => {
       );
     });
 
+    it('state/ folders need a reducer test', async () => {
+      const shell = 'apps/intranet/shell-intranet/src';
+      const r = await run(validApps(), {
+        ...validRegistries(),
+        // ok: feature state and app-level state with their reducer tests
+        [`${staff}/features/staff/state/staffReducer.ts`]: '',
+        [`${staff}/features/staff/state/staffReducer.test.ts`]: '',
+        [`${staff}/features/staff/state/StaffContext.tsx`]: '',
+        [`${staff}/state/appReducer.ts`]: '',
+        [`${staff}/state/appReducer.test.ts`]: '',
+        // missing tests
+        [`${staff}/features/leave/state/leaveReducer.ts`]: '',
+        [`${staff}/features/leave/state/LeaveContext.tsx`]: '',
+        [`${shell}/state/ShellContext.tsx`]: '',
+      });
+      assert.deepEqual(rules(r.errors), ['state-test', 'state-test']);
+      const text = r.errors.map((e) => e.message).join('\n');
+      assert.match(
+        text,
+        /features\/leave\/state\/: .*\(leaveReducer\.test\.ts\)/,
+      );
+      assert.match(
+        text,
+        /shell-intranet\/src\/state\/: .*<name>Reducer\.ts \+ <name>Reducer\.test\.ts/,
+      );
+    });
+
     it('fails on index.ts barrels outside a feature root', async () => {
       const r = await run(validApps(), {
         ...validRegistries(),

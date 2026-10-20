@@ -172,6 +172,48 @@ shell's `features/welcome` and `features/startup` and its `layouts/ShellLayout`,
   requests ([auth-contract.md](auth-contract.md)). On 401 call `useAuth().refresh()`.
 - Normalise response shapes in `api/` so hooks and components do not branch on transport details.
 
+## State management
+
+React only: `useState`, `useReducer` and Context. No Redux, Zustand, MobX or other state
+library (none is in the catalog; adding one is a platform decision, not a feature decision).
+Pick the smallest place that works:
+
+| The state is…                                                         | Put it in                                                                                                      | Example                                                         |
+| --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| used by one component                                                 | `useState` (or `useReducer`) in that component                                                                 | a form's field values, an open/closed toggle                    |
+| data from the API                                                     | the feature's data hook, called by the page ([Data fetching](#data-fetching)); **never copied into a Context** | `useItems()` in `OverviewPage`                                  |
+| UI state shared by several components of one feature                  | a **feature Context** in `features/<name>/state/` (below)                                                      | selected items: a picker sets them, a summary shows them        |
+| needed by every page of the remote                                    | an **app-level Context** in `src/state/` (same shape), passed to `createRemoteApp({ providers })`              | a remote-wide preference, a draft kept across pages             |
+| owned by the shell (user, theme, settings)                            | host props (`useHostProps()`), `useAuth()`, `useTheme()`: never one remote reading another remote's state      | `useHostProps().user`                                           |
+| shareable or bookmarkable (filters, search, sort, page, selected tab) | URL search params (`useSearchParams()` from `react-router`)                                                    | `?q=ada&dept=hr`: back button, reload and a pasted link keep it |
+
+Feature (or app-level) state is a pure reducer plus a Context, one folder:
+
+```
+features/<name>/state/
+  <name>Reducer.ts         state type, action union, initial state, pure reducer (no React, no API)
+  <name>Reducer.test.ts    required (pnpm check rule state-test)
+  <Name>Context.tsx        <NameProvider> (useReducer) + useNameState() + useNameDispatch()
+  <Name>Context.test.tsx   the hooks under the provider, and the error outside it
+```
+
+- **Two contexts**, one for the state and one for `dispatch`: components that only dispatch
+  (a button) do not re-render on every state change.
+- **The hooks throw a clear error outside the provider** (`useNameState() must be used inside
+<NameProvider>`), so a missing provider fails at once instead of rendering stale defaults.
+- **Actions describe what happened** (`{ type: 'itemToggled', id }`), the reducer decides the
+  new state; switch on `action.type` with a `never` check so a new action cannot be forgotten.
+- Put the provider as low as possible: around the page (or the part of it) that uses the state.
+  State needed by every page goes into `src/state/` and is passed to
+  `createRemoteApp({ routes, providers: [AppProvider] })` (`@org/mf-runtime/remote`), which
+  wraps the routes in both modes (embedded and standalone, inside the router and the host
+  props).
+- Everything a component needs from outside comes in through props, hooks of the feature or
+  the host; never `window` globals, never another remote's modules.
+- Generated example: `pnpm gen:remote <zone> <name> --state` adds `features/demo/state/`
+  (`demoReducer.ts`, `DemoContext.tsx` and their tests) with `ItemPicker` (sets the selection)
+  and `SelectionSummary` (shows and clears it) on the overview page.
+
 ## TypeScript
 
 - `strict` everywhere. Avoid `any`; prefer explicit types and narrow unions.
@@ -285,5 +327,7 @@ Package names: apps `@org/<zone>-<name>` / `@org/shell-<zone>` (generated); shar
 - Undocumented globals for host/embed detection (use `useHostProps().embedded`).
 - One `.module.scss` shared by several components, component files loose in `components/` or a
   feature root, a component without a test.
+- A global store library (Redux, …), API data copied into a Context, filters kept in state
+  when they belong in the URL, a Context hook that silently works without its provider.
 - Expanding scope beyond the requested change; prefer small, incremental changes.
 - Commits only when asked; never commit secrets.

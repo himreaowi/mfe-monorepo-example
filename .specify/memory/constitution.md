@@ -152,12 +152,13 @@ resilience are product quality, not polish.
 apps/<zone>/<name>/src/
 ├── main.tsx          # entry (MF async startup): shell: global styles, PWA, manifest, render;
 │                     #   remote: standalone only
-├── app/              # providers, routes, registry (shell) / RemoteApp, apps (remote)
+├── app/              # providers, routes, registry (shell) / apps (exposed ./App), routes (remote)
 ├── features/<name>/  # domain modules; index.ts = the feature's public API (the only barrel)
-│                     #   (api/, hooks/, types/, utils/,
+│                     #   (api/, hooks/, state/, types/, utils/,
 │                     #   components/<Component>/ one folder per component, __fixtures__/)
-├── pages/            # route-level screens composing features
+├── pages/            # route-level screens: call the features' data hooks, compose features
 ├── layouts/          # chrome
+├── state/            # optional app-level Context + reducer (createRemoteApp providers)
 ├── components/       # shared UI of this app, one folder per component
 ├── core/             # constants (routePaths, apiRoutes), types, utils (no parallel lib/)
 └── services/         # optional app-wide infra; the API client is useApiClient() (@org/mf-runtime)

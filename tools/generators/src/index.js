@@ -3,7 +3,7 @@
  * App generators.
  *
  *   pnpm gen:shell <zone> [--layout top|side] [--title "<text>"]   (--layout: starter layout to copy)
- *   pnpm gen:remote <zone> <name> [--private] [--external [--vendor-format <format>]] [--title "<text>"]
+ *   pnpm gen:remote <zone> <name> [--private] [--state] [--external [--vendor-format <format>]] [--title "<text>"]
  *
  * Apps live in apps/<zone>/<name>. Every app gets its own package.json (deps via `catalog:` /
  * `workspace:*`), Nx tags and a dev port from its zone's range.
@@ -344,9 +344,11 @@ export async function generateShell({ root, zone, title, layout = 'top' }) {
  * Generate apps/<zone>/<name> and register it with the zone's shell.
  * @param {{
  *   root: string, zone: string, name: string, private?: boolean, external?: boolean,
- *   vendorFormat?: string, title?: string,
+ *   vendorFormat?: string, title?: string, state?: boolean,
  * }} options `vendorFormat` (only with `external`): format of the dev mock vendor config
- * (`esm` default, `web-component`, `script`); `title`: overrides the title derived from the name
+ * (`esm` default, `web-component`, `script`); `title`: overrides the title derived from the name;
+ * `state`: add the feature-state example (`features/demo/state/`: reducer + Context, used by
+ * ItemPicker and SelectionSummary on the overview page; templates/remote-state)
  * @returns {Promise<{ dir: string, port: number, packageName: string, federationName: string, entry: RegistryEntry }>}
  */
 export async function generateRemote({
@@ -357,9 +359,15 @@ export async function generateRemote({
   external = false,
   vendorFormat,
   title,
+  state = false,
 }) {
   assertZone(zone);
   assertRemoteName(name);
+  if (state && external) {
+    throw new UsageError(
+      '--state adds feature state to the demo feature of a React remote; an --external adapter has none (the vendor owns its state).',
+    );
+  }
   if (vendorFormat !== undefined && !external) {
     throw new UsageError('--vendor-format only applies to --external remotes.');
   }
@@ -390,7 +398,11 @@ export async function generateRemote({
     : undefined;
 
   const rendered = await renderLayers(
-    external ? ['remote', 'external'] : ['remote'],
+    external
+      ? ['remote', 'external']
+      : state
+        ? ['remote', 'remote-state']
+        : ['remote'],
     dir,
     {
       ZONE: zone,

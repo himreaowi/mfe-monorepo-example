@@ -43,6 +43,11 @@ pnpm dev:<zone>
   (the shell's `package.json` `mfe.devManifest` has `"auth": { "mock": true }`, the dev-only mock
   sign-in, and `settings.apiBaseUrl` → the zone's mock API). See
   `docs/auth-contract.md`.
+- `--state` (`gen:remote`, not with `--external`): adds the **feature-state example** from
+  `templates/remote-state/`: `src/features/demo/state/` (`demoReducer.ts` + test,
+  `DemoContext.tsx` with `DemoProvider`, `useDemoState()`, `useDemoDispatch()` + test) and two
+  components that share it on the overview page (`ItemPicker` sets the selected items,
+  `SelectionSummary` shows and clears them). See docs/coding-conventions.md "State management".
 - `--external`: an **adapter remote** for a vendor module (tag `kind:external`, registry
   `"kind": "external"`). `src/features/external/components/ExternalModuleHost/` renders
   `<ExternalModule>` (`@org/mf-runtime/external`) configured from the remote's manifest

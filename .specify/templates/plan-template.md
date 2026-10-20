@@ -107,7 +107,7 @@ apps/
     │   └── src/
     └── [remote]/                  # remote (or --external adapter)
         └── src/
-            ├── app/               # RemoteApp (exposed ./App), apps, routes
+            ├── app/               # apps (exposed ./App), routes
             ├── features/[feature]/
             │   ├── api/
             │   ├── hooks/

@@ -14,6 +14,8 @@
  * - component layout (docs/coding-conventions.md "One folder per component"): components live in
  *   `features/<feature>/components/<Name>/`, `src/components/<Name>/` or `src/layouts/<Name>/`
  *   with `<Name>.tsx` and `<Name>.test.tsx`; a CSS module is imported only from its own folder
+ * - state folders (`src/features/<feature>/state/`, app-level `src/state/`) hold a tested
+ *   reducer: at least one `<name>Reducer.test.ts`
  * - no barrel files: the only `index.ts` in an app is a feature's public API
  *   (`src/features/<feature>/index.ts`); everything else is imported from its file
  *   (`@/components/Card/Card`)
@@ -503,7 +505,7 @@ function checkComponentLayout(root, appDir, err) {
         const base = file.name.replace(/\.(test\.)?tsx$|\.module\.s?css$/, '');
         err(
           'component-folder',
-          `${rel(path.join(featureDir, file.name))}: components and their styles live in features/${feature.name}/components/<Name>/ (move it to components/${base}/${file.name}). The feature root keeps only api/, hooks/, types/, utils/, components/ and index.ts. See ${LAYOUT_DOC}.`,
+          `${rel(path.join(featureDir, file.name))}: components and their styles live in features/${feature.name}/components/<Name>/ (move it to components/${base}/${file.name}). The feature root keeps only api/, hooks/, state/, types/, utils/, components/ and index.ts. See ${LAYOUT_DOC}.`,
         );
       }
     }
@@ -549,6 +551,25 @@ function checkComponentLayout(root, appDir, err) {
         );
       }
     }
+  }
+
+  // state folders hold a reducer with its test (docs/coding-conventions.md "State management")
+  const stateDirs = [
+    path.join(src, 'state'),
+    ...entries(path.join(src, 'features'))
+      .filter((feature) => feature.isDirectory())
+      .map((feature) => path.join(src, 'features', feature.name, 'state')),
+  ].filter((dir) => fs.existsSync(dir));
+  for (const dir of stateDirs) {
+    const files = entries(dir)
+      .filter((f) => f.isFile())
+      .map((f) => f.name);
+    if (files.some((f) => /Reducer\.test\.tsx?$/.test(f))) continue;
+    const reducer = files.find((f) => /Reducer\.tsx?$/.test(f));
+    err(
+      'state-test',
+      `${rel(dir)}/: a state/ folder holds a pure reducer and its test (${reducer ? reducer.replace(/\.tsx?$/, '.test.ts') : '<name>Reducer.ts + <name>Reducer.test.ts'}) next to the <Name>Context.tsx that provides it. See docs/coding-conventions.md ("State management").`,
+    );
   }
 
   // no barrel files: index.ts only as a feature's public API (src/features/<feature>/index.ts)

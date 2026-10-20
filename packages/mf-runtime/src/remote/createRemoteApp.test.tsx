@@ -1,6 +1,14 @@
 import { render, screen } from '@testing-library/react';
+import { createContext, useContext, type ReactNode } from 'react';
 import userEvent from '@testing-library/user-event';
-import { Link, MemoryRouter, Navigate, Route, Routes } from 'react-router';
+import {
+  Link,
+  MemoryRouter,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+} from 'react-router';
 import { THEME_OWNER_ATTRIBUTE } from '@org/design-tokens';
 import { ThemeProvider, ThemeToggle, useTheme } from '@org/ui';
 import { createRemoteApp } from './createRemoteApp';
@@ -133,5 +141,79 @@ describe('createRemoteApp', () => {
     expect(html.getAttribute('data-theme')).toBe('dark');
     await user.click(screen.getByRole('link', { name: 'to route 2' }));
     expect(window.location.pathname).toBe('/route-2');
+  });
+
+  describe('providers (app-level state)', () => {
+    const Outer = createContext('none');
+    const Inner = createContext('none');
+    /** Reads both contexts, the host props and the router: providers sit inside all of them. */
+    function OuterProvider({ children }: { children: ReactNode }) {
+      const { embedded } = useHostProps();
+      const { pathname } = useLocation();
+      return (
+        <Outer.Provider value={`outer:${String(embedded)}:${pathname}`}>
+          {children}
+        </Outer.Provider>
+      );
+    }
+    function InnerProvider({ children }: { children: ReactNode }) {
+      const outer = useContext(Outer);
+      return (
+        <Inner.Provider value={`inner<${outer}>`}>{children}</Inner.Provider>
+      );
+    }
+    function Show() {
+      return <p data-testid="ctx">{useContext(Inner)}</p>;
+    }
+    const app = createRemoteApp({
+      routes: [{ path: '*', element: <Show /> }],
+      providers: [OuterProvider, InnerProvider],
+      StandaloneLayout: ({ children }) => (
+        <div data-testid="layout" data-outer={useContext(Outer)}>
+          {children}
+        </div>
+      ),
+    });
+
+    it('embedded: wraps the routes, first provider outermost, inside router and host props', () => {
+      render(
+        <ThemeProvider>
+          <MemoryRouter initialEntries={['/apps/staff/x']}>
+            <Routes>
+              <Route
+                path="apps/staff/*"
+                element={<app.EmbeddedApp embedded basePath="/apps/staff" />}
+              />
+            </Routes>
+          </MemoryRouter>
+        </ThemeProvider>,
+      );
+      expect(screen.getByTestId('ctx')).toHaveTextContent(
+        'inner<outer:true:/apps/staff/x>',
+      );
+      expect(screen.queryByTestId('layout')).toBeNull();
+    });
+
+    it('standalone: wraps the StandaloneLayout too', () => {
+      window.history.replaceState(null, '', '/y');
+      render(<app.StandaloneApp />);
+      expect(screen.getByTestId('ctx')).toHaveTextContent(
+        'inner<outer:false:/y>',
+      );
+      expect(screen.getByTestId('layout')).toHaveAttribute(
+        'data-outer',
+        'outer:false:/y',
+      );
+    });
+
+    it('accepts a single provider', () => {
+      const single = createRemoteApp({
+        routes: [{ index: true, element: <Show /> }],
+        providers: InnerProvider,
+      });
+      window.history.replaceState(null, '', '/');
+      render(<single.StandaloneApp />);
+      expect(screen.getByTestId('ctx')).toHaveTextContent('inner<none>');
+    });
   });
 });

@@ -1,0 +1,65 @@
+import {
+  createContext,
+  useContext,
+  useReducer,
+  type Dispatch,
+  type ReactNode,
+} from 'react';
+import {
+  demoReducer,
+  initialDemoState,
+  type DemoAction,
+  type DemoState,
+} from './demoReducer';
+
+/*
+ * Feature state: React Context + useReducer (docs/coding-conventions.md "State management").
+ * State and dispatch are separate contexts, so a component that only dispatches (a button)
+ * does not re-render when the state changes. The provider wraps what uses it (here the
+ * overview page); state needed by every page of the remote belongs in an app-level provider
+ * (createRemoteApp({ providers })).
+ */
+const DemoStateContext = createContext<DemoState | null>(null);
+DemoStateContext.displayName = 'DemoStateContext';
+const DemoDispatchContext = createContext<Dispatch<DemoAction> | null>(null);
+DemoDispatchContext.displayName = 'DemoDispatchContext';
+
+export function DemoProvider({
+  children,
+  initialState = initialDemoState,
+}: {
+  children: ReactNode;
+  /** For tests and stories. */
+  initialState?: DemoState;
+}) {
+  const [state, dispatch] = useReducer(demoReducer, initialState);
+  return (
+    <DemoStateContext.Provider value={state}>
+      <DemoDispatchContext.Provider value={dispatch}>
+        {children}
+      </DemoDispatchContext.Provider>
+    </DemoStateContext.Provider>
+  );
+}
+
+/** The demo feature's state. Throws outside `<DemoProvider>`. */
+export function useDemoState(): DemoState {
+  const state = useContext(DemoStateContext);
+  if (state === null) {
+    throw new Error(
+      'useDemoState() must be used inside <DemoProvider> (src/features/demo/state/DemoContext.tsx). Wrap the page (or the components that use it) in <DemoProvider>.',
+    );
+  }
+  return state;
+}
+
+/** Dispatch demo actions (`{ type: 'itemToggled', id }`, …). Throws outside `<DemoProvider>`. */
+export function useDemoDispatch(): Dispatch<DemoAction> {
+  const dispatch = useContext(DemoDispatchContext);
+  if (dispatch === null) {
+    throw new Error(
+      'useDemoDispatch() must be used inside <DemoProvider> (src/features/demo/state/DemoContext.tsx). Wrap the page (or the components that use it) in <DemoProvider>.',
+    );
+  }
+  return dispatch;
+}

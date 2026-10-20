@@ -56,9 +56,10 @@ src/
   components/         ModeBadge/
   features/demo/      sample feature (host props, counter, links, items from the API + form)
     api/ hooks/ types/ utils/
+    state/            only with `gen:remote --state`: feature state (reducer + Context)
     components/       one folder per component: Demo/, DemoDetails/, DemoItems/, AddItemForm/
                       (<Name>.tsx, <Name>.module.scss, <Name>.test.tsx; no index.ts)
-    index.ts          public API (Demo, DemoDetails)
+    index.ts          public API (components and data hooks for the pages)
   layouts/            StandaloneLayout/ (own simple chrome, standalone only)
   pages/              OverviewPage, DetailsPage, NotFoundPage
   core/constants/     app, routePaths, apiRoutes

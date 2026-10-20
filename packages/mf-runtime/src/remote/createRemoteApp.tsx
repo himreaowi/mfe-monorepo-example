@@ -20,7 +20,29 @@ export type CreateRemoteAppOptions = {
   standaloneProps?: Partial<HostProps>;
   /** Chrome around the routes in standalone mode only (the remote's own `StandaloneLayout`). */
   StandaloneLayout?: ComponentType<{ children: ReactNode }>;
+  /**
+   * App-level providers around the routes, in both modes (remote-wide state: a Context +
+   * useReducer, see docs/coding-conventions.md "State management"). One component or a list,
+   * outermost first. They render inside the router and `HostPropsProvider` (so they may use
+   * `useHostProps()`, `useNavigate()`, `useSearchParams()`) and, standalone, around the
+   * `StandaloneLayout` (so its chrome can read them too).
+   */
+  providers?: ProviderComponent | ProviderComponent[];
 };
+
+/** A component that wraps its children in a context provider. */
+export type ProviderComponent = ComponentType<{ children: ReactNode }>;
+
+/** Nest `children` in `providers`, the first one outermost. */
+function withProviders(
+  providers: ProviderComponent[],
+  children: ReactNode,
+): ReactNode {
+  return providers.reduceRight<ReactNode>(
+    (inner, Provider) => <Provider>{inner}</Provider>,
+    children,
+  );
+}
 
 export type RemoteAppParts = {
   /** Default export of the exposed module (`./App`). Rendered by the shell's `<RemoteApp>`. */
@@ -39,16 +61,19 @@ export type RemoteAppParts = {
  * - wraps itself in `ThemeProvider`, which passes through to the shell's provider (shared
  *   @org/ui) or follows the shell's `<html>` theme. It never takes over the document theme.
  * - provides `HostProps` via `useHostProps()`.
+ * - wraps the routes in `providers` (app-level state), inside the router.
  * - does not import global styles and does not register a service worker.
  *
  * Standalone: own `ThemeProvider` (root), own `BrowserRouter`, mock host props
- * (`embedded: false`, `basePath: '/'`), optional `StandaloneLayout`.
+ * (`embedded: false`, `basePath: '/'`), `providers` around the optional `StandaloneLayout`.
  */
 export function createRemoteApp({
   routes,
   standaloneProps = {},
   StandaloneLayout,
+  providers = [],
 }: CreateRemoteAppOptions): RemoteAppParts {
+  const providerList = Array.isArray(providers) ? providers : [providers];
   function RemoteRoutes() {
     return useRoutes(routes);
   }
@@ -63,7 +88,7 @@ export function createRemoteApp({
     const content = (
       <ThemeProvider>
         <HostPropsProvider value={value}>
-          <RemoteRoutes />
+          {withProviders(providerList, <RemoteRoutes />)}
         </HostPropsProvider>
       </ThemeProvider>
     );
@@ -87,10 +112,13 @@ export function createRemoteApp({
       <ThemeProvider>
         <HostPropsProvider value={value}>
           <BrowserRouter>
-            {StandaloneLayout ? (
-              <StandaloneLayout>{routed}</StandaloneLayout>
-            ) : (
-              routed
+            {withProviders(
+              providerList,
+              StandaloneLayout ? (
+                <StandaloneLayout>{routed}</StandaloneLayout>
+              ) : (
+                routed
+              ),
             )}
           </BrowserRouter>
         </HostPropsProvider>

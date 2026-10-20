@@ -1,0 +1,27 @@
+import { Button } from '@org/ui';
+import { useDemoDispatch, useDemoState } from '../../state/DemoContext';
+import styles from './SelectionSummary.module.scss';
+
+/** How many items are selected (feature state, set by ItemPicker) and a way to clear them. */
+export function SelectionSummary() {
+  const { selectedIds } = useDemoState();
+  const dispatch = useDemoDispatch();
+  const count = selectedIds.length;
+  return (
+    <div className={styles.summary} data-testid="selection-summary">
+      <p className={styles.copy} role="status">
+        {count === 0
+          ? 'No items selected'
+          : `${count} ${count === 1 ? 'item' : 'items'} selected`}
+      </p>
+      {count > 0 ? (
+        <Button
+          variant="secondary"
+          onClick={() => dispatch({ type: 'selectionCleared' })}
+        >
+          Clear selection
+        </Button>
+      ) : null}
+    </div>
+  );
+}

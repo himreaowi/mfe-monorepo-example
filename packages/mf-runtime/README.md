@@ -98,6 +98,8 @@ const { EmbeddedApp, StandaloneApp } = createRemoteApp({
   },
   // the remote's own chrome for standalone mode (generated: src/layouts/StandaloneLayout)
   StandaloneLayout,
+  // optional: app-level providers (remote-wide Context state), in both modes, outermost first
+  providers: [AppStateProvider],
 });
 
 export default EmbeddedApp;
@@ -115,6 +117,11 @@ createRoot(el).render(<StandaloneApp />);
 | Host props       | From the shell (`embedded: true`, `basePath`, `settings`, `user`, …)                                                                                                                | `standaloneProps` + `embedded: false`, `basePath: '/'` |
 | Global styles/SW | None (the shell has them)                                                                                                                                                           | Imported/registered by the standalone `src/main.tsx`   |
 
+- `createRemoteApp({ routes, standaloneProps?, StandaloneLayout?, providers? })`: `providers`
+  (one component or a list, outermost first) wrap the routes in both modes, inside the router
+  and the host props (they may use `useHostProps()`, `useNavigate()`); standalone they wrap the
+  `StandaloneLayout` too. For remote-wide state (`src/state/`, docs/coding-conventions.md
+  "State management").
 - `useHostProps()`: the host props.
 - `useApiClient()`: the remote's API client (`createApiClient` from `@org/http-client`): base URL
   from host props `settings.apiBaseUrl`, `credentials: 'include'`, memoised per base URL;
