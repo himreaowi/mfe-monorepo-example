@@ -1,19 +1,36 @@
 #!/usr/bin/env node
 // @ts-check
 /**
- * CLI:  gen.js shell <zone> [--layout top|side] [--title "<text>"]
- *       gen.js remote <zone> <name> [--private] [--state] [--external [--vendor-format <f>]] [--title "<text>"]
- * Root scripts: `pnpm gen:shell <zone>`, `pnpm gen:remote <zone> <name> [flags]`.
+ * CLI:  gen.js shell <zone> [<name>] [--base-path /<path>] [--layout top|side] [--title "<text>"]
+ *       gen.js remote <zone> <name> [--shell <shell>[,<shell>]] [--private] [--state] [--external [--vendor-format <f>]] [--title "<text>"]
+ * Root scripts: `pnpm gen:shell <zone> [<name>]`, `pnpm gen:remote <zone> <name> [flags]`.
  */
 import path from 'node:path';
 import { parseArgs } from 'node:util';
-import { UsageError, generateRemote, generateShell } from '../src/index.js';
+import {
+  UsageError,
+  generateRemote,
+  generateShell,
+  listShells,
+  shellUrl,
+} from '../src/index.js';
+
+/** @param {string} root @param {any} zone */
+const listShellCount = (root, zone) => listShells(root, zone).length;
 
 const USAGE = `Usage:
-  pnpm gen:shell <zone> [--layout top|side] [--title "<text>"]   zone: intranet | internet
-  pnpm gen:remote <zone> <name> [--private] [--state] [--external [--vendor-format <format>]] [--title "<text>"]
+  pnpm gen:shell <zone> [<name>] [--base-path /<path>] [--layout top|side] [--title "<text>"]
+  pnpm gen:remote <zone> <name> [--shell <shell>] [--private] [--state] [--external [--vendor-format <format>]] [--title "<text>"]
+  zone: intranet | internet
 
 Options:
+  <name>                  gen:shell: the shell's name (apps/<zone>/shell-<name>); default: the
+                          zone (shell-intranet), for a zone's only shell
+  --base-path /<path>     gen:shell: where the shell is served (default /). Several shells of a
+                          zone share one origin, each under its own path (/citizen, /business);
+                          pnpm dev:<zone> serves them all on the zone port through a dev proxy
+  --shell <shell>         gen:remote: the shell(s) that list the remote (nav + route); required
+                          when the zone has several shells; repeat it or comma-separate
   --layout top|side       gen:shell: the starter layout copied into the shell (its own code
                           afterwards): top (default, nav in the header row) or side (nav in a
                           sidebar left of the content); phones: Menu button
@@ -41,6 +58,8 @@ async function main() {
       'vendor-format': { type: 'string' },
       title: { type: 'string' },
       layout: { type: 'string' },
+      'base-path': { type: 'string' },
+      shell: { type: 'string', multiple: true },
       root: { type: 'string' },
       help: { type: 'boolean', short: 'h', default: false },
     },
@@ -56,34 +75,42 @@ async function main() {
 
   if (kind === 'shell') {
     if (
-      name !== undefined ||
+      extra.length > 0 ||
+      values.shell !== undefined ||
       values.private ||
       values.state ||
       values.external ||
       values['vendor-format'] !== undefined
     ) {
       throw new UsageError(
-        `gen:shell takes only a zone (and --layout, --title).\n\n${USAGE}`,
+        `gen:shell takes a zone and an optional name (and --base-path, --layout, --title).\n\n${USAGE}`,
       );
     }
     const r = await generateShell({
       root,
       zone,
+      name,
+      basePath: values['base-path'],
       title: values.title,
       layout: values.layout,
     });
     console.log(
-      `Created ${path.relative(root, r.dir)} (${r.packageName}, "${r.title}", federation name ${r.federationName}, port ${r.port}, ${r.layout} starter layout in src/layouts/ShellLayout).`,
+      `Created ${path.relative(root, r.dir)} (${r.packageName}, "${r.title}", federation name ${r.federationName}, base path ${r.basePath}, port ${r.port}, ${r.layout} starter layout in src/layouts/ShellLayout).`,
     );
+    if (r.defaultShell) {
+      console.log(
+        `No ${zone} shell sits at /: the root package.json now redirects / to it (mfe.zones.${zone}.defaultShell).`,
+      );
+    }
     console.log(
-      `\nNext:\n  pnpm install\n  pnpm gen:remote ${zone} <name>\n  pnpm dev:${zone}`,
+      `\nNext:\n  pnpm install\n  pnpm gen:remote ${zone} <name>${listShellCount(root, zone) > 1 ? ' --shell <shell>' : ''}\n  pnpm dev:${zone}            # every ${zone} shell on ${shellUrl(zone, '/')}${r.basePath === '/' ? '' : `, this one at ${shellUrl(zone, r.basePath)}/`}`,
     );
     return;
   }
   if (kind === 'remote') {
-    if (values.layout !== undefined) {
+    if (values.layout !== undefined || values['base-path'] !== undefined) {
       throw new UsageError(
-        `--layout applies to gen:shell only (the shell owns the layout).\n\n${USAGE}`,
+        `--layout and --base-path apply to gen:shell only (the shell owns its layout and path).\n\n${USAGE}`,
       );
     }
     if (extra.length > 0) {
@@ -95,6 +122,7 @@ async function main() {
       root,
       zone,
       name,
+      shells: values.shell,
       private: values.private,
       external: values.external,
       vendorFormat: values['vendor-format'],
@@ -105,10 +133,10 @@ async function main() {
       `Created ${path.relative(root, r.dir)} (${r.packageName}, "${r.entry.title}", federation name ${r.federationName}, port ${r.port}, ${r.entry.access}${r.entry.kind === 'external' ? ', external' : ''}).`,
     );
     console.log(
-      `Registered with the ${zone} shell: route ${r.entry.path}/*, dev manifest entry http://localhost:${r.port}/mf-manifest.json.`,
+      `Registered with ${r.shells.map((s) => `shell-${s.name}`).join(', ')}: route ${r.entry.path}/*, dev manifest entry http://localhost:${r.port}/mf-manifest.json.`,
     );
     console.log(
-      `\nNext:\n  pnpm install\n  pnpm dev:${zone}            # shell + all ${zone} remotes\n  pnpm --filter ${r.packageName} dev   # this remote standalone`,
+      `\nNext:\n  pnpm install\n  pnpm dev:${zone}            # every ${zone} shell + remote: ${r.shells.map((s) => s.url).join(', ')}\n  pnpm --filter ${r.packageName} dev   # this remote standalone`,
     );
     return;
   }

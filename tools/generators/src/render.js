@@ -11,6 +11,9 @@ const prettierOptions = require('@org/prettier-config');
 
 export const TEMPLATES_DIR = path.join(import.meta.dirname, '..', 'templates');
 
+/** Compile-time globals of @org/rspack-config (`__MFE_BASE_PATH__`): kept as written. */
+const BUILD_GLOBALS = new Set(['MFE_NAME', 'MFE_BASE_PATH']);
+
 /**
  * Replace `__KEY__` placeholders. Unknown placeholders are an error (typo protection).
  * @param {string} text
@@ -19,6 +22,7 @@ export const TEMPLATES_DIR = path.join(import.meta.dirname, '..', 'templates');
  */
 export function substitute(text, tokens, source) {
   return text.replace(/__([A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*)__/g, (match, key) => {
+    if (BUILD_GLOBALS.has(key)) return match;
     if (!Object.hasOwn(tokens, key)) {
       throw new Error(`Unknown template token ${match} in ${source}`);
     }
