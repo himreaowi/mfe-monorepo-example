@@ -49,6 +49,10 @@ function tempWorkspace() {
       }
     }
   }
+  // template state: no zone settings yet (a project's generated shells may have added some)
+  const rootPkg = JSON.parse(read(root, 'package.json'));
+  if (rootPkg.mfe) delete rootPkg.mfe.zones;
+  fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify(rootPkg));
   fs.mkdirSync(path.join(root, 'apps'));
   return root;
 }

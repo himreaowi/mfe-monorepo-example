@@ -141,7 +141,11 @@ describe('check-apps', () => {
         federationName: `internet_shell_${name}`,
         extra: { name: `@org/shell-${name}` },
       });
-    /** @param {Record<string, string | undefined>} bases name → base path */
+    /**
+     * @param {Record<string, string | undefined>} bases name → base path
+     * @param {Record<string, unknown>} [rootMfe]
+     * @param {Record<string, string[]>} [registries]
+     */
     const setup = (
       bases,
       rootMfe = { zones: { internet: { defaultShell: 'citizen' } } },

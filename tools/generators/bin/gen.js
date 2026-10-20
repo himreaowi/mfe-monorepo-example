@@ -15,7 +15,7 @@ import {
   shellUrl,
 } from '../src/index.js';
 
-/** @param {string} root @param {any} zone */
+/** @param {string} root @param {import('../src/index.js').Zone} zone */
 const listShellCount = (root, zone) => listShells(root, zone).length;
 
 const USAGE = `Usage:
@@ -86,6 +86,7 @@ async function main() {
         `gen:shell takes a zone and an optional name (and --base-path, --layout, --title).\n\n${USAGE}`,
       );
     }
+    const z = /** @type {import('../src/index.js').Zone} */ (zone);
     const r = await generateShell({
       root,
       zone,
@@ -103,7 +104,7 @@ async function main() {
       );
     }
     console.log(
-      `\nNext:\n  pnpm install\n  pnpm gen:remote ${zone} <name>${listShellCount(root, zone) > 1 ? ' --shell <shell>' : ''}\n  pnpm dev:${zone}            # every ${zone} shell on ${shellUrl(zone, '/')}${r.basePath === '/' ? '' : `, this one at ${shellUrl(zone, r.basePath)}/`}`,
+      `\nNext:\n  pnpm install\n  pnpm gen:remote ${zone} <name>${listShellCount(root, z) > 1 ? ' --shell <shell>' : ''}\n  pnpm dev:${zone}            # every ${zone} shell on ${shellUrl(z, '/')}${r.basePath === '/' ? '' : `, this one at ${shellUrl(z, r.basePath)}/`}`,
     );
     return;
   }
