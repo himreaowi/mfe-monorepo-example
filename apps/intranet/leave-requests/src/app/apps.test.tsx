@@ -1,9 +1,11 @@
+import path from 'node:path';
 import { render, screen } from '@testing-library/react';
+import { scanExposedModule } from '@org/jest-config/exposed-module';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { ThemeProvider } from '@org/ui';
 import { getLeaveBalance, getLeaveRequests } from '@/features/leave/api';
 import { balances, request } from '@/features/leave/__fixtures__/leave';
-import { EmbeddedApp, StandaloneApp } from './apps';
+import EmbeddedApp, { StandaloneApp } from './apps';
 
 jest.mock('@/features/leave/api');
 
@@ -57,5 +59,18 @@ describe('Leave Requests remote', () => {
       screen.getByRole('button', { name: 'Use dark theme' }),
     ).toBeInTheDocument();
     expect(screen.getByText('Leave Requests (standalone)')).toBeInTheDocument();
+  });
+
+  it('exposed module: nothing it reaches imports global styles or registers a service worker', () => {
+    const { files, violations } = scanExposedModule(
+      path.join(__dirname, 'apps.tsx'),
+    );
+    expect(violations).toEqual([]);
+    // the walk reached the feature components (features/<name>/components/<Name>/<Name>.tsx)
+    expect(
+      files.some((file) =>
+        /[\\/]features[\\/][^\\/]+[\\/]components[\\/]/.test(file),
+      ),
+    ).toBe(true);
   });
 });

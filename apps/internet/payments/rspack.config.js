@@ -11,5 +11,5 @@ export default createRemoteConfig({
   name: mfe.federationName,
   port: mfe.port,
   title: 'Payments',
-  // exposes: { './App': './src/app/RemoteApp.tsx' } (default)
+  // exposes: { './App': './src/app/apps.tsx' } (default)
 });

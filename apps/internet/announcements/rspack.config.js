@@ -11,5 +11,5 @@ export default createRemoteConfig({
   name: mfe.federationName,
   port: mfe.port,
   title: 'Announcements',
-  // exposes: { './App': './src/app/RemoteApp.tsx' } (default)
+  // exposes: { './App': './src/app/apps.tsx' } (default)
 });

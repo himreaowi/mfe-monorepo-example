@@ -1,4 +1,6 @@
+import path from 'node:path';
 import { render, screen } from '@testing-library/react';
+import { scanExposedModule } from '@org/jest-config/exposed-module';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { ThemeProvider } from '@org/ui';
 import {
@@ -7,7 +9,7 @@ import {
   listServices,
 } from '@/features/catalogue/api';
 import { dogLicence } from '@/features/catalogue/__fixtures__/services';
-import { EmbeddedApp, StandaloneApp } from './apps';
+import EmbeddedApp, { StandaloneApp } from './apps';
 
 jest.mock('@/features/catalogue/api');
 
@@ -69,5 +71,18 @@ describe('Services remote', () => {
       screen.getByRole('button', { name: 'Use dark theme' }),
     ).toBeInTheDocument();
     expect(screen.getByText('Services (standalone)')).toBeInTheDocument();
+  });
+
+  it('exposed module: nothing it reaches imports global styles or registers a service worker', () => {
+    const { files, violations } = scanExposedModule(
+      path.join(__dirname, 'apps.tsx'),
+    );
+    expect(violations).toEqual([]);
+    // the walk reached the feature components (features/<name>/components/<Name>/<Name>.tsx)
+    expect(
+      files.some((file) =>
+        /[\\/]features[\\/][^\\/]+[\\/]components[\\/]/.test(file),
+      ),
+    ).toBe(true);
   });
 });

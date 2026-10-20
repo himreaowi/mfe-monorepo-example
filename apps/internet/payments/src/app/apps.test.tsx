@@ -1,8 +1,10 @@
+import path from 'node:path';
 import { render, screen } from '@testing-library/react';
+import { scanExposedModule } from '@org/jest-config/exposed-module';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import type { ExternalModuleProps } from '@org/mf-runtime/external';
 import { ThemeProvider } from '@org/ui';
-import { EmbeddedApp, StandaloneApp } from './apps';
+import EmbeddedApp, { StandaloneApp } from './apps';
 
 let lastProps: ExternalModuleProps | undefined;
 jest.mock('@org/mf-runtime/external', () => ({
@@ -50,5 +52,18 @@ describe('Payments external adapter remote', () => {
     render(<StandaloneApp />);
     expect(screen.getByText('Payments (standalone)')).toBeInTheDocument();
     expect(lastProps?.config).toMatchObject({ format: 'web-component' });
+  });
+
+  it('exposed module: nothing it reaches imports global styles or registers a service worker', () => {
+    const { files, violations } = scanExposedModule(
+      path.join(__dirname, 'apps.tsx'),
+    );
+    expect(violations).toEqual([]);
+    // the walk reached the feature components (features/<name>/components/<Name>/<Name>.tsx)
+    expect(
+      files.some((file) =>
+        /[\\/]features[\\/][^\\/]+[\\/]components[\\/]/.test(file),
+      ),
+    ).toBe(true);
   });
 });

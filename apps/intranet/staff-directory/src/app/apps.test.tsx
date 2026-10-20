@@ -1,4 +1,6 @@
+import path from 'node:path';
 import { render, screen } from '@testing-library/react';
+import { scanExposedModule } from '@org/jest-config/exposed-module';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { ThemeProvider } from '@org/ui';
 import {
@@ -6,7 +8,7 @@ import {
   getStaffMember,
   searchStaff,
 } from '@/features/staff/api';
-import { EmbeddedApp, StandaloneApp } from './apps';
+import EmbeddedApp, { StandaloneApp } from './apps';
 
 jest.mock('@/features/staff/api');
 
@@ -85,5 +87,18 @@ describe('Staff Directory remote', () => {
       screen.getByText('Staff Directory (standalone)'),
     ).toBeInTheDocument();
     expect(await screen.findByText('Aisha Rahman')).toBeInTheDocument();
+  });
+
+  it('exposed module: nothing it reaches imports global styles or registers a service worker', () => {
+    const { files, violations } = scanExposedModule(
+      path.join(__dirname, 'apps.tsx'),
+    );
+    expect(violations).toEqual([]);
+    // the walk reached the feature components (features/<name>/components/<Name>/<Name>.tsx)
+    expect(
+      files.some((file) =>
+        /[\\/]features[\\/][^\\/]+[\\/]components[\\/]/.test(file),
+      ),
+    ).toBe(true);
   });
 });
