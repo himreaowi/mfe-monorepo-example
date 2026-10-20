@@ -2,7 +2,7 @@
   "name": "@org/ui",
   "version": "0.1.0",
   "private": true,
-  "description": "Shared React UI building blocks: Button, ThemeToggle, Brand, SkipLink, useMenuDisclosure, useFitLayout, RemoteFallback, ConnectionRequired, ThemeProvider. Each shell owns its layout. Tier-1 Module Federation singleton.",
+  "description": "Shared React UI: the in-house component library (Button, Link, form fields, Dialog, Alert, Card, Badge, Spinner, Table, Tabs, \u2026) and the shell building blocks (Brand, SkipLink, ThemeToggle, ThemeProvider, useMenuDisclosure, useFitLayout, RemoteFallback, ConnectionRequired). Native HTML first, design tokens only. Tier-1 Module Federation singleton. Storybook is dev-only.",
   "type": "module",
   "sideEffects": [
     "*.css",
@@ -27,7 +27,8 @@
   },
   "peerDependencies": {
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-router": "^8.0.0"
   },
   "devDependencies": {
     "@org/eslint-config": "workspace:*",

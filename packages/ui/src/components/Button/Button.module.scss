@@ -1,3 +1,5 @@
+@use '../../styles/mixins' as *;
+
 .button {
   display: inline-flex;
   align-items: center;
@@ -9,9 +11,12 @@
   cursor: pointer;
   background: var(--color-accent);
   color: var(--color-accent-contrast);
+
+  @include focus-ring;
 }
 
-.button:disabled {
+.button:disabled,
+.loading {
   opacity: 0.55;
   cursor: not-allowed;
 }
@@ -22,8 +27,23 @@
   border-color: var(--color-border);
 }
 
+.danger {
+  background: var(--color-danger);
+  color: var(--color-danger-contrast);
+}
+
 .ghost {
   background: transparent;
   color: var(--color-accent);
   border-color: transparent;
+}
+
+.sm {
+  padding: var(--space-1) var(--space-3);
+  font-size: 0.875rem;
+}
+
+.lg {
+  padding: var(--space-3) var(--space-6);
+  font-size: 1.125rem;
 }
