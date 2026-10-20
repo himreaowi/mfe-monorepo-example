@@ -243,6 +243,9 @@ Target: **WCAG 2.2 AA** ([contracts/a11y-wcag.md](contracts/a11y-wcag.md)).
   `checkA11y(page)` fails with one line per failing element (rule, impact, selector, fix).
 - Use `checkA11y(page, { include: ['[data-testid="my-dialog"]'] })` after opening dialogs or
   menus in feature tests: axe only sees what is rendered.
+- Components of `@org/ui`: `pnpm test:ui` runs the same axe tags (WCAG 2.2 AA) against every
+  Storybook story in light and dark, plus screenshot comparisons
+  ([packages/ui/README.md](../packages/ui/README.md#storybook-dev-only)).
 - Do not disable rules to get green. If a rule must be skipped (third-party widget you cannot
   fix), use `exclude`/`disableRules` next to a comment with the ticket.
 - axe finds roughly a third of WCAG issues. Keyboard order, focus visibility, screen reader
@@ -262,7 +265,13 @@ pnpm test
 pnpm build
 pnpm --filter @org/shell-<zone> exec playwright install --with-deps chromium
 CI=true pnpm e2e:<zone>       # one job per zone (or pnpm e2e for all, sequentially)
+pnpm --filter @org/ui exec playwright install --with-deps chromium
+CI=true pnpm test:ui          # when packages/ui changed: axe + screenshots of every story
 ```
+
+`pnpm test:ui` skips the screenshot comparison on a platform without committed baselines (only
+`darwin` ones are in the repo); generate Linux baselines once in the CI image with
+`pnpm test:ui:update` and commit them to make it a visual gate in CI too.
 
 - `CI=true`: fresh dev servers, 2 retries (a test that passes on retry is reported as flaky),
   `forbidOnly`, JUnit at `apps/<zone>/shell-<zone>/test-results/junit.xml` (publish it as test

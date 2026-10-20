@@ -1,9 +1,14 @@
-import { Button } from '@org/ui';
+import { Alert, Button, Spinner, Table, type TableColumn } from '@org/ui';
 import type { CreateItemResult } from '../../hooks/useCreateItem';
 import type { ItemsState } from '../../hooks/useItems';
 import type { Item, ItemDraft } from '../../types/item';
 import { AddItemForm } from '../AddItemForm/AddItemForm';
 import styles from './DemoItems.module.scss';
+
+const columns: TableColumn<Item>[] = [
+  { key: 'name', header: 'Name', rowHeader: true, sortable: true },
+  { key: 'description', header: 'Description' },
+];
 
 export type DemoItemsProps = {
   /** From `useItems()`, called by the page. */
@@ -45,33 +50,29 @@ export function DemoItems({
         </p>
       ) : null}
       {state.status === 'loading' ? (
-        <p className={styles.copy} role="status">
-          Loading items…
-        </p>
+        <Spinner label="Loading items…" labelVisible />
       ) : null}
       {state.status === 'error' ? (
-        <div className={styles.error} role="alert">
+        <Alert variant="error">
           <p>{state.message}</p>
           <Button variant="secondary" onClick={onRetry}>
             Try again
           </Button>
-        </div>
+        </Alert>
       ) : null}
       {state.status === 'success' ? (
         <>
           {state.items.length === 0 ? (
             <p className={styles.copy}>No items yet.</p>
           ) : (
-            <ul className={styles.list} data-testid="demo-item-list">
-              {state.items.map((item) => (
-                <li key={item.id}>
-                  <strong>{item.name}</strong>
-                  {item.description ? (
-                    <span className={styles.copy}> — {item.description}</span>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
+            <Table
+              caption="Items"
+              captionHidden
+              columns={columns}
+              rows={state.items}
+              getRowKey={(item) => item.id}
+              data-testid="demo-item-list"
+            />
           )}
           <AddItemForm onCreate={onCreate} onCreated={onCreated} />
         </>

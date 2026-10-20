@@ -9,6 +9,14 @@
   --color-border: #cbd5e1;
   --color-danger: #b91c1c;
   --color-danger-bg: #fef2f2;
+  --color-danger-contrast: #ffffff;
+  --color-success: #15803d;
+  --color-success-bg: #f0fdf4;
+  --color-warning: #92400e;
+  --color-warning-bg: #fffbeb;
+  --color-info: #1d4ed8;
+  --color-info-bg: #eff6ff;
+  --color-overlay: rgb(15 23 42 / 55%);
   --font-sans: 'Source Sans 3', 'Segoe UI', sans-serif;
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -30,4 +38,12 @@
   --color-border: #334155;
   --color-danger: #fca5a5;
   --color-danger-bg: #450a0a;
+  --color-danger-contrast: #450a0a;
+  --color-success: #86efac;
+  --color-success-bg: #052e16;
+  --color-warning: #fcd34d;
+  --color-warning-bg: #451a03;
+  --color-info: #93c5fd;
+  --color-info-bg: #172554;
+  --color-overlay: rgb(0 0 0 / 65%);
 }

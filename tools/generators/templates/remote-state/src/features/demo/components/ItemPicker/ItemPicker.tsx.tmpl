@@ -1,3 +1,4 @@
+import { Checkbox } from '@org/ui';
 import { useDemoDispatch, useDemoState } from '../../state/DemoContext';
 import type { Item } from '../../types/item';
 import styles from './ItemPicker.module.scss';
@@ -14,14 +15,12 @@ export function ItemPicker({ items }: { items: Item[] }) {
     <fieldset className={styles.picker} data-testid="item-picker">
       <legend className={styles.legend}>Select items</legend>
       {items.map((item) => (
-        <label key={item.id} className={styles.option}>
-          <input
-            type="checkbox"
-            checked={selectedIds.includes(item.id)}
-            onChange={() => dispatch({ type: 'itemToggled', id: item.id })}
-          />
-          {item.name}
-        </label>
+        <Checkbox
+          key={item.id}
+          label={item.name}
+          checked={selectedIds.includes(item.id)}
+          onChange={() => dispatch({ type: 'itemToggled', id: item.id })}
+        />
       ))}
     </fieldset>
   );

@@ -1,6 +1,7 @@
 // @ts-check
 import assert from 'node:assert/strict';
 import { after, describe, it } from 'node:test';
+import fs from 'node:fs';
 import path from 'node:path';
 import { checkApps } from '../src/check-apps.js';
 import {
@@ -605,6 +606,113 @@ describe('check-apps', () => {
       });
       assert.deepEqual(rules(r.errors), ['dev-manifest']);
       assert.match(r.errors[0].message, /"mfe\.devManifest" must be an object/);
+    });
+  });
+
+  describe('component library (@org/ui) and shared components', () => {
+    const uiDir = 'packages/ui/src/components';
+    const uiComponent = (/** @type {string} */ name, skip = '') =>
+      Object.fromEntries(
+        ['.tsx', '.module.scss', '.test.tsx', '.stories.tsx']
+          .filter((ext) => ext !== skip)
+          .map((ext) => [`${uiDir}/${name}/${name}${ext}`, '']),
+      );
+    const component = (
+      /** @type {string} */ dir,
+      /** @type {string} */ name,
+    ) => ({
+      [`${dir}/${name}/${name}.tsx`]: `export const ${name} = () => null;\n`,
+      [`${dir}/${name}/${name}.test.tsx`]: '',
+    });
+
+    it('@org/ui component folders have tsx, module.scss, test and stories', async () => {
+      let r = await run(validApps(), {
+        ...validRegistries(),
+        ...uiComponent('Button'),
+        ...uiComponent('Tabs'),
+      });
+      assert.deepEqual(r.errors, []);
+      r = await run(validApps(), {
+        ...validRegistries(),
+        ...uiComponent('Button', '.stories.tsx'),
+        ...uiComponent('Tabs', '.module.scss'),
+        [`${uiDir}/loose.tsx`]: '',
+        [`${uiDir}/lower/lower.tsx`]: '',
+      });
+      assert.deepEqual(rules(r.errors), [
+        'ui-component-files',
+        'ui-component-files',
+        'ui-component-files',
+        'ui-component-files',
+      ]);
+      const text = r.errors.map((e) => e.message).join('\n');
+      assert.match(text, /Button\/: .*\(missing: Button\.stories\.tsx\)/);
+      assert.match(text, /Tabs\/: .*\(missing: Tabs\.module\.scss\)/);
+    });
+
+    it('fails on the same component name in two apps, unless allowed', async () => {
+      const files = {
+        ...validRegistries(),
+        ...component('apps/intranet/staff/src/components', 'StatusPill'),
+        ...component(
+          'apps/intranet/leave/src/features/leave/components',
+          'StatusPill',
+        ),
+        ...component('apps/intranet/staff/src/components', 'StaffCard'),
+        // layouts are per app by design
+        ...component('apps/intranet/staff/src/layouts', 'StandaloneLayout'),
+        ...component('apps/intranet/leave/src/layouts', 'StandaloneLayout'),
+      };
+      const apps = validApps();
+      let r = await run(apps, files);
+      assert.deepEqual(rules(r.errors), ['shared-component']);
+      assert.match(
+        r.errors[0].message,
+        /component StatusPill exists in 2 apps \(apps\/intranet\/leave, apps\/intranet\/staff\)\. Move it to @org\/ui/,
+      );
+      r = await checkApps({
+        root: makeWorkspace({
+          apps,
+          files,
+          rootMfe: {
+            componentDuplicatesAllowed: { StatusPill: 'each app styles it' },
+          },
+        }),
+      });
+      assert.deepEqual(r.errors, []);
+      r = await checkApps({
+        root: makeWorkspace({
+          apps,
+          files,
+          rootMfe: { componentDuplicatesAllowed: ['StatusPill'] },
+        }),
+      });
+      assert.deepEqual(rules(r.errors), ['component-duplicates-config']);
+    });
+
+    it('the repo allows every component the generators copy into each app', async () => {
+      const repo = path.resolve(import.meta.dirname, '../../..');
+      const allowed = Object.keys(
+        JSON.parse(fs.readFileSync(path.join(repo, 'package.json'), 'utf8')).mfe
+          ?.componentDuplicatesAllowed ?? {},
+      );
+      const generated = fs
+        .readdirSync(path.join(repo, 'tools/generators/templates'), {
+          recursive: true,
+          withFileTypes: true,
+        })
+        .filter(
+          (d) =>
+            d.isDirectory() &&
+            path.basename(d.parentPath) === 'components' &&
+            !d.parentPath.includes(`${path.sep}layouts`),
+        )
+        .map((d) => d.name);
+      assert.ok(generated.length > 0);
+      assert.deepEqual(
+        generated.filter((name) => !allowed.includes(name)),
+        [],
+      );
     });
   });
 

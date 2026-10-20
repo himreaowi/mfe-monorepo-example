@@ -18,6 +18,7 @@ APIs, manifest, vendor modules).
 | What                   | Where                                                                                                                                                                                            |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | A new app              | `pnpm gen:shell` / `pnpm gen:remote` ([adding-an-app.md](adding-an-app.md)); never copy an app folder                                                                                            |
+| A UI component         | `@org/ui` first ([Use @org/ui first](#use-orgui-first)); an app-level component only for what is specific to that app                                                                            |
 | Code used by 2+ apps   | a package in `packages/` (tag `type:package`), `workspace:*` dependency                                                                                                                          |
 | Code used by one app   | that app's `src/`                                                                                                                                                                                |
 | Build/test/lint config | the shared config packages (`@org/webpack-config`, `@org/jest-config`, `@org/playwright-config`, `@org/eslint-config`, `@org/tsconfig`, `@org/prettier-config`); apps keep one-line config files |
@@ -30,6 +31,28 @@ Hard rules (enforced by `pnpm check` and ESLint, see [guardrails.md](guardrails.
 - Packages never import apps.
 - Every package declares what it imports (isolated `node_modules`, D7). Dependency versions
   follow the tiers in [adding-dependencies.md](adding-dependencies.md).
+
+## Use @org/ui first
+
+Before writing a component, use the in-house library `@org/ui`
+([packages/ui/README.md](../packages/ui/README.md), browse it with `pnpm storybook`): Button,
+Link, TextField, TextArea, Select, DateField, Checkbox, RadioGroup, Dialog, Alert, Card, Badge,
+Spinner, Table, Tabs, VisuallyHidden. They are built on native elements, use the tokens, work in
+both themes and pass axe (WCAG 2.2 AA) in every state.
+
+- Forms: `TextField` / `Select` / `DateField` / `TextArea` / `Checkbox` / `RadioGroup` with
+  `label`, `hint`, `error` (they wire `aria-describedby` and `aria-invalid`); `Alert` for the
+  error summary and form-level errors; `Button type="submit" loading={sending}`.
+- Loading: `Spinner` (its `role="status"` label starts with "Loading", which the e2e helper
+  `settle(page)` waits for). Messages: `Alert`. Lists of records: `Table` (or `Card` per item
+  for a card grid). Status labels: `Badge`. Confirmations: `Dialog`.
+- An app component may **compose** library components (e.g. `ModeBadge` wraps `Badge` with the
+  app's wording); it must not copy their markup or styles.
+- Do not add an external UI or headless library (React Aria, Radix, MUI, …) to an app. A
+  missing component or variant is added to `@org/ui` (README "Adding a component").
+- `pnpm check` flags a component folder name that exists in two or more apps
+  (`shared-component`): move it to `@org/ui`, or, when each app really needs its own, list it
+  with a reason in the root `package.json` `mfe.componentDuplicatesAllowed`.
 
 ## Layers inside an app
 
@@ -277,6 +300,7 @@ features/<name>/state/
 - Treat the server as the authority: map `HttpClientError.body.errors` (`{ "<field>": "<message>" }`
   from a 422) onto the same field errors and summary; show other failures as a form-level error
   with a retry.
+- Build forms from the `@org/ui` field components and `Alert` ([Use @org/ui first](#use-orgui-first)).
 - The generated remote's `features/demo` "Add item" form shows this pattern.
 
 ## Imports and naming

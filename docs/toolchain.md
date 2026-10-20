@@ -40,6 +40,7 @@ those versions were chosen.
 | yaml                                                                | 2.9.1                    | catalog (A5)                  | `tools/scripts` reads `pnpm-workspace.yaml`                                       |
 | @playwright/test                                                    | 1.64.1                   | catalog (A8)                  | Chromium revision 1248; shells + `@org/playwright-config`                         |
 | @axe-core/playwright                                                | 4.14.0                   | catalog (A8)                  | brings axe-core 4.14                                                              |
+| storybook, @storybook/react-webpack5                                | 10.6.2                   | catalog (dev only, `@org/ui`) | 10.6.3 was 1 day old (minimumReleaseAge); webpack 5 builder like the apps         |
 
 ## A0 spike: one React instance across shell and remote
 
