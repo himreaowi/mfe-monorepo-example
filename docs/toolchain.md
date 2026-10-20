@@ -194,7 +194,8 @@ tier-1 singleton.
   lockfile (unused).
 - **Minifiers.** JS: `TerserPlugin` with `TerserPlugin.swcMinify` (the SWC minifier Rspack used).
   CSS: `CssMinimizerPlugin` with `lightningCssMinify` (Rspack's CSS minifier too). Minimizing is
-  production only.
+  production only. License comments are dropped and no `.LICENSE.txt` files are written
+  (`extractComments: false`), as with the Rspack build.
 
 - `@org/webpack-config` is ESM and tested with `node --test`, not Jest (Jest 30 cannot
   `require()` ESM-only packages, see below).

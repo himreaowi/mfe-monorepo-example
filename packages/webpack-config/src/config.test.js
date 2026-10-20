@@ -438,6 +438,10 @@ describe('real build', () => {
   it('production: hidden source maps without sourcesContent, no dev-only code anywhere', async () => {
     const prod = await build('app_prod', { production: true });
     assert.ok(prod.maps.length > 0, '.map files emitted');
+    assert.ok(
+      !prod.files.some((f) => f.endsWith('.LICENSE.txt')),
+      'no extracted license files',
+    );
     assert.doesNotMatch(
       prod.js,
       /^\/\/# sourceMappingURL=/m,
