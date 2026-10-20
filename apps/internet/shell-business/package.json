@@ -1,0 +1,91 @@
+{
+  "name": "@org/shell-business",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Business Portal: host app of the internet zone at /business",
+  "type": "module",
+  "scripts": {
+    "dev": "mfe-dev-manifest --shell-dir . && rspack dev",
+    "build": "rspack build",
+    "preview": "mfe-preview",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json && tsc -p e2e/tsconfig.json",
+    "test": "jest",
+    "e2e": "playwright test"
+  },
+  "nx": {
+    "tags": [
+      "zone:internet",
+      "type:shell",
+      "access:public"
+    ],
+    "targets": {
+      "dev": {
+        "dependsOn": [
+          {
+            "projects": [
+              "@org/mock-api"
+            ],
+            "target": "serve:internet"
+          }
+        ]
+      }
+    }
+  },
+  "mfe": {
+    "port": 3202,
+    "federationName": "internet_shell_business",
+    "basePath": "/business",
+    "devManifest": {
+      "auth": {
+        "mock": true,
+        "mockUser": {
+          "id": "mock-corppass-1",
+          "name": "Lim Wei Ling (Acme Trading Pte Ltd)",
+          "roles": [
+            "business-admin"
+          ]
+        }
+      },
+      "settings": {
+        "apiBaseUrl": "http://localhost:3290/api"
+      }
+    }
+  },
+  "dependencies": {
+    "@org/auth": "workspace:*",
+    "@org/design-tokens": "workspace:*",
+    "@org/http-client": "workspace:*",
+    "@org/mf-runtime": "workspace:*",
+    "@org/pwa": "workspace:*",
+    "@org/ui": "workspace:*",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-router": "catalog:"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "catalog:",
+    "@org/eslint-config": "workspace:*",
+    "@org/jest-config": "workspace:*",
+    "@org/playwright-config": "workspace:*",
+    "@org/rspack-config": "workspace:*",
+    "@org/scripts": "workspace:*",
+    "@org/tsconfig": "workspace:*",
+    "@playwright/test": "catalog:",
+    "@rspack/cli": "catalog:",
+    "@rspack/core": "catalog:",
+    "@rspack/dev-server": "catalog:",
+    "@testing-library/dom": "catalog:",
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@testing-library/user-event": "catalog:",
+    "@types/jest": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "eslint": "catalog:",
+    "jest": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:"
+  }
+}

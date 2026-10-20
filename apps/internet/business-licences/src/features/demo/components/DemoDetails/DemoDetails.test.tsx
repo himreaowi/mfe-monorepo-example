@@ -1,0 +1,23 @@
+import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router';
+import { HostPropsProvider } from '@org/mf-runtime/remote';
+import { DemoDetails } from './DemoDetails';
+
+describe('DemoDetails', () => {
+  it('shows the base path and links back to the overview', () => {
+    render(
+      <MemoryRouter>
+        <HostPropsProvider value={{ embedded: true, basePath: '/apps/x' }}>
+          <DemoDetails />
+        </HostPropsProvider>
+      </MemoryRouter>,
+    );
+    expect(
+      screen.getByRole('heading', { name: 'Details' }),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('demo-base-path')).toHaveTextContent('/apps/x');
+    expect(
+      screen.getByRole('link', { name: 'Back to overview' }),
+    ).toHaveAttribute('href', '/apps/x');
+  });
+});

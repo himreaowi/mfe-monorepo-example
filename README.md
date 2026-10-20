@@ -8,34 +8,43 @@ section.
 
 ## The example
 
-| Zone     | App (package)                                            | Kind                                    | Routes                                             |
-| -------- | -------------------------------------------------------- | --------------------------------------- | -------------------------------------------------- |
-| intranet | Staff Portal (`@org/shell-intranet`, :3100)              | shell (blue header, sidebar nav)        | `/`, 404                                           |
-| intranet | Staff directory (`@org/intranet-staff-directory`, :3101) | public remote                           | `/staff-directory`, `/staff-directory/<id>`        |
-| intranet | Leave (`@org/intranet-leave-requests`, :3102)            | public remote                           | `/leave-requests`, `/leave-requests/new`           |
-| intranet | IT helpdesk (`@org/intranet-it-helpdesk`, :3103)         | external adapter (esm vendor)           | `/it-helpdesk`, `…/new`, `…/tickets/<id>` (vendor) |
-| internet | Citizen Portal (`@org/shell-internet`, :3200)            | shell (default header, top nav)         | `/`, 404                                           |
-| internet | Services (`@org/internet-services`, :3201)               | public remote                           | `/services`, `/services/<slug>`                    |
-| internet | Announcements (`@org/internet-announcements`, :3202)     | public remote                           | `/announcements`, `/announcements/<id>`            |
-| internet | My profile (`@org/internet-my-profile`, :3203)           | private remote (sign-in)                | `/my-profile`                                      |
-| internet | Payments (`@org/internet-payments`, :3204)               | external adapter (web component vendor) | `/payments`, `/payments/receipt/<ref>` (vendor)    |
+| Zone     | App (package)                                                  | Kind                                           | Routes                                             |
+| -------- | -------------------------------------------------------------- | ---------------------------------------------- | -------------------------------------------------- |
+| intranet | Staff Portal (`@org/shell-intranet`, :3101, at `/`)            | shell (blue header, sidebar nav)               | `/`, 404                                           |
+| intranet | Staff directory (`@org/intranet-staff-directory`, :3110)       | public remote                                  | `/staff-directory`, `/staff-directory/<id>`        |
+| intranet | Leave (`@org/intranet-leave-requests`, :3111)                  | public remote                                  | `/leave-requests`, `/leave-requests/new`           |
+| intranet | IT helpdesk (`@org/intranet-it-helpdesk`, :3112)               | external adapter (esm vendor)                  | `/it-helpdesk`, `…/new`, `…/tickets/<id>` (vendor) |
+| internet | Citizen Portal (`@org/shell-citizen`, :3201, at `/citizen`)    | shell (default header, top nav, Singpass mock) | `/citizen/`, 404; `/` redirects here               |
+| internet | Business Portal (`@org/shell-business`, :3202, at `/business`) | shell (sidebar nav, Corppass mock)             | `/business/`, 404                                  |
+| internet | Services (`@org/internet-services`, :3210)                     | public remote (citizen)                        | `/services`, `/services/<slug>`                    |
+| internet | Announcements (`@org/internet-announcements`, :3211)           | public remote (citizen + business)             | `/announcements`, `/announcements/<id>`            |
+| internet | My profile (`@org/internet-my-profile`, :3212)                 | private remote (citizen)                       | `/my-profile`                                      |
+| internet | Payments (`@org/internet-payments`, :3213)                     | external adapter (web component vendor)        | `/payments`, `/payments/receipt/<ref>` (vendor)    |
+| internet | Business licences (`@org/internet-business-licences`, :3214)   | private remote (business)                      | `/business-licences`, `/business-licences/<id>`    |
+
+Remote routes are below each shell's base path: `/citizen/announcements`, `/business/announcements`.
 
 ```sh
 nvm use && corepack enable && pnpm install
 pnpm dev:intranet     # Staff Portal  http://localhost:3100 (+ mock API :3190, example vendor :3192)
-pnpm dev:internet     # Citizen Portal http://localhost:3200 (+ mock API :3290, example vendor :3292)
-pnpm e2e              # both zones, one after the other: feature specs + generated specs + axe (light + dark)
+pnpm dev:internet     # http://localhost:3200: Citizen Portal /citizen/, Business Portal /business/ (+ mock API :3290, example vendor :3292)
+pnpm e2e              # every shell (Staff, Citizen, Business), one after the other: feature specs + generated specs + axe (light + dark)
 ```
 
 Both portals can run at the same time (two terminals): every zone has its own port range,
 dev tools included. `pnpm dev:<zone>` is the template's launcher (`tools/scripts/bin/dev.js`):
 Ctrl-C stops every dev server of the zone and frees its ports. "Sign in" uses the template's dev
-mock.
+mock, per shell: the Citizen Portal signs in the default (Singpass-style) mock user, the Business
+Portal a Corppass-style business user (`mfe.devManifest.auth.mockUser` in
+`apps/internet/shell-business/package.json`), each with its own session.
 
-| Zone     | Apps      | Dev tools (root `package.json` `mfe.tools`, read with `toolPort`)                  |
-| -------- | --------- | ---------------------------------------------------------------------------------- |
-| intranet | 3100–3104 | 3190 mock API (`tools/mock-api`), 3192 Acme Service Desk (`tools/example-vendors`) |
-| internet | 3200–3204 | 3290 mock API, 3292 Bright Payments                                                |
+| Zone     | Dev proxy | Shells     | Remotes   | Dev tools (root `package.json` `mfe.tools`, read with `toolPort`)                  |
+| -------- | --------- | ---------- | --------- | ---------------------------------------------------------------------------------- |
+| intranet | 3100      | 3101       | 3110–3112 | 3190 mock API (`tools/mock-api`), 3192 Acme Service Desk (`tools/example-vendors`) |
+| internet | 3200      | 3201, 3202 | 3210–3214 | 3290 mock API, 3292 Bright Payments                                                |
+
+The internet zone has two shells on one origin: `/` redirects to the Citizen Portal (root
+`package.json` `mfe.zones.internet.defaultShell`).
 
 ### What was added by hand
 

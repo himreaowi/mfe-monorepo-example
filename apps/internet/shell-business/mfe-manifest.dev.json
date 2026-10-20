@@ -1,0 +1,23 @@
+{
+  "remotes": {
+    "internet_announcements": {
+      "entry": "http://localhost:3211/mf-manifest.json"
+    },
+    "internet_business_licences": {
+      "entry": "http://localhost:3214/mf-manifest.json"
+    }
+  },
+  "auth": {
+    "mock": true,
+    "mockUser": {
+      "id": "mock-corppass-1",
+      "name": "Lim Wei Ling (Acme Trading Pte Ltd)",
+      "roles": [
+        "business-admin"
+      ]
+    }
+  },
+  "settings": {
+    "apiBaseUrl": "http://localhost:3290/api"
+  }
+}

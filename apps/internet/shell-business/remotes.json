@@ -1,0 +1,24 @@
+{
+  "$comment": "Remotes of this shell (nav + routes). Managed by `pnpm gen:remote`; edit title/path by hand if needed. URLs per environment live in mfe-manifest.json, not here.",
+  "remotes": [
+    {
+      "name": "announcements",
+      "title": "Announcements",
+      "path": "/announcements",
+      "federationName": "internet_announcements",
+      "package": "@org/internet-announcements",
+      "access": "public",
+      "kind": "react",
+      "description": "News about services, fees and maintenance."
+    },
+    {
+      "name": "business-licences",
+      "title": "Business licences",
+      "path": "/business-licences",
+      "federationName": "internet_business_licences",
+      "package": "@org/internet-business-licences",
+      "access": "private",
+      "kind": "react"
+    }
+  ]
+}

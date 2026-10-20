@@ -1,0 +1,50 @@
+.list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.link {
+  display: inline-block;
+  padding: var(--space-2);
+  border-radius: var(--radius);
+  color: var(--color-text);
+  text-decoration: none;
+
+  &:hover {
+    background: var(--color-bg);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+}
+
+.active {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+/*
+ * orientation="vertical" (sidebar / drawer): one link per row, the whole row clickable, the
+ * active link also marked by a bar on its left edge (not by colour alone; NavLink also sets
+ * aria-current="page").
+ */
+.vertical {
+  flex-direction: column;
+  flex-wrap: nowrap;
+
+  .link {
+    display: block;
+    padding: var(--space-2) var(--space-3);
+    border-radius: 0 var(--radius) var(--radius) 0;
+  }
+
+  .active {
+    box-shadow: inset 4px 0 0 var(--color-accent);
+  }
+}

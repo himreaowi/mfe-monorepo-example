@@ -1,0 +1,147 @@
+import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { Button } from '@org/ui';
+import { FEDERATION_NAME } from '@/core/constants/app';
+import type { CreateItemResult } from '../../hooks/useCreateItem';
+import type { Item, ItemDraft, ItemFieldErrors } from '../../types/item';
+import { validateItemDraft } from '../../utils/validation';
+import styles from './AddItemForm.module.scss';
+
+const NAME_ID = `${FEDERATION_NAME}-item-name`;
+const NAME_ERROR_ID = `${NAME_ID}-error`;
+
+/**
+ * The form pattern of docs/coding-conventions.md: validate on submit, then an error summary
+ * (focused, links to the fields) plus an error next to each field; server 422 errors land in
+ * the same places; submit is disabled only while sending.
+ *
+ * It sends nothing itself: `onCreate` comes from the page (`useCreateItem()`), the form keeps
+ * only its own UI state (field value, errors, "sending").
+ */
+export function AddItemForm({
+  onCreate,
+  onCreated,
+}: {
+  onCreate: (draft: ItemDraft) => Promise<CreateItemResult>;
+  onCreated: (item: Item) => void;
+}) {
+  const [name, setName] = useState('');
+  const [errors, setErrors] = useState<ItemFieldErrors>({});
+  const [formError, setFormError] = useState('');
+  const [status, setStatus] = useState('');
+  const [sending, setSending] = useState(false);
+  const [failedSubmits, setFailedSubmits] = useState(0);
+  const summaryRef = useRef<HTMLDivElement>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
+
+  // move focus to the summary after each failed submit
+  useEffect(() => {
+    if (failedSubmits > 0) summaryRef.current?.focus();
+  }, [failedSubmits]);
+
+  const showErrors = (next: ItemFieldErrors) => {
+    setErrors(next);
+    setFailedSubmits((n) => n + 1);
+  };
+
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setStatus('');
+    setFormError('');
+    const draft = { name: name.trim() };
+    const clientErrors = validateItemDraft(draft);
+    if (Object.keys(clientErrors).length > 0) {
+      showErrors(clientErrors);
+      return;
+    }
+    setErrors({});
+    setSending(true);
+    const result = await onCreate(draft);
+    setSending(false);
+    if (result.ok) {
+      onCreated(result.item);
+      setName('');
+      setStatus(`Added “${result.item.name}”.`);
+    } else if (result.fieldErrors) {
+      showErrors(result.fieldErrors);
+    } else {
+      setFormError(result.message);
+    }
+  }
+
+  const fieldErrors = Object.entries(errors).filter(([, message]) => message);
+
+  return (
+    <form
+      className={styles.form}
+      onSubmit={(event) => void onSubmit(event)}
+      noValidate
+      aria-labelledby="demo-add-item-title"
+    >
+      <h3 id="demo-add-item-title" className={styles.formTitle}>
+        Add an item
+      </h3>
+      {fieldErrors.length > 0 ? (
+        <div
+          ref={summaryRef}
+          className={styles.errorSummary}
+          role="alert"
+          tabIndex={-1}
+          aria-labelledby="demo-error-summary-title"
+          data-testid="error-summary"
+        >
+          <h4 id="demo-error-summary-title" className={styles.summaryTitle}>
+            There is a problem
+          </h4>
+          <ul>
+            {fieldErrors.map(([field, message]) => (
+              <li key={field}>
+                <a
+                  href={`#${NAME_ID}`}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    nameRef.current?.focus();
+                  }}
+                >
+                  {message}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {formError ? (
+        <p className={styles.error} role="alert">
+          {formError}
+        </p>
+      ) : null}
+      <div className={styles.field}>
+        <label htmlFor={NAME_ID}>Name</label>
+        {errors.name ? (
+          <p id={NAME_ERROR_ID} className={styles.fieldError}>
+            <span className={styles.visuallyHidden}>Error: </span>
+            {errors.name}
+          </p>
+        ) : null}
+        <input
+          ref={nameRef}
+          id={NAME_ID}
+          name="name"
+          className={styles.input}
+          value={name}
+          autoComplete="off"
+          aria-invalid={errors.name ? true : undefined}
+          aria-describedby={errors.name ? NAME_ERROR_ID : undefined}
+          onChange={(event) => setName(event.target.value)}
+        />
+      </div>
+      <div className={styles.row}>
+        <Button type="submit" disabled={sending}>
+          {sending ? 'Adding…' : 'Add item'}
+        </Button>
+        <p className={styles.copy} role="status">
+          {status}
+        </p>
+      </div>
+    </form>
+  );
+}

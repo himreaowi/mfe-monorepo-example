@@ -1,0 +1,364 @@
+import { expect, test } from '@org/playwright-config/test';
+import {
+  SIDEBAR_MIN_WIDTH,
+  escapeRegExp,
+  expectDrawer,
+  expectHeaderBrandOneLine,
+  expectRemoteRendered,
+  expectSidebar,
+  navPlacement,
+  openHeaderMenu,
+  openNav,
+  resizeHeader,
+  zone,
+} from './helpers';
+
+/**
+ * Widths the header must stay one row at: 320 (WCAG 1.4.10 reflow, = 1280 px at 400 % zoom),
+ * phone, tablet, small and common laptop.
+ *
+ * The header tests follow the shell's own layout (src/layouts/ShellLayout; the hooks they rely
+ * on are listed at the top of helpers.ts): `data-nav-placement="top"` = nav in the header row,
+ * `"side"` = sidebar from SIDEBAR_MIN_WIDTH (top bar with brand, theme toggle and user menu),
+ * drawer behind "Menu" below it.
+ */
+const HEADER_WIDTHS = [320, 375, 800, 1024, 1280];
+
+test.describe('Business Portal', () => {
+  test('home page lists every remote in the nav', async ({ page }) => {
+    await page.goto(zone.home);
+    await expect(page.getByTestId('shell-welcome')).toBeVisible();
+    const nav = await openNav(page);
+    await expect(nav.getByRole('link', { name: 'Home' })).toBeVisible();
+    for (const remote of zone.remotes) {
+      await expect(
+        nav.getByRole('link', { name: remote.title, exact: true }),
+      ).toHaveAttribute('href', remote.path);
+    }
+    if (zone.remotes.length === 0) {
+      await expect(page.getByTestId('no-remotes')).toBeVisible();
+    }
+  });
+
+  test('the nav opens every remote without a page reload', async ({ page }) => {
+    await page.goto(zone.home);
+    // a full page load would drop this marker
+    await page.evaluate(() => {
+      (window as unknown as { __e2eSpa: boolean }).__e2eSpa = true;
+    });
+    for (const remote of zone.remotes) {
+      // on phones the menu closes after each navigation: open it every time
+      const nav = await openNav(page);
+      await nav.getByRole('link', { name: remote.title, exact: true }).click();
+      await expect(page).toHaveURL(new RegExp(`${escapeRegExp(remote.path)}$`));
+      if (remote.access === 'private') {
+        await expect(page.getByTestId('sign-in-prompt')).toBeVisible();
+      } else {
+        await expectRemoteRendered(page, remote);
+      }
+    }
+    await (await openNav(page)).getByRole('link', { name: 'Home' }).click();
+    await expect(page.getByTestId('shell-welcome')).toBeVisible();
+    expect(
+      await page.evaluate(
+        () => (window as unknown as { __e2eSpa?: boolean }).__e2eSpa,
+      ),
+    ).toBe(true);
+  });
+
+  test('header brand: full name for screen readers and on the home page', async ({
+    page,
+  }) => {
+    await page.goto(zone.home);
+    await expect(page.getByTestId('shell-welcome')).toBeVisible();
+    const brand = page.getByTestId('header-brand');
+    const name = ((await brand.textContent()) ?? '').trim();
+    expect(name.length, 'brand text').toBeGreaterThan(0);
+    // a long brand may be cut off with an ellipsis on screen: the full name stays visible as
+    // the home page heading (WCAG 1.3.1 / 1.4.10: no information only in the truncated text)
+    await expect(
+      page.getByTestId('shell-welcome').getByRole('heading', { level: 1 }),
+    ).toHaveText(name);
+    // CSS truncation keeps the text whole: the accessibility tree has the full name, once
+    // (no visually hidden duplicate, no tooltip announced as a description)
+    const tree = await page.getByRole('banner').ariaSnapshot();
+    expect(
+      tree.split(name).length - 1,
+      `"${name}" in the banner's accessibility tree`,
+    ).toBe(1);
+    await expect(brand).not.toHaveAttribute('title');
+    await expectHeaderBrandOneLine(page);
+  });
+
+  test('unknown paths show the 404 page', async ({ page }) => {
+    await page.goto(`${zone.home}e2e-no-such-page`);
+    await expect(page.getByTestId('not-found-page')).toBeVisible();
+    await page.getByRole('link', { name: 'Back to home' }).click();
+    await expect(page.getByTestId('shell-welcome')).toBeVisible();
+  });
+
+  test('theme choice persists across reloads and applies to remotes', async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme: 'light' });
+    await page.goto(zone.home);
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+    await (
+      await openHeaderMenu(page)
+    )
+      .getByRole('button', { name: 'Use dark theme' })
+      .click();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await page.reload();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    const publicRemote = zone.remotes.find((r) => r.access === 'public');
+    if (publicRemote) {
+      await page.goto(publicRemote.path);
+      await expectRemoteRendered(page, publicRemote);
+      await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    }
+    await (
+      await openHeaderMenu(page)
+    )
+      .getByRole('button', { name: 'Use system theme' })
+      .click();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  });
+
+  test('header: one compact row on phones with a Menu disclosure', async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== 'mobile',
+      'phone disclosure; desktop widths: next test',
+    );
+    await page.goto(zone.home);
+    await expect(page.getByTestId('shell-welcome')).toBeVisible();
+    const menu = page.getByRole('button', { name: 'Menu' });
+    const nav = page.getByRole('list', { name: 'Apps' });
+    const header = page.getByTestId('main-header');
+    await expect(header).toHaveAttribute('data-layout', 'compact');
+    const box = await header.boundingBox();
+    expect(
+      box?.height ?? 0,
+      'collapsed header height at 375 px',
+    ).toBeLessThanOrEqual(64);
+    // a long brand truncates instead of wrapping; the Menu button stays fully visible
+    await expectHeaderBrandOneLine(page);
+    await expect(menu).toHaveAttribute('aria-expanded', 'false');
+    await expect(nav).toBeHidden();
+    // aria-controls points at the panel
+    expect(await menu.getAttribute('aria-controls')).toBe(
+      await page.getByTestId('header-panel').getAttribute('id'),
+    );
+    // open, Escape closes and returns focus
+    await menu.click();
+    await expect(menu).toHaveAttribute('aria-expanded', 'true');
+    await expect(nav).toBeVisible();
+    // side placement: the panel is a drawer on the left, below the top bar
+    if ((await navPlacement(page)) === 'side') await expectDrawer(page);
+    // keyboard: the first Tab stop after the button is inside the panel
+    await page.keyboard.press('Tab');
+    expect(
+      await page
+        .getByTestId('header-panel')
+        .evaluate((panel) => panel.contains(document.activeElement)),
+      'focus moves into the open panel',
+    ).toBe(true);
+    await page.keyboard.press('Escape');
+    await expect(menu).toHaveAttribute('aria-expanded', 'false');
+    await expect(menu).toBeFocused();
+    // a click outside the header (bottom-right: below the top panel, right of the side drawer)
+    // closes it
+    await menu.click();
+    const viewport = page.viewportSize() ?? { width: 375, height: 812 };
+    await page.mouse.click(viewport.width - 8, viewport.height - 8);
+    await expect(menu).toHaveAttribute('aria-expanded', 'false');
+    // following a link closes; so does browser back / forward
+    const first = zone.remotes[0];
+    if (first) {
+      await (
+        await openNav(page)
+      )
+        .getByRole('link', { name: first.title, exact: true })
+        .click();
+      await expect(page).toHaveURL(new RegExp(`${escapeRegExp(first.path)}$`));
+      await expect(menu).toHaveAttribute('aria-expanded', 'false');
+      await openHeaderMenu(page);
+      await page.goBack();
+      await expect(page.getByTestId('shell-welcome')).toBeVisible();
+      await expect(menu).toHaveAttribute('aria-expanded', 'false');
+    }
+  });
+
+  test('landmarks, skip link and keyboard order', async ({
+    page,
+  }, testInfo) => {
+    await page.goto(zone.home);
+    await expect(page.getByTestId('shell-welcome')).toBeVisible();
+    await expect(page.getByRole('banner')).toHaveCount(1);
+    await expect(page.getByRole('main')).toHaveCount(1);
+    // skip link: the first Tab stop, visible while focused, moves focus to <main>
+    await page.keyboard.press('Tab');
+    const skip = page.getByRole('link', { name: 'Skip to main content' });
+    await expect(skip).toBeFocused();
+    await expect(skip).toBeInViewport();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('main')).toBeFocused();
+    await expect(page).toHaveURL(/\/$/); // no #fragment navigation
+    // keyboard order follows the visual order: header row left to right (top), or top bar
+    // (theme toggle, user menu) before the sidebar links (side)
+    if (testInfo.project.name === 'desktop') {
+      const placement = await navPlacement(page);
+      const layout = await page
+        .getByTestId('main-header')
+        .getAttribute('data-layout');
+      await page.goto(zone.home);
+      await expect(page.getByTestId('shell-welcome')).toBeVisible();
+      const order: string[] = [];
+      for (let i = 0; i < 30; i += 1) {
+        await page.keyboard.press('Tab');
+        const name = await page.evaluate(() => {
+          const el = document.activeElement;
+          return el?.closest('main')
+            ? 'main'
+            : (el?.getAttribute('aria-label') ?? el?.textContent?.trim() ?? '');
+        });
+        if (name === 'main') break;
+        order.push(name);
+      }
+      const home = order.indexOf('Home');
+      const theme = order.findIndex((name) => /theme/i.test(name));
+      expect(
+        home,
+        `Home link in the Tab order: ${order.join(' > ')}`,
+      ).toBeGreaterThan(0);
+      expect(
+        theme,
+        `theme toggle in the Tab order: ${order.join(' > ')}`,
+      ).toBeGreaterThan(0);
+      if (layout === 'wide') {
+        if (placement === 'side')
+          expect(theme, 'top bar before sidebar').toBeLessThan(home);
+        else expect(home, 'nav before the theme toggle').toBeLessThan(theme);
+      }
+    }
+    // one nav landmark with a name (behind "Menu" when compact)
+    await openHeaderMenu(page);
+    await expect(page.getByRole('navigation', { name: 'Main' })).toHaveCount(1);
+  });
+
+  for (const signedIn of [false, true]) {
+    test(`header: one row at every width (${signedIn ? 'signed in' : 'signed out'})`, async ({
+      page,
+    }, testInfo) => {
+      test.skip(
+        testInfo.project.name !== 'desktop',
+        'sets its own viewport sizes',
+      );
+      test.skip(
+        signedIn && !zone.authMock,
+        'signs in with the dev mock: needs "auth": { "mock": true }',
+      );
+      await page.goto(zone.home);
+      await expect(page.getByTestId('shell-welcome')).toBeVisible();
+      if (signedIn) {
+        await (
+          await openHeaderMenu(page)
+        )
+          .getByRole('button', { name: 'Sign in' })
+          .click();
+        await expect(page.getByTestId('user-name')).toBeAttached();
+        // the panel may still be open (compact header): close it
+        const menu = page.getByRole('button', { name: 'Menu' });
+        if (
+          (await menu.isVisible()) &&
+          (await menu.getAttribute('aria-expanded')) === 'true'
+        ) {
+          await page.keyboard.press('Escape');
+          await expect(menu).toHaveAttribute('aria-expanded', 'false');
+        }
+      }
+      const header = page.getByTestId('main-header');
+      const menu = page.getByRole('button', { name: 'Menu' });
+      const nav = page.getByRole('list', { name: 'Apps' });
+      const placement = await navPlacement(page);
+      for (const width of HEADER_WIDTHS) {
+        // the layout measures the row: wide when brand, nav and actions fit, else compact;
+        // resizeHeader waits until the layout settled at the new width
+        const layout = await resizeHeader(page, width);
+        if (placement === 'side') {
+          // the nav is not in the top bar: sidebar from SIDEBAR_MIN_WIDTH, drawer below it
+          expect(layout, `side layout at ${width} px`).toBe(
+            width >= SIDEBAR_MIN_WIDTH ? 'wide' : 'compact',
+          );
+          if (layout === 'wide') await expectSidebar(page);
+        }
+        const maxHeight = width < 640 ? 64 : 80;
+        await expect
+          .poll(
+            async () => Math.round((await header.boundingBox())?.height ?? 0),
+            {
+              message: `header height at ${width} px (one row ≤ ${maxHeight} px)`,
+            },
+          )
+          .toBeLessThanOrEqual(maxHeight);
+        // a long brand truncates (ellipsis) instead of wrapping into a second line
+        await expectHeaderBrandOneLine(page);
+        if (layout === 'wide') {
+          await expect(menu).toBeHidden();
+          await expect(nav).toBeVisible();
+        } else {
+          await expect(menu).toBeVisible();
+          await expect(nav).toBeHidden();
+        }
+        // no horizontal page scrolling at any width
+        expect(
+          await page.evaluate(
+            () => document.documentElement.scrollWidth <= window.innerWidth,
+          ),
+          `no horizontal scroll at ${width} px`,
+        ).toBe(true);
+      }
+    });
+  }
+
+  test('side nav: top bar and sidebar stay in view on a long page', async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== 'desktop',
+      'sets its own viewport size',
+    );
+    await page.goto(zone.home);
+    await expect(page.getByTestId('shell-welcome')).toBeVisible();
+    test.skip(
+      (await navPlacement(page)) !== 'side',
+      'top navigation (data-nav-placement="top" on the header)',
+    );
+    expect(await resizeHeader(page, 1280)).toBe('wide');
+    // make the page taller than the viewport, then scroll down
+    await page.getByRole('main').evaluate((main) => {
+      main.style.minHeight = '3000px';
+    });
+    await page.mouse.wheel(0, 1500);
+    await expect
+      .poll(() => page.evaluate(() => window.scrollY))
+      .toBeGreaterThan(1000);
+    const header = await page.getByTestId('main-header').boundingBox();
+    expect(header?.y, 'top bar sticks to the top').toBe(0);
+    await expect(
+      page.getByRole('link', { name: 'Home', exact: true }),
+    ).toBeInViewport();
+    await expectSidebar(page);
+  });
+
+  test('offline: shows the connection banner', async ({ page, context }) => {
+    await page.goto(zone.home);
+    await expect(page.getByTestId('shell-welcome')).toBeVisible();
+    await context.setOffline(true);
+    await expect(page.getByTestId('connection-required')).toBeVisible();
+    await context.setOffline(false);
+    await expect(page.getByTestId('connection-required')).toHaveCount(0);
+  });
+});
