@@ -64,11 +64,11 @@ const APP_DEPENDENCIES = {
 const APP_DEV_DEPENDENCIES = {
   '@org/eslint-config': 'workspace:*',
   '@org/jest-config': 'workspace:*',
-  '@org/rspack-config': 'workspace:*',
   '@org/tsconfig': 'workspace:*',
-  '@rspack/cli': 'catalog:',
-  '@rspack/core': 'catalog:',
-  '@rspack/dev-server': 'catalog:',
+  '@org/webpack-config': 'workspace:*',
+  webpack: 'catalog:',
+  'webpack-cli': 'catalog:',
+  'webpack-dev-server': 'catalog:',
   '@testing-library/dom': 'catalog:',
   '@testing-library/jest-dom': 'catalog:',
   '@testing-library/react': 'catalog:',
@@ -265,9 +265,9 @@ function appPackageJson(o) {
   const scripts = {
     // a shell regenerates its mfe-manifest.dev.json first (remotes.json + remote ports)
     dev: o.shell
-      ? 'mfe-dev-manifest --shell-dir . && rspack dev'
-      : 'rspack dev',
-    build: 'rspack build',
+      ? 'mfe-dev-manifest --shell-dir . && webpack serve'
+      : 'webpack serve',
+    build: 'webpack build',
     preview: 'mfe-preview',
     lint: 'eslint .',
     typecheck: o.shell

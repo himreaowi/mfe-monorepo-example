@@ -11,7 +11,7 @@ import type { AuthClient, ManifestAuthConfig } from './types';
  * | `{ sessionUrl, loginUrl, logoutUrl, … }` | BFF client            | BFF client                        |
  *
  * The mock module is imported dynamically inside a `process.env.NODE_ENV !== 'production'`
- * branch. Rspack replaces `process.env.NODE_ENV` and removes the branch (and the chunk) from
+ * branch. webpack replaces `process.env.NODE_ENV` and removes the branch (and the chunk) from
  * production builds. Disabled auth fails closed: `<RequireAuth>` never shows its children.
  */
 export async function loadAuthClient(

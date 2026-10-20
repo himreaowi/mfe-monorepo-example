@@ -65,8 +65,8 @@ the negative control in [toolchain.md](toolchain.md)).
 ## Tier 1: core singletons
 
 `react`, `react-dom`, `react-router`, `@org/ui` and `@org/auth` are listed in `TIER1` in
-`tools/scripts/src/tiers.js` and in `TIER1_SINGLETONS` in `packages/rspack-config/src/tier1.js`
-(check-versions fails if the two lists differ). `@org/rspack-config` shares them with
+`tools/scripts/src/tiers.js` and in `TIER1_SINGLETONS` in `packages/webpack-config/src/tier1.js`
+(check-versions fails if the two lists differ). `@org/webpack-config` shares them with
 `singleton: true, strictVersion: true, requiredVersion: <catalog version>`: an app built against
 another version fails loudly when the shell loads it, and the shell shows `RemoteFallback`.
 
@@ -106,8 +106,8 @@ Only when an app truly cannot use the catalog version (tier 1 or tier 2), add an
 ### Adding a new tier-1 package
 
 Add it to the default catalog, to `TIER1` in `tools/scripts/src/tiers.js` and to
-`TIER1_SINGLETONS` in `packages/rspack-config/src/tier1.js` in one pull request, then restart every
-dev server (Rspack does not reload config files).
+`TIER1_SINGLETONS` in `packages/webpack-config/src/tier1.js` in one pull request, then restart every
+dev server (webpack-dev-server does not reload config files).
 
 ## What CI says
 

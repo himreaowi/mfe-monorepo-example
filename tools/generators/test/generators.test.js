@@ -38,7 +38,7 @@ function tempWorkspace() {
     'pnpm-workspace.yaml',
     'version-exceptions.json',
     'package.json',
-    'packages/rspack-config/src/tier1.js',
+    'packages/webpack-config/src/tier1.js',
   ]) {
     copy(rel);
   }
@@ -112,7 +112,7 @@ describe('generators', () => {
     });
     assert.equal(
       pkg.scripts.dev,
-      'mfe-dev-manifest --shell-dir . && rspack dev',
+      'mfe-dev-manifest --shell-dir . && webpack serve',
     );
     assert.deepEqual(Object.keys(pkg.scripts), [
       'dev',
@@ -161,7 +161,7 @@ describe('generators', () => {
       'README.md',
       'eslint.config.js',
       'jest.config.js',
-      'rspack.config.js',
+      'webpack.config.js',
       'tsconfig.json',
       'playwright.config.ts',
       'e2e/tsconfig.json',
@@ -242,10 +242,10 @@ describe('generators', () => {
     // the header e2e tests read the structure from the page (no generated copy per layout)
     assert.match(read(root, `${dir}/e2e/helpers.ts`), /data-nav-placement/);
     assert.match(read(root, `${dir}/e2e/shell.spec.ts`), /expectSidebar/);
-    assert.match(read(root, `${dir}/rspack.config.js`), /createShellConfig/);
+    assert.match(read(root, `${dir}/webpack.config.js`), /createShellConfig/);
     // the API client comes from @org/mf-runtime (useApiClient), no per-app services/http.ts
     assert.ok(!files.some((f) => f.startsWith('src/services/')));
-    // async startup (@org/rspack-config): one entry file, no import('./bootstrap') boundary
+    // async startup (@org/webpack-config): one entry file, no import('./bootstrap') boundary
     assert.ok(!files.includes('src/bootstrap.tsx'));
     assert.doesNotMatch(read(root, `${dir}/src/main.tsx`), /import\(/);
     assert.match(
@@ -479,7 +479,7 @@ describe('generators', () => {
     ]) {
       assert.ok(files.includes(f), `missing ${f}`);
     }
-    assert.match(read(root, `${dir}/rspack.config.js`), /createRemoteConfig/);
+    assert.match(read(root, `${dir}/webpack.config.js`), /createRemoteConfig/);
     assert.ok(!files.some((f) => f.startsWith('src/services/')));
     // page-level data fetching: the page calls the hooks, the components only display
     const overview = read(
@@ -677,7 +677,7 @@ describe('generators', () => {
     );
     assert.equal(
       readJson(root, 'apps/internet/payments/package.json').scripts.dev,
-      'rspack dev',
+      'webpack serve',
     );
     assert.equal(dev.remotes.internet_services.props, undefined);
     assert.equal(dev.settings.apiBaseUrl, '/api');
@@ -951,7 +951,7 @@ describe('generators: several shells in a zone', () => {
     const pkg = readJson(root, 'apps/internet/shell-business/package.json');
     assert.equal(pkg.mfe.basePath, '/business');
     assert.match(
-      read(root, 'apps/internet/shell-business/rspack.config.js'),
+      read(root, 'apps/internet/shell-business/webpack.config.js'),
       /basePath: mfe\.basePath/,
     );
     assert.match(

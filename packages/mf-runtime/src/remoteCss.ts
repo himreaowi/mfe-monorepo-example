@@ -6,9 +6,9 @@ import {
 const CSS_FILE = /\.css(?:[?#]|$)/i;
 
 /**
- * Builds extract each chunk's CSS into a `.css` file (`@org/rspack-config`; hashed in production,
+ * Builds extract each chunk's CSS into a `.css` file (`@org/webpack-config`; hashed in production,
  * `[name].css` in development, so this applies to `pnpm dev` too).
- * The remote's own chunk loader (CssExtractRspackPlugin runtime in its `remoteEntry.js`) loads
+ * The remote's own chunk loader (MiniCssExtractPlugin runtime in its `remoteEntry.js`) loads
  * the CSS of the exposed module and of every lazy chunk as `<link rel="stylesheet">` from the
  * remote's origin and resolves the chunk only after the stylesheet's `load` event: no flash of
  * unstyled content, and a CSS file that fails to load rejects `loadRemote` (→ retry →

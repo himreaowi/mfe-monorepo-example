@@ -1,11 +1,11 @@
-# @org/rspack-config
+# @org/webpack-config
 
-Rspack 2 + Module Federation 2 (`@module-federation/enhanced/rspack`) config factories. They
-replace starter-mfe's `webpack.common/dev/prod.js`. ESM only (`@rspack/core` 2 is ESM-only).
+webpack 5 + Module Federation 2 (`@module-federation/enhanced/webpack`) config factories. They
+replace starter-mfe's `webpack.common/dev/prod.js`. ESM only.
 
 ```js
-// apps/intranet/shell/rspack.config.js
-import { createShellConfig } from '@org/rspack-config';
+// apps/intranet/shell/webpack.config.js
+import { createShellConfig } from '@org/webpack-config';
 
 export default createShellConfig({
   rootDir: import.meta.dirname,
@@ -16,8 +16,8 @@ export default createShellConfig({
 ```
 
 ```js
-// apps/intranet/staff-directory/rspack.config.js
-import { createRemoteConfig } from '@org/rspack-config';
+// apps/intranet/staff-directory/webpack.config.js
+import { createRemoteConfig } from '@org/webpack-config';
 
 export default createRemoteConfig({
   rootDir: import.meta.dirname,
@@ -27,9 +27,10 @@ export default createRemoteConfig({
 });
 ```
 
-Run with the Rspack CLI (`rspack dev`, `rspack build`). The app needs `@rspack/cli`,
-`@rspack/core`, `@rspack/dev-server` and the tier-1 packages; loaders come from this package.
-App TS code can use `"types": ["@org/rspack-config/client"]` for `*.module.scss` and asset
+Run with the webpack CLI (`webpack serve`, `webpack build`). The app needs `webpack`,
+`webpack-cli`, `webpack-dev-server` and the tier-1 packages; loaders, plugins and minifiers come
+from this package.
+App TS code can use `"types": ["@org/webpack-config/client"]` for `*.module.scss` and asset
 imports.
 
 ## What the factories set up
@@ -46,10 +47,11 @@ Shared by both:
 
 - Entry `./src/main.tsx`, which imports React and renders directly: Module Federation runs with
   `experiments: { asyncStartup: true }`, so the shared singletons are negotiated before the entry
-  module runs (no `import('./bootstrap')` boundary file). `HtmlRspackPlugin` with `chunks: ['main']`; template `public/index.html` or
+  module runs (no `import('./bootstrap')` boundary file). `HtmlWebpackPlugin` with `chunks: ['main']`; template `public/index.html` or
   the package default (`templates/index.html`).
-- TS/TSX via `builtin:swc-loader` (automatic JSX runtime).
-- SCSS/CSS via sass-loader + css-loader + **`CssExtractRspackPlugin` in development and
+- TS/TSX via `swc-loader` (`@swc/core`, automatic JSX runtime). Production minification: SWC
+  (`TerserPlugin.swcMinify`) for JS, lightningcss (`css-minimizer-webpack-plugin`) for CSS.
+- SCSS/CSS via sass-loader + css-loader + **`mini-css-extract-plugin` in development and
   production** (no style-loader): one `.css` per chunk (`[name].[contenthash:8].css` in
   production, `[name].css` + linked `.css.map` in development), loaded as
   `<link rel="stylesheet">` by the chunk loader before the chunk runs (a remote's CSS comes from
@@ -85,4 +87,4 @@ Shared by both:
 - `output.uniqueName` = federation name; `__MFE_NAME__` defined.
 - Federation names must be JS identifiers (`intranet_staff_directory`); invalid names throw.
 
-Restart `rspack dev` after changing the config (it does not reload config files).
+Restart `webpack serve` after changing the config (it does not reload config files).

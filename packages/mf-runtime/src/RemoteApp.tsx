@@ -46,8 +46,8 @@ const RETRY_DELAY_MS = 300;
 
 function shortMessage(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
-  // Rspack's "Loading CSS chunk <id> failed." error has an escaped newline (backslash + "n")
-  // before the URL, not a real one
+  // The CSS chunk loader's "Loading CSS chunk <id> failed." error has a newline before the URL:
+  // a real one with webpack, an escaped one (backslash + "n") in Rspack builds. Cut at either.
   const firstLine = message.split(/\n|\\n/)[0]?.trim() ?? '';
   return firstLine.length > 200 ? `${firstLine.slice(0, 200)}…` : firstLine;
 }

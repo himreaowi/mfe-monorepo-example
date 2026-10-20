@@ -112,7 +112,7 @@ mfe-manifest.json (per environment, DevOps):
 
 Behaviour:
 
-- `esm`: native `import(url)` (left alone by Rspack via `webpackIgnore`). With `integrity`, a
+- `esm`: native `import(url)` (left alone by webpack via `webpackIgnore`). With `integrity`, a
   `<link rel="modulepreload" integrity>` fetches and verifies the module first; the import then
   reuses it. A wrong hash is refused by the browser (verified in the test host).
 - `script` / `web-component`: a `<script>` with `integrity` + `crossorigin`, cached per URL;

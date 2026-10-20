@@ -1,18 +1,23 @@
 // @ts-check
 /**
- * Rspack + Module Federation 2 config factories (replaces starter-mfe webpack.common/dev/prod).
+ * webpack 5 + Module Federation 2 config factories (replaces starter-mfe webpack.common/dev/prod).
  *
- *   // apps/<zone>/<name>/rspack.config.js
- *   import { createRemoteConfig } from '@org/rspack-config';
+ *   // apps/<zone>/<name>/webpack.config.js
+ *   import { createRemoteConfig } from '@org/webpack-config';
  *   export default createRemoteConfig({ rootDir: import.meta.dirname, name: 'intranet_staff', port: 3101 });
  *
- * Each factory returns a config function `(env, argv) => Configuration` for the Rspack CLI.
+ * Each factory returns a config function `(env, argv) => Configuration` for the webpack CLI.
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import { rspack } from '@rspack/core';
-import { ModuleFederationPlugin } from '@module-federation/enhanced/rspack';
+import webpack from 'webpack';
+import HtmlWebpackPlugin from 'html-webpack-plugin';
+import CopyWebpackPlugin from 'copy-webpack-plugin';
+import MiniCssExtractPlugin from 'mini-css-extract-plugin';
+import TerserPlugin from 'terser-webpack-plugin';
+import CssMinimizerPlugin from 'css-minimizer-webpack-plugin';
+import { ModuleFederationPlugin } from '@module-federation/enhanced/webpack';
 import { PwaPlugin } from '@org/pwa/build';
 import * as sass from 'sass';
 import { TIER1_SINGLETONS } from './tier1.js';
@@ -39,13 +44,13 @@ function normalizeShellBasePath(basePath) {
   const trimmed = basePath.replace(/\/+$/, '');
   if (!BASE_PATH.test(trimmed)) {
     throw new Error(
-      `[@org/rspack-config] Invalid basePath "${basePath}". Use "/" or a path like "/citizen" (lowercase letters, digits, "-").`,
+      `[@org/webpack-config] Invalid basePath "${basePath}". Use "/" or a path like "/citizen" (lowercase letters, digits, "-").`,
     );
   }
   return trimmed;
 }
 
-/** @typedef {import('@rspack/core').Configuration} Configuration */
+/** @typedef {import('webpack').Configuration & { devServer?: import('webpack-dev-server').Configuration }} Configuration */
 /** @typedef {import('./index.d.ts').BaseOptions} BaseOptions */
 /** @typedef {import('./index.d.ts').ShellOptions} ShellOptions */
 /** @typedef {import('./index.d.ts').RemoteOptions} RemoteOptions */
@@ -56,7 +61,7 @@ function normalizeShellBasePath(basePath) {
 function assertFederationName(name) {
   if (typeof name !== 'string' || !FEDERATION_NAME.test(name)) {
     throw new Error(
-      `[@org/rspack-config] Invalid federation name "${name}". Use letters, digits and "_" ` +
+      `[@org/webpack-config] Invalid federation name "${name}". Use letters, digits and "_" ` +
         '(a valid JS identifier, e.g. "intranet_staff_directory").',
     );
   }
@@ -109,7 +114,7 @@ function createSharedConfig(rootDir, opts = {}) {
     const version = installedVersion(rootDir, pkg);
     if (!version) {
       opts.warn?.(
-        `[@org/rspack-config] tier-1 package "${pkg}" is not a dependency of ${rootDir}; it is not shared.`,
+        `[@org/webpack-config] tier-1 package "${pkg}" is not a dependency of ${rootDir}; it is not shared.`,
       );
       continue;
     }
@@ -133,14 +138,14 @@ function resolveMode(env, argv, explicit) {
   if (explicit) return explicit;
   if (argv.mode === 'development' || argv.mode === 'production')
     return argv.mode;
-  if (env.RSPACK_SERVE) return 'development';
-  if (env.RSPACK_BUILD) return 'production';
+  if (env.WEBPACK_SERVE) return 'development';
+  if (env.WEBPACK_BUILD) return 'production';
   return process.env.NODE_ENV === 'production' ? 'production' : 'development';
 }
 
 /**
  * Style loaders, the same in development and production: sass-loader → css-loader →
- * CssExtractRspackPlugin's loader. Each JS chunk's CSS becomes a real .css file that the chunk
+ * MiniCssExtractPlugin's loader. Each JS chunk's CSS becomes a real .css file that the chunk
  * loader fetches as <link rel="stylesheet"> (from the app's own origin via publicPath) and
  * awaits before the chunk's code runs, also when a shell loads a remote's exposed module. No
  * <style> element at runtime, so the CSP needs no `style-src 'unsafe-inline'` (the dev servers
@@ -156,7 +161,7 @@ function resolveMode(env, argv, explicit) {
  */
 function styleLoaders({ name, isDev, modules }) {
   return [
-    { loader: rspack.CssExtractRspackPlugin.loader },
+    { loader: MiniCssExtractPlugin.loader },
     {
       loader: require.resolve('css-loader'),
       options: {
@@ -254,7 +259,7 @@ function devContentSecurityPolicy({ extraOrigins = [], frameSrc = [] } = {}) {
  * In production the file is written per environment by DevOps (never built in).
  * @param {string} file
  * @param {string} [prefix] the shell's public path (`/` or `/citizen/`)
- * @returns {NonNullable<import('@rspack/dev-server').Configuration['setupMiddlewares']>}
+ * @returns {NonNullable<import('webpack-dev-server').Configuration['setupMiddlewares']>}
  */
 function devManifestMiddleware(file, prefix = '/') {
   return (middlewares) => {
@@ -310,6 +315,22 @@ function basePathRedirectMiddleware(basePath) {
 }
 
 /**
+ * Entry chunk file name (production): `[name].[contenthash:8].js`, written as a function.
+ * Module Federation 2.9's "federation runtime" module resolves the entry's file name template
+ * (to find the entry's directory) while the chunk hashes are computed, when no content hash
+ * exists yet, and webpack throws "Path variable [contenthash:8] not implemented in this
+ * context". Until the hash exists the function returns the same name without it (only the
+ * directory is used); the emitted file always gets the hashed name.
+ * @param {import('webpack').PathData} pathData
+ * @returns {string}
+ */
+function entryFilename(pathData) {
+  const hashed =
+    pathData.contentHash ?? pathData.chunk?.contentHash?.javascript;
+  return hashed ? '[name].[contenthash:8].js' : '[name].js';
+}
+
+/**
  * Shared base for shells and remotes.
  * @param {BaseOptions & { kind: 'shell' | 'remote', exposes?: Record<string, string>, pwa?: boolean, devManifest?: string | false, basePath?: string }} options
  * @param {'development' | 'production'} mode
@@ -336,7 +357,7 @@ function createBaseConfig(options, mode) {
   } = options;
   if (!rootDir || !path.isAbsolute(rootDir)) {
     throw new Error(
-      '[@org/rspack-config] rootDir must be an absolute path (use import.meta.dirname).',
+      '[@org/webpack-config] rootDir must be an absolute path (use import.meta.dirname).',
     );
   }
   assertFederationName(name);
@@ -347,7 +368,7 @@ function createBaseConfig(options, mode) {
   const { htmlPublicPath = publicPrefix } = options;
   if (!Number.isInteger(port)) {
     throw new Error(
-      `[@org/rspack-config] port must be an integer (got ${port}).`,
+      `[@org/webpack-config] port must be an integer (got ${port}).`,
     );
   }
 
@@ -380,7 +401,7 @@ function createBaseConfig(options, mode) {
 
   /** @type {Configuration['plugins']} */
   const plugins = [
-    new rspack.HtmlRspackPlugin({
+    new HtmlWebpackPlugin({
       template: templatePath,
       title,
       // Only the app entry. Without this the standalone page can also get federation chunks
@@ -395,7 +416,7 @@ function createBaseConfig(options, mode) {
           : '',
       },
     }),
-    new rspack.DefinePlugin({
+    new webpack.DefinePlugin({
       __MFE_NAME__: JSON.stringify(name),
       // the shell's base path (`/`, `/citizen`): router basename, manifest URL, SW scope
       __MFE_BASE_PATH__: JSON.stringify(basePath),
@@ -421,7 +442,7 @@ function createBaseConfig(options, mode) {
 
   if (!isDev && hasPublicDir) {
     plugins.push(
-      new rspack.CopyRspackPlugin({
+      new CopyWebpackPlugin({
         patterns: [
           {
             from: publicDirAbs,
@@ -437,7 +458,7 @@ function createBaseConfig(options, mode) {
     );
   }
   plugins.push(
-    new rspack.CssExtractRspackPlugin({
+    new MiniCssExtractPlugin({
       // production: 8 hex chars like the JS chunks (deploy/nginx caches `*.<8 hex>.css` as
       // immutable); development: stable names, HMR re-fetches them with a `?<timestamp>` query
       filename: isDev ? '[name].css' : '[name].[contenthash:8].css',
@@ -467,7 +488,7 @@ function createBaseConfig(options, mode) {
       // remote's own origin (from mf-manifest).
       publicPath: kind === 'shell' ? publicPrefix : 'auto',
       uniqueName: name,
-      filename: isDev ? '[name].js' : '[name].[contenthash:8].js',
+      filename: isDev ? '[name].js' : entryFilename,
       chunkFilename: isDev ? '[name].js' : '[name].[contenthash:8].js',
       clean: true,
     },
@@ -480,7 +501,7 @@ function createBaseConfig(options, mode) {
         {
           test: /\.[cm]?[jt]sx?$/,
           exclude: /node_modules/,
-          loader: 'builtin:swc-loader',
+          loader: require.resolve('swc-loader'),
           options: swcOptions,
           type: 'javascript/auto',
         },
@@ -502,8 +523,15 @@ function createBaseConfig(options, mode) {
       ],
     },
     plugins,
-    // Lazy compilation breaks federation entry loading (standalone remote renders blank).
-    lazyCompilation: false,
+    optimization: {
+      // SWC minifier (same engine as the transform) for JS, lightningcss for CSS
+      minimizer: [
+        new TerserPlugin({ minify: TerserPlugin.swcMinify }),
+        new CssMinimizerPlugin({
+          minify: CssMinimizerPlugin.lightningCssMinify,
+        }),
+      ],
+    },
     performance: { hints: false },
     devServer: {
       port,

@@ -11,7 +11,7 @@ const prettierOptions = require('@org/prettier-config');
 
 export const TEMPLATES_DIR = path.join(import.meta.dirname, '..', 'templates');
 
-/** Compile-time globals of @org/rspack-config (`__MFE_BASE_PATH__`): kept as written. */
+/** Compile-time globals of @org/webpack-config (`__MFE_BASE_PATH__`): kept as written. */
 const BUILD_GLOBALS = new Set(['MFE_NAME', 'MFE_BASE_PATH']);
 
 /**

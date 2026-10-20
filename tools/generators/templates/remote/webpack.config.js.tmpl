@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { createRemoteConfig } from '@org/rspack-config';
+import { createRemoteConfig } from '@org/webpack-config';
 
 // Port and federation name live in package.json ("mfe"), so tools and this config agree.
 const { mfe } = JSON.parse(

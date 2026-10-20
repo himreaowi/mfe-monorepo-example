@@ -11,7 +11,7 @@
       "type": "string"
     },
     "remotes": {
-      "description": "Remotes by Module Federation name (the remote's `name` in its rspack config).",
+      "description": "Remotes by Module Federation name (the remote's `name` in its webpack config).",
       "type": "object",
       "propertyNames": {
         "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
