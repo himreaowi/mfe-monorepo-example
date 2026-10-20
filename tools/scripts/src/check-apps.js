@@ -23,6 +23,11 @@
  * - no barrel files: the only `index.ts` in an app is a feature's public API
  *   (`src/features/<feature>/index.ts`); everything else is imported from its file
  *   (`@/components/Card/Card`)
+ * - @org/ui component library (packages/ui/src/components/<Name>/): every component folder has
+ *   <Name>.tsx, <Name>.module.scss, <Name>.test.tsx and <Name>.stories.tsx
+ * - shared components belong in @org/ui: a component folder name (src/components/<Name>,
+ *   features/<feature>/components/<Name>) found in two or more apps is an error, unless the
+ *   root package.json lists it in `mfe.componentDuplicatesAllowed` ({ "<Name>": "<reason>" })
  * - remotes never set CSS custom properties page-wide (`:root`, `html`, `body`, `[data-theme]`,
  *   `document.documentElement.style.setProperty('--…')`): that would restyle the shell's layout
  *   and every other remote
@@ -534,6 +539,10 @@ export async function checkApps({ root }) {
   // --- dev tool servers (root package.json mfe.tools) ---------------------------------------
   checkTools(root, err);
 
+  // --- component library (@org/ui) and components duplicated across apps ------------------------
+  checkUiLibrary(root, err);
+  checkDuplicateComponents(root, infos, err);
+
   return { errors, warnings };
 }
 
@@ -871,5 +880,120 @@ function checkTools(root, err) {
         }).`,
       );
     }
+  }
+}
+
+const UI_DOC = 'packages/ui/README.md ("Adding a component")';
+
+/**
+ * @org/ui: `src/components/<Name>/` holds `<Name>.tsx`, `<Name>.module.scss`, `<Name>.test.tsx`
+ * and `<Name>.stories.tsx` (Storybook, dev only; the a11y and visual tests run every story).
+ * @param {string} root
+ * @param {(rule: string, message: string) => void} err
+ */
+function checkUiLibrary(root, err) {
+  const ui = loadWorkspace(root).packages.find((p) => p.name === '@org/ui');
+  if (!ui) return;
+  const dir = path.join(root, ui.dir, 'src', 'components');
+  for (const item of entries(dir)) {
+    const where = path
+      .relative(root, path.join(dir, item.name))
+      .split(path.sep)
+      .join('/');
+    if (!item.isDirectory()) {
+      err(
+        'ui-component-files',
+        `${where}: @org/ui has one folder per component (src/components/<Name>/). See ${UI_DOC}.`,
+      );
+      continue;
+    }
+    const name = item.name;
+    const missing = [
+      `${name}.tsx`,
+      `${name}.module.scss`,
+      `${name}.test.tsx`,
+      `${name}.stories.tsx`,
+    ].filter((f) => !fs.existsSync(path.join(dir, name, f)));
+    if (!COMPONENT_NAME.test(name) || missing.length > 0) {
+      err(
+        'ui-component-files',
+        `${where}/: an @org/ui component folder is named after its component (PascalCase) and has ${name}.tsx, ${name}.module.scss, ${name}.test.tsx and ${name}.stories.tsx${missing.length > 0 ? ` (missing: ${missing.join(', ')})` : ''}. See ${UI_DOC}.`,
+      );
+    }
+  }
+}
+
+/**
+ * Component folders of an app (`src/components/<Name>/` and
+ * `src/features/<feature>/components/<Name>/` with `<Name>.tsx`). Layouts (`src/layouts/`) are
+ * per app by design (each shell owns its ShellLayout) and are not counted.
+ * @param {string} appDir absolute
+ * @returns {string[]}
+ */
+function appComponentNames(appDir) {
+  const src = path.join(appDir, 'src');
+  const dirs = [path.join(src, 'components')];
+  for (const feature of entries(path.join(src, 'features'))) {
+    if (feature.isDirectory()) {
+      dirs.push(path.join(src, 'features', feature.name, 'components'));
+    }
+  }
+  return dirs.flatMap((dir) =>
+    entries(dir)
+      .filter(
+        (d) =>
+          d.isDirectory() &&
+          COMPONENT_NAME.test(d.name) &&
+          fs.existsSync(path.join(dir, d.name, `${d.name}.tsx`)),
+      )
+      .map((d) => d.name),
+  );
+}
+
+/**
+ * A simple heuristic for "this should be in @org/ui": the same component folder name in two or
+ * more apps (copies drift apart: fixes and a11y improvements land in one copy only). Intentional
+ * per-app copies (e.g. generator-owned components each app edits) are listed in the root
+ * package.json `mfe.componentDuplicatesAllowed`: `{ "<Name>": "<why each app has its own>" }`.
+ * @param {string} root
+ * @param {AppInfo[]} infos
+ * @param {(rule: string, message: string) => void} err
+ */
+function checkDuplicateComponents(root, infos, err) {
+  const file = path.join(root, 'package.json');
+  const allowed = fs.existsSync(file)
+    ? readJson(file).mfe?.componentDuplicatesAllowed
+    : undefined;
+  const shape = `"mfe": { "componentDuplicatesAllowed": { "<ComponentName>": "<reason>" } }`;
+  if (
+    allowed !== undefined &&
+    (typeof allowed !== 'object' ||
+      allowed === null ||
+      Array.isArray(allowed) ||
+      Object.values(allowed).some((v) => typeof v !== 'string' || v === ''))
+  ) {
+    err(
+      'component-duplicates-config',
+      `package.json "mfe.componentDuplicatesAllowed" must map component names to a reason: ${shape}.`,
+    );
+    return;
+  }
+  /** @type {Map<string, string[]>} */
+  const byName = new Map();
+  for (const info of infos) {
+    for (const name of new Set(
+      appComponentNames(path.join(root, info.app.dir)),
+    )) {
+      byName.set(name, [...(byName.get(name) ?? []), info.app.dir]);
+    }
+  }
+  for (const [name, dirs] of [...byName].sort(([a], [b]) =>
+    a.localeCompare(b),
+  )) {
+    if (dirs.length < 2 || (allowed && Object.hasOwn(allowed, name))) continue;
+    err(
+      'shared-component',
+      `component ${name} exists in ${dirs.length} apps (${dirs.join(', ')}). Move it to @org/ui (packages/ui/src/components/${name}/, see ${UI_DOC}) and import it from '@org/ui' in each app. If each app needs its own version, rename them or list it in the root ${shape}.`,
+    );
   }
 }
