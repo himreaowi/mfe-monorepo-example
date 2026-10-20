@@ -8,7 +8,8 @@ import tseslint from 'typescript-eslint';
 
 /** Paths no package should lint. */
 export const ignores = [
-  'dist/**',
+  // also nested build output, e.g. packages/rspack-config/test/fixture/dist written by its tests
+  '**/dist/**',
   'build/**',
   'coverage/**',
   'node_modules/**',

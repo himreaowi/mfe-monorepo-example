@@ -298,7 +298,7 @@ Package names: apps `@org/<zone>-<name>` / `@org/shell-<zone>` (generated); shar
   ([ui-context.md](ui-context.md#header-colours)). Remotes never set custom properties for the
   whole page (`:root`, `html`, `body`, `[data-theme]`; `pnpm check` rule `remote-global-tokens`).
 - Never select another package's CSS Module class names (e.g. `@org/ui`'s `.skipLink`): they
-  are hashed per build and per app. Pass a `className` to the building block, or use tokens.
+  carry a per-app hash (`SkipLink_skipLink__x3Yb1`). Pass a `className` to the building block, or use tokens.
 - See [ui-context.md](ui-context.md).
 
 ## Testing

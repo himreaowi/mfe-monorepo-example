@@ -24,8 +24,8 @@ is also why it holds no layout: every change here rebuilds every app, so what on
 to look different (its header, its nav position) lives in that shell.
 
 Styles are SCSS modules that read CSS variables from `@org/design-tokens`. The app that owns the
-page imports `@org/design-tokens/global.scss` once. Their class names are hashed per build and
-per app (CSS Modules): never select them from an app; pass a `className` (the components merge
+page imports `@org/design-tokens/global.scss` once. Their class names are CSS Modules names
+with a per-app hash (`Button_button__x3Yb1`): never select them from an app; pass a `className` (the components merge
 it after their own) or set tokens.
 
 ## ThemeProvider: shell, remote, standalone

@@ -56,8 +56,10 @@ Shared by both:
   `RemoteFallback`). No `<style>` elements, so the CSP has no `style-src 'unsafe-inline'`. CSS
   hot reload in development re-fetches the changed stylesheets (no page reload; adding or
   removing a class reloads the page). Why dev = prod and why not native CSS: docs/toolchain.md.
-  CSS Modules: `[hash:base64:8]` in both modes (same class names in dev and prod), **hash salted
-  with the federation name** so two apps never produce the same class name.
+  CSS Modules: readable `[name]_[local]__[hash:base64:5]` in both modes (same class names in dev
+  and prod), `[name]` = the component's file name without `.module` (`getLocalIdent`):
+  `Button.module.scss` `.button` → `Button_button__x3Yb1`. The **hash is salted with the
+  federation name** so two apps never produce the same class name.
 - **Dev server CSP** (`devCsp`, default on): the production rules (no `'unsafe-inline'` /
   `'unsafe-eval'`, `frame-src 'none'`, …) with any `http://localhost:*` origin and the HMR
   websockets allowed (`devContentSecurityPolicy()`). `devCsp: { extraOrigins: [...] }` when the

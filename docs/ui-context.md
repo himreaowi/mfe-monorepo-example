@@ -148,7 +148,7 @@ Rules:
   and they cannot import a shell (`app-import`). Standalone, a remote shows its own small
   `StandaloneLayout`.
 - **Do not target another app's or package's class names** (`@org/ui`'s `.skipLink`, a remote's
-  classes, …): they are CSS Modules classes, renamed to a hash per build and per app, so such a
+  classes, …): they are CSS Modules classes, renamed per app (`SkipLink_skipLink__x3Yb1`, with a hash that changes), so such a
   selector silently stops matching. Pass a `className` to the building block instead.
 
 ## Component conventions

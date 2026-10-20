@@ -187,10 +187,20 @@ tier-1 singleton.
   every day loaded CSS differently from production (a remote's CSS arrived with its JS instead
   of from its origin through the chunk loader, failures could not happen, `<style>` elements
   were fine), so CSS-loading and CSP bugs only showed up after a production build. Now the
-  loaders, the CSS Modules options (`[hash:base64:8]`, salted with the federation name) and the
-  remote CSS path are identical; class names are the same in dev and prod (checked by a real
-  build in the rspack-config tests). The price: class names in dev are hashes too (DevTools
-  maps them back to the `.module.scss` through the CSS source maps).
+  loaders, the CSS Modules options and the remote CSS path are identical; class names are the
+  same in dev and prod (checked by a real build in the rspack-config tests).
+- **Readable CSS Module class names, dev and prod:** `localIdentName:
+'[name]_[local]__[hash:base64:5]'` with a small `getLocalIdent` (exported by
+  `@org/rspack-config`) that makes `[name]` the file name without `.module.scss`
+  (css-loader's own `[name]` is `Button.module`, printed as `Button-module`), so
+  `Button.module.scss` `.button` → `Button_button__x3Yb1`. DevTools and production markup show
+  which component a class belongs to; the hash is still css-loader's (resource path + class
+  name) and `localIdentHashSalt` stays the federation name, so two apps never produce the same
+  class name for the same file and class (e.g. both remotes' `ModeBadge_badge__…` differ). The
+  5-character hash keeps names short; the component prefix plus the salt make a clash
+  practically impossible. Nothing may select these names (they still change with the hash); tests
+  run with `identity-obj-proxy` (`styles.button` is `'button'`) and e2e uses roles and test ids,
+  never class names.
 - **CSS hot reload with extracted CSS.** The extract loader adds a small HMR handler to every
   stylesheet module: on a change it re-fetches the page's `<link rel="stylesheet">` files with a
   `?<timestamp>` query (for CSS Modules all of them, the old link is removed when the new one has
@@ -228,7 +238,8 @@ tier-1 singleton.
 - Rule `type: 'javascript/auto'` is set on the SCSS/CSS rules, so Rspack's native CSS handling
   does not process them a second time.
 - `css-loader` `modules.localIdentHashSalt = <federation name>` gives each app different hashes
-  for the same file + class (checked by a real build in the rspack-config tests).
+  for the same file + class, `Widget_widget__<hash>` with another hash per app (checked by a
+  real build in the rspack-config tests).
 - sass-loader compresses CSS in production mode (`padding:4px`, not `padding: 4px`).
 - MF `dts: false`: the DTS plugin would otherwise try to generate/consume remote types (slow,
   needs a TS server). Remote types come from the contract instead.

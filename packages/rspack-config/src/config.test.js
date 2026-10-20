@@ -9,6 +9,7 @@ import {
   createShellConfig,
   createSharedConfig,
   devContentSecurityPolicy,
+  getLocalIdent,
   TIER1_SINGLETONS,
 } from './index.js';
 
@@ -188,6 +189,11 @@ describe('createShellConfig', () => {
         .map((r) => /** @type {any} */ (r))
         .find((r) => String(r.test).includes('module')).use[1].options.modules;
     assert.deepEqual(modulesOptions(config), modulesOptions(prod));
+    assert.equal(
+      modulesOptions(config).localIdentName,
+      '[name]_[local]__[hash:base64:5]',
+    );
+    assert.equal(modulesOptions(config).getLocalIdent, getLocalIdent);
     assert.equal(modulesOptions(config).localIdentHashSalt, 'test_shell');
   });
 
@@ -292,7 +298,7 @@ describe('real build', () => {
       rmSync(join(fixture, 'dist'), { recursive: true, force: true }),
   );
 
-  it('compiles TSX + SCSS modules, emits mf-manifest.json, salts class names per app', async () => {
+  it('compiles TSX + SCSS modules, emits mf-manifest.json, readable class names salted per app', async () => {
     const a = await build('app_a');
     const b = await build('app_b');
     for (const f of ['mf-manifest.json', 'remoteEntry.js', 'index.html']) {
@@ -300,8 +306,10 @@ describe('real build', () => {
     }
     /** @param {string} js */
     const classOf = (js) => js.match(/"widget":\s*["`]([^"`]+)["`]/)?.[1];
-    assert.ok(classOf(a.js), 'class name exported');
-    assert.ok(classOf(b.js), 'class name exported');
+    // `Widget.module.scss` `.widget` → `Widget_widget__<5-char hash>` (no `.module` in it)
+    assert.match(classOf(a.js) ?? '', /^Widget_widget__[A-Za-z0-9_-]{5}$/);
+    assert.match(classOf(b.js) ?? '', /^Widget_widget__[A-Za-z0-9_-]{5}$/);
+    // same file and class, another federation name: another hash
     assert.notEqual(classOf(a.js), classOf(b.js));
     // production: the CSS is in .css files, not in the JS (no style-loader runtime)
     assert.match(a.css, /padding:\s?4px/, 'SCSS compiled into a .css file');
@@ -359,10 +367,17 @@ describe('real build', () => {
     assert.doesNotMatch(dev.js, /insertStyleElement|styleTagTransform/);
     assert.doesNotMatch(dev.css, /data:application\/json/);
     const classes = (/** @type {string} */ css) =>
-      [...css.matchAll(/\.([A-Za-z0-9_-]{8})(?=[\s{:,.>[)])/g)]
+      [
+        ...css.matchAll(
+          /\.([A-Z][A-Za-z0-9]*_[A-Za-z0-9]+__[A-Za-z0-9_-]{5})(?=[\s{:,.>[)])/g,
+        ),
+      ]
         .map((m) => m[1])
         .sort();
-    assert.ok(classes(dev.css).length > 0);
+    assert.deepEqual(
+      [...new Set(classes(dev.css))].map((c) => c.replace(/__.*/, '')),
+      ['Lazy_lazy', 'Widget_widget'],
+    );
     assert.deepEqual(
       [...new Set(classes(dev.css))],
       [...new Set(classes(prod.css))],
