@@ -10,6 +10,8 @@
  *   (apps/<zone>/shell-<name>), required when the zone has several shells (each has its own
  *   manifest)
  * - production rules: no `"auth": { "mock": true }`, https entries (http only for localhost)
+ * - warnings for absolute API / sign-in URLs: the browser should only call its own origin
+ *   (`<base>/api`, `<base>/auth/...`, proxied by nginx to API_UPSTREAM / AUTH_UPSTREAM)
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -87,6 +89,20 @@ export async function validateManifestFile({
       message:
         '"auth": { "mock": true } is for development only (production builds ignore it and disable sign-in). Use the BFF URLs (docs/auth-contract.md).',
     });
+  }
+  const sameOrigin = /** @type {[string, unknown][]} */ ([
+    ['settings.apiBaseUrl', manifest.settings?.apiBaseUrl],
+    ['auth.sessionUrl', manifest.auth?.sessionUrl],
+    ['auth.loginUrl', manifest.auth?.loginUrl],
+    ['auth.logoutUrl', manifest.auth?.logoutUrl],
+  ]);
+  for (const [key, value] of sameOrigin) {
+    if (typeof value === 'string' && /^https?:\/\//.test(value)) {
+      warnings.push({
+        rule: 'same-origin',
+        message: `${key}: ${value} is an absolute URL, so the browser calls another origin (CORS, a host in the CSP). Use the shell's same-origin proxy path (<base path>/api, <base path>/auth/...) and set API_UPSTREAM / AUTH_UPSTREAM instead (docs/configuration.md).`,
+      });
+    }
   }
   for (const [name, remote] of Object.entries(manifest.remotes ?? {})) {
     const entry = /** @type {{ entry: string }} */ (remote).entry;

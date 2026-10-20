@@ -53,7 +53,7 @@ export interface Zone {
   authMock: boolean;
   /** `settings.apiBaseUrl` of the dev manifest, if any. */
   apiBaseUrl?: string;
-  /** `apiBaseUrl` points at the dev-only mock API (tools/mock-api) of a zone. */
+  /** `apiBaseUrl` is the dev proxy's same-origin `<base>/api` (default upstream: the dev-only mock API, tools/mock-api) or the mock API itself. */
   mockApi: boolean;
   remotes: ZoneRemote[];
   /**
