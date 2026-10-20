@@ -1,4 +1,5 @@
-import type { Configuration } from '@rspack/core';
+import type { Configuration } from 'webpack';
+import type {} from 'webpack-dev-server';
 
 export type SharedConfig = Record<
   string,
@@ -12,13 +13,13 @@ export type SharedConfig = Record<
 >;
 
 export interface BaseOptions {
-  /** App directory (absolute). Use `import.meta.dirname` in rspack.config.js. */
+  /** App directory (absolute). Use `import.meta.dirname` in webpack.config.js. */
   rootDir: string;
   /** Module Federation name, a JS identifier, unique across all apps (e.g. `intranet_staff`). Also salts the hash of CSS Module class names. */
   name: string;
   /** Dev server port (intranet 3100–3189, internet 3200–3289; see tools/scripts/src/zones.js). */
   port: number;
-  /** Force a mode. Default: from the Rspack CLI (`rspack dev` → development, `rspack build` → production). */
+  /** Force a mode. Default: from the webpack CLI (`webpack serve` → development, `webpack build` → production). */
   mode?: 'development' | 'production';
   /**
    * Entry module. Default `./src/main.tsx`. Module Federation starts asynchronously
@@ -42,7 +43,7 @@ export interface BaseOptions {
   /** Compile-time constants (JSON-stringified). Runtime config belongs in mfe-manifest.json. */
   define?: Record<string, unknown>;
   /**
-   * Content-Security-Policy header of the dev server (`rspack dev`). Default `true`: the
+   * Content-Security-Policy header of the dev server (`webpack serve`). Default `true`: the
    * production rules (no `'unsafe-inline'`/`'unsafe-eval'`, `frame-src 'none'`, …) with any
    * localhost origin allowed, so dev fails early on what production would block. Pass
    * `{ extraOrigins }` when the dev manifest points at non-local origins (a deployed remote, a

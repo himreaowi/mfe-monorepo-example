@@ -17,7 +17,7 @@ standalone chrome. See `docs/ui-context.md` "Layout: the shell owns it".
 | `ConnectionRequired`          | Offline banner (`visible`; a shell passes `!useOnlineStatus()` from `@org/pwa`)                                             |
 | `ThemeProvider`, `useTheme()` | Light/dark/system theme, sets `data-theme` on `<html>`                                                                      |
 
-`@org/ui` is a **tier-1 singleton**: `@org/rspack-config` shares it through Module Federation
+`@org/ui` is a **tier-1 singleton**: `@org/webpack-config` shares it through Module Federation
 (`singleton`, `strictVersion`, `requiredVersion` = this package's version). A remote rendered in a
 shell therefore uses the shell's copy of these components, styles and the `ThemeContext`. That
 is also why it holds no layout: every change here rebuilds every app, so what one shell wants

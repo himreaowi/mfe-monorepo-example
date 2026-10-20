@@ -1,4 +1,4 @@
-// Replaced at build time by Rspack (optimization.nodeEnv). Declared locally so browser code
+// Replaced at build time by webpack (optimization.nodeEnv). Declared locally so browser code
 // does not need @types/node.
 declare const process: { env: { NODE_ENV?: string } };
 

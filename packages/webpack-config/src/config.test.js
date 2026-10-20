@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { after, describe, it } from 'node:test';
-import { rspack } from '@rspack/core';
+import webpack from 'webpack';
+import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import {
   createRemoteConfig,
   createShellConfig,
@@ -13,7 +14,7 @@ import {
   TIER1_SINGLETONS,
 } from './index.js';
 
-/** @typedef {import('@rspack/core').Configuration} Configuration */
+/** @typedef {import('webpack').Configuration & { devServer?: any }} Configuration */
 
 const pkgDir = join(import.meta.dirname, '..');
 const fixture = join(pkgDir, 'test', 'fixture');
@@ -82,11 +83,10 @@ describe('createShellConfig', () => {
     rootDir: fixture,
     name: 'test_shell',
     port: 3100,
-  })({ RSPACK_SERVE: true }, {});
+  })({ WEBPACK_SERVE: true }, {});
 
   it('is a development config when served', () => {
     assert.equal(config.mode, 'development');
-    assert.equal(config.lazyCompilation, false);
     const devServer = /** @type {any} */ (config.devServer);
     assert.equal(devServer.port, 3100);
     assert.equal(devServer.headers['Access-Control-Allow-Origin'], '*');
@@ -121,7 +121,7 @@ describe('createShellConfig', () => {
           name: 'test_shell',
           port: 3100,
           devCsp,
-        })({ RSPACK_SERVE: true }, {}).devServer
+        })({ WEBPACK_SERVE: true }, {}).devServer
       ).headers['Content-Security-Policy'];
     const extra = csp({
       extraOrigins: ['https://dev.example.sg'],
@@ -153,16 +153,16 @@ describe('createShellConfig', () => {
       name: 'test_shell',
       port: 3201,
       basePath: '/citizen/',
-    })({ RSPACK_SERVE: true }, {});
+    })({ WEBPACK_SERVE: true }, {});
     const devServer = /** @type {any} */ (sub.devServer);
     assert.equal(sub.output?.publicPath, '/citizen/');
     assert.equal(devServer.historyApiFallback.index, '/citizen/index.html');
     assert.equal(devServer.client.webSocketURL.pathname, '/citizen/ws');
     assert.equal(devServer.webSocketServer.options.path, '/citizen/ws');
     const define = pluginNamed(sub, 'DefinePlugin');
-    assert.equal(define._args[0].__MFE_BASE_PATH__, '"/citizen"');
-    const html = pluginNamed(sub, 'HtmlRspackPlugin');
-    const htmlOptions = html._args[0];
+    assert.equal(define.definitions.__MFE_BASE_PATH__, '"/citizen"');
+    const html = pluginNamed(sub, 'HtmlWebpackPlugin');
+    const htmlOptions = html.userOptions;
     assert.equal(htmlOptions.publicPath, '/citizen/');
     assert.match(
       htmlOptions.templateParameters.manifestLink,
@@ -190,15 +190,15 @@ describe('createShellConfig', () => {
           name: 'test_shell',
           port: 3201,
           basePath: 'citizen',
-        })({ RSPACK_SERVE: true }, {}),
+        })({ WEBPACK_SERVE: true }, {}),
       /Invalid basePath/,
     );
   });
 
   it("only injects the 'main' chunk into the HTML", () => {
-    const html = pluginNamed(config, 'HtmlRspackPlugin');
-    assert.deepEqual(html._args[0].chunks, ['main']);
-    assert.equal(html._args[0].publicPath, '/');
+    const html = pluginNamed(config, 'HtmlWebpackPlugin');
+    assert.deepEqual(html.userOptions.chunks, ['main']);
+    assert.equal(html.userOptions.publicPath, '/');
   });
 
   it('adds the Workbox plugin to production builds only', () => {
@@ -206,7 +206,7 @@ describe('createShellConfig', () => {
       rootDir: fixture,
       name: 'test_shell',
       port: 3100,
-    })({ RSPACK_BUILD: true }, {});
+    })({ WEBPACK_BUILD: true }, {});
     assert.equal(prod.mode, 'production');
     assert.ok(pluginNamed(prod, 'PwaPlugin'));
     assert.equal(pluginNamed(config, 'PwaPlugin'), undefined);
@@ -216,11 +216,11 @@ describe('createShellConfig', () => {
     const loaders = styleRuleFirstLoaders(config);
     assert.equal(loaders.length, 2);
     for (const loader of loaders) {
-      assert.equal(loader, rspack.CssExtractRspackPlugin.loader);
+      assert.equal(loader, MiniCssExtractPlugin.loader);
       assert.doesNotMatch(loader, /style-loader/);
     }
-    const extract = pluginNamed(config, 'CssExtractRspackPlugin');
-    assert.ok(extract, 'CssExtractRspackPlugin in development');
+    const extract = pluginNamed(config, 'MiniCssExtractPlugin');
+    assert.ok(extract, 'MiniCssExtractPlugin in development');
     assert.equal(extract.options.filename, '[name].css');
     assert.equal(extract.options.chunkFilename, '[name].css');
   });
@@ -230,7 +230,7 @@ describe('createShellConfig', () => {
       rootDir: fixture,
       name: 'test_shell',
       port: 3100,
-    })({ RSPACK_BUILD: true }, {});
+    })({ WEBPACK_BUILD: true }, {});
     /** @param {Configuration} c */
     const modulesOptions = (c) =>
       (c.module?.rules ?? [])
@@ -250,15 +250,15 @@ describe('createShellConfig', () => {
       rootDir: fixture,
       name: 'test_shell',
       port: 3100,
-    })({ RSPACK_BUILD: true }, {});
+    })({ WEBPACK_BUILD: true }, {});
     const loaders = styleRuleFirstLoaders(prod);
     assert.equal(loaders.length, 2);
     for (const loader of loaders) {
-      assert.equal(loader, rspack.CssExtractRspackPlugin.loader);
+      assert.equal(loader, MiniCssExtractPlugin.loader);
       assert.doesNotMatch(loader, /style-loader/);
     }
-    const extract = pluginNamed(prod, 'CssExtractRspackPlugin');
-    assert.ok(extract, 'CssExtractRspackPlugin in production');
+    const extract = pluginNamed(prod, 'MiniCssExtractPlugin');
+    assert.ok(extract, 'MiniCssExtractPlugin in production');
     assert.equal(extract.options.filename, '[name].[contenthash:8].css');
     assert.equal(extract.options.chunkFilename, '[name].[contenthash:8].css');
   });
@@ -278,13 +278,13 @@ describe('createRemoteConfig', () => {
       rootDir: fixture,
       name: 'test_remote',
       port: 3101,
-    })({ RSPACK_BUILD: true }, {});
+    })({ WEBPACK_BUILD: true }, {});
     assert.equal(config.output?.publicPath, 'auto');
     assert.deepEqual(mfOptions(config).exposes, {
       './App': './src/app/apps.tsx',
     });
     assert.equal(pluginNamed(config, 'PwaPlugin'), undefined);
-    assert.ok(pluginNamed(config, 'CssExtractRspackPlugin'));
+    assert.ok(pluginNamed(config, 'MiniCssExtractPlugin'));
   });
 });
 
@@ -295,7 +295,7 @@ describe('real build', () => {
   /**
    * @param {string} name
    * @param {{ production?: boolean, development?: boolean, outName?: string }} [opts]
-   *   production: keep the default devtool + minifier; development: a `rspack dev` config
+   *   production: keep the default devtool + minifier; development: a `webpack serve` config
    *   (compiled without the dev server)
    */
   async function build(name, opts = {}) {
@@ -304,7 +304,10 @@ describe('real build', () => {
       name,
       port: 3101,
       exposes: { './App': './src/App.tsx' },
-    })(opts.development ? { RSPACK_SERVE: true } : { RSPACK_BUILD: true }, {});
+    })(
+      opts.development ? { WEBPACK_SERVE: true } : { WEBPACK_BUILD: true },
+      {},
+    );
     const outDir = join(fixture, 'dist', opts.outName ?? name);
     config.output = { ...config.output, path: outDir };
     if (!opts.production && !opts.development) {
@@ -312,7 +315,7 @@ describe('real build', () => {
       config.optimization = { minimize: false };
     }
     await new Promise((resolve, reject) => {
-      rspack(config).run((err, stats) => {
+      webpack(config).run((err, stats) => {
         if (err) return reject(err);
         if (stats?.hasErrors())
           return reject(new Error(stats.toString('errors-only')));

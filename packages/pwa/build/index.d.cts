@@ -1,4 +1,4 @@
-import type { Compiler } from '@rspack/core';
+import type { Compiler } from 'webpack';
 
 export interface GenerateServiceWorkerOptions {
   /** Directory containing the built app (globDirectory). */

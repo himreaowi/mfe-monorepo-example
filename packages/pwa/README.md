@@ -11,7 +11,7 @@ PWA support ported from starter-mfe.
 
 ## Build (`@org/pwa/build`, Node, CommonJS)
 
-- `PwaPlugin`: Rspack plugin used by `@org/rspack-config` for production shell builds. It emits
+- `PwaPlugin`: webpack plugin used by `@org/webpack-config` for production shell builds. It emits
   the default `manifest.webmanifest` + `icons/` (unless the app's `public/` already provides them)
   and then runs Workbox **`workbox-build` `generateSW`** (not `workbox-webpack-plugin`, which
   imports webpack).

@@ -6,7 +6,7 @@
  *    version-exceptions.json has a valid (non-expired) entry for that package + app + version.
  * 2. A third-party package used by 2+ workspace packages with a non-catalog spec must move to
  *    the catalog (tier 2).
- * 3. The tier-1 list equals TIER1_SINGLETONS in @org/rspack-config, and every tier-1 package is
+ * 3. The tier-1 list equals TIER1_SINGLETONS in @org/webpack-config, and every tier-1 package is
  *    in the default catalog (or is a workspace package).
  * 4. version-exceptions.json is well-formed; expired entries fail.
  * Plus: workspace packages are referenced with `workspace:`.
@@ -166,12 +166,12 @@ function suggestVersion(specs) {
 }
 
 /**
- * Load the tier-1 singleton list of @org/rspack-config (lightweight module, no Rspack import).
+ * Load the tier-1 singleton list of @org/webpack-config (lightweight module, no webpack import).
  * @param {string} root
  * @returns {Promise<string[] | null>}
  */
 export async function loadTier1Singletons(root) {
-  const file = path.join(root, 'packages', 'rspack-config', 'src', 'tier1.js');
+  const file = path.join(root, 'packages', 'webpack-config', 'src', 'tier1.js');
   if (!fs.existsSync(file)) return null;
   const mod = await import(new URL(`file://${file}`).href);
   return mod.TIER1_SINGLETONS ?? null;
@@ -343,7 +343,7 @@ export async function checkVersions({
       const extra = b.filter((x) => !a.includes(x));
       err(
         'tier1-drift',
-        `The tier-1 list (tools/scripts/src/tiers.js: ${a.join(', ')}) differs from TIER1_SINGLETONS in packages/rspack-config/src/tier1.js (${b.join(', ')}).` +
+        `The tier-1 list (tools/scripts/src/tiers.js: ${a.join(', ')}) differs from TIER1_SINGLETONS in packages/webpack-config/src/tier1.js (${b.join(', ')}).` +
           (missing.length
             ? ` Not shared as singleton: ${missing.join(', ')}.`
             : '') +
@@ -354,7 +354,7 @@ export async function checkVersions({
   } else {
     warn(
       'tier1-unverified',
-      'packages/rspack-config/src/tier1.js not found; tier-1 list not compared with the Module Federation singletons.',
+      'packages/webpack-config/src/tier1.js not found; tier-1 list not compared with the Module Federation singletons.',
     );
   }
   for (const dep of tier1) {

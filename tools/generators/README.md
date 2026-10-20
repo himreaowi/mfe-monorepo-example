@@ -93,7 +93,7 @@ comma-separated: `--shell citizen,business`).
   (standalone mode only) and must not set page-wide custom properties (`pnpm check` rule
   `remote-global-tokens`).
 - Metadata in the generated `package.json`: `nx.tags` (`zone:`, `type:`, `access:`, `kind:`) and
-  `mfe` (`port`, `federationName`). `rspack.config.js` reads `mfe` from `package.json`.
+  `mfe` (`port`, `federationName`). `webpack.config.js` reads `mfe` from `package.json`.
 - Dependencies: `catalog:` for third-party packages, `workspace:*` for `@org/*`.
 - Shells get the zone's e2e suite: `playwright.config.ts` (`@org/playwright-config`) and
   `e2e/*.spec.ts`, which iterate `remotes.json` (deep links, private guard, external adapters

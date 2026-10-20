@@ -1,5 +1,5 @@
-// Ambient types for app sources built with @org/rspack-config.
-// tsconfig: "types": ["@org/rspack-config/client"]
+// Ambient types for app sources built with @org/webpack-config.
+// tsconfig: "types": ["@org/webpack-config/client"]
 declare module '*.module.scss' {
   const classes: { readonly [key: string]: string };
   export default classes;

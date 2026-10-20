@@ -1,8 +1,8 @@
 {
-  "name": "@org/rspack-config",
+  "name": "@org/webpack-config",
   "version": "0.1.0",
   "private": true,
-  "description": "Rspack + Module Federation 2 config factories: createShellConfig / createRemoteConfig",
+  "description": "webpack 5 + Module Federation 2 config factories: createShellConfig / createRemoteConfig",
   "type": "module",
   "types": "./src/index.d.ts",
   "exports": {
@@ -33,21 +33,27 @@
   "dependencies": {
     "@module-federation/enhanced": "catalog:",
     "@org/pwa": "workspace:*",
+    "@swc/core": "catalog:",
+    "copy-webpack-plugin": "catalog:",
     "css-loader": "catalog:",
+    "css-minimizer-webpack-plugin": "catalog:",
+    "html-webpack-plugin": "catalog:",
+    "lightningcss": "catalog:",
+    "mini-css-extract-plugin": "catalog:",
     "sass": "catalog:",
-    "sass-loader": "catalog:"
+    "sass-loader": "catalog:",
+    "swc-loader": "catalog:",
+    "terser-webpack-plugin": "catalog:"
   },
   "peerDependencies": {
-    "@rspack/core": "^2.0.0",
-    "@rspack/dev-server": "^2.0.0"
+    "webpack": "^5.101.0",
+    "webpack-dev-server": "^6.0.0"
   },
   "devDependencies": {
     "@org/auth": "workspace:*",
     "@org/eslint-config": "workspace:*",
     "@org/tsconfig": "workspace:*",
     "@org/ui": "workspace:*",
-    "@rspack/core": "catalog:",
-    "@rspack/dev-server": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "eslint": "catalog:",
@@ -55,6 +61,8 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-router": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "webpack": "catalog:",
+    "webpack-dev-server": "catalog:"
   }
 }

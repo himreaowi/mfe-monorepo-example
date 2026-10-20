@@ -1,6 +1,6 @@
 // @ts-check
-// Build-time PWA helpers (Node). Workbox via workbox-build, NOT workbox-webpack-plugin
-// (that one imports webpack, which is not installed in an Rspack app).
+// Build-time PWA helpers (Node). Workbox via workbox-build (a plain Node API, run after emit),
+// not workbox-webpack-plugin: one small plugin, no extra webpack-version coupling.
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -96,7 +96,7 @@ function defaultAssetFiles() {
 }
 
 /**
- * Rspack plugin:
+ * webpack plugin:
  * 1. emits the default manifest.webmanifest + icons unless the app already emits its own
  *    (e.g. copied from its public/ folder), and
  * 2. after emit, generates service-worker.js with Workbox.
@@ -110,7 +110,7 @@ class PwaPlugin {
     this.options = options;
   }
 
-  /** @param {import('@rspack/core').Compiler} compiler */
+  /** @param {import('webpack').Compiler} compiler */
   apply(compiler) {
     const { Compilation, sources } = compiler.webpack;
     const logger = compiler.getInfrastructureLogger(PLUGIN_NAME);

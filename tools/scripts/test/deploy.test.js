@@ -89,7 +89,7 @@ describe('deploy/nginx templates', () => {
       'main.f0dd8b37.js',
       '118.3b298b8a.js',
       '__federation_expose_App.6b3d4dc8.js',
-      // extracted CSS ([name].[contenthash:8].css from @org/rspack-config)
+      // extracted CSS ([name].[contenthash:8].css from @org/webpack-config)
       '__federation_expose_App.f1c5d0e3.css',
       '735.dd49997c.css',
     ]) {
