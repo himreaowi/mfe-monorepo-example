@@ -1,15 +1,23 @@
 import { Link } from 'react-router';
 import { useRemotePath } from '@org/mf-runtime/remote';
 import { RemoteFallback } from '@org/ui';
+import type { ApiResult } from '@org/use-api';
 import { routePaths } from '@/core/constants/routePaths';
 import { formatDate } from '@/core/utils/formatDate';
-import { useAnnouncement } from '../../hooks/useAnnouncements';
+import type { Announcement } from '../../types/announcement';
 import styles from './AnnouncementDetail.module.scss';
 
-/** One announcement. The body is plain text paragraphs (no HTML from the API is rendered). */
-export function AnnouncementDetail({ id }: { id: string }) {
+/**
+ * One announcement. The body is plain text paragraphs (no HTML from the API is rendered).
+ * Displays only: the page loads it (`useAnnouncement(id)`; `null` = unknown id) and passes the
+ * result down.
+ */
+export function AnnouncementDetail({
+  announcement,
+}: {
+  announcement: ApiResult<Announcement | null>;
+}) {
   const toPath = useRemotePath();
-  const announcement = useAnnouncement(id);
   const back = (
     <p>
       <Link className={styles.back} to={toPath(routePaths.list)}>

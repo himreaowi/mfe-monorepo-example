@@ -1,34 +1,29 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
-import { getAnnouncement } from '../../api/announcementsApi';
+import type { ApiResult } from '@org/use-api';
 import { maintenance } from '../../__fixtures__/announcements';
+import type { Announcement } from '../../types/announcement';
 import { AnnouncementDetail } from './AnnouncementDetail';
 
-jest.mock('../../api/announcementsApi');
-
-function renderIn(ui: React.ReactNode) {
+// A display component: the page loads the announcement and passes the result in.
+function renderDetail(announcement: ApiResult<Announcement | null>) {
   return render(
     <MemoryRouter>
-      <HostPropsProvider
-        value={{
-          embedded: true,
-          basePath: '/announcements',
-          settings: { apiBaseUrl: 'https://api.test' },
-        }}
-      >
-        {ui}
+      <HostPropsProvider value={{ embedded: true, basePath: '/announcements' }}>
+        <AnnouncementDetail announcement={announcement} />
       </HostPropsProvider>
     </MemoryRouter>,
   );
 }
 
+const reload = jest.fn();
+
 describe('AnnouncementDetail', () => {
-  it('shows the title, date and paragraphs', async () => {
-    jest.mocked(getAnnouncement).mockResolvedValue(maintenance);
-    renderIn(<AnnouncementDetail id="a-2026-031" />);
+  it('shows the title, date and paragraphs', () => {
+    renderDetail({ status: 'success', data: maintenance, reload });
     expect(
-      await screen.findByRole('heading', {
+      screen.getByRole('heading', {
         level: 1,
         name: 'Online services maintenance on 25 October',
       }),
@@ -45,21 +40,28 @@ describe('AnnouncementDetail', () => {
     ).toHaveAttribute('href', '/announcements');
   });
 
-  it('handles a missing announcement', async () => {
-    jest.mocked(getAnnouncement).mockResolvedValue(null);
-    renderIn(<AnnouncementDetail id="gone" />);
+  it('handles a missing announcement', () => {
+    renderDetail({ status: 'success', data: null, reload });
     expect(
-      await screen.findByRole('heading', { name: 'Announcement not found' }),
+      screen.getByRole('heading', { name: 'Announcement not found' }),
     ).toBeInTheDocument();
   });
 
-  it('shows loading, then offers a retry when it cannot be loaded', async () => {
-    jest
-      .mocked(getAnnouncement)
-      .mockRejectedValue(new Error('500 Internal Server Error'));
-    renderIn(<AnnouncementDetail id="a-2026-031" />);
+  it('shows loading without the back link', () => {
+    renderDetail({ status: 'loading', reload });
     expect(screen.getByRole('status')).toHaveTextContent('Loading');
-    expect(await screen.findByRole('alert')).toHaveTextContent(
+    expect(
+      screen.queryByRole('link', { name: 'Back to all announcements' }),
+    ).toBeNull();
+  });
+
+  it('offers a retry when it cannot be loaded', () => {
+    renderDetail({
+      status: 'error',
+      error: new Error('500 Internal Server Error'),
+      reload,
+    });
+    expect(screen.getByRole('alert')).toHaveTextContent(
       'Could not load this announcement',
     );
     expect(

@@ -1,14 +1,23 @@
 import { Link } from 'react-router';
 import { useRemotePath } from '@org/mf-runtime/remote';
 import { RemoteFallback } from '@org/ui';
+import type { ApiResult } from '@org/use-api';
 import { announcementPath } from '@/core/constants/routePaths';
 import { formatDate } from '@/core/utils/formatDate';
-import { useAnnouncements } from '../../hooks/useAnnouncements';
+import type { AnnouncementSummary } from '../../types/announcement';
 import styles from './AnnouncementList.module.scss';
 
-export function AnnouncementList() {
+/**
+ * The announcements, newest first. Displays only: the page loads them (`useAnnouncements()`)
+ * and passes the result down, "Try again" is its `reload` (docs/coding-conventions.md "Data
+ * fetching").
+ */
+export function AnnouncementList({
+  announcements,
+}: {
+  announcements: ApiResult<AnnouncementSummary[]>;
+}) {
   const toPath = useRemotePath();
-  const announcements = useAnnouncements();
   return (
     <section className={styles.page} data-testid="announcement-list">
       <h1 className={styles.title}>Announcements</h1>
