@@ -39,7 +39,7 @@ const targets: Target[] = [
     open: async (page) => {
       test.skip(
         !zone.authMock,
-        'needs "auth": { "mock": true } in mfe-manifest.dev.json',
+        'needs "auth": { "mock": true } (the shell\'s package.json mfe.devManifest → mfe-manifest.dev.json)',
       );
       await page.goto('/');
       await expect(page.getByTestId('shell-welcome')).toBeVisible();

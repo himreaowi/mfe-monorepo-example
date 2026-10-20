@@ -5,7 +5,7 @@
   "description": "Citizen Portal: host app (shell) of the internet zone",
   "type": "module",
   "scripts": {
-    "dev": "rspack dev",
+    "dev": "mfe-dev-manifest --shell-dir . && rspack dev",
     "build": "rspack build",
     "preview": "mfe-preview",
     "lint": "eslint .",
@@ -34,7 +34,32 @@
   },
   "mfe": {
     "port": 3200,
-    "federationName": "internet_shell"
+    "federationName": "internet_shell",
+    "devManifest": {
+      "auth": {
+        "mock": true
+      },
+      "settings": {
+        "apiBaseUrl": "http://localhost:3290/api"
+      },
+      "remotes": {
+        "internet_payments": {
+          "props": {
+            "vendor": {
+              "url": "http://localhost:3292/payments/2.3.1/element.js",
+              "format": "web-component",
+              "tagName": "bright-checkout",
+              "config": {
+                "title": "Pay your dog licence",
+                "description": "Dog licence renewal 2027",
+                "amount": 1500,
+                "currency": "SGD"
+              }
+            }
+          }
+        }
+      }
+    }
   },
   "dependencies": {
     "@org/auth": "workspace:*",

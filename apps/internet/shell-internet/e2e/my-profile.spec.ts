@@ -6,7 +6,7 @@ const remote = zone.remotes.find((r) => r.name === 'my-profile')!;
 test.describe('My profile (private)', () => {
   test.skip(
     !zone.authMock,
-    'needs "auth": { "mock": true } in mfe-manifest.dev.json',
+    'needs "auth": { "mock": true } (the shell\'s package.json mfe.devManifest → mfe-manifest.dev.json)',
   );
 
   test('sign in → my profile → save notification choices (CSRF)', async ({

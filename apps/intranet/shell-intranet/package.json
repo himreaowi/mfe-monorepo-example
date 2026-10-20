@@ -5,7 +5,7 @@
   "description": "Staff Portal: host app (shell) of the intranet zone",
   "type": "module",
   "scripts": {
-    "dev": "rspack dev",
+    "dev": "mfe-dev-manifest --shell-dir . && rspack dev",
     "build": "rspack build",
     "preview": "mfe-preview",
     "lint": "eslint .",
@@ -34,7 +34,28 @@
   },
   "mfe": {
     "port": 3100,
-    "federationName": "intranet_shell"
+    "federationName": "intranet_shell",
+    "devManifest": {
+      "auth": {
+        "mock": true
+      },
+      "settings": {
+        "apiBaseUrl": "http://localhost:3190/api"
+      },
+      "remotes": {
+        "intranet_it_helpdesk": {
+          "props": {
+            "vendor": {
+              "url": "http://localhost:3192/helpdesk/1.0.0/mount.js",
+              "format": "esm",
+              "config": {
+                "apiBaseUrl": "http://localhost:3190/api"
+              }
+            }
+          }
+        }
+      }
+    }
   },
   "dependencies": {
     "@org/auth": "workspace:*",

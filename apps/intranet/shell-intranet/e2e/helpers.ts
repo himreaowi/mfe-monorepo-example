@@ -338,7 +338,7 @@ export async function openRemote(
   if (remote.access === 'private') {
     test.skip(
       !zone.authMock,
-      'private remote: needs "auth": { "mock": true } in mfe-manifest.dev.json',
+      'private remote: needs "auth": { "mock": true } (the shell\'s package.json mfe.devManifest → mfe-manifest.dev.json)',
     );
   }
   await page.goto(subPath ? `${remote.path}/${subPath}` : remote.path);
