@@ -369,6 +369,11 @@ describe('real build', () => {
     assert.doesNotMatch(a.js, /insertStyleElement|styleTagTransform/);
     // absolute script URL: a standalone deep link (/details) still loads the entry
     assert.match(a.html, /<script[^>]+src="\/main\.[^"]+\.js"/);
+    assert.doesNotMatch(
+      a.html,
+      /<meta[^>]*\/>/,
+      'no XML-style closing slashes',
+    );
   });
 
   it('production: content-hashed .css per chunk (exposed module + lazy chunk), loaded by the chunk loader', async () => {

@@ -407,6 +407,20 @@ function createBaseConfig(options, mode) {
       // Only the app entry. Without this the standalone page can also get federation chunks
       // and render blank.
       chunks: ['main'],
+      // production: html-minifier-terser as before, but without the XML-style closing slashes
+      // (`<meta ... />`) its defaults keep; development: untouched
+      minify: isDev
+        ? false
+        : {
+            collapseWhitespace: true,
+            collapseBooleanAttributes: true,
+            keepClosingSlash: false,
+            removeComments: true,
+            removeRedundantAttributes: true,
+            removeScriptTypeAttributes: true,
+            removeStyleLinkTypeAttributes: true,
+            useShortDoctype: true,
+          },
       // Absolute script URLs in index.html, so a deep link or reload (/details) still loads
       // /main.js. A remote keeps output.publicPath 'auto' for its federation chunks.
       publicPath: htmlPublicPath,
