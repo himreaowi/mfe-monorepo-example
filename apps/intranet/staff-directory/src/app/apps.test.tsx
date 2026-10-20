@@ -7,10 +7,10 @@ import {
   getDepartments,
   getStaffMember,
   searchStaff,
-} from '@/features/staff/api';
+} from '@/features/staff/api/staffApi';
 import EmbeddedApp, { StandaloneApp } from './apps';
 
-jest.mock('@/features/staff/api');
+jest.mock('@/features/staff/api/staffApi');
 
 beforeEach(() => {
   jest.mocked(getDepartments).mockResolvedValue([]);

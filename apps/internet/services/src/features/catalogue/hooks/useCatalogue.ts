@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { requireApiClient, useApi } from '@org/use-api';
 import { useApiClient } from '@org/mf-runtime/remote';
-import { getCategories, getService, listServices } from '../api';
+import { getCategories, getService, listServices } from '../api/catalogueApi';
 import type { CatalogueQuery } from '../types/service';
 
 export function useServices({ q, category }: CatalogueQuery) {

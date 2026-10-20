@@ -1,4 +1,4 @@
 export {
   StartupError,
   type StartupErrorProps,
-} from './components/StartupError';
+} from './components/StartupError/StartupError';

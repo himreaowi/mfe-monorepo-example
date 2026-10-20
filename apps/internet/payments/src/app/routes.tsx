@@ -1,5 +1,5 @@
 import type { RouteObject } from 'react-router';
-import { OverviewPage } from '@/pages/OverviewPage';
+import { OverviewPage } from '@/pages/OverviewPage/OverviewPage';
 
 /**
  * The vendor module owns every path below `/payments/*` in the shell (`/` standalone): it

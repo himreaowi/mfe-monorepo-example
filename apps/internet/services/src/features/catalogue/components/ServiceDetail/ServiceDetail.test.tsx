@@ -1,11 +1,11 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
-import { getService } from '../../api';
+import { getService } from '../../api/catalogueApi';
 import { ServiceDetail } from './ServiceDetail';
 import { dogLicence } from '../../__fixtures__/services';
 
-jest.mock('../../api');
+jest.mock('../../api/catalogueApi');
 const getMock = jest.mocked(getService);
 
 function renderDetail() {

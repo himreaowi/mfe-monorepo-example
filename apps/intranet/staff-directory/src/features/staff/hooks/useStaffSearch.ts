@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { requireApiClient, useApi } from '@org/use-api';
 import { useApiClient } from '@org/mf-runtime/remote';
-import { searchStaff } from '../api';
+import { searchStaff } from '../api/staffApi';
 import type { StaffSearchQuery } from '../types/staff';
 
 export function useStaffSearch({ q, department }: StaffSearchQuery) {

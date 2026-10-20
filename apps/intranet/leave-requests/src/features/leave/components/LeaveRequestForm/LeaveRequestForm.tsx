@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router';
 import { useRemotePath } from '@org/mf-runtime/remote';
 import { Button, RemoteFallback } from '@org/ui';
 import { routePaths } from '@/core/constants/routePaths';
-import { LeaveValidationError } from '../../api';
+import { LeaveValidationError } from '../../api/leaveApi';
 import { useLeaveBalance } from '../../hooks/useLeaveBalance';
 import { useSubmitLeaveRequest } from '../../hooks/useSubmitLeaveRequest';
 import type {
@@ -15,7 +15,7 @@ import type {
 } from '../../types/leave';
 import { countWorkingDays, formatDays, todayIso } from '../../utils/dates';
 import { MAX_REASON_LENGTH, validateLeave } from '../../utils/validateLeave';
-import type { LeaveOverviewState } from '../LeaveOverview';
+import type { LeaveOverviewState } from '../LeaveOverview/LeaveOverview';
 import { Field } from './Field';
 import styles from './LeaveRequestForm.module.scss';
 

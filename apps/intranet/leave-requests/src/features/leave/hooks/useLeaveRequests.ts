@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { requireApiClient, useApi } from '@org/use-api';
 import { useApiClient } from '@org/mf-runtime/remote';
-import { getLeaveRequests } from '../api';
+import { getLeaveRequests } from '../api/leaveApi';
 
 export function useLeaveRequests() {
   const http = useApiClient();

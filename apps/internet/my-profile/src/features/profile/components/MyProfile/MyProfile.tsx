@@ -1,8 +1,8 @@
 import { useHostProps } from '@org/mf-runtime/remote';
 import { RemoteFallback } from '@org/ui';
 import { useProfile } from '../../hooks/useProfile';
-import { PreferencesForm } from '../PreferencesForm';
-import { ProfileDetails } from '../ProfileDetails';
+import { PreferencesForm } from '../PreferencesForm/PreferencesForm';
+import { ProfileDetails } from '../ProfileDetails/ProfileDetails';
 import styles from './MyProfile.module.scss';
 
 /**

@@ -11,7 +11,7 @@ import {
   useMenuDisclosure,
   type FitLayout,
 } from '@org/ui';
-import { RemoteNav } from '@/components/RemoteNav';
+import { RemoteNav } from '@/components/RemoteNav/RemoteNav';
 import { APP_TITLE } from '@/core/constants/app';
 import type { RemoteEntry } from '@/core/types/remotes';
 import styles from './ShellLayout.module.scss';

@@ -3,7 +3,7 @@ import { useAuth } from '@org/auth';
 import { HttpClientError } from '@org/http-client';
 import { requireApiClient, useApi, useSubmit } from '@org/use-api';
 import { useApiClient } from '@org/mf-runtime/remote';
-import { getProfile, updatePreferences } from '../api';
+import { getProfile, updatePreferences } from '../api/profileApi';
 import type { Preferences } from '../types/profile';
 
 /** A 401 means the session ended: let the shell re-check it (the guard then shows sign-in). */

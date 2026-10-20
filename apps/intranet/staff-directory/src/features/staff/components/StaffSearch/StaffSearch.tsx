@@ -4,7 +4,7 @@ import { RemoteFallback } from '@org/ui';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { useDepartments } from '../../hooks/useDepartments';
 import { useStaffSearch } from '../../hooks/useStaffSearch';
-import { StaffCard } from '../StaffCard';
+import { StaffCard } from '../StaffCard/StaffCard';
 import styles from './StaffSearch.module.scss';
 
 /**

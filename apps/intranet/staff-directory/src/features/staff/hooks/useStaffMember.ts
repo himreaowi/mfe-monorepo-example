@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { requireApiClient, useApi } from '@org/use-api';
 import { useApiClient } from '@org/mf-runtime/remote';
-import { getStaffMember } from '../api';
+import { getStaffMember } from '../api/staffApi';
 
 export function useStaffMember(id: string) {
   const http = useApiClient();

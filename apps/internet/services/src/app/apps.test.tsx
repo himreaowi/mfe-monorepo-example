@@ -7,11 +7,11 @@ import {
   getCategories,
   getService,
   listServices,
-} from '@/features/catalogue/api';
+} from '@/features/catalogue/api/catalogueApi';
 import { dogLicence } from '@/features/catalogue/__fixtures__/services';
 import EmbeddedApp, { StandaloneApp } from './apps';
 
-jest.mock('@/features/catalogue/api');
+jest.mock('@/features/catalogue/api/catalogueApi');
 
 beforeEach(() => {
   jest.mocked(getCategories).mockResolvedValue([]);

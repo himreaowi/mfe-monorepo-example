@@ -1,11 +1,11 @@
 import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
-import { getLeaveBalance, getLeaveRequests } from '../../api';
+import { getLeaveBalance, getLeaveRequests } from '../../api/leaveApi';
 import { LeaveOverview } from './LeaveOverview';
 import { balances, request } from '../../__fixtures__/leave';
 
-jest.mock('../../api');
+jest.mock('../../api/leaveApi');
 
 function renderOverview(state?: unknown) {
   return render(

@@ -3,11 +3,14 @@ import { render, screen } from '@testing-library/react';
 import { scanExposedModule } from '@org/jest-config/exposed-module';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { ThemeProvider } from '@org/ui';
-import { getLeaveBalance, getLeaveRequests } from '@/features/leave/api';
+import {
+  getLeaveBalance,
+  getLeaveRequests,
+} from '@/features/leave/api/leaveApi';
 import { balances, request } from '@/features/leave/__fixtures__/leave';
 import EmbeddedApp, { StandaloneApp } from './apps';
 
-jest.mock('@/features/leave/api');
+jest.mock('@/features/leave/api/leaveApi');
 
 beforeEach(() => {
   jest.mocked(getLeaveBalance).mockResolvedValue(balances);

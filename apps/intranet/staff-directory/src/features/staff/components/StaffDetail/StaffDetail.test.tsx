@@ -1,10 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
-import { getStaffMember } from '../../api';
+import { getStaffMember } from '../../api/staffApi';
 import { StaffDetail } from './StaffDetail';
 
-jest.mock('../../api');
+jest.mock('../../api/staffApi');
 const getMock = jest.mocked(getStaffMember);
 
 function renderDetail(id: string) {

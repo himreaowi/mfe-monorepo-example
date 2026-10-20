@@ -2,11 +2,11 @@ import { render, screen } from '@testing-library/react';
 import { useAuth } from '@org/auth';
 import { HttpClientError } from '@org/http-client';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
-import { getProfile } from '../../api';
+import { getProfile } from '../../api/profileApi';
 import { MyProfile } from './MyProfile';
 import { profile } from '../../__fixtures__/profile';
 
-jest.mock('../../api');
+jest.mock('../../api/profileApi');
 jest.mock('@org/auth', () => ({ useAuth: jest.fn() }));
 
 const refresh = jest.fn();

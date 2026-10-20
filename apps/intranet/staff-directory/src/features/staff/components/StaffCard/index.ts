@@ -1,1 +1,0 @@
-export { StaffCard } from './StaffCard';

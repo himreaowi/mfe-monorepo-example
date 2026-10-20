@@ -6,11 +6,11 @@ import { ThemeProvider } from '@org/ui';
 import {
   getAnnouncement,
   listAnnouncements,
-} from '@/features/announcements/api';
+} from '@/features/announcements/api/announcementsApi';
 import { maintenance } from '@/features/announcements/__fixtures__/announcements';
 import EmbeddedApp, { StandaloneApp } from './apps';
 
-jest.mock('@/features/announcements/api');
+jest.mock('@/features/announcements/api/announcementsApi');
 
 beforeEach(() => {
   jest.mocked(listAnnouncements).mockResolvedValue([maintenance]);

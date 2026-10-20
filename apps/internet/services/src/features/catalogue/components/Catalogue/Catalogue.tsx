@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router';
 import { RemoteFallback } from '@org/ui';
 import { useCategories, useServices } from '../../hooks/useCatalogue';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
-import { ServiceCard } from '../ServiceCard';
+import { ServiceCard } from '../ServiceCard/ServiceCard';
 import styles from './Catalogue.module.scss';
 
 /** Services catalogue with search and a category filter (query kept in the URL). */

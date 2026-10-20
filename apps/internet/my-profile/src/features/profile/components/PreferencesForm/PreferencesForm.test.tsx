@@ -3,11 +3,11 @@ import userEvent from '@testing-library/user-event';
 import { useAuth } from '@org/auth';
 import { HttpClientError } from '@org/http-client';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
-import { updatePreferences } from '../../api';
+import { updatePreferences } from '../../api/profileApi';
 import { profile } from '../../__fixtures__/profile';
 import { PreferencesForm } from './PreferencesForm';
 
-jest.mock('../../api');
+jest.mock('../../api/profileApi');
 jest.mock('@org/auth', () => ({ useAuth: jest.fn() }));
 
 function renderProfile() {

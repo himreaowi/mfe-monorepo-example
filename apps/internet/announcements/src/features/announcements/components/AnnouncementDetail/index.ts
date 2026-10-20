@@ -1,1 +1,0 @@
-export { AnnouncementDetail } from './AnnouncementDetail';

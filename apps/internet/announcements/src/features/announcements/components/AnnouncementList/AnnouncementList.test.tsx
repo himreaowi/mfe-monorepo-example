@@ -1,11 +1,11 @@
 import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
-import { listAnnouncements } from '../../api';
+import { listAnnouncements } from '../../api/announcementsApi';
 import { maintenance } from '../../__fixtures__/announcements';
 import { AnnouncementList } from './AnnouncementList';
 
-jest.mock('../../api');
+jest.mock('../../api/announcementsApi');
 
 function renderIn(ui: React.ReactNode) {
   return render(

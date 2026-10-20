@@ -3,7 +3,7 @@
 // reachable from here may import global styles or register a service worker: the shell owns
 // the page (apps.test.tsx checks it).
 import { createRemoteApp, type HostProps } from '@org/mf-runtime/remote';
-import { StandaloneLayout } from '@/layouts/StandaloneLayout';
+import { StandaloneLayout } from '@/layouts/StandaloneLayout/StandaloneLayout';
 import { routes } from './routes';
 
 /** Mock host props for standalone mode (what the shell would pass). */

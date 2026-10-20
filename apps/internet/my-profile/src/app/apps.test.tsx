@@ -3,11 +3,11 @@ import { render, screen } from '@testing-library/react';
 import { scanExposedModule } from '@org/jest-config/exposed-module';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { ThemeProvider } from '@org/ui';
-import { getProfile } from '@/features/profile/api';
+import { getProfile } from '@/features/profile/api/profileApi';
 import { profile } from '@/features/profile/__fixtures__/profile';
 import EmbeddedApp, { StandaloneApp } from './apps';
 
-jest.mock('@/features/profile/api');
+jest.mock('@/features/profile/api/profileApi');
 
 beforeEach(() => {
   jest.mocked(getProfile).mockResolvedValue(profile);

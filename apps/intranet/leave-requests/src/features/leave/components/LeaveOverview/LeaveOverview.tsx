@@ -7,8 +7,8 @@ import { useLeaveBalance } from '../../hooks/useLeaveBalance';
 import { useLeaveRequests } from '../../hooks/useLeaveRequests';
 import type { LeaveRequest } from '../../types/leave';
 import { formatDays, formatRange } from '../../utils/dates';
-import { LeaveBalanceCards } from '../LeaveBalanceCards';
-import { LeaveRequestList } from '../LeaveRequestList';
+import { LeaveBalanceCards } from '../LeaveBalanceCards/LeaveBalanceCards';
+import { LeaveRequestList } from '../LeaveRequestList/LeaveRequestList';
 import styles from './LeaveOverview.module.scss';
 
 /** Router state the form leaves behind after a successful submit. */

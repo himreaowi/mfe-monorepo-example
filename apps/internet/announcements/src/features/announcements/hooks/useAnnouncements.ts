@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { requireApiClient, useApi } from '@org/use-api';
 import { useApiClient } from '@org/mf-runtime/remote';
-import { getAnnouncement, listAnnouncements } from '../api';
+import { getAnnouncement, listAnnouncements } from '../api/announcementsApi';
 
 export function useAnnouncements() {
   const http = useApiClient();

@@ -2,11 +2,11 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
-import { getDepartments, searchStaff } from '../../api';
+import { getDepartments, searchStaff } from '../../api/staffApi';
 import { ann } from '../../__fixtures__/staff';
 import { StaffSearch } from './StaffSearch';
 
-jest.mock('../../api');
+jest.mock('../../api/staffApi');
 
 const searchMock = jest.mocked(searchStaff);
 const departmentsMock = jest.mocked(getDepartments);
