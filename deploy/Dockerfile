@@ -40,10 +40,18 @@ RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
     && pnpm install --frozen-lockfile --offline --filter "${APP}..."
 
 # 3) Production build of that app, copied to /out (only static files leave this stage).
+# A shell with a base path (package.json mfe.basePath, e.g. /citizen) is served below it:
+# dist/ goes to html/citizen/ and nginx learns the path from mfe-base-path.inc.
 RUN pnpm --filter "${APP}" run build \
     && APP_DIR="$(pnpm --filter "${APP}" exec pwd)" \
     && test -f "$APP_DIR/dist/index.html" \
-    && cp -r "$APP_DIR/dist" /out
+    && BASE_PATH="$(node -p "String(require('$APP_DIR/package.json').mfe?.basePath ?? '/').replace(/\/+$/, '')")" \
+    && mkdir -p "/out/html$BASE_PATH" \
+    && cp -r "$APP_DIR/dist/." "/out/html$BASE_PATH/" \
+    && printf 'set $mfe_base_path "%s";\n' "$BASE_PATH" > /out/mfe-base-path.inc \
+    && if [ -n "$BASE_PATH" ]; then \
+         printf 'location = / {\n    return 302 %s/;\n}\n' "$BASE_PATH" >> /out/mfe-base-path.inc; \
+       fi
 
 # ---------------------------------------------------------------------------------------------
 # runtime: static files + nginx (non-root, port 8080)
@@ -66,7 +74,8 @@ ENV NGINX_PORT=8080 \
 
 COPY deploy/nginx/default.conf.template deploy/nginx/security-headers.inc.template /etc/nginx/templates/
 COPY --chmod=755 deploy/docker-entrypoint.d/40-mfe-manifest.sh /docker-entrypoint.d/
-COPY --from=build /out /usr/share/nginx/html
+COPY --from=build /out/html /usr/share/nginx/html
+COPY --from=build /out/mfe-base-path.inc /etc/nginx/mfe-base-path.inc
 
 USER root
 # the default server config of the image is replaced by default.conf.template;

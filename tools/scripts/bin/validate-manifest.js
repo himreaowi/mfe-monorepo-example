@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // @ts-check
 /**
- * `pnpm -s validate-manifest <file> [--zone=<zone>] [--allow-mock]`: check a per-environment
- * mfe-manifest.json before deploying it (schema, remotes of the zone's shell, no mock auth,
+ * `pnpm -s validate-manifest <file> [--zone=<zone> [--shell=<name>]] [--allow-mock]`: check a
+ * per-environment mfe-manifest.json before deploying it (schema, remotes of the shell, no mock auth,
  * https). Exit 1 on errors. See docs/devops-handoff.md.
  */
 import path from 'node:path';
@@ -14,13 +14,14 @@ const { values, positionals } = parseArgs({
   args: process.argv.slice(2).filter((a) => a !== '--'),
   options: {
     zone: { type: 'string' },
+    shell: { type: 'string' },
     'allow-mock': { type: 'boolean', default: false },
     root: { type: 'string' },
   },
 });
 if (positionals.length !== 1) {
   console.error(
-    'Usage: pnpm -s validate-manifest <mfe-manifest.json> [--zone=<zone>] [--allow-mock]',
+    'Usage: pnpm -s validate-manifest <mfe-manifest.json> [--zone=<zone> [--shell=<name>]] [--allow-mock]',
   );
   process.exit(2);
 }
@@ -35,6 +36,7 @@ const { errors, warnings } = await validateManifestFile({
   root,
   file,
   zone: values.zone,
+  shell: values.shell,
   allowMock: values['allow-mock'],
 });
 for (const w of warnings) console.warn(`warning [${w.rule}] ${w.message}`);

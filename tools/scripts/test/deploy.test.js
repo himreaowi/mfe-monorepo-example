@@ -61,11 +61,11 @@ describe('deploy/nginx templates', () => {
 
   it('caching: no-cache for index.html and manifests/entries, immutable for hashed files', () => {
     for (const match of [
-      '= /mfe-manifest.json',
+      '~ ^/(?:[a-z0-9/-]+/)?mfe-manifest\\.json$',
       '= /index.html',
       '/',
-      '~ ^/(mf-manifest\\.json|mf-stats\\.json|remoteEntry\\.js)$',
-      '~ ^/(service-worker\\.js|manifest\\.webmanifest)$',
+      '~ /(mf-manifest\\.json|mf-stats\\.json|remoteEntry\\.js)$',
+      '~ /(service-worker\\.js|manifest\\.webmanifest)$',
     ]) {
       assert.match(location(match).body, /Cache-Control "no-cache"/, match);
     }
@@ -92,8 +92,25 @@ describe('deploy/nginx templates', () => {
   });
 
   it('SPA fallback, per-env manifest from /etc/mfe, CORS from an allow-list, no source maps', () => {
-    assert.match(location('/').body, /try_files \$uri \/index\.html;/);
-    assert.match(location('= /mfe-manifest.json').body, /root \/etc\/mfe;/);
+    assert.match(
+      location('/').body,
+      /try_files \$uri \$mfe_base_path\/index\.html;/,
+    );
+    const manifest = '~ ^/(?:[a-z0-9/-]+/)?mfe-manifest\\.json$';
+    assert.match(location(manifest).body, /root \/etc\/mfe;/);
+    // the shell's manifest below its base path, before the generic *.json location
+    const re = /^\/(?:[a-z0-9/-]+\/)?mfe-manifest\.json$/;
+    for (const url of ['/mfe-manifest.json', '/citizen/mfe-manifest.json']) {
+      assert.match(url, re);
+    }
+    assert.doesNotMatch('/mf-manifest.json', re);
+    const order = locations().map((l) => l.match);
+    assert.ok(
+      order.indexOf(manifest) <
+        order.findIndex((m) => m.includes('json|js|css')),
+    );
+    assert.match(conf, /include \/etc\/nginx\/mfe-base-path\.inc;/);
+    assert.match(dockerfile, /return 302 %s\/;/);
     assert.match(conf, /"~\$\{MFE_CORS_ORIGINS_REGEX\}" \$http_origin;/);
     assert.doesNotMatch(conf, /Access-Control-Allow-Origin "\*"/);
     assert.match(location('~* \\.map$').body, /return 404;/);
@@ -139,7 +156,7 @@ describe('deploy/nginx templates', () => {
     assert.match(dockerfile, /^USER 101$/m);
     assert.match(
       dockerfile,
-      /COPY --from=build \/out \/usr\/share\/nginx\/html/,
+      /COPY --from=build \/out\/html \/usr\/share\/nginx\/html/,
     );
   });
 });
@@ -177,6 +194,49 @@ describe('validate-manifest', () => {
   }
   const VALIDATOR =
     'packages/mf-runtime/src/manifest/validateSchema.generated.js';
+
+  it('several shells in a zone: --shell picks whose remotes.json applies', async () => {
+    const root = makeWorkspace({
+      apps: {
+        'internet/shell-citizen': app('shell', {
+          zone: 'internet',
+          type: 'shell',
+          port: 3201,
+        }),
+        'internet/shell-business': app('shell', {
+          zone: 'internet',
+          type: 'shell',
+          port: 3202,
+        }),
+        'internet/services': app('services', { zone: 'internet', port: 3211 }),
+      },
+      files: {
+        'apps/internet/shell-citizen/remotes.json': {
+          remotes: [entry('internet', 'services')],
+        },
+        'apps/internet/shell-business/remotes.json': { remotes: [] },
+        'm.json': { remotes: {} },
+      },
+    });
+    fs.mkdirSync(path.join(root, path.dirname(VALIDATOR)), { recursive: true });
+    fs.copyFileSync(path.join(ROOT, VALIDATOR), path.join(root, VALIDATOR));
+    const run = (/** @type {string | undefined} */ shell) =>
+      validateManifestFile({
+        root,
+        file: path.join(root, 'm.json'),
+        zone: 'internet',
+        shell,
+      });
+    assert.match(
+      (await run(undefined)).errors[0].message,
+      /pass --shell=<name>/,
+    );
+    assert.deepEqual((await run('business')).errors, []);
+    assert.deepEqual(
+      (await run('citizen')).errors.map((e) => e.rule),
+      ['remote-missing'],
+    );
+  });
 
   it('schema errors, mock auth, http entries', async () => {
     let r = await check({ remotes: {}, extra: 1 });

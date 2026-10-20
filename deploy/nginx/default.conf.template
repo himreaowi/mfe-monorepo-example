@@ -3,6 +3,14 @@
 # in deploy/Dockerfile).
 # nginx's own variables ($uri, $http_origin, ...) are left alone.
 #
+# A shell built with a base path (package.json mfe.basePath, e.g. /citizen) is copied to
+# html/citizen/ by the Dockerfile, which also writes /etc/nginx/mfe-base-path.inc
+# (`set $mfe_base_path "/citizen";` and a `location = /` redirect to /citizen/; only the `set`,
+# empty, for "/" and for remotes): every URL of the shell is
+# below its base path (/citizen/main.<hash>.js, /citizen/mfe-manifest.json), so a reverse proxy
+# in front can route /citizen/ and /business/ to two shell containers on one domain without
+# rewriting paths (deploy/README.md, "Several shells on one domain").
+#
 # Caching rule of thumb: anything that names other files (index.html, mfe-manifest.json,
 # mf-manifest.json, remoteEntry.js, service-worker.js) is revalidated on every request; files
 # with a content hash in their name never change and are cached for a year.
@@ -20,6 +28,8 @@ server {
     server_name _;
     root /usr/share/nginx/html;
     index index.html;
+
+    include /etc/nginx/mfe-base-path.inc;
 
     server_tokens off;
     charset utf-8;
@@ -40,9 +50,10 @@ server {
         return 200 "ok\n";
     }
 
-    # Per-environment runtime config of a shell (remotes, auth/BFF URLs, settings). Written by
-    # DevOps per environment: mounted at /etc/mfe/mfe-manifest.json or MFE_MANIFEST_JSON.
-    location = /mfe-manifest.json {
+    # Per-environment runtime config of a shell (remotes, auth/BFF URLs, settings), served below
+    # the shell's base path (/mfe-manifest.json, /citizen/mfe-manifest.json). Written by DevOps
+    # per environment: mounted at /etc/mfe/mfe-manifest.json or MFE_MANIFEST_JSON.
+    location ~ ^/(?:[a-z0-9/-]+/)?mfe-manifest\.json$ {
         root /etc/mfe;
         default_type application/json;
         try_files /mfe-manifest.json =404;
@@ -51,7 +62,7 @@ server {
     }
 
     # Module Federation entry points: always revalidate (they point at hashed chunks).
-    location ~ ^/(mf-manifest\.json|mf-stats\.json|remoteEntry\.js)$ {
+    location ~ /(mf-manifest\.json|mf-stats\.json|remoteEntry\.js)$ {
         try_files $uri =404;
         add_header Cache-Control "no-cache" always;
         add_header Access-Control-Allow-Origin $mfe_cors_origin always;
@@ -60,7 +71,7 @@ server {
     }
 
     # Service worker and PWA manifest: must not be cached, or users keep an old app.
-    location ~ ^/(service-worker\.js|manifest\.webmanifest)$ {
+    location ~ /(service-worker\.js|manifest\.webmanifest)$ {
         try_files $uri =404;
         add_header Cache-Control "no-cache" always;
         include /etc/nginx/conf.d/security-headers.inc;
@@ -89,10 +100,10 @@ server {
         include /etc/nginx/conf.d/security-headers.inc;
     }
 
-    # SPA fallback: every other path (deep links such as /staff-directory/details) gets
-    # index.html, which is revalidated on every request.
+    # SPA fallback: every other path (deep links such as /staff-directory/details or
+    # /citizen/services/x) gets the shell's index.html, which is revalidated on every request.
     location / {
-        try_files $uri /index.html;
+        try_files $uri $mfe_base_path/index.html;
         add_header Cache-Control "no-cache" always;
         include /etc/nginx/conf.d/security-headers.inc;
     }
