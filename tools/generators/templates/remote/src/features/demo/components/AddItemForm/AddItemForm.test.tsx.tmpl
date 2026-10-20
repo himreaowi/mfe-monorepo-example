@@ -30,7 +30,7 @@ describe('AddItemForm', () => {
     expect(input).toHaveFocus();
   });
 
-  it('disables submit only while sending, then reports success', async () => {
+  it('submit shows loading only while sending, then reports success', async () => {
     let resolve: (value: CreateItemResult) => void = () => undefined;
     const onCreate = jest.fn(
       () => new Promise<CreateItemResult>((r) => (resolve = r)),
@@ -39,7 +39,10 @@ describe('AddItemForm', () => {
     await user.type(screen.getByLabelText('Name'), 'New item');
     await user.click(screen.getByRole('button', { name: 'Add item' }));
     expect(onCreate).toHaveBeenCalledWith({ name: 'New item' });
-    expect(screen.getByRole('button', { name: 'Adding…' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Adding…' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
     resolve({ ok: true, item: { id: 9, name: 'New item', description: '' } });
     expect(await screen.findByText('Added “New item”.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add item' })).toBeEnabled();
