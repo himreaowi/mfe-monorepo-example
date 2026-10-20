@@ -39,7 +39,7 @@
     }
   },
   "mfe": {
-    "port": 3204,
+    "port": 3213,
     "federationName": "internet_payments"
   },
   "dependencies": {

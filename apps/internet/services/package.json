@@ -32,7 +32,7 @@
     }
   },
   "mfe": {
-    "port": 3201,
+    "port": 3210,
     "federationName": "internet_services"
   },
   "dependencies": {

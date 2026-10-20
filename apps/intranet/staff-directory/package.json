@@ -32,7 +32,7 @@
     }
   },
   "mfe": {
-    "port": 3101,
+    "port": 3110,
     "federationName": "intranet_staff_directory"
   },
   "dependencies": {

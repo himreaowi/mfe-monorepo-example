@@ -1,5 +1,5 @@
 {
-  "name": "@org/shell-internet",
+  "name": "@org/shell-citizen",
   "version": "0.0.0",
   "private": true,
   "description": "Citizen Portal: host app (shell) of the internet zone",
@@ -33,8 +33,9 @@
     }
   },
   "mfe": {
-    "port": 3200,
-    "federationName": "internet_shell",
+    "port": 3201,
+    "federationName": "internet_shell_citizen",
+    "basePath": "/citizen",
     "devManifest": {
       "auth": {
         "mock": true

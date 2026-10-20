@@ -32,7 +32,7 @@
     }
   },
   "mfe": {
-    "port": 3203,
+    "port": 3212,
     "federationName": "internet_my_profile"
   },
   "dependencies": {

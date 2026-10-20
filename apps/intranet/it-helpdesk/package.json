@@ -39,7 +39,7 @@
     }
   },
   "mfe": {
-    "port": 3103,
+    "port": 3112,
     "federationName": "intranet_it_helpdesk"
   },
   "dependencies": {

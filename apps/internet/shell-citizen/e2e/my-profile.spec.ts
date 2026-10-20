@@ -45,7 +45,7 @@ test.describe('My profile (private)', () => {
     ).toBeChecked();
 
     // the home page greets the signed-in user; signing out closes the profile again
-    await page.goto('/');
+    await page.goto(zone.home);
     await expect(page.getByTestId('welcome-user')).toHaveText(
       'Welcome back, Dev User (mock).',
     );

@@ -1,16 +1,16 @@
 {
   "remotes": {
     "internet_services": {
-      "entry": "http://localhost:3201/mf-manifest.json"
+      "entry": "http://localhost:3210/mf-manifest.json"
     },
     "internet_announcements": {
-      "entry": "http://localhost:3202/mf-manifest.json"
+      "entry": "http://localhost:3211/mf-manifest.json"
     },
     "internet_my_profile": {
-      "entry": "http://localhost:3203/mf-manifest.json"
+      "entry": "http://localhost:3212/mf-manifest.json"
     },
     "internet_payments": {
-      "entry": "http://localhost:3204/mf-manifest.json",
+      "entry": "http://localhost:3213/mf-manifest.json",
       "props": {
         "vendor": {
           "url": "http://localhost:3292/payments/2.3.1/element.js",

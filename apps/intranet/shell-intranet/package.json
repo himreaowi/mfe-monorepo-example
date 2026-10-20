@@ -33,8 +33,9 @@
     }
   },
   "mfe": {
-    "port": 3100,
+    "port": 3101,
     "federationName": "intranet_shell",
+    "basePath": "/",
     "devManifest": {
       "auth": {
         "mock": true

@@ -32,7 +32,7 @@
     }
   },
   "mfe": {
-    "port": 3102,
+    "port": 3111,
     "federationName": "intranet_leave_requests"
   },
   "dependencies": {

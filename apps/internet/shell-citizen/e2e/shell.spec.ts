@@ -26,7 +26,7 @@ const HEADER_WIDTHS = [320, 375, 800, 1024, 1280];
 
 test.describe('Citizen Portal', () => {
   test('home page lists every remote in the nav', async ({ page }) => {
-    await page.goto('/');
+    await page.goto(zone.home);
     await expect(page.getByTestId('shell-welcome')).toBeVisible();
     const nav = await openNav(page);
     await expect(nav.getByRole('link', { name: 'Home' })).toBeVisible();
@@ -41,7 +41,7 @@ test.describe('Citizen Portal', () => {
   });
 
   test('the nav opens every remote without a page reload', async ({ page }) => {
-    await page.goto('/');
+    await page.goto(zone.home);
     // a full page load would drop this marker
     await page.evaluate(() => {
       (window as unknown as { __e2eSpa: boolean }).__e2eSpa = true;
@@ -69,7 +69,7 @@ test.describe('Citizen Portal', () => {
   test('header brand: full name for screen readers and on the home page', async ({
     page,
   }) => {
-    await page.goto('/');
+    await page.goto(zone.home);
     await expect(page.getByTestId('shell-welcome')).toBeVisible();
     const brand = page.getByTestId('header-brand');
     const name = ((await brand.textContent()) ?? '').trim();
@@ -91,7 +91,7 @@ test.describe('Citizen Portal', () => {
   });
 
   test('unknown paths show the 404 page', async ({ page }) => {
-    await page.goto('/e2e-no-such-page');
+    await page.goto(`${zone.home}e2e-no-such-page`);
     await expect(page.getByTestId('not-found-page')).toBeVisible();
     await page.getByRole('link', { name: 'Back to home' }).click();
     await expect(page.getByTestId('shell-welcome')).toBeVisible();
@@ -101,7 +101,7 @@ test.describe('Citizen Portal', () => {
     page,
   }) => {
     await page.emulateMedia({ colorScheme: 'light' });
-    await page.goto('/');
+    await page.goto(zone.home);
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
     await (
       await openHeaderMenu(page)
@@ -132,7 +132,7 @@ test.describe('Citizen Portal', () => {
       testInfo.project.name !== 'mobile',
       'phone disclosure; desktop widths: next test',
     );
-    await page.goto('/');
+    await page.goto(zone.home);
     await expect(page.getByTestId('shell-welcome')).toBeVisible();
     const menu = page.getByRole('button', { name: 'Menu' });
     const nav = page.getByRole('list', { name: 'Apps' });
@@ -194,7 +194,7 @@ test.describe('Citizen Portal', () => {
   test('landmarks, skip link and keyboard order', async ({
     page,
   }, testInfo) => {
-    await page.goto('/');
+    await page.goto(zone.home);
     await expect(page.getByTestId('shell-welcome')).toBeVisible();
     await expect(page.getByRole('banner')).toHaveCount(1);
     await expect(page.getByRole('main')).toHaveCount(1);
@@ -213,7 +213,7 @@ test.describe('Citizen Portal', () => {
       const layout = await page
         .getByTestId('main-header')
         .getAttribute('data-layout');
-      await page.goto('/');
+      await page.goto(zone.home);
       await expect(page.getByTestId('shell-welcome')).toBeVisible();
       const order: string[] = [];
       for (let i = 0; i < 30; i += 1) {
@@ -260,7 +260,7 @@ test.describe('Citizen Portal', () => {
         signedIn && !zone.authMock,
         'signs in with the dev mock: needs "auth": { "mock": true }',
       );
-      await page.goto('/');
+      await page.goto(zone.home);
       await expect(page.getByTestId('shell-welcome')).toBeVisible();
       if (signedIn) {
         await (
@@ -330,7 +330,7 @@ test.describe('Citizen Portal', () => {
       testInfo.project.name !== 'desktop',
       'sets its own viewport size',
     );
-    await page.goto('/');
+    await page.goto(zone.home);
     await expect(page.getByTestId('shell-welcome')).toBeVisible();
     test.skip(
       (await navPlacement(page)) !== 'side',
@@ -354,7 +354,7 @@ test.describe('Citizen Portal', () => {
   });
 
   test('offline: shows the connection banner', async ({ page, context }) => {
-    await page.goto('/');
+    await page.goto(zone.home);
     await expect(page.getByTestId('shell-welcome')).toBeVisible();
     await context.setOffline(true);
     await expect(page.getByTestId('connection-required')).toBeVisible();

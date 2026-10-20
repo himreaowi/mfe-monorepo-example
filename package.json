@@ -24,6 +24,11 @@
         "package": "@org/example-vendors",
         "description": "Example vendor demo servers (intranet: Acme Service Desk, internet: Bright Payments)"
       }
+    },
+    "zones": {
+      "internet": {
+        "defaultShell": "citizen"
+      }
     }
   },
   "scripts": {

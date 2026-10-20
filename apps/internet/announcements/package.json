@@ -32,7 +32,7 @@
     }
   },
   "mfe": {
-    "port": 3202,
+    "port": 3211,
     "federationName": "internet_announcements"
   },
   "dependencies": {

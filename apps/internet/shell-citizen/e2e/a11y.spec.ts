@@ -18,7 +18,7 @@ const targets: Target[] = [
   {
     name: 'home',
     open: async (page) => {
-      await page.goto('/');
+      await page.goto(zone.home);
       await expect(page.getByTestId('shell-welcome')).toBeVisible();
     },
   },
@@ -27,7 +27,7 @@ const targets: Target[] = [
     // side layout that is the drawer (on wide screens the sidebar is always scanned)
     name: 'home, header menu open',
     open: async (page) => {
-      await page.goto('/');
+      await page.goto(zone.home);
       await expect(page.getByTestId('shell-welcome')).toBeVisible();
       await openHeaderMenu(page);
     },
@@ -41,7 +41,7 @@ const targets: Target[] = [
         !zone.authMock,
         'needs "auth": { "mock": true } (the shell\'s package.json mfe.devManifest → mfe-manifest.dev.json)',
       );
-      await page.goto('/');
+      await page.goto(zone.home);
       await expect(page.getByTestId('shell-welcome')).toBeVisible();
       const panel = await openHeaderMenu(page);
       await panel.getByRole('button', { name: 'Sign in' }).click();
@@ -53,7 +53,7 @@ const targets: Target[] = [
   {
     name: 'not found',
     open: async (page) => {
-      await page.goto('/e2e-no-such-page');
+      await page.goto(`${zone.home}e2e-no-such-page`);
       await expect(page.getByTestId('not-found-page')).toBeVisible();
     },
   },

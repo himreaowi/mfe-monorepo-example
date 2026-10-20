@@ -1,13 +1,13 @@
 {
   "remotes": {
     "intranet_staff_directory": {
-      "entry": "http://localhost:3101/mf-manifest.json"
+      "entry": "http://localhost:3110/mf-manifest.json"
     },
     "intranet_leave_requests": {
-      "entry": "http://localhost:3102/mf-manifest.json"
+      "entry": "http://localhost:3111/mf-manifest.json"
     },
     "intranet_it_helpdesk": {
-      "entry": "http://localhost:3103/mf-manifest.json",
+      "entry": "http://localhost:3112/mf-manifest.json",
       "props": {
         "vendor": {
           "url": "http://localhost:3192/helpdesk/1.0.0/mount.js",
