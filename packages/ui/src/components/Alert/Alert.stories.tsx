@@ -36,6 +36,26 @@ export const Variants: Story = {
   ),
 };
 
+/** An error summary: heading, links to the fields; focus it after a failed submit. */
+export const ErrorSummary: Story = {
+  args: {
+    variant: 'error',
+    title: 'There is a problem',
+    headingLevel: 2,
+    tabIndex: -1,
+    children: (
+      <ul className="sb-flush">
+        <li>
+          <a href="#name">Enter your name</a>
+        </li>
+        <li>
+          <a href="#date">Enter a start date</a>
+        </li>
+      </ul>
+    ),
+  },
+};
+
 export const WithoutTitle: Story = {
   args: {
     variant: 'error',

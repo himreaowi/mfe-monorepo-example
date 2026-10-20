@@ -14,6 +14,17 @@ describe('Alert', () => {
     expect(alert).toHaveClass('alert', 'error');
   });
 
+  it('headingLevel renders the title as a heading', () => {
+    render(
+      <Alert variant="error" title="There is a problem" headingLevel={2}>
+        x
+      </Alert>,
+    );
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'There is a problem' }),
+    ).toBeInTheDocument();
+  });
+
   it('info and success are polite status messages', () => {
     render(<Alert variant="success">Saved</Alert>);
     expect(screen.getByRole('status')).toHaveTextContent('Saved');
