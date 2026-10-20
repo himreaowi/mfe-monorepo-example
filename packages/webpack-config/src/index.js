@@ -526,7 +526,12 @@ function createBaseConfig(options, mode) {
     optimization: {
       // SWC minifier (same engine as the transform) for JS, lightningcss for CSS
       minimizer: [
-        new TerserPlugin({ minify: TerserPlugin.swcMinify }),
+        new TerserPlugin({
+          minify: TerserPlugin.swcMinify,
+          // like the Rspack build before: no `.LICENSE.txt` files and no license comments kept
+          extractComments: false,
+          terserOptions: { format: { comments: false } },
+        }),
         new CssMinimizerPlugin({
           minify: CssMinimizerPlugin.lightningCssMinify,
         }),
