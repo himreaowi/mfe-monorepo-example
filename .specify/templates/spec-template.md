@@ -136,7 +136,7 @@ _Example of marking unclear requirements:_
   - PWA/offline expectations if relevant
 -->
 
-- [Zone and apps, e.g., "internet zone: new private remote my-profile, nav entry in shell-internet"]
+- [Zone and apps, e.g., "internet zone: new private remote my-profile, nav entry in the citizen shell"]
 - [Access, e.g., "my-profile requires sign-in (access: private, BFF session)"]
 - [Contract impact, e.g., "No manifest or host-prop changes"]
 - [Dependency, e.g., "date-fns (tier 2, already in the catalog)"]

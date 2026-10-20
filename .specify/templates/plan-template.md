@@ -20,8 +20,8 @@
 
 **Language/Version**: TypeScript (catalog version) + React 19, Node 24 for tooling
 
-**Primary Dependencies**: React, React Router, Rspack + Module Federation 2 via
-`@org/rspack-config`; workspace packages `@org/ui`, `@org/design-tokens`,
+**Primary Dependencies**: React, React Router, webpack 5 + Module Federation 2 via
+`@org/webpack-config`; workspace packages `@org/ui`, `@org/design-tokens`,
 `@org/mf-runtime`, `@org/auth`, `@org/http-client`, `@org/pwa` (as needed). New
 third-party dependencies: state the tier (1 / 2 / 3, `docs/adding-dependencies.md`)
 
@@ -46,7 +46,7 @@ browser (BFF); shells never import remotes, remotes never import remotes, zones
 share only `packages/*`; WCAG 2.2 AA; 375 px without horizontal scroll
 
 **Scale/Scope**: name the zone(s) and apps, e.g.
-`Zone: internet. Apps: my-profile (private remote), shell-internet (nav entry).
+`Zone: internet. Apps: my-profile (private remote), shell-citizen (nav entry).
 Packages: @org/ui (new Card). Out: intranet zone, other remotes.`
 
 ## Constitution Check
@@ -124,7 +124,7 @@ packages/
 └── [package]/                     # shared code (type:package), e.g. ui, mf-runtime
 ```
 
-**Zones / apps**: [e.g. internet: shell-internet, my-profile]
+**Zones / apps**: [e.g. internet: shell-citizen (shells listing it), my-profile]
 
 **Structure Decision**: [Concrete paths used by this feature. Unit tests beside
 the source; feature flows in the zone's `e2e/`. For a remote: standalone and

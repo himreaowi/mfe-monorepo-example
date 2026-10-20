@@ -320,7 +320,7 @@ handle formatting.
 | Test data    | feature `__fixtures__/`              | `__fixtures__/leave.ts`                      |
 | e2e spec     | shell `e2e/`                         | `e2e/leave-requests.spec.ts`                 |
 
-Package names: apps `@org/<zone>-<name>` / `@org/shell-<zone>` (generated); shared packages
+Package names: apps `@org/<zone>-<name>` / `@org/shell-<name>` (generated); shared packages
 `@org/<name>` (never with an app prefix).
 
 ## Styling

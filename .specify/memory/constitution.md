@@ -15,6 +15,9 @@ Sync Impact Report
   tasks-template.md ✅; checklist/constitution templates unchanged; .cursor/skills/speckit-*
   reviewed (generic, no edits)
 - Runtime guidance: AGENTS.md ✅, README.md ✅, docs/coding-conventions.md ✅
+- v3.1.0 (MINOR): webpack replaces Rspack; several shells per zone with base paths and a zone port
+  plan; same-origin /api and /auth proxy with variables; @org/ui library + Storybook; page-level
+  data fetching and the Context + reducer state pattern. Templates re-checked.
 - Follow-up TODOs: none
 -->
 
@@ -30,17 +33,22 @@ All frontend apps live in one pnpm + Nx workspace (D1). Each app is built and de
 own.
 
 - Apps live at `apps/<zone>/<name>/` and are created with the generators (`pnpm gen:shell`,
-  `pnpm gen:remote [--private] [--external]`). Every app declares Nx tags (`zone:`, `type:`,
-  `access:`, `kind:`) and `mfe.port` / `mfe.federationName` in its `package.json`.
-- **Zones** (`intranet`, `internet`) each have exactly one shell (`shell-<zone>`). Zones share
-  nothing but `packages/*` (D5): no remote is used by both shells.
+  `pnpm gen:remote [--shell <s>] [--private] [--external]`). Every app declares Nx tags (`zone:`, `type:`,
+  `access:`, `kind:`) and `mfe.port` / `mfe.federationName` (shells also `mfe.basePath`) in its `package.json`. Dev ports
+  per zone: proxy x00, shells x01–x09, remotes x10–x89, tools x90–x99 (intranet 31xx,
+  internet 32xx).
+- **Zones** (`intranet`, `internet`) each have one or more shells (`shell-<name>`, e.g.
+  `pnpm gen:shell internet citizen --base-path /citizen`); several shells of a zone share one
+  origin, each under its own `mfe.basePath`, and a remote may be listed by several shells of
+  the same zone (`pnpm gen:remote <zone> <name> --shell <s>`). Zones share nothing but
+  `packages/*` (D5): no remote is used by shells of two zones.
 - A **shell** loads its remotes at runtime from `/mfe-manifest.json`; it MUST NOT import remote
   code. A **remote** MUST NOT import another remote or a shell. Shared code goes to
   `packages/`.
 - Every remote MUST run standalone (`pnpm dev` in its folder, mock host props) and embedded in
   its shell, from the same feature code. Breaking either mode is a violation.
 - There is no hybrid layer (D5). Public vs signed-in areas of the internet zone are route
-  guards (`access:private`) inside the internet shell, not separate shells.
+  guards (`access:private`) inside the internet zone's shell, not a separate layer.
 - Every app and package keeps its own `node_modules` (pnpm isolated layout, D7) and declares
   every dependency it uses.
 
@@ -97,6 +105,10 @@ production MFE incidents.
 - No secrets in client bundles or manifests. Environment-specific URLs are configuration.
 - Vendors have no repo access (D3). Their modules run under a CSP allow-list, SRI-pinned,
   versioned URLs; untrusted code goes in an iframe.
+- Environment URLs are never built in: the same-origin `<base>/api` and `<base>/auth` proxy
+  (upstreams `API_UPSTREAM` / `AUTH_UPSTREAM`) and the manifest generated at container start
+  from variables (`docs/configuration.md`) keep one image for every environment; the browser
+  calls relative paths, never an absolute `apiBaseUrl`.
 - Dev-only code (mock auth, mock vendor) MUST be absent from production builds.
 
 Rationale: microfrontends multiply the code running in one origin; least privilege keeps a
@@ -104,11 +116,12 @@ single faulty or compromised module from reaching user sessions.
 
 ### V. Composition-First UI and One Design System
 
-- Shared components, tokens and theme live in `packages/ui` and `packages/design-tokens`;
+- Shared components (the `@org/ui` library, documented in Storybook), tokens and theme live in `packages/ui` and `packages/design-tokens`;
   apps consume `var(--…)` tokens instead of hardcoded colours and spacing.
 - Prefer composition (children, slots, small hooks) over boolean-prop sprawl. No Atomic Design
   folder taxonomy; one folder per component (`<Component>.tsx`, own `.module.scss`, test;
-  no `index.ts` barrel, imports name the file): shared components at `components/<Component>/`, feature UI under
+  no `index.ts` barrel, imports name the file; CSS Modules class names are readable,
+  `Component_class__hash`): shared components at `components/<Component>/`, feature UI under
   `features/<name>/components/<Component>/`.
 - The shell owns the document (global styles, theme attribute, service worker). Remotes never
   import global styles or register a service worker from their exposed module.
@@ -142,7 +155,8 @@ resilience are product quality, not polish.
 ## Technology Constraints
 
 - Node 24 LTS, pnpm via Corepack (`packageManager`), pnpm catalog (`catalogMode: manual`),
-  Nx package-based mode, Rspack + Module Federation 2 (`@module-federation/enhanced`),
+  Nx package-based mode, webpack 5 (`@org/webpack-config`) + Module Federation 2 (`@module-federation/enhanced`),
+  Storybook 10 for `@org/ui` (dev only),
   React 19, TypeScript (version in the catalog; see `docs/toolchain.md`).
 - Frontend only (D8): backends, pipelines and infrastructure belong to other teams; this repo
   provides contracts, `deploy/` reference templates and `docs/devops-handoff.md`.
@@ -156,9 +170,10 @@ apps/<zone>/<name>/src/
 ├── features/<name>/  # domain modules; index.ts = the feature's public API (the only barrel)
 │                     #   (api/, hooks/, state/, types/, utils/,
 │                     #   components/<Component>/ one folder per component, __fixtures__/)
-├── pages/            # route-level screens: call the features' data hooks, compose features
+├── pages/            # route-level screens: fetch data (page-level), compose features
 ├── layouts/          # chrome
-├── state/            # optional app-level Context + reducer (createRemoteApp providers)
+├── state/            # optional app-level Context + reducer (createRemoteApp providers);
+│                     #   shareable filters live in the URL, not in state
 ├── components/       # shared UI of this app, one folder per component
 ├── core/             # constants (routePaths, apiRoutes), types, utils (no parallel lib/)
 └── services/         # optional app-wide infra; the API client is useApiClient() (@org/mf-runtime)
@@ -191,4 +206,4 @@ Compliance: `/speckit-plan`'s Constitution Check is the primary gate; reviewers 
 reject changes that violate a MUST without an approved Complexity Tracking entry. On conflict
 with other docs, this file wins.
 
-**Version**: 3.0.0 | **Ratified**: 2026-07-30 | **Last Amended**: 2026-10-18
+**Version**: 3.1.0 | **Ratified**: 2026-07-30 | **Last Amended**: 2026-10-21
