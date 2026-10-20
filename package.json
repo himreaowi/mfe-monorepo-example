@@ -18,6 +18,16 @@
       "mockVendor": {
         "offset": 1,
         "package": "@org/mock-vendor"
+      },
+      "storybook": {
+        "offset": 2,
+        "package": "@org/ui",
+        "description": "Storybook dev server of @org/ui (pnpm storybook). Not per zone: intranet tools port only (3192)."
+      },
+      "storybookTest": {
+        "offset": 3,
+        "package": "@org/ui",
+        "description": "Static Storybook server for the @org/ui a11y and visual tests (pnpm test:ui). Intranet tools port only (3193)."
       }
     }
   },
@@ -28,8 +38,12 @@
     "dev-manifest": "node tools/scripts/bin/dev-manifest.js",
     "lint": "node tools/scripts/bin/check.js && nx run-many -t lint",
     "test": "nx run-many -t test",
+    "test:ui": "nx run @org/ui:test-ui --output-style=static",
+    "test:ui:update": "nx run @org/ui:test-ui --output-style=static -- --update-snapshots",
     "typecheck": "nx run-many -t typecheck",
     "build": "nx run-many -t build",
+    "storybook": "nx run @org/ui:storybook",
+    "build-storybook": "nx run @org/ui:build-storybook --output-style=static",
     "e2e": "node tools/scripts/bin/e2e.js",
     "e2e:intranet": "node tools/scripts/bin/e2e.js --zone=intranet",
     "e2e:internet": "node tools/scripts/bin/e2e.js --zone=internet",

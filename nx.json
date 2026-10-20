@@ -11,7 +11,10 @@
       "default",
       "!{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)",
       "!{projectRoot}/**/__tests__/**",
-      "!{projectRoot}/e2e/**"
+      "!{projectRoot}/e2e/**",
+      "!{projectRoot}/**/*.stories.[jt]s?(x)",
+      "!{projectRoot}/.storybook/**",
+      "!{projectRoot}/visual/**"
     ]
   },
   "targetDefaults": {

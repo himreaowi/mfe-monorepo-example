@@ -2,7 +2,16 @@
   "extends": "@org/tsconfig/library.json",
   "compilerOptions": {
     "noEmit": true,
-    "types": ["jest", "node", "@testing-library/jest-dom"]
+    "types": [
+      "jest",
+      "node",
+      "@testing-library/jest-dom"
+    ],
+    "allowJs": true
   },
-  "include": ["src"]
+  "include": [
+    "src",
+    ".storybook",
+    "visual"
+  ]
 }

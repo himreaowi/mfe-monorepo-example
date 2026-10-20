@@ -17,6 +17,8 @@ export const ignores = [
   'test-results/**',
   '.tmp-tests/**',
   '.blob/**',
+  // Storybook static build of @org/ui (pnpm build-storybook)
+  '**/storybook-static/**',
 ];
 
 /**

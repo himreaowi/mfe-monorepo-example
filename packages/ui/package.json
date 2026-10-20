@@ -15,12 +15,37 @@
   "scripts": {
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "jest"
+    "test": "jest",
+    "storybook": "node .storybook/run.js",
+    "build-storybook": "storybook build --quiet --output-dir storybook-static",
+    "test-ui": "playwright test -c visual/playwright.config.ts"
   },
   "nx": {
     "tags": [
       "type:package"
-    ]
+    ],
+    "targets": {
+      "storybook": {
+        "continuous": true,
+        "cache": false
+      },
+      "build-storybook": {
+        "cache": true,
+        "inputs": [
+          "default",
+          "^production"
+        ],
+        "outputs": [
+          "{projectRoot}/storybook-static"
+        ]
+      },
+      "test-ui": {
+        "cache": false,
+        "dependsOn": [
+          "build-storybook"
+        ]
+      }
+    }
   },
   "dependencies": {
     "@org/design-tokens": "workspace:*"
@@ -31,9 +56,13 @@
     "react-router": "^8.0.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "catalog:",
     "@org/eslint-config": "workspace:*",
     "@org/jest-config": "workspace:*",
     "@org/tsconfig": "workspace:*",
+    "@playwright/test": "catalog:",
+    "@storybook/react-webpack5": "catalog:",
+    "@swc/core": "catalog:",
     "@testing-library/dom": "catalog:",
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/react": "catalog:",
@@ -42,12 +71,19 @@
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "css-loader": "catalog:",
     "eslint": "catalog:",
     "jest": "catalog:",
+    "mini-css-extract-plugin": "catalog:",
     "prettier": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-router": "catalog:",
-    "typescript": "catalog:"
+    "sass": "catalog:",
+    "sass-loader": "catalog:",
+    "storybook": "catalog:",
+    "swc-loader": "catalog:",
+    "typescript": "catalog:",
+    "webpack": "catalog:"
   }
 }

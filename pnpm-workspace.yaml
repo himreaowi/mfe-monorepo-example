@@ -20,6 +20,8 @@ allowBuilds:
   '@parcel/watcher': false
   '@swc/core': false
   unrs-resolver: false
+  # Storybook (dev only) bundles with esbuild; its binary comes as an optional dependency.
+  esbuild: false
 
 # react-router's .d.ts files import 'react' but it does not declare @types/react. In the isolated
 # layout TypeScript then walks up past the repo and may pick up a stray @types/react (e.g. v18 in
@@ -94,6 +96,9 @@ catalog:
   # e2e (playwright-config, generated shells)
   '@axe-core/playwright': 4.14.0
   '@playwright/test': 1.64.1
+  # Storybook for @org/ui (dev only: never a dependency of an app, never in an app bundle)
+  storybook: 10.6.2
+  '@storybook/react-webpack5': 10.6.2
   # mf-runtime (manifest validator codegen, dev only)
   ajv: 8.20.0
   # tools/scripts (reads pnpm-workspace.yaml)
