@@ -1,8 +1,7 @@
 import { useState, type ReactNode } from 'react';
-import { Link } from 'react-router';
 import { useAuth } from '@org/auth';
 import { useHostProps, useRemotePath } from '@org/mf-runtime/remote';
-import { Button } from '@org/ui';
+import { Button, Card, Link } from '@org/ui';
 import { ModeBadge } from '@/components/ModeBadge/ModeBadge';
 import { APP_TITLE } from '@/core/constants/app';
 import { routePaths } from '@/core/constants/routePaths';
@@ -22,7 +21,8 @@ export function Demo({ children }: { children?: ReactNode }) {
   const [count, setCount] = useState(0);
 
   return (
-    <section
+    <Card
+      as="section"
       className={styles.panel}
       data-testid="demo-feature"
       data-embedded={embedded ? 'true' : 'false'}
@@ -45,6 +45,6 @@ export function Demo({ children }: { children?: ReactNode }) {
         <Link to={toPath(routePaths.details)}>Go to details</Link>
       </div>
       {children}
-    </section>
+    </Card>
   );
 }

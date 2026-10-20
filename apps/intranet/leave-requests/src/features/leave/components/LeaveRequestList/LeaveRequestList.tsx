@@ -1,3 +1,4 @@
+import { Badge, Card, type BadgeVariant } from '@org/ui';
 import type {
   LeaveBalance,
   LeaveRequest,
@@ -6,10 +7,10 @@ import type {
 import { formatDate, formatDays, formatRange } from '../../utils/dates';
 import styles from './LeaveRequestList.module.scss';
 
-const STATUS_LABELS: Record<LeaveStatus, string> = {
-  pending: 'Waiting for approval',
-  approved: 'Approved',
-  rejected: 'Not approved',
+const STATUS: Record<LeaveStatus, { label: string; variant: BadgeVariant }> = {
+  pending: { label: 'Waiting for approval', variant: 'warning' },
+  approved: { label: 'Approved', variant: 'success' },
+  rejected: { label: 'Not approved', variant: 'danger' },
 };
 
 export function LeaveRequestList({
@@ -29,7 +30,8 @@ export function LeaveRequestList({
   return (
     <ul className={styles.requests} aria-label="Your leave requests">
       {requests.map((request) => (
-        <li
+        <Card
+          as="li"
           key={request.id}
           className={styles.request}
           data-testid="leave-request"
@@ -38,7 +40,12 @@ export function LeaveRequestList({
             {label(request.type)}:{' '}
             {formatRange(request.startDate, request.endDate)}
           </h3>
-          <span className={styles.status}>{STATUS_LABELS[request.status]}</span>
+          <Badge
+            variant={STATUS[request.status].variant}
+            className={styles.status}
+          >
+            {STATUS[request.status].label}
+          </Badge>
           <p className={styles.full}>
             {formatDays(request.days)}
             {request.reason ? ` · ${request.reason}` : ''}
@@ -46,7 +53,7 @@ export function LeaveRequestList({
           <p className={`${styles.full} ${styles.muted}`}>
             {request.id}, requested {formatDate(request.createdAt)}
           </p>
-        </li>
+        </Card>
       ))}
     </ul>
   );

@@ -9,45 +9,15 @@
   border-radius: var(--radius);
 }
 
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-
-  label {
-    font-weight: 600;
-  }
-
-  input,
-  select,
-  textarea {
-    font: inherit;
-    width: 100%;
-    min-height: 2.5rem;
-    padding: var(--space-2);
-    color: var(--color-text);
-    background: var(--color-surface);
-    border: 1px solid var(--color-text-muted);
-    border-radius: var(--radius);
-    color-scheme: light dark;
-  }
-
-  input:focus-visible,
-  select:focus-visible,
-  textarea:focus-visible {
-    outline: 3px solid var(--color-accent);
-    outline-offset: 2px;
-  }
-
-  [aria-invalid='true'] {
-    border: 2px solid var(--color-danger);
-  }
-}
-
 .dates {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
   gap: var(--space-4);
+}
+
+// full width of its grid column (the library's DateField sizes to its content)
+.date {
+  align-self: stretch;
 }
 
 .hint {
@@ -56,29 +26,7 @@
   color: var(--color-text-muted);
 }
 
-.error {
-  margin: 0;
-  color: var(--color-danger);
-  font-weight: 600;
-}
-
 .summary {
-  padding: var(--space-4);
-  border: 2px solid var(--color-danger);
-  border-radius: var(--radius);
-  background: var(--color-danger-bg);
-  color: var(--color-text);
-
-  &:focus-visible {
-    outline: 3px solid var(--color-accent);
-    outline-offset: 2px;
-  }
-
-  h2 {
-    margin: 0 0 var(--space-2);
-    font-size: 1.125rem;
-  }
-
   ul {
     margin: 0;
     padding-left: var(--space-6);
@@ -87,6 +35,11 @@
   a {
     color: var(--color-danger);
     font-weight: 600;
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--color-accent);
+    outline-offset: 2px;
   }
 }
 
@@ -103,6 +56,6 @@
   height: 1px;
   margin: -1px;
   overflow: hidden;
-  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
   white-space: nowrap;
 }

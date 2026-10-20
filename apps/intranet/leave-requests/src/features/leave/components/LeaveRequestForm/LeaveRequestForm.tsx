@@ -1,7 +1,15 @@
 import { useId, useRef, useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { useNavigate } from 'react-router';
 import { useRemotePath } from '@org/mf-runtime/remote';
-import { Button, RemoteFallback } from '@org/ui';
+import {
+  Alert,
+  Button,
+  DateField,
+  Link,
+  RemoteFallback,
+  Select,
+  TextArea,
+} from '@org/ui';
 import type { ApiResult, SubmitResult } from '@org/use-api';
 import { routePaths } from '@/core/constants/routePaths';
 import { LeaveValidationError } from '../../api/leaveApi';
@@ -17,7 +25,6 @@ import type {
 import { countWorkingDays, formatDays, todayIso } from '../../utils/dates';
 import { MAX_REASON_LENGTH, validateLeave } from '../../utils/validateLeave';
 import type { LeaveOverviewState } from '../LeaveOverview/LeaveOverview';
-import { Field } from './Field';
 import styles from './LeaveRequestForm.module.scss';
 
 const EMPTY: LeaveRequestInput = {
@@ -121,15 +128,15 @@ export function LeaveRequestForm({
         Leave details
       </h2>
       {errorList.length > 0 ? (
-        <div
+        <Alert
           ref={summaryRef}
+          variant="error"
+          title="There is a problem"
+          headingLevel={2}
           className={styles.summary}
-          role="alert"
           tabIndex={-1}
-          aria-labelledby={`${idPrefix}-summary`}
           data-testid="error-summary"
         >
-          <h2 id={`${idPrefix}-summary`}>There is a problem</h2>
           <ul>
             {errorList.map((field) => (
               <li key={field}>
@@ -145,69 +152,45 @@ export function LeaveRequestForm({
               </li>
             ))}
           </ul>
-        </div>
+        </Alert>
       ) : null}
 
-      <Field id={ids.type} label="Leave type" error={errors.type}>
-        {(describedBy) => (
-          <select
-            id={ids.type}
-            value={values.type}
-            aria-describedby={describedBy}
-            aria-invalid={errors.type ? true : undefined}
-            onChange={(event) => set('type', event.target.value as LeaveType)}
-          >
-            <option value="">
-              {balance.status === 'loading'
-                ? 'Loading…'
-                : 'Choose a leave type'}
-            </option>
-            {balances.map((b) => (
-              <option key={b.type} value={b.type}>
-                {balanceLabel(b)}
-              </option>
-            ))}
-          </select>
-        )}
-      </Field>
+      <Select
+        id={ids.type}
+        label="Leave type"
+        error={errors.type}
+        value={values.type}
+        onChange={(event) => set('type', event.target.value as LeaveType)}
+        placeholder={
+          balance.status === 'loading' ? 'Loading…' : 'Choose a leave type'
+        }
+        options={balances.map((b) => ({
+          value: b.type,
+          label: balanceLabel(b),
+        }))}
+      />
 
       <div className={styles.dates}>
-        <Field
+        <DateField
           id={ids.startDate}
           label="First day"
           hint="Today or later"
           error={errors.startDate}
-        >
-          {(describedBy) => (
-            <input
-              id={ids.startDate}
-              type="date"
-              min={today}
-              value={values.startDate}
-              aria-describedby={describedBy}
-              aria-invalid={errors.startDate ? true : undefined}
-              onChange={(event) => set('startDate', event.target.value)}
-            />
-          )}
-        </Field>
-        <Field
+          inputClassName={styles.date}
+          min={today}
+          value={values.startDate}
+          onChange={(event) => set('startDate', event.target.value)}
+        />
+        <DateField
           id={ids.endDate}
           label="Last day"
           hint="Same as the first day for one day"
           error={errors.endDate}
-        >
-          {(describedBy) => (
-            <input
-              id={ids.endDate}
-              type="date"
-              min={values.startDate || today}
-              value={values.endDate}
-              aria-describedby={describedBy}
-              aria-invalid={errors.endDate ? true : undefined}
-              onChange={(event) => set('endDate', event.target.value)}
-            />
-          )}
-        </Field>
+          inputClassName={styles.date}
+          min={values.startDate || today}
+          value={values.endDate}
+          onChange={(event) => set('endDate', event.target.value)}
+        />
       </div>
       <p className={styles.hint} aria-live="polite" data-testid="leave-days">
         {days > 0
@@ -215,31 +198,19 @@ export function LeaveRequestForm({
           : ''}
       </p>
 
-      <Field
+      <TextArea
         id={ids.reason}
         label="Reason (optional)"
         hint={`Up to ${MAX_REASON_LENGTH} characters. Your manager sees it.`}
         error={errors.reason}
-      >
-        {(describedBy) => (
-          <textarea
-            id={ids.reason}
-            rows={3}
-            value={values.reason}
-            aria-describedby={describedBy}
-            aria-invalid={errors.reason ? true : undefined}
-            onChange={(event) => set('reason', event.target.value)}
-          />
-        )}
-      </Field>
+        rows={3}
+        value={values.reason}
+        onChange={(event) => set('reason', event.target.value)}
+      />
 
-      {sendError ? (
-        <p className={styles.error} role="alert">
-          {sendError}
-        </p>
-      ) : null}
+      {sendError ? <Alert variant="error">{sendError}</Alert> : null}
       <div className={styles.actions}>
-        <Button type="submit" disabled={submitting}>
+        <Button type="submit" loading={submitting}>
           {submitting ? 'Sending…' : 'Send request'}
         </Button>
         <Link to={toPath(routePaths.overview)}>Cancel</Link>

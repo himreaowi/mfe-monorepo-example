@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { Button } from '@org/ui';
+import { Alert, Button, TextField } from '@org/ui';
 import { FEDERATION_NAME } from '@/core/constants/app';
 import type { CreateItemResult } from '../../hooks/useCreateItem';
 import type { Item, ItemDraft, ItemFieldErrors } from '../../types/item';
@@ -7,12 +7,12 @@ import { validateItemDraft } from '../../utils/validation';
 import styles from './AddItemForm.module.scss';
 
 const NAME_ID = `${FEDERATION_NAME}-item-name`;
-const NAME_ERROR_ID = `${NAME_ID}-error`;
 
 /**
  * The form pattern of docs/coding-conventions.md: validate on submit, then an error summary
  * (focused, links to the fields) plus an error next to each field; server 422 errors land in
- * the same places; submit is disabled only while sending.
+ * the same places; while sending, the submit button shows `loading` (it keeps focus).
+ * Fields and messages come from @org/ui (TextField wires label, error and aria-* itself).
  *
  * It sends nothing itself: `onCreate` comes from the page (`useCreateItem()`), the form keeps
  * only its own UI state (field value, errors, "sending").
@@ -81,17 +81,15 @@ export function AddItemForm({
         Add an item
       </h3>
       {fieldErrors.length > 0 ? (
-        <div
+        <Alert
           ref={summaryRef}
+          variant="error"
+          title="There is a problem"
+          headingLevel={4}
           className={styles.errorSummary}
-          role="alert"
           tabIndex={-1}
-          aria-labelledby="demo-error-summary-title"
           data-testid="error-summary"
         >
-          <h4 id="demo-error-summary-title" className={styles.summaryTitle}>
-            There is a problem
-          </h4>
           <ul>
             {fieldErrors.map(([field, message]) => (
               <li key={field}>
@@ -107,35 +105,22 @@ export function AddItemForm({
               </li>
             ))}
           </ul>
-        </div>
+        </Alert>
       ) : null}
-      {formError ? (
-        <p className={styles.error} role="alert">
-          {formError}
-        </p>
-      ) : null}
-      <div className={styles.field}>
-        <label htmlFor={NAME_ID}>Name</label>
-        {errors.name ? (
-          <p id={NAME_ERROR_ID} className={styles.fieldError}>
-            <span className={styles.visuallyHidden}>Error: </span>
-            {errors.name}
-          </p>
-        ) : null}
-        <input
-          ref={nameRef}
-          id={NAME_ID}
-          name="name"
-          className={styles.input}
-          value={name}
-          autoComplete="off"
-          aria-invalid={errors.name ? true : undefined}
-          aria-describedby={errors.name ? NAME_ERROR_ID : undefined}
-          onChange={(event) => setName(event.target.value)}
-        />
-      </div>
+      {formError ? <Alert variant="error">{formError}</Alert> : null}
+      <TextField
+        ref={nameRef}
+        id={NAME_ID}
+        label="Name"
+        name="name"
+        className={styles.field}
+        value={name}
+        autoComplete="off"
+        error={errors.name}
+        onChange={(event) => setName(event.target.value)}
+      />
       <div className={styles.row}>
-        <Button type="submit" disabled={sending}>
+        <Button type="submit" loading={sending}>
           {sending ? 'Adding…' : 'Add item'}
         </Button>
         <p className={styles.copy} role="status">

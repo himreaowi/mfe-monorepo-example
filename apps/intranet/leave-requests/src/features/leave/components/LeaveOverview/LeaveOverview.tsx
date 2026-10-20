@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router';
 import { useRemotePath } from '@org/mf-runtime/remote';
-import { RemoteFallback } from '@org/ui';
+import { Alert, RemoteFallback, Spinner } from '@org/ui';
 import type { ApiResult } from '@org/use-api';
 import { routePaths } from '@/core/constants/routePaths';
 import type { LeaveBalances, LeaveRequest } from '../../types/leave';
@@ -32,7 +32,7 @@ export function LeaveOverview({
 }) {
   const toPath = useRemotePath();
   const created = createdFrom(useLocation().state);
-  const successRef = useRef<HTMLParagraphElement>(null);
+  const successRef = useRef<HTMLDivElement>(null);
   const createdId = created?.id;
 
   // Coming back from the form: move focus to the confirmation so it is read out.
@@ -49,17 +49,17 @@ export function LeaveOverview({
         </Link>
       </div>
       {created ? (
-        <p
+        <Alert
           ref={successRef}
+          variant="success"
           className={styles.success}
-          role="status"
           tabIndex={-1}
           data-testid="leave-created"
         >
           Request {created.id} sent: {formatDays(created.days)},{' '}
           {formatRange(created.startDate, created.endDate)}. Your manager will
           review it.
-        </p>
+        </Alert>
       ) : null}
 
       <section aria-labelledby="leave-balance-title">
@@ -68,7 +68,7 @@ export function LeaveOverview({
           {balance.status === 'success' ? ` for ${balance.data.year}` : ''}
         </h2>
         {balance.status === 'loading' ? (
-          <p role="status">Loading your balance…</p>
+          <Spinner label="Loading your balance…" labelVisible />
         ) : null}
         {balance.status === 'error' ? (
           <RemoteFallback
@@ -87,7 +87,7 @@ export function LeaveOverview({
           Your requests
         </h2>
         {requests.status === 'loading' ? (
-          <p role="status">Loading your requests…</p>
+          <Spinner label="Loading your requests…" labelVisible />
         ) : null}
         {requests.status === 'error' ? (
           <RemoteFallback
