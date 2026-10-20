@@ -37,7 +37,7 @@ describe('PreferencesForm', () => {
     expect(screen.getByRole('button', { name: 'Save choices' })).toBeEnabled();
   });
 
-  it('saves the notification choices, disabled only while saving, and confirms', async () => {
+  it('saves the notification choices, busy (loading) only while saving, and confirms', async () => {
     let resolve: (value: Profile) => void = () => undefined;
     const send = jest.fn(() => new Promise<Profile>((r) => (resolve = r)));
     const { user } = renderForm(send);
@@ -49,7 +49,10 @@ describe('PreferencesForm', () => {
       emailUpdates: true,
       smsReminders: true,
     });
-    expect(screen.getByRole('button', { name: 'Saving…' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Saving…' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
     resolve({
       ...profile,
       preferences: { emailUpdates: true, smsReminders: true },

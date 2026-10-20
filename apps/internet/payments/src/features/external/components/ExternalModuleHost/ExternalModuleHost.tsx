@@ -6,7 +6,7 @@ import {
   type ExternalNavigateOptions,
 } from '@org/mf-runtime/external';
 import { joinBasePath, useHostProps } from '@org/mf-runtime/remote';
-import { RemoteFallback, useTheme } from '@org/ui';
+import { RemoteFallback, Spinner, useTheme } from '@org/ui';
 import { APP_TITLE, FEDERATION_NAME } from '@/core/constants/app';
 import {
   describeError,
@@ -98,7 +98,9 @@ export function ExternalModuleHost() {
           onNavigate={onNavigate}
           onEvent={onEvent}
           onError={onError}
-          loading={<p role="status">Loading the payment service…</p>}
+          loading={
+            <Spinner label="Loading the payment service…" labelVisible />
+          }
         />
       )}
     </section>

@@ -1,12 +1,7 @@
-.card {
-  display: flex;
-  flex-direction: column;
+// compact card in the results grid (`ul` raises specificity over the @org/ui Card)
+ul .card {
   gap: var(--space-1);
   padding: var(--space-4);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
   overflow-wrap: anywhere;
 
   p {
@@ -17,22 +12,10 @@
 .name {
   margin: 0;
   font-size: 1.125rem;
-
-  a {
-    color: var(--color-accent);
-  }
 }
 
 .muted {
   color: var(--color-text-muted);
-}
-
-.tag {
-  display: inline-block;
-  padding: 0 var(--space-2);
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  background: var(--color-bg);
 }
 
 .badges {

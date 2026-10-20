@@ -1,5 +1,5 @@
 import { useHostProps } from '@org/mf-runtime/remote';
-import { RemoteFallback } from '@org/ui';
+import { RemoteFallback, Spinner } from '@org/ui';
 import type { ApiResult, SubmitResult } from '@org/use-api';
 import type { Preferences, Profile } from '../../types/profile';
 import { PreferencesForm } from '../PreferencesForm/PreferencesForm';
@@ -29,7 +29,7 @@ export function MyProfile({
         </p>
       </div>
       {profile.status === 'loading' ? (
-        <p role="status">Loading your profile…</p>
+        <Spinner label="Loading your profile…" labelVisible />
       ) : null}
       {profile.status === 'error' ? (
         <RemoteFallback

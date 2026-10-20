@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import { Select, TextField } from '@org/ui';
 import {
   useStaffFilters,
   useStaffFiltersDispatch,
@@ -23,38 +24,31 @@ export function StaffFilters({ departments }: { departments: string[] }) {
       aria-label="Staff"
       onSubmit={(event) => event.preventDefault()}
     >
-      <div className={styles.field}>
-        <label htmlFor={searchId}>Search staff</label>
-        <input
-          id={searchId}
-          type="search"
-          value={q}
-          autoComplete="off"
-          onChange={(event) =>
-            dispatch({ type: 'queryChanged', q: event.target.value })
-          }
-        />
-      </div>
-      <div className={styles.field}>
-        <label htmlFor={departmentId}>Department</label>
-        <select
-          id={departmentId}
-          value={department}
-          onChange={(event) =>
-            dispatch({
-              type: 'departmentChanged',
-              department: event.target.value,
-            })
-          }
-        >
-          <option value="">All departments</option>
-          {departments.map((name) => (
-            <option key={name} value={name}>
-              {name}
-            </option>
-          ))}
-        </select>
-      </div>
+      <TextField
+        id={searchId}
+        className={styles.field}
+        label="Search staff"
+        type="search"
+        value={q}
+        autoComplete="off"
+        onChange={(event) =>
+          dispatch({ type: 'queryChanged', q: event.target.value })
+        }
+      />
+      <Select
+        id={departmentId}
+        className={styles.field}
+        label="Department"
+        value={department}
+        onChange={(event) =>
+          dispatch({
+            type: 'departmentChanged',
+            department: event.target.value,
+          })
+        }
+        placeholder="All departments"
+        options={departments.map((name) => ({ value: name, label: name }))}
+      />
     </form>
   );
 }

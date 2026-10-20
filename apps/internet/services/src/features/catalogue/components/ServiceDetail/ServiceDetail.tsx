@@ -1,6 +1,6 @@
 import { Link } from 'react-router';
 import { useRemotePath } from '@org/mf-runtime/remote';
-import { RemoteFallback } from '@org/ui';
+import { RemoteFallback, Spinner } from '@org/ui';
 import type { ApiResult } from '@org/use-api';
 import { routePaths } from '@/core/constants/routePaths';
 import { formatFee } from '@/core/utils/formatMoney';
@@ -29,7 +29,7 @@ export function ServiceDetail({
     return (
       <section className={styles.page} data-testid="service-detail">
         <h1 className={styles.title}>Service</h1>
-        <p role="status">Loading…</p>
+        <Spinner labelVisible />
       </section>
     );
   }

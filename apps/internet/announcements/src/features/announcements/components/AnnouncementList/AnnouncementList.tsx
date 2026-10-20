@@ -1,6 +1,5 @@
-import { Link } from 'react-router';
 import { useRemotePath } from '@org/mf-runtime/remote';
-import { RemoteFallback } from '@org/ui';
+import { Card, Link, RemoteFallback, Spinner } from '@org/ui';
 import type { ApiResult } from '@org/use-api';
 import { announcementPath } from '@/core/constants/routePaths';
 import { formatDate } from '@/core/utils/formatDate';
@@ -25,7 +24,7 @@ export function AnnouncementList({
         News about our services, fees and planned maintenance.
       </p>
       {announcements.status === 'loading' ? (
-        <p role="status">Loading announcements…</p>
+        <Spinner label="Loading announcements…" labelVisible />
       ) : null}
       {announcements.status === 'error' ? (
         <RemoteFallback
@@ -40,7 +39,8 @@ export function AnnouncementList({
       {announcements.status === 'success' && announcements.data.length > 0 ? (
         <ul className={styles.list} aria-label="Announcements">
           {announcements.data.map((item) => (
-            <li
+            <Card
+              as="li"
               key={item.id}
               className={styles.item}
               data-testid="announcement"
@@ -55,7 +55,7 @@ export function AnnouncementList({
                 , {item.category}
               </p>
               <p>{item.summary}</p>
-            </li>
+            </Card>
           ))}
         </ul>
       ) : null}

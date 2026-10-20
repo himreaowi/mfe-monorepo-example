@@ -6,7 +6,7 @@ import {
   type ExternalNavigateOptions,
 } from '@org/mf-runtime/external';
 import { joinBasePath, useHostProps } from '@org/mf-runtime/remote';
-import { RemoteFallback, useTheme } from '@org/ui';
+import { RemoteFallback, Spinner, useTheme } from '@org/ui';
 import { APP_TITLE, FEDERATION_NAME } from '@/core/constants/app';
 import { describeError, describeEvent } from '../../utils/activity';
 import { resolveVendorConfig } from '../../utils/vendorConfig';
@@ -85,7 +85,7 @@ export function ExternalModuleHost() {
           onNavigate={onNavigate}
           onEvent={onEvent}
           onError={onError}
-          loading={<p role="status">Loading the ticket desk…</p>}
+          loading={<Spinner label="Loading the ticket desk…" labelVisible />}
         />
       )}
       <aside

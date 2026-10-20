@@ -1,5 +1,5 @@
 import { useId } from 'react';
-import { RemoteFallback } from '@org/ui';
+import { RemoteFallback, Select, TextField } from '@org/ui';
 import type { ApiResult } from '@org/use-api';
 import type { CatalogueQuery, CatalogueResult } from '../../types/service';
 import { ServiceCard } from '../ServiceCard/ServiceCard';
@@ -49,33 +49,28 @@ export function Catalogue({
         aria-label="Services"
         onSubmit={(event) => event.preventDefault()}
       >
-        <div className={styles.field}>
-          <label htmlFor={searchId}>Search services</label>
-          <input
-            id={searchId}
-            type="search"
-            value={q}
-            autoComplete="off"
-            onChange={(event) => onQueryChange('q', event.target.value)}
-          />
-        </div>
-        <div className={styles.field}>
-          <label htmlFor={categoryId}>Topic</label>
-          <select
-            id={categoryId}
-            value={category}
-            onChange={(event) => onQueryChange('category', event.target.value)}
-          >
-            <option value="">All topics</option>
-            {categories.status === 'success'
-              ? categories.data.map((name) => (
-                  <option key={name} value={name}>
-                    {name}
-                  </option>
-                ))
-              : null}
-          </select>
-        </div>
+        <TextField
+          id={searchId}
+          className={styles.field}
+          label="Search services"
+          type="search"
+          value={q}
+          autoComplete="off"
+          onChange={(event) => onQueryChange('q', event.target.value)}
+        />
+        <Select
+          id={categoryId}
+          className={styles.field}
+          label="Topic"
+          value={category}
+          onChange={(event) => onQueryChange('category', event.target.value)}
+          placeholder="All topics"
+          options={
+            categories.status === 'success'
+              ? categories.data.map((name) => ({ value: name, label: name }))
+              : []
+          }
+        />
       </form>
       <p className={styles.status} role="status" data-testid="service-count">
         {count}

@@ -1,6 +1,6 @@
 import { useId, useRef, useState, type FormEvent } from 'react';
 import { HttpClientError } from '@org/http-client';
-import { Button } from '@org/ui';
+import { Alert, Button, Checkbox, VisuallyHidden } from '@org/ui';
 import type { SubmitResult } from '@org/use-api';
 import type { Preferences, Profile } from '../../types/profile';
 import styles from './PreferencesForm.module.scss';
@@ -20,7 +20,7 @@ function preferencesError(error: Error): string | undefined {
  * Notification choices; saved with a PUT that carries the CSRF header. Two checkboxes cannot be
  * invalid on the client, so only the server validates: a 422 is shown like any form error
  * (focused error summary linking to the choices + the error next to them,
- * docs/coding-conventions.md), other failures as a form-level error. The button is disabled
+ * docs/coding-conventions.md), other failures as a form-level error. The button shows `loading`
  * only while saving. It sends nothing itself: `save` comes from the page
  * (`useSavePreferences()`); the form keeps only its own UI state (choices, field error).
  */
@@ -75,15 +75,15 @@ export function PreferencesForm({
     >
       <h2 id="preferences-title">Notifications</h2>
       {fieldError ? (
-        <div
+        <Alert
           ref={summaryRef}
+          variant="error"
+          title="There is a problem"
+          headingLevel={3}
           className={styles.summary}
-          role="alert"
           tabIndex={-1}
-          aria-labelledby={`${id}-summary`}
           data-testid="error-summary"
         >
-          <h3 id={`${id}-summary`}>There is a problem</h3>
           <ul>
             <li>
               <a
@@ -97,7 +97,7 @@ export function PreferencesForm({
               </a>
             </li>
           </ul>
-        </div>
+        </Alert>
       ) : null}
       <fieldset
         className={styles.fieldset}
@@ -106,34 +106,28 @@ export function PreferencesForm({
         <legend>How should we keep you informed?</legend>
         {fieldError ? (
           <p className={styles.error} id={errorId}>
-            <span className={styles.visuallyHidden}>Error: </span>
+            <VisuallyHidden>Error: </VisuallyHidden>
             {fieldError}
           </p>
         ) : null}
-        <label className={styles.check}>
-          <input
-            id={firstChoiceId}
-            type="checkbox"
-            checked={values.emailUpdates}
-            aria-invalid={fieldError ? true : undefined}
-            onChange={(event) => toggle('emailUpdates')(event.target.checked)}
-          />
-          <span>Email me about service updates</span>
-          <span className={styles.hint}>Maintenance, new services, fees.</span>
-        </label>
-        <label className={styles.check}>
-          <input
-            type="checkbox"
-            checked={values.smsReminders}
-            aria-invalid={fieldError ? true : undefined}
-            onChange={(event) => toggle('smsReminders')(event.target.checked)}
-          />
-          <span>Send me SMS reminders</span>
-          <span className={styles.hint}>Renewals and appointments.</span>
-        </label>
+        <Checkbox
+          id={firstChoiceId}
+          label="Email me about service updates"
+          hint="Maintenance, new services, fees."
+          checked={values.emailUpdates}
+          aria-invalid={fieldError ? true : undefined}
+          onChange={(event) => toggle('emailUpdates')(event.target.checked)}
+        />
+        <Checkbox
+          label="Send me SMS reminders"
+          hint="Renewals and appointments."
+          checked={values.smsReminders}
+          aria-invalid={fieldError ? true : undefined}
+          onChange={(event) => toggle('smsReminders')(event.target.checked)}
+        />
       </fieldset>
       <div className={styles.actions}>
-        <Button type="submit" disabled={saving}>
+        <Button type="submit" loading={saving}>
           {saving ? 'Saving…' : 'Save choices'}
         </Button>
         <p
@@ -145,9 +139,9 @@ export function PreferencesForm({
         </p>
       </div>
       {formError ? (
-        <p className={styles.error} role="alert">
+        <Alert variant="error">
           Your choices could not be saved ({formError.message}). Try again.
-        </p>
+        </Alert>
       ) : null}
     </form>
   );

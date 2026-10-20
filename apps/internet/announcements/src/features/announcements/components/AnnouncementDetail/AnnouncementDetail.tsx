@@ -1,6 +1,6 @@
 import { Link } from 'react-router';
 import { useRemotePath } from '@org/mf-runtime/remote';
-import { RemoteFallback } from '@org/ui';
+import { RemoteFallback, Spinner } from '@org/ui';
 import type { ApiResult } from '@org/use-api';
 import { routePaths } from '@/core/constants/routePaths';
 import { formatDate } from '@/core/utils/formatDate';
@@ -34,9 +34,7 @@ export function AnnouncementDetail({
         <h1 className={styles.title}>
           {notFound ? 'Announcement not found' : 'Announcement'}
         </h1>
-        {announcement.status === 'loading' ? (
-          <p role="status">Loading…</p>
-        ) : null}
+        {announcement.status === 'loading' ? <Spinner labelVisible /> : null}
         {announcement.status === 'error' ? (
           <RemoteFallback
             title="Could not load this announcement"
