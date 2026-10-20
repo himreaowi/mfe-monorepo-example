@@ -29,18 +29,18 @@ function workspace() {
       unused: { name: '@org/unused', version: '0.1.0' },
     },
     apps: {
-      'intranet/shell-intranet': app('shell', { type: 'shell', port: 3100 }),
+      'intranet/shell-intranet': app('shell', { type: 'shell', port: 3101 }),
       'intranet/staff': app('staff', {
-        port: 3101,
+        port: 3111,
         deps: { '@org/charts': 'workspace:*' },
       }),
       'intranet/leave': app('leave', {
-        port: 3102,
+        port: 3112,
         access: 'private',
         tags: ['zone:intranet', 'type:remote', 'access:private'],
       }),
       'intranet/helpdesk': app('helpdesk', {
-        port: 3103,
+        port: 3113,
         tags: [
           'zone:intranet',
           'type:remote',
@@ -51,9 +51,9 @@ function workspace() {
       'internet/shell-internet': app('shell', {
         zone: 'internet',
         type: 'shell',
-        port: 3200,
+        port: 3201,
       }),
-      'internet/services': app('services', { zone: 'internet', port: 3201 }),
+      'internet/services': app('services', { zone: 'internet', port: 3211 }),
     },
     files: { 'docs/readme.md': '# docs\n' },
   });
@@ -100,7 +100,7 @@ describe('listApps', () => {
       type: 'remote',
       access: 'public',
       kind: 'external',
-      port: 3103,
+      port: 3113,
       federationName: 'intranet_helpdesk',
       path: 'apps/intranet/helpdesk',
       distDir: 'apps/intranet/helpdesk/dist',
@@ -230,7 +230,7 @@ describe('CLI', () => {
       'internet_shell',
       'internet_services',
     ]);
-    assert.equal(matrix.internet_services.port, '3201');
+    assert.equal(matrix.internet_services.port, '3211');
   });
 
   it('--affected needs a base; unknown zones fail', () => {

@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 // @ts-check
 /**
- * `pnpm e2e` / `pnpm e2e:<zone>`: run each zone's e2e suite (in its shell), one zone at a time.
+ * `pnpm e2e` / `pnpm e2e:<zone>`: run each shell's e2e suite, one shell at a time.
  *   e2e.js [--zone=<zone>] [any Playwright option, e.g. --project=desktop --grep=a11y]
- * One zone at a time: each suite starts that zone's dev servers and stops them afterwards.
+ * One shell at a time: each suite starts its zone's dev servers (every shell, remote and tool +
+ * the zone's dev proxy, `pnpm dev:<zone>`), tests its shell through the proxy under the shell's
+ * base path, and stops them afterwards.
  * A zone without a shell is skipped. Exit code 1 if any zone failed. Regenerates every shell's
  * mfe-manifest.dev.json first (src/dev-manifest.js).
  */
@@ -60,12 +62,16 @@ for (const dir of shellDirs(root)) {
   if (changed) console.log(`e2e: regenerated ${path.relative(root, file)}`);
 }
 
-/** @type {{ zone: string, status: string }[]} */
+/** @type {{ zone: string, shell: string, status: string }[]} */
 const results = [];
 for (const shell of shells) {
   if (!shell.hasE2e) {
     console.log(`e2e: ${shell.name} has no "e2e" script, skipped.`);
-    results.push({ zone: shell.zone, status: 'skipped (no e2e script)' });
+    results.push({
+      zone: shell.zone,
+      shell: shell.name,
+      status: 'skipped (no e2e script)',
+    });
     continue;
   }
   console.log(`\n=== e2e ${shell.zone} (${shell.name}) ===\n`);
@@ -76,10 +82,11 @@ for (const shell of shells) {
   );
   results.push({
     zone: shell.zone,
+    shell: shell.name,
     status: run.status === 0 ? 'passed' : `failed (exit ${run.status})`,
   });
 }
 
 console.log('\ne2e summary:');
-for (const r of results) console.log(`  ${r.zone}: ${r.status}`);
+for (const r of results) console.log(`  ${r.zone} ${r.shell}: ${r.status}`);
 if (results.some((r) => r.status.startsWith('failed'))) process.exitCode = 1;

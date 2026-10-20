@@ -157,8 +157,8 @@ describe('validate-manifest', () => {
   async function check(manifest, zone) {
     const root = makeWorkspace({
       apps: {
-        'intranet/shell-intranet': app('shell', { type: 'shell', port: 3100 }),
-        'intranet/staff': app('staff', { port: 3101 }),
+        'intranet/shell-intranet': app('shell', { type: 'shell', port: 3101 }),
+        'intranet/staff': app('staff', { port: 3111 }),
       },
       files: {
         'apps/intranet/shell-intranet/remotes.json': {

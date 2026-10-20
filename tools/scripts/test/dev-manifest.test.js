@@ -24,7 +24,7 @@ const BIN = path.join(import.meta.dirname, '..', 'bin', 'dev-manifest.js');
 const vendor = { url: 'http://localhost:3191/mount.js', format: 'esm' };
 
 function workspace() {
-  const shell = app('shell', { type: 'shell', port: 3100 });
+  const shell = app('shell', { type: 'shell', port: 3101 });
   return makeWorkspace({
     apps: {
       ...validApps(),
@@ -62,10 +62,10 @@ describe('dev manifest generator', () => {
     assert.deepEqual(manifest, {
       remotes: {
         intranet_leave: {
-          entry: 'http://localhost:3102/mf-manifest.json',
+          entry: 'http://localhost:3112/mf-manifest.json',
           props: { vendor },
         },
-        intranet_staff: { entry: 'http://localhost:3101/mf-manifest.json' },
+        intranet_staff: { entry: 'http://localhost:3111/mf-manifest.json' },
       },
       auth: { mock: true },
       settings: { apiBaseUrl: 'http://localhost:3190/api' },

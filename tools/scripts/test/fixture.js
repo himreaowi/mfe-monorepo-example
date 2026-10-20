@@ -75,6 +75,7 @@ export function entry(
  *   packages?: Record<string, object>,      // 'ui' → package.json
  *   files?: Record<string, string | object>,
  *   exceptions?: unknown,
+ *   rootMfe?: Record<string, unknown>,      // root package.json "mfe" (zones, tools)
  * }} [o]
  */
 export function makeWorkspace(o = {}) {
@@ -104,6 +105,7 @@ export function makeWorkspace(o = {}) {
     name: '@org/root',
     private: true,
     devDependencies: { typescript: 'catalog:' },
+    ...(o.rootMfe ? { mfe: o.rootMfe } : {}),
   });
   const packages = o.packages ?? {
     ui: {
@@ -146,15 +148,15 @@ export function cleanupWorkspaces() {
 /** A valid workspace: intranet shell + 2 remotes, internet shell + 1 remote. */
 export function validApps() {
   return {
-    'intranet/shell-intranet': app('shell', { type: 'shell', port: 3100 }),
-    'intranet/staff': app('staff', { port: 3101 }),
-    'intranet/leave': app('leave', { port: 3102, access: 'private' }),
+    'intranet/shell-intranet': app('shell', { type: 'shell', port: 3101 }),
+    'intranet/staff': app('staff', { port: 3111 }),
+    'intranet/leave': app('leave', { port: 3112, access: 'private' }),
     'internet/shell-internet': app('shell', {
       zone: 'internet',
       type: 'shell',
-      port: 3200,
+      port: 3201,
     }),
-    'internet/services': app('services', { zone: 'internet', port: 3201 }),
+    'internet/services': app('services', { zone: 'internet', port: 3211 }),
   };
 }
 
@@ -168,8 +170,8 @@ export function validRegistries() {
     },
     'apps/intranet/shell-intranet/mfe-manifest.dev.json': {
       remotes: {
-        intranet_staff: { entry: 'http://localhost:3101/mf-manifest.json' },
-        intranet_leave: { entry: 'http://localhost:3102/mf-manifest.json' },
+        intranet_staff: { entry: 'http://localhost:3111/mf-manifest.json' },
+        intranet_leave: { entry: 'http://localhost:3112/mf-manifest.json' },
       },
     },
     'apps/internet/shell-internet/remotes.json': {
@@ -177,7 +179,7 @@ export function validRegistries() {
     },
     'apps/internet/shell-internet/mfe-manifest.dev.json': {
       remotes: {
-        internet_services: { entry: 'http://localhost:3201/mf-manifest.json' },
+        internet_services: { entry: 'http://localhost:3211/mf-manifest.json' },
       },
     },
   };

@@ -34,12 +34,12 @@ describe('check-apps', () => {
   it('(g) fails on a duplicate port', async () => {
     const r = await run({
       ...validApps(),
-      'intranet/leave': app('leave', { port: 3101, access: 'private' }),
+      'intranet/leave': app('leave', { port: 3111, access: 'private' }),
     });
     // the dev manifest still has the old port: regenerated after the fix
     assert.deepEqual(rules(r.errors), ['app-port-duplicate', 'dev-manifest']);
     const duplicate = r.errors.find((e) => e.rule === 'app-port-duplicate');
-    assert.match(duplicate?.message ?? '', /Dev port 3101 is used by 2 apps/);
+    assert.match(duplicate?.message ?? '', /Dev port 3111 is used by 2 apps/);
     assert.match(duplicate?.message ?? '', /@org\/intranet-leave/);
     assert.match(duplicate?.message ?? '', /@org\/intranet-staff/);
   });
@@ -50,7 +50,10 @@ describe('check-apps', () => {
       'intranet/staff': app('staff', { port: 3290 }),
     });
     assert.deepEqual(rules(r.errors), ['app-port', 'dev-manifest']);
-    assert.match(r.errors[0].message, /outside the intranet range 3100-3189/);
+    assert.match(
+      r.errors[0].message,
+      /outside the intranet remotes range 3110-3189/,
+    );
     r = await run({ ...validApps(), 'intranet/staff': app('staff', {}) });
     assert.deepEqual(rules(r.errors), ['app-port', 'dev-manifest']);
   });
@@ -63,7 +66,7 @@ describe('check-apps', () => {
     assert.deepEqual(rules(r.errors), ['app-port', 'dev-manifest']);
     assert.match(
       r.errors[0].message,
-      /port 3191 is reserved for the intranet dev tools \(3190-3199/,
+      /port 3191 is reserved for the intranet dev tools .*tools 3190-3199/,
     );
   });
 
@@ -71,7 +74,7 @@ describe('check-apps', () => {
     let r = await run({
       ...validApps(),
       'intranet/staff': app('staff', {
-        port: 3101,
+        port: 3111,
         tags: ['zone:intranet', 'type:remote'],
       }),
     });
@@ -80,12 +83,12 @@ describe('check-apps', () => {
     r = await run({
       ...validApps(),
       'intranet/staff': app('staff', {
-        port: 3101,
+        port: 3111,
         tags: ['zone:internet', 'type:remote', 'access:public', 'kind:vendor'],
       }),
     });
     assert.deepEqual(rules(r.errors), ['app-tags', 'app-tags']);
-    const pkg = app('staff', { port: 3101 });
+    const pkg = app('staff', { port: 3111 });
     delete (/** @type {any} */ (pkg).nx);
     r = await run({ ...validApps(), 'intranet/staff': pkg });
     assert.ok(rules(r.errors).includes('app-tags'));
@@ -94,10 +97,10 @@ describe('check-apps', () => {
   it('fails on misplaced apps and bad shells', async () => {
     let r = await run({
       ...validApps(),
-      'intranet/group/x': app('x', { port: 3110 }),
+      'intranet/group/x': app('x', { port: 3120 }),
     });
     assert.deepEqual(rules(r.errors), ['app-location']);
-    r = await run({ ...validApps(), 'extranet/x': app('x', { port: 3110 }) });
+    r = await run({ ...validApps(), 'extranet/x': app('x', { port: 3120 }) });
     assert.deepEqual(rules(r.errors), ['app-location']);
     r = await run({
       ...validApps(),
@@ -108,15 +111,147 @@ describe('check-apps', () => {
         federationName: 'intranet_main',
       }),
     });
-    // a second shell, misnamed, without remotes.json
-    assert.deepEqual(rules(r.errors), ['app-shell', 'app-shell', 'registry']);
+    // a second shell: misnamed folder, remote port, base path "/" taken, no remotes.json
+    assert.deepEqual(rules(r.errors), [
+      'app-base-path',
+      'app-port',
+      'app-shell',
+      'registry',
+    ]);
+    r = await run({
+      ...validApps(),
+      'intranet/staff': app('staff', { port: 3102 }),
+      'intranet/shell-intranet': app('shell', { type: 'shell', port: 3111 }),
+    });
+    assert.deepEqual(rules(r.errors), ['app-port', 'app-port', 'dev-manifest']);
+    r = await run({
+      ...validApps(),
+      'intranet/shell-intranet': app('shell', { type: 'shell', port: 3100 }),
+    });
+    assert.match(r.errors[0].message, /port 3100 is the intranet dev proxy/);
+  });
+
+  describe('several shells per zone', () => {
+    /** @param {string} name @param {number} port */
+    const shell = (name, port) =>
+      app('shell', {
+        zone: 'internet',
+        type: 'shell',
+        port,
+        federationName: `internet_shell_${name}`,
+        extra: { name: `@org/shell-${name}` },
+      });
+    /** @param {Record<string, string | undefined>} bases name → base path */
+    const setup = (
+      bases,
+      rootMfe = { zones: { internet: { defaultShell: 'citizen' } } },
+      registries = {},
+    ) => {
+      /** @type {Record<string, object>} */
+      const apps = { ...validApps() };
+      delete apps['internet/shell-internet'];
+      /** @type {Record<string, string | object>} */
+      const files = { ...validRegistries() };
+      delete files['apps/internet/shell-internet/remotes.json'];
+      delete files['apps/internet/shell-internet/mfe-manifest.dev.json'];
+      let port = 3201;
+      for (const [name, basePath] of Object.entries(bases)) {
+        const pkg = /** @type {any} */ (shell(name, port));
+        port += 1;
+        if (basePath !== undefined) pkg.mfe.basePath = basePath;
+        apps[`internet/shell-${name}`] = pkg;
+        const remotes = /** @type {any} */ (registries)[name] ?? ['services'];
+        files[`apps/internet/shell-${name}/remotes.json`] = {
+          remotes: remotes.map((/** @type {string} */ r) =>
+            entry('internet', r),
+          ),
+        };
+        files[`apps/internet/shell-${name}/mfe-manifest.dev.json`] = {
+          remotes: Object.fromEntries(
+            remotes.map((/** @type {string} */ r) => [
+              `internet_${r}`,
+              {
+                entry: `http://localhost:${r === 'services' ? 3211 : 3212}/mf-manifest.json`,
+              },
+            ]),
+          ),
+        };
+      }
+      return checkApps({ root: makeWorkspace({ apps, files, rootMfe }) });
+    };
+
+    it('passes with two shells under their own base paths sharing a remote', async () => {
+      const r = await setup({ citizen: '/citizen', business: '/business' });
+      assert.deepEqual(r.errors, []);
+      assert.deepEqual(r.warnings, []);
+    });
+
+    it('fails on equal or nested base paths, and two shells at "/"', async () => {
+      let r = await setup({ citizen: '/citizen', business: '/citizen' });
+      assert.deepEqual(rules(r.errors), ['app-base-path']);
+      r = await setup({ citizen: '/citizen', business: '/citizen/business' });
+      assert.deepEqual(rules(r.errors), ['app-base-path']);
+      r = await setup({ citizen: undefined, business: '/' }, {});
+      assert.deepEqual(rules(r.errors), ['app-base-path']);
+      // "/" next to a base path is fine (the longest match wins)
+      r = await setup({ citizen: '/citizen', business: undefined }, {});
+      assert.deepEqual(r.errors, []);
+    });
+
+    it('fails on a malformed base path', async () => {
+      const r = await setup({ citizen: '/Citizen/', business: '/business' });
+      assert.deepEqual(rules(r.errors), ['app-base-path']);
+      assert.match(r.errors[0].message, /"\/citizen"/);
+    });
+
+    it('needs a default shell when no shell sits at "/", and only then', async () => {
+      let r = await setup({ citizen: '/citizen', business: '/business' }, {});
+      assert.deepEqual(rules(r.errors), ['zone-default-shell']);
+      assert.match(
+        r.errors[0].message,
+        /defaultShell": "<business \| citizen>"/,
+      );
+      r = await setup(
+        { citizen: '/citizen', business: '/business' },
+        { zones: { internet: { defaultShell: 'nope' } } },
+      );
+      assert.deepEqual(rules(r.errors), ['zone-default-shell']);
+      r = await setup({ citizen: undefined, business: '/business' });
+      assert.deepEqual(rules(r.errors), ['zone-default-shell']);
+    });
+
+    it('a remote listed by no shell of its zone warns once', async () => {
+      const r = await setup(
+        { citizen: '/citizen', business: '/business' },
+        undefined,
+        {
+          citizen: [],
+          business: [],
+        },
+      );
+      assert.deepEqual(r.errors, []);
+      assert.equal(r.warnings.length, 1);
+      assert.match(
+        r.warnings[0].message,
+        /not registered in the remotes.json of any internet shell/,
+      );
+    });
+
+    it('fails on a base path on a remote', async () => {
+      const remote = /** @type {any} */ (
+        app('services', { zone: 'internet', port: 3211 })
+      );
+      remote.mfe.basePath = '/x';
+      const r = await run({ ...validApps(), 'internet/services': remote });
+      assert.deepEqual(rules(r.errors), ['app-base-path']);
+    });
   });
 
   it('fails on duplicate federation names', async () => {
     const r = await run({
       ...validApps(),
       'intranet/leave': app('leave', {
-        port: 3102,
+        port: 3112,
         access: 'private',
         federationName: 'intranet_staff',
       }),
@@ -128,7 +263,7 @@ describe('check-apps', () => {
     const r = await run({
       ...validApps(),
       'intranet/leave': app('leave', {
-        port: 3102,
+        port: 3112,
         access: 'private',
         deps: { '@org/intranet-staff': 'workspace:*' },
       }),
@@ -141,7 +276,7 @@ describe('check-apps', () => {
     const r = await run({
       ...validApps(),
       'intranet/staff': app('staff', {
-        port: 3101,
+        port: 3111,
         devDeps: { '@org/internet-services': 'workspace:*' },
       }),
     });
@@ -400,7 +535,7 @@ describe('check-apps', () => {
     const vendor = { url: 'http://localhost:3191/mount.js', format: 'esm' };
     /** @param {Record<string, unknown>} devManifest */
     const shellWith = (devManifest) => {
-      const shell = app('shell', { type: 'shell', port: 3100 });
+      const shell = app('shell', { type: 'shell', port: 3101 });
       return { ...shell, mfe: { ...shell.mfe, devManifest } };
     };
     const devManifest = {
@@ -415,10 +550,10 @@ describe('check-apps', () => {
       files['apps/intranet/shell-intranet/mfe-manifest.dev.json'] = {
         remotes: {
           intranet_staff: {
-            entry: 'http://localhost:3101/mf-manifest.json',
+            entry: 'http://localhost:3111/mf-manifest.json',
             props: { vendor },
           },
-          intranet_leave: { entry: 'http://localhost:3102/mf-manifest.json' },
+          intranet_leave: { entry: 'http://localhost:3112/mf-manifest.json' },
         },
         auth: { mock: true },
         settings: { apiBaseUrl: 'http://localhost:3190/api' },
@@ -433,7 +568,7 @@ describe('check-apps', () => {
     it('fails when a remote port changed, the file is missing or edited by hand', async () => {
       const moved = await run({
         ...validApps(),
-        'intranet/leave': app('leave', { port: 3105, access: 'private' }),
+        'intranet/leave': app('leave', { port: 3115, access: 'private' }),
       });
       assert.deepEqual(rules(moved.errors), ['dev-manifest']);
       assert.match(
