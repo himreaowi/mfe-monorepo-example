@@ -229,7 +229,8 @@ method? }`, or a RegExp tested against `"<status> <METHOD> <url>"`. `consoleErro
   are reachable with normal locators.
 - Data: the suite runs against dev servers and mocks (mock sign-in, mock API, mock vendor). Use
   `page.route()` to stub error cases; do not depend on shared test environments.
-- A real BFF or vendor in `mfe-manifest.dev.json` turns the mock-specific checks into skips
+- A real BFF or vendor in the dev manifest (the shell's `package.json` `mfe.devManifest`, then
+  `pnpm dev-manifest`) turns the mock-specific checks into skips
   (`zone.authMock`, `remote.mockVendor`), not failures.
 
 ## Accessibility

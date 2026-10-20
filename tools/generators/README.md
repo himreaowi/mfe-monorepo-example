@@ -98,7 +98,7 @@ pnpm dev:<zone>
 - Generated files are formatted with the repo's Prettier config.
 
 Templates live in `templates/shell`, `templates/shell-layouts/top|side` (an overlay on `shell`:
-the starter layout), `templates/remote` and `templates/external` (an overlay on `remote`). Files end in `.tmpl` (so the repo's tools ignore them) and use `__TOKEN__` placeholders
+the starter layout), `templates/remote`, `templates/remote-state` (an overlay on `remote` for `--state`) and `templates/external` (an overlay on `remote`). Files end in `.tmpl` (so the repo's tools ignore them) and use `__TOKEN__` placeholders
 (`__ZONE__`, `__NAME__`, `__APP_TITLE__`, `__SHELL_LAYOUT__`, `__PACKAGE_NAME__`, `__FEDERATION_NAME__`,
 `__ROUTE_PATH__`, `__PORT__`, `__SHELL_PORT__`, `__ACCESS__`, `__DIR_NAME__`, `__MOCK_API_URL__`,
 `__MOCK_VENDOR_PORT__`, `__MOCK_VENDOR_URL__`, `__MOCK_VENDOR_CONFIG__` (JSON),

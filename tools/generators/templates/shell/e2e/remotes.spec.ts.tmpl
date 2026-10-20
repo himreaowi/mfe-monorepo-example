@@ -60,7 +60,7 @@ for (const remote of zone.remotes) {
       }) => {
         test.skip(
           !zone.authMock,
-          'needs "auth": { "mock": true } in mfe-manifest.dev.json',
+          'needs "auth": { "mock": true } (the shell\'s package.json mfe.devManifest → mfe-manifest.dev.json)',
         );
         const requests: string[] = [];
         page.on('request', (request) => {

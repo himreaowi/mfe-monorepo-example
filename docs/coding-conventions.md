@@ -120,6 +120,19 @@ shell's `features/welcome` and `features/startup` and its `layouts/ShellLayout`,
 
 ## Remotes
 
+A remote's wiring is five files; everything else is features, pages and layouts:
+
+| File                 | Role                                                                                     |
+| -------------------- | ---------------------------------------------------------------------------------------- |
+| `package.json`       | name, Nx tags, `mfe.port` / `mfe.federationName` (read by the config and the tools)      |
+| `rspack.config.js`   | `createRemoteConfig` (exposes `./App` → `src/app/apps.tsx`, MF async startup)            |
+| `src/main.tsx`       | standalone entry: global styles + `<StandaloneApp />`                                    |
+| `src/app/apps.tsx`   | the exposed module: `createRemoteApp(…)`, standalone mock host props, optional providers |
+| `src/app/routes.tsx` | relative routes                                                                          |
+
+The API client is `useApiClient()` from `@org/mf-runtime/remote` (no per-app file) and the
+shell's dev manifest entry is generated (`pnpm dev-manifest`).
+
 - `src/app/apps.tsx` is the exposed module (`./App`): its default export is the embedded app,
   its named `StandaloneApp` is rendered by `src/main.tsx`, and it holds the standalone mock host
   props. Nothing it reaches may import global styles (`@org/design-tokens/global.scss`) or
