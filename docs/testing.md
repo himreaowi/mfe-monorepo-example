@@ -60,7 +60,6 @@ Recommended split (the generated remote's `features/demo` does exactly this):
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | `features/*/api/` (pure)  | real `@org/http-client` + a fake fetch: `createFakeFetch` from `@org/jest-config/fetch`; assert URLs, bodies, parsed results, errors |
 | `features/*/hooks/`, UI   | `jest.mock('../api')` (or pass a stubbed client): render states (loading, data, empty, error, retry) without HTTP                    |
-| `services/http.ts`        | base URL resolution (`http.url(apiRoutes…)`), no request                                                                             |
 | Real API / mock API flows | e2e (`tools/mock-api` runs with `pnpm dev:<zone>`)                                                                                   |
 
 ```ts

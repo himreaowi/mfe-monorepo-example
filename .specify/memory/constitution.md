@@ -159,7 +159,7 @@ apps/<zone>/<name>/src/
 ├── layouts/          # chrome
 ├── components/       # shared UI of this app, one folder per component
 ├── core/             # constants (routePaths, apiRoutes), types, utils (no parallel lib/)
-└── services/         # app-wide infra (http client)
+└── services/         # optional app-wide infra; the API client is useApiClient() (@org/mf-runtime)
 ```
 
 ## Quality Gates & Workflow

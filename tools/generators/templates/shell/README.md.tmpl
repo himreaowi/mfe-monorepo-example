@@ -24,7 +24,8 @@ copied from the `__SHELL_LAYOUT__` starter, `--layout`).
 - `mfe-manifest.dev.json` is served as `/mfe-manifest.json` by the dev server. It points each
   remote at its dev server (`http://localhost:<port>/mf-manifest.json`) and
   `settings.apiBaseUrl` at the zone's dev-only mock API (`__MOCK_API_URL__`, `tools/mock-api`);
-  the shell passes `settings` to every remote.
+  the shell passes `settings` to every remote. Shell code that calls an API uses
+  `useApiClient()` from `@org/mf-runtime` (same base URL, `credentials: 'include'`).
 - In production the shell fetches `/mfe-manifest.json` at startup. It is **not** built in: DevOps
   writes one per environment next to `index.html` (same shape, real URLs). One build serves every
   environment.
@@ -126,5 +127,4 @@ src/
   layouts/            ShellLayout/ (this shell's own layout: structure, colours, tests)
   pages/              HomePage, RemotePage, NotFoundPage
   core/               constants, types
-  services/           http client (base URL from manifest settings)
 ```

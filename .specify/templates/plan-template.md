@@ -119,7 +119,7 @@ apps/
             ├── pages/
             ├── components/[Component]/
             ├── core/constants/    # routePaths, apiRoutes
-            └── services/
+            └── services/          # optional (API client: useApiClient() from @org/mf-runtime)
 packages/
 └── [package]/                     # shared code (type:package), e.g. ui, mf-runtime
 ```

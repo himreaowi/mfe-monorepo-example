@@ -167,7 +167,6 @@ describe('generators', () => {
       'src/pages/HomePage/HomePage.tsx',
       'src/pages/RemotePage/RemotePage.tsx',
       'src/core/constants/routePaths.ts',
-      'src/services/http.ts',
     ]) {
       assert.ok(files.includes(f), `missing ${f}`);
     }
@@ -229,6 +228,8 @@ describe('generators', () => {
     assert.match(read(root, `${dir}/e2e/helpers.ts`), /data-nav-placement/);
     assert.match(read(root, `${dir}/e2e/shell.spec.ts`), /expectSidebar/);
     assert.match(read(root, `${dir}/rspack.config.js`), /createShellConfig/);
+    // the API client comes from @org/mf-runtime (useApiClient), no per-app services/http.ts
+    assert.ok(!files.some((f) => f.startsWith('src/services/')));
     // async startup (@org/rspack-config): one entry file, no import('./bootstrap') boundary
     assert.ok(!files.includes('src/bootstrap.tsx'));
     assert.doesNotMatch(read(root, `${dir}/src/main.tsx`), /import\(/);
@@ -403,12 +404,16 @@ describe('generators', () => {
       'src/pages/OverviewPage/OverviewPage.tsx',
       'src/pages/DetailsPage/DetailsPage.tsx',
       'src/core/constants/apiRoutes.ts',
-      'src/services/http.ts',
       'public/index.html',
     ]) {
       assert.ok(files.includes(f), `missing ${f}`);
     }
     assert.match(read(root, `${dir}/rspack.config.js`), /createRemoteConfig/);
+    assert.ok(!files.some((f) => f.startsWith('src/services/')));
+    assert.match(
+      read(root, `${dir}/src/features/demo/hooks/useItems.ts`),
+      /import \{ useApiClient \} from '@org\/mf-runtime\/remote';/,
+    );
     // the exposed module is src/app/apps.tsx (no RemoteApp.tsx / standaloneProps.ts)
     for (const f of ['src/app/RemoteApp.tsx', 'src/app/standaloneProps.ts']) {
       assert.ok(!files.includes(f), `${f} should not exist`);

@@ -492,6 +492,9 @@ importers:
       '@module-federation/enhanced':
         specifier: 'catalog:'
         version: 2.9.2(@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2))(typescript@6.0.3)(webpack@5.112.0(@swc/core@1.16.18)(postcss@8.5.30))
+      '@org/http-client':
+        specifier: workspace:*
+        version: link:../http-client
       '@org/ui':
         specifier: workspace:*
         version: link:../ui

@@ -4,8 +4,8 @@ import { AddItemForm } from '../AddItemForm';
 import styles from './DemoItems.module.scss';
 
 /**
- * Example of the data-fetching pattern: apiRoutes → services/http (base URL from
- * settings.apiBaseUrl) → api/ → hooks/ → this component, which only renders states.
+ * Example of the data-fetching pattern: apiRoutes → useApiClient() from @org/mf-runtime/remote
+ * (base URL from settings.apiBaseUrl) → api/ → hooks/ → this component, which only renders states.
  * In development the data comes from the zone's mock API (tools/mock-api).
  */
 export function DemoItems() {

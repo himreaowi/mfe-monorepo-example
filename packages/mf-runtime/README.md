@@ -36,6 +36,7 @@ root.render(
 | `remoteCssPlugin` / `registerRemoteCssPlugin()`                          | MF runtime plugin: removes `.css` from the preloads MF starts for `loadRemote`, so a remote's extracted CSS is loaded only by the remote's own chunk loader, which awaits each `<link>` (no unstyled flash) and rejects on a failed one (→ `RemoteFallback`). See docs/toolchain.md "CSS extraction" |
 | `<RemoteApp name module? basePath? props? retries? loading? onError? />` | Error boundary + Suspense + `loadRemote('<name>/<module>')`. Failure → `RemoteFallback` (from `@org/ui`) with "Try again" (re-registers the remote, then loads again); `retries` automatic attempts first (default 1). Unknown name → fallback without a request                                     |
 | `MfeManifestProvider`, `useMfeManifest()`                                | Gives `<RemoteApp>` per-remote `props` and `settings`                                                                                                                                                                                                                                                |
+| `useApiClient()`                                                         | The shell's API client (`@org/http-client` `createApiClient`): base URL from the manifest's `settings.apiBaseUrl`, `credentials: 'include'`; `undefined` without one                                                                                                                                 |
 | `mfe-manifest.schema.json`                                               | `@org/mf-runtime/mfe-manifest.schema.json`, for DevOps/CI validation of per-env manifests                                                                                                                                                                                                            |
 
 The remote receives `HostProps`:
@@ -115,6 +116,10 @@ createRoot(el).render(<StandaloneApp />);
 | Global styles/SW | None (the shell has them)                                                                                                                                                           | Imported/registered by the standalone `src/main.tsx`   |
 
 - `useHostProps()`: the host props.
+- `useApiClient()`: the remote's API client (`createApiClient` from `@org/http-client`): base URL
+  from host props `settings.apiBaseUrl`, `credentials: 'include'`, memoised per base URL;
+  `undefined` when the environment has no `settings.apiBaseUrl`. Use it in feature hooks; no
+  per-remote `services/http.ts`.
 - `useRemotePath()(to)`: absolute path inside the remote (`/apps/staff/route-2` embedded,
   `/route-2` standalone). Use it for links between remote pages: relative links inside a splat
   route are easy to get wrong.

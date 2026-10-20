@@ -33,20 +33,20 @@ Hard rules (enforced by `pnpm check` and ESLint, see [guardrails.md](guardrails.
 
 ## Layers inside an app
 
-| Layer                  | Role                                                                                           |
-| ---------------------- | ---------------------------------------------------------------------------------------------- |
-| `src/main.tsx`         | Entry. Shell: global styles, PWA, manifest, auth client, render. Remote: standalone entry only |
-| `src/app/`             | Wiring: providers, routes, registry (shell); `apps` (exposed `./App`), routes (remote)         |
-| `src/features/<name>/` | Domain UI (`components/<Name>/`) + `api/` / `hooks/` / `types/` / `utils/`, public `index.ts`  |
-| `src/pages/`           | Thin route containers that compose features                                                    |
-| `src/components/`      | UI primitives of this app, one folder per component (shared ones go to `@org/ui`)              |
-| `src/layouts/`         | Chrome, owned by the app: `ShellLayout` (shell), `StandaloneLayout` (remote), one folder each  |
-| `src/core/`            | Constants (`routePaths`, `apiRoutes`, `app`), types, small utils (no parallel `lib/`)          |
-| `src/styles/`          | Shell only: `shell.scss`, shell-wide global styles (empty by default)                          |
-| `src/services/`        | App-wide infra (`http` client)                                                                 |
+| Layer                  | Role                                                                                              |
+| ---------------------- | ------------------------------------------------------------------------------------------------- |
+| `src/main.tsx`         | Entry. Shell: global styles, PWA, manifest, auth client, render. Remote: standalone entry only    |
+| `src/app/`             | Wiring: providers, routes, registry (shell); `apps` (exposed `./App`), routes (remote)            |
+| `src/features/<name>/` | Domain UI (`components/<Name>/`) + `api/` / `hooks/` / `types/` / `utils/`, public `index.ts`     |
+| `src/pages/`           | Thin route containers that compose features                                                       |
+| `src/components/`      | UI primitives of this app, one folder per component (shared ones go to `@org/ui`)                 |
+| `src/layouts/`         | Chrome, owned by the app: `ShellLayout` (shell), `StandaloneLayout` (remote), one folder each     |
+| `src/core/`            | Constants (`routePaths`, `apiRoutes`, `app`), types, small utils (no parallel `lib/`)             |
+| `src/styles/`          | Shell only: `shell.scss`, shell-wide global styles (empty by default)                             |
+| `src/services/`        | Optional app-wide infra. Not generated: the API client is `useApiClient()` from `@org/mf-runtime` |
 
 **Rule of thumb:** pages compose, features own domain data, components stay presentational,
-core holds constants, services own HTTP.
+core holds constants, `api/` modules own the requests (through `useApiClient()`).
 
 New capability: `features/<name>/` (types → api → hooks → UI) → thin `pages/` entry → route in
 `app/routes.tsx` using `routePaths`.
@@ -138,8 +138,11 @@ shell's `features/welcome` and `features/startup` and its `layouts/ShellLayout`,
 ## Data fetching
 
 - Do **not** hardcode API paths in components: define them in `core/constants/apiRoutes.ts`
-  (`defineApiRoutes`) and call them through the app's `services/http.ts`
-  (`createHttpClient` from `@org/http-client`, base URL from `settings.apiBaseUrl`).
+  (`defineApiRoutes`) and call them through `useApiClient()`: from `@org/mf-runtime/remote` in a
+  remote (base URL from host props `settings.apiBaseUrl`), from `@org/mf-runtime` in a shell
+  (base URL from the loaded manifest's `settings.apiBaseUrl`). Both use `createApiClient` from
+  `@org/http-client` (`credentials: 'include'`) and return `undefined` when no API is
+  configured. No per-app `services/http.ts`.
 - Do **not** hardcode app paths: use `routePaths` / `useRemotePath()`.
 - Do **not** call APIs in a component's `useEffect`. Use `features/<feature>/api/` (pure request
   functions) + `features/<feature>/hooks/` (loading / success / error, abort on unmount or
