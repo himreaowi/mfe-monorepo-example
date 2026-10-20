@@ -10,7 +10,12 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { writeDevManifest } from '@org/scripts';
+import {
+  ENV_EXAMPLE_FILE,
+  renderShellEnvExample,
+  syncZoneEnvExample,
+  writeDevManifest,
+} from '@org/scripts';
 import {
   BASE_PATH,
   basePathsOverlap,
@@ -136,6 +141,38 @@ export function mockApiBaseUrl(
   /** @type {string | undefined} */ root = undefined,
 ) {
   return `http://localhost:${toolPort(zone, 'mockApi', root)}/api`;
+}
+
+/**
+ * `settings.apiBaseUrl` of a shell's dev manifest: its same-origin API path on the zone's dev
+ * proxy (`/api`, `/citizen/api`). The proxy forwards it to `API_UPSTREAM` (the zone's mock API
+ * unless a .env says otherwise), exactly like nginx does in production.
+ * @param {string} basePath
+ */
+export function shellApiBaseUrl(basePath) {
+  return `${basePath === '/' ? '' : basePath}/api`;
+}
+
+/**
+ * Create / update apps/<zone>/.env.example so it documents every remote the zone's shells
+ * register (`pnpm check`, check-env).
+ * @param {string} root
+ * @param {Zone} zone
+ */
+function syncEnvExample(root, zone) {
+  const remotes = [
+    ...new Set(
+      listShells(root, zone).flatMap((s) =>
+        readRegistry(s.dir).remotes.map((r) => r.federationName),
+      ),
+    ),
+  ];
+  syncZoneEnvExample({
+    root,
+    zone,
+    mockApiUrl: mockApiBaseUrl(zone, root),
+    remotes,
+  });
 }
 
 /**
@@ -334,7 +371,7 @@ export async function generateShell({
     BASE_PATH: basePath,
     SHELL_URL: shellUrl(zone, basePath),
     BASE_PREFIX: basePath === '/' ? '' : `${basePath}/`,
-    MOCK_API_URL: mockApiBaseUrl(zone, root),
+    API_PATH: shellApiBaseUrl(basePath),
     SHELL_LAYOUT: layout,
   });
   writeFiles(dir, files);
@@ -356,7 +393,7 @@ export async function generateShell({
       // (tools/mock-api); production manifests list the BFF URLs and the real API instead
       devManifest: {
         auth: { mock: true },
-        settings: { apiBaseUrl: mockApiBaseUrl(zone, root) },
+        settings: { apiBaseUrl: shellApiBaseUrl(basePath) },
       },
     }),
   );
@@ -366,6 +403,15 @@ export async function generateShell({
     remotes: [],
   });
   writeDevManifest(root, dir);
+  // .env.example: the zone's (created if missing) and, when the zone has other shells that may
+  // use other backends, this shell's own overrides
+  syncEnvExample(root, zone);
+  if (existing.length > 0) {
+    fs.writeFileSync(
+      path.join(dir, ENV_EXAMPLE_FILE),
+      renderShellEnvExample({ zone, name: names.name, basePath }),
+    );
+  }
 
   // no shell at "/" in the zone: the zone's "/" (dev proxy, deploy example) redirects to the
   // first shell below a base path, set in the root package.json (mfe.zones.<zone>.defaultShell)
@@ -544,6 +590,7 @@ export async function generateRemote({
     }
     writeDevManifest(root, shell.dir);
   }
+  syncEnvExample(root, zone);
 
   return {
     dir,

@@ -47,7 +47,8 @@ comma-separated: `--shell citizen,business`).
   remote is not downloaded before sign-in. Every remote receives host prop `user`.
 - Shells always render `<AuthProvider>`; the client comes from the manifest's `auth` section
   (the shell's `package.json` `mfe.devManifest` has `"auth": { "mock": true }`, the dev-only mock
-  sign-in, and `settings.apiBaseUrl` → the zone's mock API). See
+  sign-in, and `settings.apiBaseUrl` → the shell's same-origin `<base>/api`, which the dev proxy forwards to
+  the zone's mock API unless `API_UPSTREAM` says otherwise). See
   `docs/auth-contract.md`.
 - `--state` (`gen:remote`, not with `--external`): adds the **feature-state example** from
   `templates/remote-state/`: `src/features/demo/state/` (`demoReducer.ts` + test,
@@ -68,7 +69,9 @@ comma-separated: `--shell citizen,business`).
   `docs/external-modules.md`.
 - **Dev tools per zone**: every generated app's `nx.targets.dev.dependsOn` starts the zone's
   mock API (`@org/mock-api`, target `serve:<zone>`; adapters also `@org/mock-vendor`), and the
-  shell's dev manifest gets `settings.apiBaseUrl: http://localhost:<3190|3290>/api`. Tool ports
+  shell's dev manifest gets `settings.apiBaseUrl: <base path>/api` (proxied to
+  `http://localhost:<3190|3290>/api` by default; `.env.example` files are created, see
+  `docs/configuration.md`). Tool ports
   come from the zone's tools range and the root `package.json` `mfe.tools` (`toolPort()` in
   `tools/scripts/src/zones.js`), so `pnpm dev:intranet` and `pnpm dev:internet` run side by side.
 - The remote's demo feature (`src/features/demo`) loads `/items` from that API through

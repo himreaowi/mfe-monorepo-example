@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
-import { checkApps, checkVersions } from '@org/scripts';
+import { checkApps, checkEnv, checkVersions } from '@org/scripts';
 import {
   generateRemote,
   generateShell,
@@ -106,7 +106,8 @@ describe('generators', () => {
       basePath: '/',
       devManifest: {
         auth: { mock: true },
-        settings: { apiBaseUrl: 'http://localhost:3190/api' },
+        // same-origin: the zone's dev proxy forwards /api to API_UPSTREAM (default: mock API)
+        settings: { apiBaseUrl: '/api' },
       },
     });
     assert.equal(
@@ -142,8 +143,7 @@ describe('generators', () => {
     assert.deepEqual(readJson(root, `${dir}/mfe-manifest.dev.json`), {
       remotes: {},
       auth: { mock: true },
-      // the zone's dev-only mock API (tools/mock-api, intranet tools port)
-      settings: { apiBaseUrl: 'http://localhost:3190/api' },
+      settings: { apiBaseUrl: '/api' },
     });
     // `pnpm dev:intranet` / `nx dev` start the zone's mock API with the shell
     assert.deepEqual(pkg.nx.targets, {
@@ -680,7 +680,7 @@ describe('generators', () => {
       'rspack dev',
     );
     assert.equal(dev.remotes.internet_services.props, undefined);
-    assert.equal(dev.settings.apiBaseUrl, 'http://localhost:3290/api');
+    assert.equal(dev.settings.apiBaseUrl, '/api');
     const fallback = read(
       root,
       'apps/internet/payments/src/features/external/utils/vendorConfig.ts',
@@ -1043,6 +1043,21 @@ describe('generators: several shells in a zone', () => {
     const r = await checkApps({ root });
     assert.deepEqual(r.errors, []);
     assert.deepEqual(r.warnings, []);
+    // .env.example: the zone's lists the new remotes; the second shell got its own overrides file
+    const zoneEnv = read(root, 'apps/internet/.env.example');
+    assert.match(zoneEnv, /^# API_UPSTREAM=/m);
+    assert.match(zoneEnv, /^# REMOTE_INTERNET_ANNOUNCEMENTS_URL=/m);
+    assert.match(zoneEnv, /^# REMOTE_INTERNET_LICENCES_URL=/m);
+    assert.ok(
+      fs.existsSync(
+        path.join(root, 'apps/internet/shell-business/.env.example'),
+      ) !==
+        fs.existsSync(
+          path.join(root, 'apps/internet/shell-citizen/.env.example'),
+        ),
+      'only the second shell of the zone gets a shell-level .env.example',
+    );
+    assert.deepEqual((await checkEnv({ root })).errors, []);
   });
 
   it('CLI: gen:shell <zone> <name> --base-path, gen:remote --shell (repeated)', () => {
