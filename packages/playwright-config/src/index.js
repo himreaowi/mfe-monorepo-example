@@ -2,7 +2,7 @@
 /**
  * Playwright config factory for a zone's e2e suite (lives in the zone's shell: e2e/).
  *
- *   // apps/<zone>/shell-<zone>/playwright.config.ts
+ *   // apps/<zone>/<name>/shell/playwright.config.ts
  *   import { createZoneConfig } from '@org/playwright-config';
  *   export default createZoneConfig({ shellDir: import.meta.dirname });
  */

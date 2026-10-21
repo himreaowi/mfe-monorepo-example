@@ -3,7 +3,7 @@ import type { PlaywrightTestConfig } from '@playwright/test';
 export * from './zone';
 
 export interface ZoneConfigOptions {
-  /** The shell folder (apps/<zone>/shell-<zone>). Use `import.meta.dirname`. */
+  /** The shell folder (apps/<zone>/<name>/shell). Use `import.meta.dirname`. */
   shellDir: string;
   /** Default `process.env` (CI, MFE_E2E_WORKERS, MFE_E2E_SKIP_WEBSERVER). */
   env?: Record<string, string | undefined>;

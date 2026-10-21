@@ -28,7 +28,7 @@ function workspace() {
   return makeWorkspace({
     apps: {
       ...validApps(),
-      'intranet/shell-intranet': {
+      'intranet/intranet/shell': {
         ...shell,
         mfe: {
           ...shell.mfe,
@@ -41,7 +41,7 @@ function workspace() {
       },
     },
     files: {
-      'apps/intranet/shell-intranet/remotes.json': {
+      'apps/intranet/intranet/shell/remotes.json': {
         // registry order is kept; "ghost" has no app (skipped, reported)
         remotes: [
           entry('intranet', 'leave', 'private'),
@@ -49,7 +49,7 @@ function workspace() {
           entry('intranet', 'staff'),
         ],
       },
-      'apps/internet/shell-internet/remotes.json': { remotes: [] },
+      'apps/internet/internet/shell/remotes.json': { remotes: [] },
     },
   });
 }
@@ -57,7 +57,7 @@ function workspace() {
 describe('dev manifest generator', () => {
   it('builds remotes from remotes.json + mfe.port and merges mfe.devManifest', () => {
     const root = workspace();
-    const shellDir = path.join(root, 'apps/intranet/shell-intranet');
+    const shellDir = path.join(root, 'apps/intranet/intranet/shell');
     const { manifest, problems } = buildDevManifest(root, shellDir);
     assert.deepEqual(manifest, {
       remotes: {
@@ -80,7 +80,7 @@ describe('dev manifest generator', () => {
 
   it('writes only when the content changes; status follows', () => {
     const root = workspace();
-    const shellDir = path.join(root, 'apps/intranet/shell-intranet');
+    const shellDir = path.join(root, 'apps/intranet/intranet/shell');
     assert.deepEqual(devManifestStatus(root, shellDir), {
       upToDate: false,
       missing: true,
@@ -98,7 +98,7 @@ describe('dev manifest generator', () => {
       shellDirs(root)
         .map((d) => path.relative(root, d))
         .sort(),
-      ['apps/internet/shell-internet', 'apps/intranet/shell-intranet'],
+      ['apps/internet/internet/shell', 'apps/intranet/intranet/shell'],
     );
     const out = execFileSync(process.execPath, [BIN, '--root', root], {
       encoding: 'utf8',
@@ -106,11 +106,11 @@ describe('dev manifest generator', () => {
     });
     assert.match(
       out,
-      /wrote apps\/intranet\/shell-intranet\/mfe-manifest\.dev\.json/,
+      /wrote apps\/intranet\/intranet\/shell\/mfe-manifest\.dev\.json/,
     );
     assert.match(
       out,
-      /wrote apps\/internet\/shell-internet\/mfe-manifest\.dev\.json/,
+      /wrote apps\/internet\/internet\/shell\/mfe-manifest\.dev\.json/,
     );
     for (const dir of shellDirs(root)) {
       assert.equal(devManifestStatus(root, dir).upToDate, true);

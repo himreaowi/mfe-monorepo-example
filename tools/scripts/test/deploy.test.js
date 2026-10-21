@@ -192,11 +192,11 @@ describe('validate-manifest', () => {
   async function check(manifest, zone) {
     const root = makeWorkspace({
       apps: {
-        'intranet/shell-intranet': app('shell', { type: 'shell', port: 3101 }),
-        'intranet/staff': app('staff', { port: 3111 }),
+        'intranet/intranet/shell': app('shell', { type: 'shell', port: 3101 }),
+        'intranet/intranet/staff': app('staff', { port: 3111 }),
       },
       files: {
-        'apps/intranet/shell-intranet/remotes.json': {
+        'apps/intranet/intranet/shell/remotes.json': {
           remotes: [entry('intranet', 'staff')],
         },
         'm.json': /** @type {object} */ (manifest),
@@ -216,23 +216,26 @@ describe('validate-manifest', () => {
   it('several shells in a zone: --shell picks whose remotes.json applies', async () => {
     const root = makeWorkspace({
       apps: {
-        'internet/shell-citizen': app('shell', {
+        'internet/citizen/shell': app('shell', {
           zone: 'internet',
           type: 'shell',
           port: 3201,
         }),
-        'internet/shell-business': app('shell', {
+        'internet/business/shell': app('shell', {
           zone: 'internet',
           type: 'shell',
           port: 3202,
         }),
-        'internet/services': app('services', { zone: 'internet', port: 3211 }),
+        'internet/internet/services': app('services', {
+          zone: 'internet',
+          port: 3211,
+        }),
       },
       files: {
-        'apps/internet/shell-citizen/remotes.json': {
+        'apps/internet/citizen/shell/remotes.json': {
           remotes: [entry('internet', 'services')],
         },
-        'apps/internet/shell-business/remotes.json': { remotes: [] },
+        'apps/internet/business/shell/remotes.json': { remotes: [] },
         'm.json': { remotes: {} },
       },
     });
@@ -542,7 +545,7 @@ describe('same-origin /api and /auth (entrypoint + nginx templates)', () => {
   it('write-shell-env: base path, registered remotes, auth of a shell', () => {
     const root = makeWorkspace({
       apps: {
-        'internet/shell-citizen': app('shell', {
+        'internet/citizen/shell': app('shell', {
           zone: 'internet',
           type: 'shell',
           port: 3201,
@@ -555,14 +558,14 @@ describe('same-origin /api and /auth (entrypoint + nginx templates)', () => {
             },
           },
         }),
-        'internet/shell-plain': app('shell', {
+        'internet/plain/shell': app('shell', {
           zone: 'internet',
           type: 'shell',
           port: 3202,
         }),
       },
       files: {
-        'apps/internet/shell-citizen/remotes.json': {
+        'apps/internet/citizen/shell/remotes.json': {
           remotes: [
             entry('internet', 'services'),
             entry('internet', 'pay-ments'),
@@ -571,11 +574,11 @@ describe('same-origin /api and /auth (entrypoint + nginx templates)', () => {
       },
     });
     assert.equal(
-      shellEnv(path.join(root, 'apps/internet/shell-citizen')),
+      shellEnv(path.join(root, 'apps/internet/citizen/shell')),
       'MFE_IS_SHELL=1\nMFE_BASE_PATH=/citizen\nMFE_REMOTES="internet_services internet_pay_ments"\nMFE_AUTH=1\n',
     );
     assert.equal(
-      shellEnv(path.join(root, 'apps/internet/shell-plain')),
+      shellEnv(path.join(root, 'apps/internet/plain/shell')),
       'MFE_IS_SHELL=1\nMFE_BASE_PATH=\nMFE_REMOTES=""\nMFE_AUTH=0\n',
     );
   });
@@ -634,7 +637,7 @@ describe('same-origin /api and /auth (entrypoint + nginx templates)', () => {
 /** A throwaway remote app dir (type:remote). */
 function remoteDir() {
   const root = makeWorkspace({
-    apps: { 'intranet/staff': app('staff', { port: 3111 }) },
+    apps: { 'intranet/intranet/staff': app('staff', { port: 3111 }) },
   });
-  return path.join(root, 'apps/intranet/staff');
+  return path.join(root, 'apps/intranet/intranet/staff');
 }

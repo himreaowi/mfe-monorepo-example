@@ -71,7 +71,7 @@ export function entry(
 /**
  * @param {{
  *   catalog?: Record<string, string>,
- *   apps?: Record<string, object>,          // 'intranet/staff' → package.json
+ *   apps?: Record<string, object>,          // 'intranet/intranet/staff' → package.json
  *   packages?: Record<string, object>,      // 'ui' → package.json
  *   files?: Record<string, string | object>,
  *   exceptions?: unknown,
@@ -148,36 +148,39 @@ export function cleanupWorkspaces() {
 /** A valid workspace: intranet shell + 2 remotes, internet shell + 1 remote. */
 export function validApps() {
   return {
-    'intranet/shell-intranet': app('shell', { type: 'shell', port: 3101 }),
-    'intranet/staff': app('staff', { port: 3111 }),
-    'intranet/leave': app('leave', { port: 3112, access: 'private' }),
-    'internet/shell-internet': app('shell', {
+    'intranet/intranet/shell': app('shell', { type: 'shell', port: 3101 }),
+    'intranet/intranet/staff': app('staff', { port: 3111 }),
+    'intranet/intranet/leave': app('leave', { port: 3112, access: 'private' }),
+    'internet/internet/shell': app('shell', {
       zone: 'internet',
       type: 'shell',
       port: 3201,
     }),
-    'internet/services': app('services', { zone: 'internet', port: 3211 }),
+    'internet/internet/services': app('services', {
+      zone: 'internet',
+      port: 3211,
+    }),
   };
 }
 
 export function validRegistries() {
   return {
-    'apps/intranet/shell-intranet/remotes.json': {
+    'apps/intranet/intranet/shell/remotes.json': {
       remotes: [
         entry('intranet', 'staff'),
         entry('intranet', 'leave', 'private'),
       ],
     },
-    'apps/intranet/shell-intranet/mfe-manifest.dev.json': {
+    'apps/intranet/intranet/shell/mfe-manifest.dev.json': {
       remotes: {
         intranet_staff: { entry: 'http://localhost:3111/mf-manifest.json' },
         intranet_leave: { entry: 'http://localhost:3112/mf-manifest.json' },
       },
     },
-    'apps/internet/shell-internet/remotes.json': {
+    'apps/internet/internet/shell/remotes.json': {
       remotes: [entry('internet', 'services')],
     },
-    'apps/internet/shell-internet/mfe-manifest.dev.json': {
+    'apps/internet/internet/shell/mfe-manifest.dev.json': {
       remotes: {
         internet_services: { entry: 'http://localhost:3211/mf-manifest.json' },
       },

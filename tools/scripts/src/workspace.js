@@ -89,7 +89,8 @@ export function loadWorkspace(root) {
 }
 
 /**
- * Package.json files below apps/ (wherever they are, so misplaced apps are found too).
+ * Package.json files of every app, apps/<zone>/<group>/<folder> (also the old flat
+ * apps/<zone>/<name> and deeper paths, so misplaced apps are found and reported by the check).
  * @param {string} root
  * @returns {WorkspacePackage[]}
  */

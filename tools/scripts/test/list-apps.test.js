@@ -29,17 +29,17 @@ function workspace() {
       unused: { name: '@org/unused', version: '0.1.0' },
     },
     apps: {
-      'intranet/shell-intranet': app('shell', { type: 'shell', port: 3101 }),
-      'intranet/staff': app('staff', {
+      'intranet/intranet/shell': app('shell', { type: 'shell', port: 3101 }),
+      'intranet/intranet/staff': app('staff', {
         port: 3111,
         deps: { '@org/charts': 'workspace:*' },
       }),
-      'intranet/leave': app('leave', {
+      'intranet/intranet/leave': app('leave', {
         port: 3112,
         access: 'private',
         tags: ['zone:intranet', 'type:remote', 'access:private'],
       }),
-      'intranet/helpdesk': app('helpdesk', {
+      'intranet/intranet/helpdesk': app('helpdesk', {
         port: 3113,
         tags: [
           'zone:intranet',
@@ -48,18 +48,24 @@ function workspace() {
           'kind:external',
         ],
       }),
-      'internet/shell-internet': app('shell', {
+      'internet/internet/shell': app('shell', {
         zone: 'internet',
         type: 'shell',
         port: 3201,
       }),
-      'internet/services': app('services', { zone: 'internet', port: 3211 }),
+      'internet/internet/services': app('services', {
+        zone: 'internet',
+        port: 3211,
+      }),
     },
     files: { 'docs/readme.md': '# docs\n' },
   });
   // leave depends on nothing from packages/ except tier-1 @org/ui (from app()); drop it to test
   // that an app without the dependency is not affected
-  const leaveFile = path.join(root, 'apps/intranet/leave/package.json');
+  const leaveFile = path.join(
+    root,
+    'apps/intranet/intranet/leave/package.json',
+  );
   const leave = JSON.parse(fs.readFileSync(leaveFile, 'utf8'));
   delete leave.dependencies['@org/ui'];
   fs.writeFileSync(leaveFile, JSON.stringify(leave, null, 2));
@@ -102,8 +108,8 @@ describe('listApps', () => {
       kind: 'external',
       port: 3113,
       federationName: 'intranet_helpdesk',
-      path: 'apps/intranet/helpdesk',
-      distDir: 'apps/intranet/helpdesk/dist',
+      path: 'apps/intranet/intranet/helpdesk',
+      distDir: 'apps/intranet/intranet/helpdesk/dist',
     });
     assert.equal(apps[2].access, 'private');
     assert.equal(apps[0].type, 'shell');
@@ -124,7 +130,7 @@ describe('affectedFromFiles (git fallback)', () => {
     const root = workspace();
     const set = affectedFromFiles({
       root,
-      files: ['apps/intranet/staff/src/App.tsx'],
+      files: ['apps/intranet/intranet/staff/src/App.tsx'],
     });
     assert.deepEqual([...(set ?? [])], ['@org/intranet-staff']);
   });
@@ -175,7 +181,7 @@ describe('affectedApps', () => {
     assert.deepEqual(affectedApps({ root, base }).apps, []);
 
     fs.appendFileSync(
-      path.join(root, 'apps/intranet/staff/package.json'),
+      path.join(root, 'apps/intranet/intranet/staff/package.json'),
       '\n',
     );
     let result = affectedApps({ root, base });
@@ -258,7 +264,7 @@ describe('CLI', () => {
     const root = workspace();
     const { base } = gitInit(root);
     fs.appendFileSync(
-      path.join(root, 'apps/internet/services/package.json'),
+      path.join(root, 'apps/internet/internet/services/package.json'),
       '\n',
     );
     const out = JSON.parse(

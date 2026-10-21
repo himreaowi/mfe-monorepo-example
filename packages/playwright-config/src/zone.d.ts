@@ -35,7 +35,7 @@ export interface Zone {
   zone: string;
   shellDir: string;
   packageName: string;
-  /** Shell name: its folder without `shell-` (`citizen`). */
+  /** Shell name: its group folder (`apps/<zone>/<name>/shell`), e.g. `citizen`. */
   name: string;
   /** The shell's own dev server port (package.json `mfe.port`). */
   port: number;

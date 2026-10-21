@@ -1,5 +1,6 @@
 packages:
-  - apps/**
+  # apps/<zone>/<shell>/{shell,<remote>} and apps/<zone>/shared/<remote> (tools/scripts/src/layout.js)
+  - apps/*/*/*
   - packages/*
   - tools/*
 

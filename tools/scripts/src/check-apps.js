@@ -2,12 +2,15 @@
 /**
  * check-apps: backstop for the Nx module-boundary lint rule.
  *
- * - every app lives at apps/<zone>/<name> and declares its Nx tags (zone, type, access) and a
+ * - every app lives at apps/<zone>/<group>/<folder> (layout.js) and declares its Nx tags (zone, type, access) and a
  *   dev port (`mfe.port`) inside its zone's range; ports and federation names are unique
- * - shells live in shell-<name> folders and declare a base path (`mfe.basePath`, default `/`);
+ * - shells live in apps/<zone>/<shellName>/shell and declare a base path (`mfe.basePath`, default `/`);
  *   a zone can have several shells: their base paths are unique and never nest (at most one at
  *   `/`), and a zone whose shells all sit below `/` names the shell `/` redirects to (root
  *   package.json `mfe.zones.<zone>.defaultShell`)
+ * - remote-location: a remote listed by one shell lives in that shell's group folder
+ *   (apps/<zone>/<shell>/<remote>), one listed by 2+ shells in apps/<zone>/shared/<remote>
+ *   (`pnpm move-remote` moves it); shell-location / group-layout guard the group folders
  * - ports follow the zone plan (src/zones.js): shells x01-x09, remotes x10-x89
  * - no app's package.json depends on another app (cross-zone deps reported as such)
  * - no app's source imports another app (by package name or by a relative path)
@@ -38,7 +41,6 @@ import {
   APP_TAGS,
   BASE_PATH,
   FEDERATION_NAME,
-  SHELL_DIR_PREFIX,
   TOOL_NAME,
   TOOL_SLOTS,
   ZONES,
@@ -48,6 +50,13 @@ import {
 } from './zones.js';
 import { loadApps, loadWorkspace, readJson } from './workspace.js';
 import { devManifestStatus } from './dev-manifest.js';
+import {
+  SHARED_GROUP,
+  SHELL_FOLDER,
+  remoteTarget,
+  shellNameFromPackage,
+  splitAppDir,
+} from './layout.js';
 
 /** @typedef {import('./check-versions.js').Issue} Issue */
 /** @typedef {import('./workspace.js').WorkspacePackage} WorkspacePackage */
@@ -68,6 +77,8 @@ const IMPORT_RE =
  *   app: WorkspacePackage,
  *   zone: string | undefined,
  *   dirName: string | undefined,
+ *   group: string | undefined,
+ *   shellName: string | undefined,
  *   tags: string[],
  *   type: string | undefined,
  *   access: string | undefined,
@@ -122,16 +133,16 @@ export async function checkApps({ root }) {
 
   // --- placement, tags, port ------------------------------------------------------------------
   for (const app of apps) {
-    const parts = app.dir.split('/'); // apps/<zone>/<name>
+    const parts = splitAppDir(app.dir); // apps/<zone>/<group>/<folder>
     const where = `${app.name} (${app.file})`;
-    if (parts.length !== 3) {
+    if (!parts) {
       err(
         'app-location',
-        `${where}: apps must live at apps/<zone>/<name> (zone: ${Object.keys(ZONES).join(' | ')}). Move it, or generate apps with pnpm gen:shell / pnpm gen:remote.`,
+        `${where}: apps must live at apps/<zone>/<shell>/shell (a shell), apps/<zone>/<shell>/<remote> or apps/<zone>/shared/<remote> (zone: ${Object.keys(ZONES).join(' | ')}). Move it, or generate apps with pnpm gen:shell / pnpm gen:remote.`,
       );
       continue;
     }
-    const [, zone, dirName] = parts;
+    const { zone, group, folder: dirName } = parts;
     if (!Object.hasOwn(ZONES, zone)) {
       err(
         'app-location',
@@ -181,14 +192,35 @@ export async function checkApps({ root }) {
       }
     }
     const type = types[0];
-    if (type === 'shell' && !dirName.startsWith(SHELL_DIR_PREFIX)) {
+    const shellName =
+      type === 'shell' ? shellNameFromPackage(app.name) : undefined;
+    if (type === 'shell') {
+      if (group === SHARED_GROUP) {
+        err(
+          'shell-location',
+          `${where}: ${app.dir} is a shell in apps/${zone}/${SHARED_GROUP}/, which is only for remotes listed by 2+ shells. Move it to apps/${zone}/<shellName>/${SHELL_FOLDER}.`,
+        );
+      } else if (dirName !== SHELL_FOLDER) {
+        err(
+          'shell-location',
+          `${where}: a shell lives in apps/${zone}/<shellName>/${SHELL_FOLDER} (found ${app.dir}); pnpm gen:shell ${zone} <name> creates one.`,
+        );
+      } else if (shellName === undefined) {
+        err(
+          'shell-location',
+          `${where}: a shell package is named @<scope>/shell-<shellName> (found ${app.name}).`,
+        );
+      } else if (group !== shellName) {
+        err(
+          'shell-location',
+          `${where}: the group folder is named after the shell: package ${app.name} belongs in apps/${zone}/${shellName}/${SHELL_FOLDER}, found ${app.dir}. Move it: git mv apps/${zone}/${group} apps/${zone}/${shellName} (or rename the package).`,
+        );
+      }
+    } else if (dirName === SHELL_FOLDER) {
       err(
-        'app-shell',
-        `${where}: a shell lives in apps/${zone}/shell-<name> (found apps/${zone}/${dirName}); pnpm gen:shell ${zone} <name> creates one.`,
+        'shell-location',
+        `${where}: the folder name "${SHELL_FOLDER}" is reserved for the shell of a group (found ${app.dir}).`,
       );
-    }
-    if (type === 'remote' && dirName.startsWith(SHELL_DIR_PREFIX)) {
-      err('app-shell', `${where}: "shell-*" folders are reserved for shells.`);
     }
     const rawBasePath = app.pkg.mfe?.basePath;
     if (type === 'shell') {
@@ -248,6 +280,8 @@ export async function checkApps({ root }) {
       app,
       zone,
       dirName,
+      group,
+      shellName,
       tags,
       type,
       access: accesses[0],
@@ -315,9 +349,7 @@ export async function checkApps({ root }) {
       ? zoneSettings[zone]
       : undefined;
     const defaultShell = settings?.defaultShell;
-    const shellNames = shells.map((i) =>
-      /** @type {string} */ (i.dirName).slice(SHELL_DIR_PREFIX.length),
-    );
+    const shellNames = shells.map((i) => i.shellName ?? String(i.group));
     const hasRoot = shells.some((i) => i.basePath === '/');
     if (defaultShell !== undefined) {
       if (
@@ -326,7 +358,7 @@ export async function checkApps({ root }) {
       ) {
         err(
           'zone-default-shell',
-          `Root package.json "mfe.zones.${zone}.defaultShell" is ${JSON.stringify(defaultShell)}, which is not a ${zone} shell (${shellNames.length ? shellNames.join(', ') : 'none yet'}). Use the shell's name (apps/${zone}/shell-<name>).`,
+          `Root package.json "mfe.zones.${zone}.defaultShell" is ${JSON.stringify(defaultShell)}, which is not a ${zone} shell (${shellNames.length ? shellNames.join(', ') : 'none yet'}). Use the shell's name (apps/${zone}/<name>/shell).`,
         );
       } else if (hasRoot) {
         err(
@@ -417,6 +449,8 @@ export async function checkApps({ root }) {
   /** Remotes listed by at least one shell (a remote may be listed by several shells of its zone). */
   /** @type {Set<string>} */
   const registeredInZone = new Set();
+  /** @type {Map<string, Set<string>>} remote package → names of the shells listing it */
+  const listedBy = new Map();
   for (const shell of infos.filter((i) => i.type === 'shell')) {
     const shellDir = path.join(root, shell.app.dir);
     const registryFile = path.join(shellDir, 'remotes.json');
@@ -472,7 +506,15 @@ export async function checkApps({ root }) {
         );
       }
     }
-    for (const name of registered) registeredInZone.add(name);
+    for (const name of registered) {
+      registeredInZone.add(name);
+      const target = byName.get(name);
+      if (!target || target.zone !== shell.zone || target.type !== 'remote')
+        continue;
+      const set = listedBy.get(name) ?? new Set();
+      set.add(shell.shellName ?? String(shell.group));
+      listedBy.set(name, set);
+    }
   }
   for (const remote of infos.filter(
     (i) =>
@@ -481,9 +523,49 @@ export async function checkApps({ root }) {
       infos.some((s) => s.type === 'shell' && s.zone === i.zone),
   )) {
     warn(
-      'registry',
-      `${remote.app.name} (${remote.app.dir}) is not registered in the remotes.json of any ${remote.zone} shell, so no shell shows it.`,
+      'remote-location',
+      `${remote.app.name} (${remote.app.dir}) is not registered in the remotes.json of any ${remote.zone} shell, so no shell shows it (unused). Register it, or delete it.`,
     );
+  }
+  for (const remote of infos.filter((i) => i.type === 'remote')) {
+    const target = remoteTarget(
+      String(remote.zone),
+      String(remote.dirName),
+      [...(listedBy.get(remote.app.name) ?? [])].sort(),
+    );
+    if (!target || target.dir === remote.app.dir) continue;
+    const by = [...(listedBy.get(remote.app.name) ?? [])].sort();
+    err(
+      'remote-location',
+      `${remote.app.name} is listed by ${by.length === 1 ? `the ${by[0]} shell` : `${by.length} ${remote.zone} shells (${by.join(', ')})`} so it belongs in ${target.dir} (found ${remote.app.dir}). Move it: pnpm move-remote ${remote.zone} ${remote.dirName} --to ${target.to}  (or: git mv ${remote.app.dir} ${target.dir} && pnpm install).`,
+    );
+  }
+  // --- group folders: one shell each, nothing unknown below a zone ---------------------------
+  for (const zone of Object.keys(ZONES)) {
+    const zoneDir = path.join(root, 'apps', zone);
+    for (const item of entries(zoneDir)) {
+      if (item.name === 'node_modules') continue;
+      if (!item.isDirectory()) {
+        if (item.name === 'README.md' || item.name.startsWith('.env')) continue;
+        err(
+          'group-layout',
+          `apps/${zone}/${item.name}: unknown item. Below a zone only .env* files, README.md, the shell group folders (apps/${zone}/<shellName>/) and apps/${zone}/${SHARED_GROUP}/ are allowed.`,
+        );
+        continue;
+      }
+      const dir = `apps/${zone}/${item.name}`;
+      const inGroup = infos.filter(
+        (i) => i.zone === zone && i.group === item.name,
+      );
+      const shellsHere = inGroup.filter((i) => i.type === 'shell');
+      if (item.name === SHARED_GROUP) continue;
+      if (shellsHere.length !== 1) {
+        err(
+          'group-layout',
+          `${dir}: a group folder holds exactly one shell in ${dir}/${SHELL_FOLDER}/, found ${shellsHere.length}. Group folders are named after their shell; remotes listed by 2+ shells go to apps/${zone}/${SHARED_GROUP}/.`,
+        );
+      }
+    }
   }
   // --- generated dev manifests ---------------------------------------------------------------
   for (const shell of infos.filter((i) => i.type === 'shell')) {

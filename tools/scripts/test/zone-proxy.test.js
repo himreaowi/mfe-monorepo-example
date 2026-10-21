@@ -91,12 +91,12 @@ describe('zone dev proxy', () => {
     const [cPort, bPort] = [await listen(citizen), await listen(business)];
     const root = makeWorkspace({
       apps: {
-        'internet/shell-citizen': {
+        'internet/citizen/shell': {
           ...app('shell', { zone: 'internet', type: 'shell', port: cPort }),
           name: '@org/shell-citizen',
           mfe: { port: cPort, federationName: 'c', basePath: '/citizen' },
         },
-        'internet/shell-business': {
+        'internet/business/shell': {
           ...app('shell', { zone: 'internet', type: 'shell', port: bPort }),
           name: '@org/shell-business',
           mfe: { port: bPort, federationName: 'b', basePath: '/business' },
@@ -150,7 +150,7 @@ describe('zone dev proxy', () => {
   it('answers 502 while a shell is not up yet', async () => {
     const root = makeWorkspace({
       apps: {
-        'intranet/shell-intranet': app('shell', { type: 'shell', port: 1 }),
+        'intranet/intranet/shell': app('shell', { type: 'shell', port: 1 }),
       },
     });
     const proxy = await startZoneProxy({ root, zone: 'intranet', port: 0 });
@@ -182,12 +182,12 @@ describe('zone dev proxy', () => {
     ];
     const root = makeWorkspace({
       apps: {
-        'internet/shell-citizen': {
+        'internet/citizen/shell': {
           ...app('shell', { zone: 'internet', type: 'shell', port: sPort }),
           name: '@org/shell-citizen',
           mfe: { port: sPort, federationName: 'c', basePath: '/citizen' },
         },
-        'internet/shell-business': {
+        'internet/business/shell': {
           ...app('shell', { zone: 'internet', type: 'shell', port: 1 }),
           name: '@org/shell-business',
           mfe: { port: 1, federationName: 'b', basePath: '/business' },
@@ -200,7 +200,7 @@ describe('zone dev proxy', () => {
       `API_UPSTREAM=http://localhost:${aPort}/v1/\nAUTH_UPSTREAM=http://localhost:${bPort}\n`,
     );
     fs.writeFileSync(
-      path.join(root, 'apps/internet/shell-business/.env'),
+      path.join(root, 'apps/internet/business/.env'),
       'API_UPSTREAM=\n',
     );
     const proxy = await startZoneProxy({
@@ -249,20 +249,20 @@ describe('zone dev proxy', () => {
     const { loadShellEnv } = await import('../src/env.js');
     const root = makeWorkspace({
       apps: {
-        'internet/shell-citizen': app('shell', {
+        'internet/citizen/shell': app('shell', {
           zone: 'internet',
           type: 'shell',
           port: 1,
         }),
       },
     });
-    const shellDir = path.join(root, 'apps/internet/shell-citizen');
+    const shellDir = path.join(root, 'apps/internet/citizen/shell');
     fs.writeFileSync(
       path.join(root, 'apps/internet/.env'),
       'API_UPSTREAM=zone\nAUTH_UPSTREAM=zone\nOTHER=zone\n',
     );
     fs.writeFileSync(
-      path.join(shellDir, '.env'),
+      path.join(path.dirname(shellDir), '.env'),
       'API_UPSTREAM=shell\nOTHER=shell\n',
     );
     const { values } = loadShellEnv({

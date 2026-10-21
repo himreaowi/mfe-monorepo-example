@@ -35,7 +35,10 @@ describe('check-apps', () => {
   it('(g) fails on a duplicate port', async () => {
     const r = await run({
       ...validApps(),
-      'intranet/leave': app('leave', { port: 3111, access: 'private' }),
+      'intranet/intranet/leave': app('leave', {
+        port: 3111,
+        access: 'private',
+      }),
     });
     // the dev manifest still has the old port: regenerated after the fix
     assert.deepEqual(rules(r.errors), ['app-port-duplicate', 'dev-manifest']);
@@ -48,21 +51,24 @@ describe('check-apps', () => {
   it('fails on a port outside the zone range or missing', async () => {
     let r = await run({
       ...validApps(),
-      'intranet/staff': app('staff', { port: 3290 }),
+      'intranet/intranet/staff': app('staff', { port: 3290 }),
     });
     assert.deepEqual(rules(r.errors), ['app-port', 'dev-manifest']);
     assert.match(
       r.errors[0].message,
       /outside the intranet remotes range 3110-3189/,
     );
-    r = await run({ ...validApps(), 'intranet/staff': app('staff', {}) });
+    r = await run({
+      ...validApps(),
+      'intranet/intranet/staff': app('staff', {}),
+    });
     assert.deepEqual(rules(r.errors), ['app-port', 'dev-manifest']);
   });
 
   it('fails on a port in the zone range reserved for dev tools', async () => {
     const r = await run({
       ...validApps(),
-      'intranet/staff': app('staff', { port: 3191 }),
+      'intranet/intranet/staff': app('staff', { port: 3191 }),
     });
     assert.deepEqual(rules(r.errors), ['app-port', 'dev-manifest']);
     assert.match(
@@ -74,7 +80,7 @@ describe('check-apps', () => {
   it('fails on missing or wrong tags', async () => {
     let r = await run({
       ...validApps(),
-      'intranet/staff': app('staff', {
+      'intranet/intranet/staff': app('staff', {
         port: 3111,
         tags: ['zone:intranet', 'type:remote'],
       }),
@@ -83,7 +89,7 @@ describe('check-apps', () => {
     assert.match(r.errors[0].message, /access:public/);
     r = await run({
       ...validApps(),
-      'intranet/staff': app('staff', {
+      'intranet/intranet/staff': app('staff', {
         port: 3111,
         tags: ['zone:internet', 'type:remote', 'access:public', 'kind:vendor'],
       }),
@@ -91,21 +97,27 @@ describe('check-apps', () => {
     assert.deepEqual(rules(r.errors), ['app-tags', 'app-tags']);
     const pkg = app('staff', { port: 3111 });
     delete (/** @type {any} */ (pkg).nx);
-    r = await run({ ...validApps(), 'intranet/staff': pkg });
+    r = await run({ ...validApps(), 'intranet/intranet/staff': pkg });
     assert.ok(rules(r.errors).includes('app-tags'));
   });
 
   it('fails on misplaced apps and bad shells', async () => {
+    // flat (old layout) and too deep
     let r = await run({
       ...validApps(),
-      'intranet/group/x': app('x', { port: 3120 }),
+      'intranet/x': app('x', { port: 3120 }),
+    });
+    assert.deepEqual(rules(r.errors), ['app-location', 'group-layout']);
+    r = await run({
+      ...validApps(),
+      'intranet/intranet/x/y': app('x', { port: 3120 }),
     });
     assert.deepEqual(rules(r.errors), ['app-location']);
     r = await run({ ...validApps(), 'extranet/x': app('x', { port: 3120 }) });
     assert.deepEqual(rules(r.errors), ['app-location']);
     r = await run({
       ...validApps(),
-      'intranet/main': app('main', {
+      'intranet/intranet/main': app('main', {
         type: 'shell',
         port: 3150,
         extra: { name: '@org/intranet-main' },
@@ -116,20 +128,183 @@ describe('check-apps', () => {
     assert.deepEqual(rules(r.errors), [
       'app-base-path',
       'app-port',
-      'app-shell',
+      'group-layout',
       'registry',
+      'shell-location',
     ]);
     r = await run({
       ...validApps(),
-      'intranet/staff': app('staff', { port: 3102 }),
-      'intranet/shell-intranet': app('shell', { type: 'shell', port: 3111 }),
+      'intranet/intranet/staff': app('staff', { port: 3102 }),
+      'intranet/intranet/shell': app('shell', { type: 'shell', port: 3111 }),
     });
     assert.deepEqual(rules(r.errors), ['app-port', 'app-port', 'dev-manifest']);
     r = await run({
       ...validApps(),
-      'intranet/shell-intranet': app('shell', { type: 'shell', port: 3100 }),
+      'intranet/intranet/shell': app('shell', { type: 'shell', port: 3100 }),
     });
     assert.match(r.errors[0].message, /port 3100 is the intranet dev proxy/);
+  });
+
+  describe('app placement (remote-location, shell-location, group-layout)', () => {
+    /** Two internet shells (alpha, beta); remote `services` listed by `listing`. */
+    const twoShells = (
+      /** @type {string} */ remoteDir,
+      /** @type {string[]} */ listing,
+      /** @type {Record<string, string | object>} */ extra = {},
+      /** @type {Record<string, object>} */ extraApps = {},
+    ) => {
+      const shell = (/** @type {string} */ n, /** @type {number} */ port) =>
+        app('shell', {
+          zone: 'internet',
+          type: 'shell',
+          port,
+          federationName: `internet_shell_${n}`,
+          extra: { name: `@org/shell-${n}`, mfe: undefined },
+        });
+      const mk = (/** @type {string} */ n, /** @type {number} */ port) => {
+        const pkg = /** @type {any} */ (shell(n, port));
+        pkg.mfe = {
+          port,
+          federationName: `internet_shell_${n}`,
+          basePath: `/${n}`,
+        };
+        return pkg;
+      };
+      /** @type {Record<string, string | object>} */
+      const files = {};
+      for (const n of ['alpha', 'beta']) {
+        const remotes = listing.includes(n)
+          ? [entry('internet', 'services')]
+          : [];
+        files[`apps/internet/${n}/shell/remotes.json`] = { remotes };
+        files[`apps/internet/${n}/shell/mfe-manifest.dev.json`] = {
+          remotes: Object.fromEntries(
+            remotes.map((r) => [
+              r.federationName,
+              { entry: 'http://localhost:3211/mf-manifest.json' },
+            ]),
+          ),
+        };
+      }
+      return checkApps({
+        root: makeWorkspace({
+          apps: {
+            'internet/alpha/shell': mk('alpha', 3201),
+            'internet/beta/shell': mk('beta', 3202),
+            [remoteDir]: app('services', { zone: 'internet', port: 3211 }),
+            ...extraApps,
+          },
+          files: { ...files, ...extra },
+          rootMfe: { zones: { internet: { defaultShell: 'alpha' } } },
+        }),
+      });
+    };
+
+    it('passes: one shell lists it -> its group; two shells -> shared', async () => {
+      let r = await twoShells('internet/alpha/services', ['alpha']);
+      assert.deepEqual(r.errors, []);
+      r = await twoShells('internet/shared/services', ['alpha', 'beta']);
+      assert.deepEqual(r.errors, []);
+    });
+
+    it('remote-location: wrong group, names the target and the move command', async () => {
+      let r = await twoShells('internet/shared/services', ['alpha']);
+      assert.deepEqual(rules(r.errors), ['remote-location']);
+      assert.match(
+        r.errors[0].message,
+        /belongs in apps\/internet\/alpha\/services/,
+      );
+      assert.match(
+        r.errors[0].message,
+        /pnpm move-remote internet services --to alpha/,
+      );
+      r = await twoShells('internet/alpha/services', ['alpha', 'beta']);
+      assert.deepEqual(rules(r.errors), ['remote-location']);
+      assert.match(r.errors[0].message, /apps\/internet\/shared\/services/);
+      assert.match(r.errors[0].message, /--to shared/);
+      r = await twoShells('internet/alpha/services', ['beta']);
+      assert.deepEqual(rules(r.errors), ['remote-location']);
+      assert.match(r.errors[0].message, /--to beta/);
+    });
+
+    it('remote-location: a remote listed by no shell is a warning (unused)', async () => {
+      const r = await twoShells('internet/alpha/services', []);
+      assert.deepEqual(r.errors, []);
+      assert.deepEqual(rules(r.warnings), ['remote-location']);
+      assert.match(r.warnings[0].message, /unused/);
+    });
+
+    it('shell-location: shell inside shared, wrong folder name, group not named after the shell', async () => {
+      let r = await twoShells(
+        'internet/alpha/services',
+        ['alpha'],
+        {},
+        {
+          'internet/shared/shell': app('shell', {
+            zone: 'internet',
+            type: 'shell',
+            port: 3203,
+            federationName: 'internet_shell_gamma',
+            extra: { name: '@org/shell-gamma' },
+          }),
+        },
+      );
+      assert.ok(rules(r.errors).includes('shell-location'));
+      assert.ok(r.errors.some((e) => /only for remotes/.test(e.message)));
+      r = await twoShells(
+        'internet/alpha/services',
+        ['alpha'],
+        {},
+        {
+          'internet/gamma/shell': app('shell', {
+            zone: 'internet',
+            type: 'shell',
+            port: 3203,
+            federationName: 'internet_shell_delta',
+            extra: { name: '@org/shell-delta' },
+          }),
+        },
+      );
+      assert.ok(
+        r.errors.some(
+          (e) =>
+            e.rule === 'shell-location' &&
+            /belongs in apps\/internet\/delta\/shell/.test(e.message),
+        ),
+      );
+    });
+
+    it('group-layout: a group without shell/, a second shell, unknown items in a zone', async () => {
+      let r = await twoShells(
+        'internet/alpha/services',
+        ['alpha'],
+        {},
+        {
+          'internet/gamma/orphan': app('orphan', {
+            zone: 'internet',
+            port: 3212,
+          }),
+        },
+      );
+      assert.ok(
+        r.errors.some(
+          (e) =>
+            e.rule === 'group-layout' &&
+            /apps\/internet\/gamma/.test(e.message),
+        ),
+      );
+      r = await twoShells('internet/alpha/services', ['alpha'], {
+        'apps/internet/notes.txt': 'x',
+        'apps/internet/.env.example': '',
+        'apps/internet/README.md': '',
+      });
+      assert.deepEqual(
+        r.errors
+          .filter((e) => e.rule === 'group-layout')
+          .map((e) => e.message.split(':')[0]),
+        ['apps/internet/notes.txt'],
+      );
+    });
   });
 
   describe('several shells per zone', () => {
@@ -154,24 +329,27 @@ describe('check-apps', () => {
     ) => {
       /** @type {Record<string, object>} */
       const apps = { ...validApps() };
-      delete apps['internet/shell-internet'];
+      delete apps['internet/internet/shell'];
+      // both shells list `services`: shared
+      apps['internet/shared/services'] = apps['internet/internet/services'];
+      delete apps['internet/internet/services'];
       /** @type {Record<string, string | object>} */
       const files = { ...validRegistries() };
-      delete files['apps/internet/shell-internet/remotes.json'];
-      delete files['apps/internet/shell-internet/mfe-manifest.dev.json'];
+      delete files['apps/internet/internet/shell/remotes.json'];
+      delete files['apps/internet/internet/shell/mfe-manifest.dev.json'];
       let port = 3201;
       for (const [name, basePath] of Object.entries(bases)) {
         const pkg = /** @type {any} */ (shell(name, port));
         port += 1;
         if (basePath !== undefined) pkg.mfe.basePath = basePath;
-        apps[`internet/shell-${name}`] = pkg;
+        apps[`internet/${name}/shell`] = pkg;
         const remotes = /** @type {any} */ (registries)[name] ?? ['services'];
-        files[`apps/internet/shell-${name}/remotes.json`] = {
+        files[`apps/internet/${name}/shell/remotes.json`] = {
           remotes: remotes.map((/** @type {string} */ r) =>
             entry('internet', r),
           ),
         };
-        files[`apps/internet/shell-${name}/mfe-manifest.dev.json`] = {
+        files[`apps/internet/${name}/shell/mfe-manifest.dev.json`] = {
           remotes: Object.fromEntries(
             remotes.map((/** @type {string} */ r) => [
               `internet_${r}`,
@@ -247,7 +425,10 @@ describe('check-apps', () => {
         app('services', { zone: 'internet', port: 3211 })
       );
       remote.mfe.basePath = '/x';
-      const r = await run({ ...validApps(), 'internet/services': remote });
+      const r = await run({
+        ...validApps(),
+        'internet/internet/services': remote,
+      });
       assert.deepEqual(rules(r.errors), ['app-base-path']);
     });
   });
@@ -255,7 +436,7 @@ describe('check-apps', () => {
   it('fails on duplicate federation names', async () => {
     const r = await run({
       ...validApps(),
-      'intranet/leave': app('leave', {
+      'intranet/intranet/leave': app('leave', {
         port: 3112,
         access: 'private',
         federationName: 'intranet_staff',
@@ -267,7 +448,7 @@ describe('check-apps', () => {
   it('fails when a remote depends on another remote (package.json)', async () => {
     const r = await run({
       ...validApps(),
-      'intranet/leave': app('leave', {
+      'intranet/intranet/leave': app('leave', {
         port: 3112,
         access: 'private',
         deps: { '@org/intranet-staff': 'workspace:*' },
@@ -280,7 +461,7 @@ describe('check-apps', () => {
   it('(e) fails on a cross-zone dependency', async () => {
     const r = await run({
       ...validApps(),
-      'intranet/staff': app('staff', {
+      'intranet/intranet/staff': app('staff', {
         port: 3111,
         devDeps: { '@org/internet-services': 'workspace:*' },
       }),
@@ -292,7 +473,7 @@ describe('check-apps', () => {
   it('(f) fails when a remote imports another remote (source backstop)', async () => {
     const r = await run(validApps(), {
       ...validRegistries(),
-      'apps/intranet/leave/src/a.ts':
+      'apps/intranet/intranet/leave/src/a.ts':
         "import { Demo } from '@org/intranet-staff/src/features/demo';\nexport { Demo };\n",
     });
     assert.deepEqual(rules(r.errors), ['app-import']);
@@ -305,9 +486,9 @@ describe('check-apps', () => {
   it('(e) fails on cross-zone imports, by name, relative path or dynamic import', async () => {
     const r = await run(validApps(), {
       ...validRegistries(),
-      'apps/intranet/staff/src/a.ts': [
+      'apps/intranet/intranet/staff/src/a.ts': [
         "export { x } from '@org/internet-services';",
-        "export { y } from '../../../internet/services/src/y';",
+        "export { y } from '../../../../internet/internet/services/src/y';",
         "export const z = () => import('@org/internet-services/src/z');",
         "import '../../leave/src/side-effect';",
         "export { own } from './own';",
@@ -325,7 +506,7 @@ describe('check-apps', () => {
   it('fails when a shell imports a remote', async () => {
     const r = await run(validApps(), {
       ...validRegistries(),
-      'apps/intranet/shell-intranet/src/a.tsx':
+      'apps/intranet/intranet/shell/src/a.tsx':
         "import Staff from '@org/intranet-staff';\nexport default Staff;\n",
     });
     assert.deepEqual(rules(r.errors), ['app-import']);
@@ -333,7 +514,7 @@ describe('check-apps', () => {
   });
 
   describe('component layout (one folder per component)', () => {
-    const staff = 'apps/intranet/staff/src';
+    const staff = 'apps/intranet/intranet/staff/src';
     const ok = (/** @type {string} */ dir, /** @type {string} */ name) => ({
       [`${dir}/${name}/${name}.tsx`]: `import styles from './${name}.module.scss';\nexport const ${name} = () => styles;\n`,
       [`${dir}/${name}/${name}.module.scss`]: '.a { color: red; }\n',
@@ -348,7 +529,7 @@ describe('check-apps', () => {
         ...ok(`${staff}/components`, 'Badge'),
         // layouts follow the same rule (a remote's StandaloneLayout, the shell's ShellLayout)
         ...ok(`${staff}/layouts`, 'StandaloneLayout'),
-        ...ok('apps/intranet/shell-intranet/src/layouts', 'ShellLayout'),
+        ...ok('apps/intranet/intranet/shell/src/layouts', 'ShellLayout'),
         // a private sub-part may use its component's styles (same folder)
         [`${staff}/features/staff/components/StaffSearch/SearchField.tsx`]:
           "import styles from './StaffSearch.module.scss';\nexport const F = () => styles;\n",
@@ -376,7 +557,7 @@ describe('check-apps', () => {
         [`${staff}/features/staff/components/Detail/Detail.tsx`]: '',
         [`${staff}/components/Badge.tsx`]: '',
         [`${staff}/layouts/StandaloneLayout.tsx`]: '',
-        'apps/intranet/shell-intranet/src/layouts/ShellLayout/ShellLayout.tsx':
+        'apps/intranet/intranet/shell/src/layouts/ShellLayout/ShellLayout.tsx':
           '',
       });
       assert.deepEqual(rules(r.errors).sort(), [
@@ -388,7 +569,7 @@ describe('check-apps', () => {
       assert.match(text, /move it to components\/StaffCard\/StaffCard\.tsx/);
       assert.match(
         text,
-        /apps\/intranet\/staff\/src\/features\/staff\/components\/StaffList\/StaffList\.tsx/,
+        /apps\/intranet\/intranet\/staff\/src\/features\/staff\/components\/StaffList\/StaffList\.tsx/,
       );
       assert.match(text, /__fixtures__\/ \(or utils\/\)/);
       assert.match(text, /components\/Detail\/: missing Detail\.test\.tsx/);
@@ -404,7 +585,7 @@ describe('check-apps', () => {
     });
 
     it('state/ folders need a reducer test', async () => {
-      const shell = 'apps/intranet/shell-intranet/src';
+      const shell = 'apps/intranet/intranet/shell/src';
       const r = await run(validApps(), {
         ...validRegistries(),
         // ok: feature state and app-level state with their reducer tests
@@ -426,7 +607,7 @@ describe('check-apps', () => {
       );
       assert.match(
         text,
-        /shell-intranet\/src\/state\/: .*<name>Reducer\.ts \+ <name>Reducer\.test\.ts/,
+        /intranet\/shell\/src\/state\/: .*<name>Reducer\.ts \+ <name>Reducer\.test\.ts/,
       );
     });
 
@@ -435,7 +616,7 @@ describe('check-apps', () => {
         ...validRegistries(),
         ...ok(`${staff}/features/staff/components`, 'StaffCard'),
         ...ok(`${staff}/components`, 'Badge'),
-        ...ok('apps/intranet/shell-intranet/src/layouts', 'ShellLayout'),
+        ...ok('apps/intranet/intranet/shell/src/layouts', 'ShellLayout'),
         [`${staff}/features/staff/index.ts`]:
           "export { StaffCard } from './components/StaffCard/StaffCard';\n",
         [`${staff}/features/staff/components/StaffCard/index.ts`]: '',
@@ -443,7 +624,7 @@ describe('check-apps', () => {
         [`${staff}/features/staff/api/index.ts`]: '',
         [`${staff}/components/Badge/index.tsx`]: '',
         [`${staff}/pages/HomePage/index.ts`]: '',
-        'apps/intranet/shell-intranet/src/layouts/ShellLayout/index.ts': '',
+        'apps/intranet/intranet/shell/src/layouts/ShellLayout/index.ts': '',
         [`${staff}/providers/index.ts`]: '',
       });
       assert.deepEqual(rules(r.errors), Array(7).fill('barrel-file'));
@@ -475,12 +656,12 @@ describe('check-apps', () => {
     it('fails when a remote sets custom properties for the whole page', async () => {
       const r = await run(validApps(), {
         ...validRegistries(),
-        ...ok('apps/intranet/shell-intranet/src/layouts', 'ShellLayout'),
+        ...ok('apps/intranet/intranet/shell/src/layouts', 'ShellLayout'),
         ...ok(`${staff}/features/x/components`, 'X'),
         // the shell may set page tokens (src/styles/shell.scss) and its layout's own values
-        'apps/intranet/shell-intranet/src/styles/shell.scss':
+        'apps/intranet/intranet/shell/src/styles/shell.scss':
           ':root { --color-accent: #1d4ed8; }\n',
-        'apps/intranet/shell-intranet/src/layouts/ShellLayout/ShellLayout.module.scss':
+        'apps/intranet/intranet/shell/src/layouts/ShellLayout/ShellLayout.module.scss':
           '.host { --header-bg: #1d4ed8; }\n',
         // component-scoped custom properties and reading tokens are fine in a remote
         [`${staff}/components/Card/Card.module.scss`]:
@@ -517,7 +698,7 @@ describe('check-apps', () => {
 
   it('checks shell registries', async () => {
     const files = validRegistries();
-    files['apps/intranet/shell-intranet/remotes.json'] = {
+    files['apps/intranet/intranet/shell/remotes.json'] = {
       remotes: [
         entry('intranet', 'staff', 'private'),
         entry('intranet', 'gone'),
@@ -533,7 +714,7 @@ describe('check-apps', () => {
       'registry',
     ]);
     // leave not registered
-    assert.deepEqual(rules(r.warnings), ['registry']);
+    assert.deepEqual(rules(r.warnings), ['remote-location']);
   });
 
   describe('generated dev manifest (mfe-manifest.dev.json)', () => {
@@ -552,7 +733,7 @@ describe('check-apps', () => {
     it('passes when the file is what the generator writes (ports, registry order, mfe.devManifest)', async () => {
       /** @type {Record<string, object>} */
       const files = validRegistries();
-      files['apps/intranet/shell-intranet/mfe-manifest.dev.json'] = {
+      files['apps/intranet/intranet/shell/mfe-manifest.dev.json'] = {
         remotes: {
           intranet_staff: {
             entry: 'http://localhost:3111/mf-manifest.json',
@@ -564,7 +745,7 @@ describe('check-apps', () => {
         settings: { apiBaseUrl: 'http://localhost:3190/api' },
       };
       const r = await run(
-        { ...validApps(), 'intranet/shell-intranet': shellWith(devManifest) },
+        { ...validApps(), 'intranet/intranet/shell': shellWith(devManifest) },
         files,
       );
       assert.deepEqual(r.errors, []);
@@ -573,17 +754,20 @@ describe('check-apps', () => {
     it('fails when a remote port changed, the file is missing or edited by hand', async () => {
       const moved = await run({
         ...validApps(),
-        'intranet/leave': app('leave', { port: 3115, access: 'private' }),
+        'intranet/intranet/leave': app('leave', {
+          port: 3115,
+          access: 'private',
+        }),
       });
       assert.deepEqual(rules(moved.errors), ['dev-manifest']);
       assert.match(
         moved.errors[0].message,
-        /shell-intranet\/mfe-manifest\.dev\.json is out of date\. It is generated from remotes\.json.*run pnpm dev-manifest/,
+        /intranet\/shell\/mfe-manifest\.dev\.json is out of date\. It is generated from remotes\.json.*run pnpm dev-manifest/,
       );
       const files = validRegistries();
       delete (
         /** @type {Record<string, unknown>} */ (files)[
-          'apps/internet/shell-internet/mfe-manifest.dev.json'
+          'apps/internet/internet/shell/mfe-manifest.dev.json'
         ]
       );
       const missing = await run(validApps(), files);
@@ -592,7 +776,7 @@ describe('check-apps', () => {
       const edited = await run({
         ...validApps(),
         // dev props must come from mfe.devManifest, not from the file
-        'intranet/shell-intranet': shellWith(devManifest),
+        'intranet/intranet/shell': shellWith(devManifest),
       });
       assert.deepEqual(rules(edited.errors), ['dev-manifest']);
     });
@@ -600,7 +784,7 @@ describe('check-apps', () => {
     it('fails on a malformed mfe.devManifest', async () => {
       const r = await run({
         ...validApps(),
-        'intranet/shell-intranet': shellWith(
+        'intranet/intranet/shell': shellWith(
           /** @type {any} */ ({ remotes: [] }),
         ),
       });
@@ -653,22 +837,34 @@ describe('check-apps', () => {
     it('fails on the same component name in two apps, unless allowed', async () => {
       const files = {
         ...validRegistries(),
-        ...component('apps/intranet/staff/src/components', 'StatusPill'),
         ...component(
-          'apps/intranet/leave/src/features/leave/components',
+          'apps/intranet/intranet/staff/src/components',
           'StatusPill',
         ),
-        ...component('apps/intranet/staff/src/components', 'StaffCard'),
+        ...component(
+          'apps/intranet/intranet/leave/src/features/leave/components',
+          'StatusPill',
+        ),
+        ...component(
+          'apps/intranet/intranet/staff/src/components',
+          'StaffCard',
+        ),
         // layouts are per app by design
-        ...component('apps/intranet/staff/src/layouts', 'StandaloneLayout'),
-        ...component('apps/intranet/leave/src/layouts', 'StandaloneLayout'),
+        ...component(
+          'apps/intranet/intranet/staff/src/layouts',
+          'StandaloneLayout',
+        ),
+        ...component(
+          'apps/intranet/intranet/leave/src/layouts',
+          'StandaloneLayout',
+        ),
       };
       const apps = validApps();
       let r = await run(apps, files);
       assert.deepEqual(rules(r.errors), ['shared-component']);
       assert.match(
         r.errors[0].message,
-        /component StatusPill exists in 2 apps \(apps\/intranet\/leave, apps\/intranet\/staff\)\. Move it to @org\/ui/,
+        /component StatusPill exists in 2 apps \(apps\/intranet\/intranet\/leave, apps\/intranet\/intranet\/staff\)\. Move it to @org\/ui/,
       );
       r = await checkApps({
         root: makeWorkspace({
