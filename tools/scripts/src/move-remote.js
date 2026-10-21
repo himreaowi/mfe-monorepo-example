@@ -130,6 +130,16 @@ export function moveRemote({
     fs.writeFileSync(abs, text.split(plan.from).join(plan.to));
     rewritten.push(rel);
   }
+  // untracked / git-ignored leftovers (.mf, node_modules, dist) stay behind with git mv: bring
+  // them along so the old folder disappears (pnpm install relinks node_modules)
+  const oldDir = path.join(root, plan.from);
+  if (fs.existsSync(oldDir)) {
+    for (const entry of fs.readdirSync(oldDir)) {
+      const dest = path.join(root, plan.to, entry);
+      if (!fs.existsSync(dest)) fs.renameSync(path.join(oldDir, entry), dest);
+    }
+    fs.rmSync(oldDir, { recursive: true, force: true });
+  }
   // an emptied group folder (only node_modules or nothing left) is removed
   const oldGroup = path.join(root, path.dirname(plan.from));
   if (fs.existsSync(oldGroup) && fs.readdirSync(oldGroup).length === 0) {

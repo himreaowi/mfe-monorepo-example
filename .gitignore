@@ -24,3 +24,6 @@ test-results/
 .nx/cache/
 .nx/workspace-data/
 storybook-static/
+
+# Module Federation diagnostics written next to each app by the dev servers
+.mf
