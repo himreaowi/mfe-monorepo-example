@@ -22,6 +22,11 @@ Instructions for AI coding agents (and humans) working in this monorepo. Details
 [--shell <s>] [--private] [--state] [--external [--vendor-format esm|web-component|script]]
 [--title "<text>"]` (`--shell` is required when the zone has several shells), then
   `pnpm install`. Never copy an app folder.
+- Layout: shell `apps/<zone>/<shellName>/shell`, its own remotes `apps/<zone>/<shellName>/<remote>`, remotes
+  listed by 2+ shells `apps/<zone>/shared/<remote>` (`shared` is reserved; nothing names a shell in
+  code). `pnpm check` rule `remote-location` fails on a misplaced remote and prints the fix:
+  `pnpm move-remote <zone> <remote> --to shared|<shellName> [--dry-run]` (git mv + path references +
+  install + check). Shell `.env*` live next to `shell/` (`apps/<zone>/<shellName>/.env`).
 - A shell never imports a remote; a remote never imports another remote or a shell; zones
   (intranet, internet) share only `packages/*`. Shared code → a package in `packages/`.
 - Dependencies: add to the package that uses it (`pnpm --filter <pkg> add <dep>`). Catalog
@@ -66,7 +71,7 @@ Instructions for AI coding agents (and humans) working in this monorepo. Details
   [docs/architecture.md](docs/architecture.md#adding-a-dev-tool-server)). Mock endpoints go into
   `tools/mock-api`.
 - Tests with the change: unit tests next to the code (every component has one); flows in the zone's
-  `apps/<zone>/shell-<name>/e2e/`. Import `test`/`expect` from `@org/playwright-config/test`.
+  `apps/<zone>/<name>/shell/e2e/`. Import `test`/`expect` from `@org/playwright-config/test`.
 - Done means green: `pnpm check && pnpm lint && pnpm typecheck && pnpm test` (+ `pnpm build`
   and `pnpm e2e:<zone>` when apps changed) and `pnpm format:check`.
 - Do not disable guardrails, lint rules or axe rules to get green; fix the cause or ask.
@@ -78,7 +83,7 @@ Instructions for AI coding agents (and humans) working in this monorepo. Details
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Generators + templates        | `tools/generators/`                                                                                                                                 |
 | Guardrails (`pnpm check`)     | `tools/scripts/src/check-*.js`, [docs/guardrails.md](docs/guardrails.md)                                                                            |
-| Shell registry / dev manifest | `apps/<zone>/shell-<name>/remotes.json`; `mfe-manifest.dev.json` is generated (`pnpm dev-manifest`) from it + ports + the shell's `mfe.devManifest` |
+| Shell registry / dev manifest | `apps/<zone>/<name>/shell/remotes.json`; `mfe-manifest.dev.json` is generated (`pnpm dev-manifest`) from it + ports + the shell's `mfe.devManifest` |
 | Manifest schema               | `packages/mf-runtime/src/manifest/mfe-manifest.schema.json`                                                                                         |
 | Host props (remote side)      | `@org/mf-runtime/remote` (`useHostProps`, `useRemotePath`, `createRemoteApp`)                                                                       |
 | Auth                          | `@org/auth`, [docs/auth-contract.md](docs/auth-contract.md)                                                                                         |

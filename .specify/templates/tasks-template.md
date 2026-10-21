@@ -20,7 +20,7 @@ description: 'Task list template for feature implementation'
 
 ## Path Conventions
 
-- Apps: `apps/<zone>/<name>/src/` (canonical layout: `app/`, `features/`,
+- Apps: `apps/<zone>/<group>/<app>/src/` (canonical layout: `app/`, `features/`,
   `pages/`, `layouts/`, `components/`, `core/`, `services/`,
   `main.tsx`); shared code: `packages/<name>/src/`
 - New apps: a setup task runs the generator (`pnpm gen:shell <zone>`,
@@ -33,7 +33,7 @@ description: 'Task list template for feature implementation'
   remotes or shells
 - Domain work belongs under `features/<name>/` with a public `index.ts`
 - Tests: unit tests beside the source (`*.test.tsx`), feature e2e flows in
-  `apps/<zone>/shell-<zone>/e2e/<feature>.spec.ts`; a11y via the zone suite
+  `apps/<zone>/<zone>/shell/e2e/<feature>.spec.ts`; a11y via the zone suite
 - Dependencies: tasks name the tier and the command (`pnpm --filter <app> add …`,
   catalog edits in `pnpm-workspace.yaml`)
 - Finish with `pnpm check && pnpm lint && pnpm typecheck && pnpm test && pnpm build`
@@ -98,7 +98,7 @@ Examples of foundational tasks (adjust based on your project):
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
 - [ ] T010 [P] [US1] Contract test for [endpoint] in packages/[pkg]/src/[name].test.ts
-- [ ] T011 [P] [US1] Integration test for [user journey] in apps/[zone]/shell-[zone]/e2e/[name].spec.ts
+- [ ] T011 [P] [US1] Integration test for [user journey] in apps/[zone]/[shell]/shell/e2e/[name].spec.ts
 
 ### Implementation for User Story 1
 
@@ -122,7 +122,7 @@ Examples of foundational tasks (adjust based on your project):
 ### Tests for User Story 2 (OPTIONAL - only if tests requested) ⚠️
 
 - [ ] T018 [P] [US2] Contract test for [endpoint] in packages/[pkg]/src/[name].test.ts
-- [ ] T019 [P] [US2] Integration test for [user journey] in apps/[zone]/shell-[zone]/e2e/[name].spec.ts
+- [ ] T019 [P] [US2] Integration test for [user journey] in apps/[zone]/[shell]/shell/e2e/[name].spec.ts
 
 ### Implementation for User Story 2
 
@@ -144,7 +144,7 @@ Examples of foundational tasks (adjust based on your project):
 ### Tests for User Story 3 (OPTIONAL - only if tests requested) ⚠️
 
 - [ ] T024 [P] [US3] Contract test for [endpoint] in packages/[pkg]/src/[name].test.ts
-- [ ] T025 [P] [US3] Integration test for [user journey] in apps/[zone]/shell-[zone]/e2e/[name].spec.ts
+- [ ] T025 [P] [US3] Integration test for [user journey] in apps/[zone]/[shell]/shell/e2e/[name].spec.ts
 
 ### Implementation for User Story 3
 
@@ -216,7 +216,7 @@ Examples of foundational tasks (adjust based on your project):
 ```bash
 # Launch all tests for User Story 1 together (if tests requested):
 Task: "Contract test for [endpoint] in packages/[pkg]/src/[name].test.ts"
-Task: "Integration test for [user journey] in apps/[zone]/shell-[zone]/e2e/[name].spec.ts"
+Task: "Integration test for [user journey] in apps/[zone]/[shell]/shell/e2e/[name].spec.ts"
 
 # Launch all models for User Story 1 together:
 Task: "Create [Entity1] model in apps/[zone]/[app]/src/features/[feature]/types/[entity1].ts"

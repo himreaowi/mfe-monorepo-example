@@ -105,15 +105,15 @@ the dev servers send the same rules (localhost origins), so a `<style>` element 
 
 ## Zones
 
-|             | intranet                                                    | internet                                                    |
-| ----------- | ----------------------------------------------------------- | ----------------------------------------------------------- |
-| Shells      | `apps/intranet/shell-<name>` (e.g. `shell-intranet` at `/`) | `apps/internet/shell-<name>` (e.g. `/citizen`, `/business`) |
-| Dev proxy   | 3100 (every shell of the zone under its base path)          | 3200                                                        |
-| Shell ports | 3101–3109                                                   | 3201–3209                                                   |
-| Remotes     | 3110–3189                                                   | 3210–3289                                                   |
-| Dev tools   | 3190–3199 (mock API 3190, mock vendor 3191)                 | 3290–3299 (3290, 3291)                                      |
-| Users       | staff (SSO via the BFF)                                     | public + signed-in citizens (Singpass via the BFF)          |
-| Sharing     | only `packages/*`                                           | only `packages/*`                                           |
+|             | intranet                                             | internet                                                    |
+| ----------- | ---------------------------------------------------- | ----------------------------------------------------------- |
+| Shells      | `apps/intranet/<name>/shell` (e.g. one shell at `/`) | `apps/internet/<name>/shell` (e.g. `/citizen`, `/business`) |
+| Dev proxy   | 3100 (every shell of the zone under its base path)   | 3200                                                        |
+| Shell ports | 3101–3109                                            | 3201–3209                                                   |
+| Remotes     | 3110–3189                                            | 3210–3289                                                   |
+| Dev tools   | 3190–3199 (mock API 3190, mock vendor 3191)          | 3290–3299 (3290, 3291)                                      |
+| Users       | staff (SSO via the BFF)                              | public + signed-in citizens (Singpass via the BFF)          |
+| Sharing     | only `packages/*`                                    | only `packages/*`                                           |
 
 Zones never share remotes, and remotes never import remotes or shells. Inside a zone, a remote
 can be listed by several shells.
@@ -122,9 +122,9 @@ can be listed by several shells.
 
 A zone has one or more shells. Each shell is its own app with its own **base path**
 (`package.json` `mfe.basePath`, default `/`), layout, sign-in config (its manifest's `auth`),
-manifest and remotes (`remotes.json`). Example: the internet zone with `shell-citizen` at
-`/citizen` (Singpass, top layout) and `shell-business` at `/business` (Corppass, side layout),
-both listing `announcements`. Rules (`pnpm check`): base paths are unique in a zone and never
+manifest and remotes (`remotes.json`). Example: the internet zone with the `citizen` shell at
+`/citizen` (Singpass, top layout) and the `business` shell at `/business` (Corppass, side layout),
+both listing `announcements` (so it lives in `apps/internet/shared/announcements`). Rules (`pnpm check`): base paths are unique in a zone and never
 nest (at most one shell at `/`); when no shell sits at `/`, the root `package.json` names the
 shell `/` redirects to:
 
@@ -207,7 +207,7 @@ Example: a vendor's demo server for the `payments` adapter in the internet zone.
    ```
 
 4. Start it with the zone: add it to `nx.targets.dev.dependsOn` of the app that needs it (here
-   `apps/internet/payments/package.json`, next to the mock API entry):
+   `apps/internet/<shell>/payments/package.json`, next to the mock API entry):
    `{ "projects": ["@org/example-vendor"], "target": "serve:internet" }`. `pnpm dev:internet`
    (and the e2e `webServer`) then starts it once.
 5. Point the dev manifest at it: in the shell's `package.json` `mfe.devManifest` (e.g. the
@@ -250,7 +250,10 @@ goes in an iframe. Details: [external-modules.md](external-modules.md).
 [Standalone HTML](diagrams/2-layers.html) · [about the diagrams](diagrams/README.md)
 
 ```
-apps/<zone>/<name>/      apps (generated); shells hold the zone's e2e suite in e2e/
+apps/<zone>/<shell>/shell     a shell (holds the zone's e2e suite in e2e/); .env* of the shell next to it
+apps/<zone>/<shell>/<remote>  a remote listed only by that shell
+apps/<zone>/shared/<remote>   a remote listed by 2+ shells of the zone (pnpm check: remote-location;
+                              pnpm move-remote moves it)
 packages/                shared code: ui, design-tokens, mf-runtime, auth, http-client, pwa,
                          webpack-config, jest-config, playwright-config, eslint/prettier/tsconfig,
                          vendor-kit

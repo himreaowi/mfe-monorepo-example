@@ -6,7 +6,7 @@ D8: this repo contains **no pipeline code**; the YAML below is illustrative. Ref
 
 ## In one paragraph
 
-One repository, one pipeline. Every app under `apps/<zone>/<name>` is a separate static web app
+One repository, one pipeline. Every app under `apps/<zone>/<shell>/` or `apps/<zone>/shared/` is a separate static web app
 (a shell or a remote) with its own build output and its own deployment. On each PR/merge the
 pipeline runs the gates once for the repo, asks `pnpm -s apps --affected` which apps changed
 (a change in `packages/` affects every app that depends on it), and builds/deploys only those,
@@ -399,7 +399,7 @@ stages:
             condition: always()
             inputs:
               {
-                testResultsFiles: 'apps/$(zone)/shell-$(zone)/test-results/junit.xml',
+                testResultsFiles: 'apps/$(zone)/<shell>/shell/test-results/junit.xml',
               }
 ```
 
