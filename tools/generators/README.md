@@ -10,10 +10,10 @@ pnpm install
 pnpm dev:<zone>
 ```
 
-| Generator    | Creates                                                                                                                                  | Package              | Federation name                                          | Port                                            |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------- | -------------------------------------------------------- | ----------------------------------------------- |
-| `gen:shell`  | `apps/<zone>/shell-<name>` (name default: the zone; `--base-path`, default `/`; incl. its e2e suite in `e2e/`)                           | `@org/shell-<name>`  | `<zone>_shell` (name = zone), else `<zone>_shell_<name>` | lowest free shell port (3101–3109 / 3201–3209)  |
-| `gen:remote` | `apps/<zone>/<name>` + entry in the `remotes.json` of the zone's shell, or of each `--shell` (regenerates their `mfe-manifest.dev.json`) | `@org/<zone>-<name>` | `<zone>_<name>`                                          | lowest free remote port (3110–3189 / 3210–3289) |
+| Generator    | Creates                                                                                                                                                                                           | Package              | Federation name                                          | Port                                            |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- | -------------------------------------------------------- | ----------------------------------------------- |
+| `gen:shell`  | `apps/<zone>/<name>/shell` (name default: the zone; `--base-path`, default `/`; incl. its e2e suite in `e2e/`)                                                                                    | `@org/shell-<name>`  | `<zone>_shell` (name = zone), else `<zone>_shell_<name>` | lowest free shell port (3101–3109 / 3201–3209)  |
+| `gen:remote` | `apps/<zone>/<shell>/<name>` (`apps/<zone>/shared/<name>` when `--shell a,b`) + entry in the `remotes.json` of the zone's shell, or of each `--shell` (regenerates their `mfe-manifest.dev.json`) | `@org/<zone>-<name>` | `<zone>_<name>`                                          | lowest free remote port (3110–3189 / 3210–3289) |
 
 Several shells per zone: `pnpm gen:shell internet citizen --base-path /citizen`, then
 `pnpm gen:shell internet business --base-path /business --layout side`; the first shell below a

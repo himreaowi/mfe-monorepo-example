@@ -3,7 +3,7 @@
  * `.env` files of the dev and deploy tooling (docs/configuration.md).
  *
  * Layering for a shell, strongest first: the real environment (`process.env`, CI, `docker run
- * -e`) > `apps/<zone>/shell-<name>/.env` > `apps/<zone>/.env` > built-in defaults (the callers',
+ * -e`) > `apps/<zone>/<name>/.env` > `apps/<zone>/.env` > built-in defaults (the callers',
  * e.g. the dev proxy's mock API). Files are parsed with Node's built-in `util.parseEnv`
  * (no dotenv dependency) and never written into `process.env`.
  *
@@ -73,7 +73,7 @@ export function readEnvFile(file) {
 /**
  * The effective variables of a shell: real environment > shell .env > zone .env.
  * @param {{ root: string, zone: string, shellDir: string, env?: NodeJS.ProcessEnv }} options
- *   `shellDir`: absolute path of apps/<zone>/shell-<name>; `env`: the real environment
+ *   `shellDir`: absolute path of apps/<zone>/<name>/shell (the shell's .env sits next to it); `env`: the real environment
  *   (default `process.env`)
  * @returns {{ values: Record<string, string>, files: string[] }} `files`: the env files that
  *   exist and were read (zone first)
@@ -81,7 +81,7 @@ export function readEnvFile(file) {
 export function loadShellEnv({ root, zone, shellDir, env = process.env }) {
   const candidates = [
     path.join(root, 'apps', zone, ENV_FILE),
-    path.join(shellDir, ENV_FILE),
+    path.join(path.dirname(shellDir), ENV_FILE),
   ];
   /** @type {Record<string, string>} */
   const values = {};
@@ -111,7 +111,7 @@ export function loadShellEnv({ root, zone, shellDir, env = process.env }) {
  */
 export function renderZoneEnvExample({ zone, mockApiUrl, remotes = [] }) {
   return `# ${zone} zone: variables shared by every shell of the zone. A shell can override any of them
-# in apps/${zone}/shell-<name>/.env (see that folder's .env.example).
+# in apps/${zone}/<name>/.env (see that folder's .env.example).
 #
 # Copy this file to .env (git-ignored; never commit real values) to change the defaults.
 #   - local dev: \`pnpm dev:${zone}\` reads it (the dev proxy forwards <base path>/api and

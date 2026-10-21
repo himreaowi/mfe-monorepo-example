@@ -118,7 +118,7 @@ afterwards. `pnpm e2e` runs every zone, one after the other. See [testing.md](te
 ## 6. Build
 
 ```sh
-pnpm build                                   # every app → apps/<zone>/<name>/dist
+pnpm build                                   # every app → <app folder>/dist
 pnpm -s apps                                 # what was built, with ports
 ```
 

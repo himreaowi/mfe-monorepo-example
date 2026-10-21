@@ -7,7 +7,7 @@
  *   shells use at runtime, so CI and the browser agree)
  * - with --zone: every remote in the shell's remotes.json has an entry (otherwise its route
  *   shows "unavailable"); unknown remotes are warnings. The shell: `--shell=<name>`
- *   (apps/<zone>/shell-<name>), required when the zone has several shells (each has its own
+ *   (apps/<zone>/<name>/shell), required when the zone has several shells (each has its own
  *   manifest)
  * - production rules: no `"auth": { "mock": true }`, https entries (http only for localhost)
  * - warnings for absolute API / sign-in URLs: the browser should only call its own origin
@@ -16,6 +16,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { SHARED_GROUP, SHELL_FOLDER } from './layout.js';
 
 /** @typedef {{ rule: string, message: string }} ManifestIssue */
 
@@ -114,14 +115,21 @@ export async function validateManifestFile({
     }
   }
 
-  /** the zone's shell folders (shell-<name>) */
+  /** the zone's shells: group folders apps/<zone>/<name> that contain a shell/ folder */
   const zoneDir = path.join(root, 'apps', zone ?? '');
   const shells =
     zone && fs.existsSync(zoneDir)
       ? fs
-          .readdirSync(zoneDir)
-          .filter((d) => d.startsWith('shell-'))
-          .map((d) => d.slice('shell-'.length))
+          .readdirSync(zoneDir, { withFileTypes: true })
+          .filter(
+            (d) =>
+              d.isDirectory() &&
+              d.name !== SHARED_GROUP &&
+              fs.existsSync(
+                path.join(zoneDir, d.name, SHELL_FOLDER, 'package.json'),
+              ),
+          )
+          .map((d) => d.name)
           .sort()
       : [];
   const shellName = shell ?? (shells.length === 1 ? shells[0] : zone);
@@ -135,7 +143,8 @@ export async function validateManifestFile({
       root,
       'apps',
       zone,
-      `shell-${shellName}`,
+      String(shellName),
+      SHELL_FOLDER,
       'remotes.json',
     );
     if (!fs.existsSync(registryFile)) {
@@ -155,7 +164,7 @@ export async function validateManifestFile({
         if (!listed.has(name)) {
           errors.push({
             rule: 'remote-missing',
-            message: `remotes.${name} is missing: shell-${shellName} has a route for it (remotes.json), which would show "unavailable".`,
+            message: `remotes.${name} is missing: the ${shellName} shell has a route for it (remotes.json), which would show "unavailable".`,
           });
         }
       }
@@ -163,7 +172,7 @@ export async function validateManifestFile({
         if (!registered.has(name)) {
           warnings.push({
             rule: 'remote-unknown',
-            message: `remotes.${name} is not in apps/${zone}/shell-${shellName}/remotes.json: no route uses it.`,
+            message: `remotes.${name} is not in apps/${zone}/${shellName}/${SHELL_FOLDER}/remotes.json: no route uses it.`,
           });
         }
       }

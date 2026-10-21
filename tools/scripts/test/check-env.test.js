@@ -17,12 +17,12 @@ const GITIGNORE = '.env\n.env.*\n!.env.example\n';
 function workspace(files = {}) {
   return makeWorkspace({
     apps: {
-      'intranet/shell-intranet': app('shell', { type: 'shell', port: 3101 }),
-      'intranet/staff': app('staff', { port: 3111 }),
+      'intranet/intranet/shell': app('shell', { type: 'shell', port: 3101 }),
+      'intranet/intranet/staff': app('staff', { port: 3111 }),
     },
     files: {
       '.gitignore': GITIGNORE,
-      'apps/intranet/shell-intranet/remotes.json': {
+      'apps/intranet/intranet/shell/remotes.json': {
         remotes: [entry('intranet', 'staff')],
       },
       'apps/intranet/.env.example': `${ALL}REMOTE_INTRANET_STAFF_URL=\n`,
@@ -59,7 +59,7 @@ describe('check-env', () => {
         await checkEnv({
           root: makeWorkspace({
             apps: {
-              'intranet/shell-intranet': app('shell', {
+              'intranet/intranet/shell': app('shell', {
                 type: 'shell',
                 port: 3101,
               }),
@@ -74,7 +74,7 @@ describe('check-env', () => {
 
   it('a shell .env.example may only list known variables', async () => {
     const root = workspace({
-      'apps/intranet/shell-intranet/.env.example':
+      'apps/intranet/intranet/.env.example':
         'API_UPSTREAM=\nREMOTE_INTRANET_STAFF_PROPS=\nSECRET_KEY=\n',
     });
     const r = await checkEnv({ root });
@@ -86,7 +86,7 @@ describe('check-env', () => {
   it('fails when a real .env file is tracked by git, .env.example is fine', async () => {
     const root = workspace({
       'apps/intranet/.env': 'API_UPSTREAM=https://secret.example\n',
-      'apps/intranet/shell-intranet/.env.uat': 'X=1\n',
+      'apps/intranet/intranet/.env.uat': 'X=1\n',
     });
     const git = (/** @type {string[]} */ ...args) =>
       execFileSync('git', args, { cwd: root, stdio: 'ignore' });
@@ -103,7 +103,7 @@ describe('check-env', () => {
       ['env-ignored'],
     );
     const root = workspace({
-      'apps/intranet/shell-intranet/remotes.json': {
+      'apps/intranet/intranet/shell/remotes.json': {
         remotes: [
           entry('intranet', 'staff'),
           { ...entry('intranet', 'staff'), federationName: 'Intranet_staff' },

@@ -147,7 +147,7 @@ export async function checkEnv({ root }) {
       }
     }
     for (const dir of dirs) {
-      const shellExample = path.join(dir, ENV_EXAMPLE_FILE);
+      const shellExample = path.join(path.dirname(dir), ENV_EXAMPLE_FILE);
       if (!fs.existsSync(shellExample)) continue;
       const unknown = [
         ...documentedVariables(fs.readFileSync(shellExample, 'utf8')),

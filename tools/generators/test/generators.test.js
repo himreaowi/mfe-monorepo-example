@@ -91,7 +91,7 @@ describe('generators', () => {
     assert.equal(r.port, 3101);
     assert.equal(r.layout, 'top');
     assert.equal(r.federationName, 'intranet_shell');
-    const dir = 'apps/intranet/shell-intranet';
+    const dir = 'apps/intranet/intranet/shell';
     const pkg = readJson(root, `${dir}/package.json`);
     assert.equal(pkg.name, '@org/shell-intranet');
     assert.deepEqual(pkg.nx.tags, [
@@ -301,8 +301,14 @@ describe('generators', () => {
     assert.equal(a.port, 3110);
     assert.equal(b.port, 3111);
     assert.equal(a.federationName, 'intranet_staff_directory');
-    const pkgA = readJson(root, 'apps/intranet/staff-directory/package.json');
-    const pkgB = readJson(root, 'apps/intranet/leave-requests/package.json');
+    const pkgA = readJson(
+      root,
+      'apps/intranet/intranet/staff-directory/package.json',
+    );
+    const pkgB = readJson(
+      root,
+      'apps/intranet/intranet/leave-requests/package.json',
+    );
     assert.equal(pkgA.name, '@org/intranet-staff-directory');
     assert.deepEqual(pkgA.nx.tags, [
       'zone:intranet',
@@ -316,7 +322,7 @@ describe('generators', () => {
     ]);
     assert.equal(pkgA.dependencies['@org/pwa'], undefined);
 
-    const shell = 'apps/intranet/shell-intranet';
+    const shell = 'apps/intranet/intranet/shell';
     assert.deepEqual(readJson(root, `${shell}/remotes.json`).remotes, [
       {
         name: 'staff-directory',
@@ -352,7 +358,7 @@ describe('generators', () => {
     });
     // standalone: the mock API in development only (dropped from production bundles)
     assert.match(
-      read(root, 'apps/intranet/staff-directory/src/app/apps.tsx'),
+      read(root, 'apps/intranet/intranet/staff-directory/src/app/apps.tsx'),
       /process\.env\.NODE_ENV !== 'production'\s*\?\s*\{ apiBaseUrl: 'http:\/\/localhost:3190\/api' \}/,
     );
   });
@@ -377,7 +383,7 @@ describe('generators', () => {
     });
     assert.equal(t.entry.title, 'Forms for HR');
     assert.match(
-      read(root, 'apps/intranet/hr-forms/src/core/constants/app.ts'),
+      read(root, 'apps/intranet/intranet/hr-forms/src/core/constants/app.ts'),
       /APP_TITLE = 'Forms for HR'/,
     );
     for (const title of ["Bob's", 'a "b"', '<x>', '', 'x'.repeat(61)]) {
@@ -387,7 +393,9 @@ describe('generators', () => {
         title,
       );
     }
-    assert.ok(!fs.existsSync(path.join(root, 'apps/intranet/bad-title')));
+    assert.ok(
+      !fs.existsSync(path.join(root, 'apps/intranet/intranet/bad-title')),
+    );
   });
 
   it('--state: feature state example (reducer + Context) used by two components', async () => {
@@ -407,7 +415,7 @@ describe('generators', () => {
       name: 'team-board',
       state: true,
     });
-    const dir = 'apps/intranet/team-board';
+    const dir = 'apps/intranet/intranet/team-board';
     const files = listFiles(path.join(root, dir));
     for (const f of [
       'src/features/demo/state/demoReducer.ts',
@@ -439,14 +447,14 @@ describe('generators', () => {
     );
     // without --state there is no state/ folder
     assert.ok(
-      !listFiles(path.join(root, 'apps/intranet/staff-directory')).some((f) =>
-        f.includes('/state/'),
-      ),
+      !listFiles(
+        path.join(root, 'apps/intranet/intranet/staff-directory'),
+      ).some((f) => f.includes('/state/')),
     );
   });
 
   it('remote layout: exposed module never imports global styles', () => {
-    const dir = 'apps/intranet/staff-directory';
+    const dir = 'apps/intranet/intranet/staff-directory';
     const files = listFiles(path.join(root, dir));
     for (const f of [
       'src/app/apps.tsx',
@@ -521,7 +529,13 @@ describe('generators', () => {
       'leave-requests',
       'it-helpdesk',
     ]) {
-      const dir = path.join(root, 'apps', 'intranet', app);
+      const dir = path.join(
+        root,
+        'apps',
+        'intranet',
+        'intranet',
+        app === 'shell-intranet' ? 'shell' : app,
+      );
       const barrels = listFiles(dir).filter((f) =>
         /(^|\/)index\.tsx?$/.test(f),
       );
@@ -540,7 +554,13 @@ describe('generators', () => {
       'it-helpdesk',
       'team-board',
     ]) {
-      const dir = path.join(root, 'apps', 'intranet', app);
+      const dir = path.join(
+        root,
+        'apps',
+        'intranet',
+        'intranet',
+        app === 'shell-intranet' ? 'shell' : app,
+      );
       for (const f of listFiles(dir)) {
         assert.doesNotMatch(
           fs.readFileSync(path.join(dir, f), 'utf8'),
@@ -564,28 +584,28 @@ describe('generators', () => {
     assert.equal(s.layout, 'side');
     const shellLayout = read(
       root,
-      'apps/internet/shell-internet/src/layouts/ShellLayout/ShellLayout.tsx',
+      'apps/internet/internet/shell/src/layouts/ShellLayout/ShellLayout.tsx',
     );
     assert.match(shellLayout, /data-nav-placement="side"/);
     assert.match(shellLayout, /orientation="vertical"/);
     assert.doesNotMatch(shellLayout, /MainLayout|navPlacement=/);
     const sideStyles = read(
       root,
-      'apps/internet/shell-internet/src/layouts/ShellLayout/ShellLayout.module.scss',
+      'apps/internet/internet/shell/src/layouts/ShellLayout/ShellLayout.module.scss',
     );
     assert.match(sideStyles, /^\$sidebar-width: 16rem;$/m);
     assert.match(sideStyles, /HEADER COLOURS: change them here/);
     assert.match(
       read(
         root,
-        'apps/internet/shell-internet/src/layouts/ShellLayout/ShellLayout.test.tsx',
+        'apps/internet/internet/shell/src/layouts/ShellLayout/ShellLayout.test.tsx',
       ),
       /sidebar when wide/,
     );
     // the starter differs only in src/layouts/ShellLayout: same e2e suite, package.json,
     // registry and manifest as a top-nav shell
-    const intranetShell = path.join(root, 'apps/intranet/shell-intranet');
-    const internetShell = path.join(root, 'apps/internet/shell-internet');
+    const intranetShell = path.join(root, 'apps/intranet/intranet/shell');
+    const internetShell = path.join(root, 'apps/internet/internet/shell');
     for (const f of [
       'e2e/shell.spec.ts',
       'e2e/helpers.ts',
@@ -601,7 +621,7 @@ describe('generators', () => {
       );
     }
     assert.doesNotMatch(
-      read(root, 'apps/internet/shell-internet/package.json'),
+      read(root, 'apps/internet/internet/shell/package.json'),
       /layout|side/i,
     );
     const r = await generateRemote({
@@ -618,7 +638,7 @@ describe('generators', () => {
     });
     assert.equal(x.port, 3211);
     assert.equal(x.entry.kind, 'external');
-    const pkg = readJson(root, 'apps/internet/payments/package.json');
+    const pkg = readJson(root, 'apps/internet/internet/payments/package.json');
     assert.deepEqual(pkg.nx.tags, [
       'zone:internet',
       'type:remote',
@@ -627,7 +647,7 @@ describe('generators', () => {
     ]);
     const adapter = read(
       root,
-      'apps/internet/payments/src/features/external/components/ExternalModuleHost/ExternalModuleHost.tsx',
+      'apps/internet/internet/payments/src/features/external/components/ExternalModuleHost/ExternalModuleHost.tsx',
     );
     assert.match(adapter, /<ExternalModule/);
     assert.match(adapter, /@org\/mf-runtime\/external/);
@@ -635,12 +655,12 @@ describe('generators', () => {
     assert.match(
       read(
         root,
-        'apps/internet/payments/src/pages/OverviewPage/OverviewPage.tsx',
+        'apps/internet/internet/payments/src/pages/OverviewPage/OverviewPage.tsx',
       ),
       /ExternalModuleHost/,
     );
     // the vendor renders the pages: no demo feature / details page in an adapter
-    const files = listFiles(path.join(root, 'apps/internet/payments'));
+    const files = listFiles(path.join(root, 'apps/internet/internet/payments'));
     assert.ok(!files.some((f) => f.startsWith('src/features/demo/')));
     assert.ok(!files.includes('src/pages/DetailsPage/DetailsPage.tsx'));
     assert.ok(files.includes('src/features/external/utils/vendorConfig.ts'));
@@ -662,7 +682,7 @@ describe('generators', () => {
     });
     const dev = readJson(
       root,
-      'apps/internet/shell-internet/mfe-manifest.dev.json',
+      'apps/internet/internet/shell/mfe-manifest.dev.json',
     );
     assert.deepEqual(dev.remotes.internet_payments.props.vendor, {
       url: 'http://localhost:3291/mount.js',
@@ -671,19 +691,20 @@ describe('generators', () => {
     });
     // the vendor props come from the shell's package.json mfe.devManifest (the file is generated)
     assert.deepEqual(
-      readJson(root, 'apps/internet/shell-internet/package.json').mfe
+      readJson(root, 'apps/internet/internet/shell/package.json').mfe
         .devManifest.remotes.internet_payments,
       { props: { vendor: dev.remotes.internet_payments.props.vendor } },
     );
     assert.equal(
-      readJson(root, 'apps/internet/payments/package.json').scripts.dev,
+      readJson(root, 'apps/internet/internet/payments/package.json').scripts
+        .dev,
       'webpack serve',
     );
     assert.equal(dev.remotes.internet_services.props, undefined);
     assert.equal(dev.settings.apiBaseUrl, '/api');
     const fallback = read(
       root,
-      'apps/internet/payments/src/features/external/utils/vendorConfig.ts',
+      'apps/internet/internet/payments/src/features/external/utils/vendorConfig.ts',
     );
     assert.match(fallback, /http:\/\/localhost:3291\/mount\.js/);
     assert.doesNotMatch(fallback, /amount|merchant/i);
@@ -699,7 +720,7 @@ describe('generators', () => {
     });
     const dev = readJson(
       root,
-      'apps/internet/shell-internet/mfe-manifest.dev.json',
+      'apps/internet/internet/shell/mfe-manifest.dev.json',
     );
     assert.deepEqual(dev.remotes[wc.federationName].props.vendor, {
       url: 'http://localhost:3291/element.js',
@@ -710,7 +731,7 @@ describe('generators', () => {
     assert.match(
       read(
         root,
-        'apps/internet/widgets/src/features/external/utils/vendorConfig.ts',
+        'apps/internet/internet/widgets/src/features/external/utils/vendorConfig.ts',
       ),
       /tagName: 'mock-vendor-widget'/,
     );
@@ -749,10 +770,12 @@ describe('generators', () => {
       }),
       /Unknown --vendor-format/,
     );
-    fs.rmSync(path.join(root, 'apps/internet/widgets'), { recursive: true });
+    fs.rmSync(path.join(root, 'apps/internet/internet/widgets'), {
+      recursive: true,
+    });
     const regFile = path.join(
       root,
-      'apps/internet/shell-internet/remotes.json',
+      'apps/internet/internet/shell/remotes.json',
     );
     const reg = JSON.parse(fs.readFileSync(regFile, 'utf8'));
     reg.remotes = reg.remotes.filter(
@@ -762,8 +785,10 @@ describe('generators', () => {
   });
 
   it('reuses the lowest free port', async () => {
-    fs.rmSync(path.join(root, 'apps/internet/services'), { recursive: true });
-    const shell = path.join(root, 'apps/internet/shell-internet/remotes.json');
+    fs.rmSync(path.join(root, 'apps/internet/internet/services'), {
+      recursive: true,
+    });
+    const shell = path.join(root, 'apps/internet/internet/shell/remotes.json');
     const reg = JSON.parse(fs.readFileSync(shell, 'utf8'));
     reg.remotes = reg.remotes.filter(
       (/** @type {any} */ e) => e.name !== 'services',
@@ -785,7 +810,7 @@ describe('generators', () => {
     // registry entry left behind without the folder
     const registryFile = path.join(
       root,
-      'apps/internet/shell-internet/remotes.json',
+      'apps/internet/internet/shell/remotes.json',
     );
     const original = fs.readFileSync(registryFile, 'utf8');
     const reg = JSON.parse(original);
@@ -800,7 +825,7 @@ describe('generators', () => {
       generateRemote({ root, zone: 'internet', name: 'ghost' }),
       /already registered/,
     );
-    assert.ok(!fs.existsSync(path.join(root, 'apps/internet/ghost')));
+    assert.ok(!fs.existsSync(path.join(root, 'apps/internet/internet/ghost')));
     fs.writeFileSync(registryFile, original);
     for (const name of [
       'Bad',
@@ -845,12 +870,12 @@ describe('generators', () => {
         encoding: 'utf8',
       },
     );
-    assert.match(out, /Created apps\/internet\/shell-internet .*port 3201/);
+    assert.match(out, /Created apps\/internet\/internet\/shell .*port 3201/);
     assert.match(out, /side starter layout in src\/layouts\/ShellLayout/);
     assert.match(
       read(
         cliRoot,
-        'apps/internet/shell-internet/src/layouts/ShellLayout/ShellLayout.tsx',
+        'apps/internet/internet/shell/src/layouts/ShellLayout/ShellLayout.tsx',
       ),
       /data-nav-placement="side"/,
     );
@@ -948,22 +973,22 @@ describe('generators: several shells in a zone', () => {
       readJson(root, 'package.json').mfe.zones.internet.defaultShell,
       'citizen',
     );
-    const pkg = readJson(root, 'apps/internet/shell-business/package.json');
+    const pkg = readJson(root, 'apps/internet/business/shell/package.json');
     assert.equal(pkg.mfe.basePath, '/business');
     assert.match(
-      read(root, 'apps/internet/shell-business/webpack.config.js'),
+      read(root, 'apps/internet/business/shell/webpack.config.js'),
       /basePath: mfe\.basePath/,
     );
     assert.match(
-      read(root, 'apps/internet/shell-business/src/app/App.tsx'),
+      read(root, 'apps/internet/business/shell/src/app/App.tsx'),
       /<BrowserRouter basename=\{BASE_PATH\}>/,
     );
     assert.match(
-      read(root, 'apps/internet/shell-business/src/main.tsx'),
+      read(root, 'apps/internet/business/shell/src/main.tsx'),
       /loadMfeManifest\(\{ url: mfeManifestUrl\(BASE_PATH\) \}\)/,
     );
     assert.match(
-      read(root, 'apps/internet/shell-business/README.md'),
+      read(root, 'apps/internet/business/shell/README.md'),
       /http:\/\/localhost:3200\/business\//,
     );
     await assert.rejects(
@@ -1021,23 +1046,23 @@ describe('generators: several shells in a zone', () => {
       external: true,
     });
     const names = (/** @type {string} */ shell) =>
-      readJson(root, `apps/internet/shell-${shell}/remotes.json`).remotes.map(
+      readJson(root, `apps/internet/${shell}/shell/remotes.json`).remotes.map(
         (/** @type {any} */ r) => r.name,
       );
     assert.deepEqual(names('citizen'), ['announcements']);
     assert.deepEqual(names('business'), ['announcements', 'licences']);
     // the vendor dev config only goes to the shells that list the adapter
     assert.ok(
-      readJson(root, 'apps/internet/shell-business/package.json').mfe
+      readJson(root, 'apps/internet/business/shell/package.json').mfe
         .devManifest.remotes[own.federationName],
     );
     assert.equal(
-      readJson(root, 'apps/internet/shell-citizen/package.json').mfe.devManifest
+      readJson(root, 'apps/internet/citizen/shell/package.json').mfe.devManifest
         .remotes,
       undefined,
     );
     assert.match(
-      read(root, 'apps/internet/announcements/README.md'),
+      read(root, 'apps/internet/shared/announcements/README.md'),
       /http:\/\/localhost:3200\/citizen\/announcements/,
     );
     const r = await checkApps({ root });
@@ -1049,12 +1074,8 @@ describe('generators: several shells in a zone', () => {
     assert.match(zoneEnv, /^# REMOTE_INTERNET_ANNOUNCEMENTS_URL=/m);
     assert.match(zoneEnv, /^# REMOTE_INTERNET_LICENCES_URL=/m);
     assert.ok(
-      fs.existsSync(
-        path.join(root, 'apps/internet/shell-business/.env.example'),
-      ) !==
-        fs.existsSync(
-          path.join(root, 'apps/internet/shell-citizen/.env.example'),
-        ),
+      fs.existsSync(path.join(root, 'apps/internet/business/.env.example')) !==
+        fs.existsSync(path.join(root, 'apps/internet/citizen/.env.example')),
       'only the second shell of the zone gets a shell-level .env.example',
     );
     assert.deepEqual((await checkEnv({ root })).errors, []);
@@ -1077,5 +1098,82 @@ describe('generators: several shells in a zone', () => {
       'agency',
     ]);
     assert.match(remote, /Registered with shell-citizen, shell-agency/);
+  });
+});
+
+describe('generators: layout with arbitrary shell names (nothing hardcoded)', () => {
+  /** @type {string} */
+  let root;
+  before(() => {
+    root = tempWorkspace();
+  });
+
+  it('shells alpha and beta, an own remote each and a shared one', async () => {
+    const alpha = await generateShell({
+      root,
+      zone: 'intranet',
+      name: 'alpha',
+      basePath: '/alpha',
+    });
+    assert.equal(alpha.dir, path.join(root, 'apps/intranet/alpha/shell'));
+    assert.equal(alpha.packageName, '@org/shell-alpha');
+    await generateShell({
+      root,
+      zone: 'intranet',
+      name: 'beta',
+      basePath: '/beta',
+    });
+    // a zone with several shells needs --shell
+    await assert.rejects(
+      generateRemote({ root, zone: 'intranet', name: 'only-alpha' }),
+      /--shell/,
+    );
+    const own = await generateRemote({
+      root,
+      zone: 'intranet',
+      name: 'only-alpha',
+      shells: ['alpha'],
+    });
+    assert.equal(own.dir, path.join(root, 'apps/intranet/alpha/only-alpha'));
+    const shared = await generateRemote({
+      root,
+      zone: 'intranet',
+      name: 'both',
+      shells: ['alpha', 'beta'],
+    });
+    assert.equal(shared.dir, path.join(root, 'apps/intranet/shared/both'));
+    const betaOwn = await generateRemote({
+      root,
+      zone: 'intranet',
+      name: 'only-beta',
+      shells: ['beta'],
+    });
+    assert.equal(betaOwn.dir, path.join(root, 'apps/intranet/beta/only-beta'));
+    // shell-level env example of the second shell sits in its group folder
+    assert.ok(
+      fs.existsSync(path.join(root, 'apps/intranet/beta/.env.example')),
+    );
+    const r = await checkApps({ root });
+    assert.deepEqual(r.errors, []);
+    assert.deepEqual(r.warnings, []);
+  });
+
+  it('one shell in the zone and no --shell: the remote goes to that shell group', async () => {
+    const solo = tempWorkspace();
+    await generateShell({ root: solo, zone: 'internet', name: 'gamma' });
+    const r = await generateRemote({
+      root: solo,
+      zone: 'internet',
+      name: 'solo',
+    });
+    assert.equal(r.dir, path.join(solo, 'apps/internet/gamma/solo'));
+    assert.deepEqual((await checkApps({ root: solo })).errors, []);
+  });
+
+  it('"shared" is not a valid shell name', async () => {
+    await assert.rejects(
+      generateShell({ root, zone: 'internet', name: 'shared' }),
+      /"shared" is reserved/,
+    );
   });
 });

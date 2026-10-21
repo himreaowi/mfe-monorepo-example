@@ -126,7 +126,7 @@ function isLocal(url) {
 }
 
 /**
- * @param {string} shellDir absolute path of apps/<zone>/shell-<name>
+ * @param {string} shellDir absolute path of apps/<zone>/<name>/shell
  * @returns {import('./zone.d.ts').Zone}
  */
 export function loadZone(shellDir) {
@@ -201,7 +201,7 @@ export function loadZone(shellDir) {
     zone,
     shellDir,
     packageName: pkg.name,
-    name: path.basename(shellDir).replace(/^shell-/, ''),
+    name: path.basename(path.dirname(shellDir)),
     port,
     proxyPort: ports.proxy,
     origin,

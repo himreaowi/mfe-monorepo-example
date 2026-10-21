@@ -4,6 +4,7 @@
 /** @typedef {import('@org/scripts/zones').Zone} Zone */
 
 import { ZONES } from '@org/scripts/zones';
+import { SHARED_GROUP, SHELL_FOLDER } from '@org/scripts/layout';
 
 export { ZONES };
 
@@ -126,7 +127,7 @@ export function assertTitle(title) {
 }
 
 /**
- * Validate a shell name (kebab-case: folder `shell-<name>`, package `@org/shell-<name>`).
+ * Validate a shell name (kebab-case: group folder `apps/<zone>/<name>/`, package `@org/shell-<name>`; `shared` is reserved).
  * @param {unknown} name
  * @returns {asserts name is string}
  */
@@ -141,12 +142,17 @@ export function assertShellName(name) {
       `Invalid shell name "${String(name)}". Use kebab-case, 2 to 30 characters (e.g. citizen, business).`,
     );
   }
+  if (name === SHARED_GROUP) {
+    throw new UsageError(
+      `"${SHARED_GROUP}" is reserved: apps/<zone>/${SHARED_GROUP}/ holds the remotes that two or more shells list. Pick another shell name.`,
+    );
+  }
 }
 
 /**
- * Names derived for a shell. `name` defaults to the zone (`shell-intranet`, federation name
- * `intranet_shell`, the zone's only shell); other shells are `shell-<name>` with federation
- * name `<zone>_shell_<name>`.
+ * Names derived for a shell. `name` defaults to the zone (package `@org/shell-intranet`,
+ * federation name `intranet_shell`, the zone's only shell); other shells have federation name
+ * `<zone>_shell_<name>`. The shell app lives in `apps/<zone>/<name>/shell`.
  * @param {Zone} zone
  * @param {{ name?: string, title?: string }} [opts] `title`: the `--title` override (default
  *   "<Name> shell", e.g. "Intranet shell", "Business shell")
@@ -157,7 +163,8 @@ export function shellNames(zone, opts = {}) {
   return {
     zone,
     name,
-    dirName: `shell-${name}`,
+    groupName: name,
+    dirName: SHELL_FOLDER,
     packageName: `${SCOPE}/shell-${name}`,
     federationName:
       name === zone

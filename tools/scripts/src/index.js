@@ -20,7 +20,6 @@ export {
   APP_TAGS,
   BASE_PATH,
   FEDERATION_NAME,
-  SHELL_DIR_PREFIX,
   basePathsOverlap,
   readZoneSettings,
   shellBasePath,
@@ -52,3 +51,11 @@ export {
   shellDirs,
   writeDevManifest,
 } from './dev-manifest.js';
+export {
+  SHARED_GROUP,
+  SHELL_FOLDER,
+  remoteTarget,
+  shellNameFromPackage,
+  splitAppDir,
+} from './layout.js';
+export { MoveError, moveRemote, planMove } from './move-remote.js';

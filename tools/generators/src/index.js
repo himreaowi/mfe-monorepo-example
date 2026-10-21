@@ -40,6 +40,7 @@ import {
   resolveShells,
 } from './workspace.js';
 import { renderLayers, writeFiles, writeJson } from './render.js';
+import { SHELL_FOLDER, remoteTarget } from '@org/scripts/layout';
 
 export * from './names.js';
 export * from './workspace.js';
@@ -324,7 +325,7 @@ function assertFree(root, dir, packageName) {
 }
 
 /**
- * Generate apps/<zone>/shell-<name> (default name: the zone).
+ * Generate apps/<zone>/<name>/shell (default name: the zone).
  * @param {{ root: string, zone: string, name?: string, basePath?: string, title?: string, layout?: string }} options
  *   `basePath`: where the shell is served (`/` default, e.g. `/citizen`; every shell of a zone
  *   needs its own, none inside another); `layout`: the starter layout copied into
@@ -349,7 +350,7 @@ export async function generateShell({
       `Invalid --base-path "${rawBasePath}". Use "/" or a path like /citizen (lowercase letters, digits and "-" per segment).`,
     );
   }
-  const dir = path.join(root, 'apps', zone, names.dirName);
+  const dir = path.join(root, 'apps', zone, names.groupName, names.dirName);
   assertFree(root, dir, names.packageName);
   const existing = listShells(root, zone);
   const clash = existing.find((s) => basePathsOverlap(s.basePath, basePath));
@@ -408,7 +409,7 @@ export async function generateShell({
   syncEnvExample(root, zone);
   if (existing.length > 0) {
     fs.writeFileSync(
-      path.join(dir, ENV_EXAMPLE_FILE),
+      path.join(path.dirname(dir), ENV_EXAMPLE_FILE),
       renderShellEnvExample({ zone, name: names.name, basePath }),
     );
   }
@@ -453,7 +454,7 @@ export function shellUrl(zone, basePath) {
 }
 
 /**
- * Generate apps/<zone>/<name> and register it with shells of its zone (`shells`: shell names;
+ * Generate apps/<zone>/<shell>/<name> (apps/<zone>/shared/<name> when several shells list it) and register it with shells of its zone (`shells`: shell names;
  * default: the zone's only shell, required when the zone has several).
  * @param {{
  *   root: string, zone: string, name: string, shells?: string[], private?: boolean,
@@ -489,7 +490,15 @@ export async function generateRemote({
   assertVendorFormat(format);
   const names = remoteNames(zone, name, { title });
   const shells = resolveShells(root, zone, shellOption);
-  const dir = path.join(root, 'apps', zone, names.dirName);
+  // one shell lists it → that shell's group folder; two or more → apps/<zone>/shared
+  const target = /** @type {NonNullable<ReturnType<typeof remoteTarget>>} */ (
+    remoteTarget(
+      zone,
+      names.dirName,
+      shells.map((s) => s.name),
+    )
+  );
+  const dir = path.join(root, target.dir);
   assertFree(root, dir, names.packageName);
 
   for (const shell of shells) {
@@ -503,7 +512,7 @@ export async function generateRemote({
       )
     ) {
       throw new UsageError(
-        `${name} is already registered in apps/${zone}/${path.basename(shell.dir)}/${REGISTRY_FILE}. Remove the stale entry first.`,
+        `${name} is already registered in apps/${zone}/${shell.name}/${SHELL_FOLDER}/${REGISTRY_FILE}. Remove the stale entry first.`,
       );
     }
   }

@@ -54,7 +54,7 @@ proxy origin. `API_UPSTREAM` defaults to the zone's mock API (`http://localhost:
 localhost origins, because the shells load the remotes' dev servers and their HMR sockets, but
 API calls no longer need it.
 
-**Point dev at a real UAT API**: create `apps/<zone>/shell-<name>/.env` (or the zone's `.env`):
+**Point dev at a real UAT API**: create `apps/<zone>/<name>/.env` (or the zone's `.env`):
 
 ```sh
 API_UPSTREAM=https://api.uat.example.sg/v1
@@ -124,9 +124,9 @@ the manifest URLs relative). Remote images ignore all of this and get no manifes
 
 ```
 apps/<zone>/.env                  shared by the zone's shells        (git-ignored)
-apps/<zone>/shell-<name>/.env     overrides for one shell            (git-ignored)
+apps/<zone>/<name>/.env           overrides for one shell            (git-ignored; next to its shell/ folder)
 apps/<zone>/.env.example          committed: every variable, with comments
-apps/<zone>/shell-<name>/.env.example   committed, only when a shell needs its own (a second
+apps/<zone>/<name>/.env.example   committed, only when a shell needs its own (a second
                                         shell in the zone gets one from `pnpm gen:shell`)
 ```
 

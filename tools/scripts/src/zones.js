@@ -134,9 +134,6 @@ export const APP_TAGS = /** @type {const} */ ({
 /** Federation names are JS identifiers. */
 export const FEDERATION_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
-/** Shell folders are `shell-<name>`; `<name>` (kebab-case) is the shell's name. */
-export const SHELL_DIR_PREFIX = 'shell-';
-
 /**
  * A shell's base path: `/` or `/segment[/segment…]` (lowercase letters, digits, `-`), no
  * trailing slash.

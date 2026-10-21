@@ -20,7 +20,7 @@ docker build -f deploy/Dockerfile --build-arg APP=@org/shell-intranet -t shell-i
 docker run --rm -p 8080:8080 --env-file apps/intranet/.env shell-intranet
 ```
 
-`apps/intranet/.env` (copy of the committed `.env.example`, git-ignored) holds, for example:
+`apps/intranet/.env` (zone level; a shell's own overrides: `apps/intranet/<shell>/.env`; copy of the committed `.env.example`, git-ignored) holds, for example:
 
 ```sh
 API_UPSTREAM=https://api.uat.example.sg/v1

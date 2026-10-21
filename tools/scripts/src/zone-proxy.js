@@ -24,20 +24,15 @@ import net from 'node:net';
 import path from 'node:path';
 import { loadShellEnv } from './env.js';
 import { loadApps } from './workspace.js';
-import {
-  SHELL_DIR_PREFIX,
-  ZONES,
-  readZoneSettings,
-  shellBasePath,
-  toolPort,
-} from './zones.js';
+import { shellNameFromPackage } from './layout.js';
+import { ZONES, readZoneSettings, shellBasePath, toolPort } from './zones.js';
 
 /**
  * @typedef {{ name: string, packageName: string, dir: string, port: number, basePath: string }} ZoneShell
  */
 
 /**
- * The shells of a zone (folders apps/<zone>/shell-<name> tagged type:shell with a port).
+ * The shells of a zone (apps/<zone>/<name>/shell tagged type:shell with a port).
  * @param {string} root
  * @param {string} zone
  * @returns {ZoneShell[]}
@@ -50,7 +45,8 @@ export function zoneShells(root, zone) {
     })
     .filter((app) => Number.isInteger(app.pkg.mfe?.port))
     .map((app) => ({
-      name: path.basename(app.dir).replace(SHELL_DIR_PREFIX, ''),
+      name:
+        shellNameFromPackage(app.name) ?? path.basename(path.dirname(app.dir)),
       packageName: app.name,
       dir: app.dir,
       port: app.pkg.mfe.port,

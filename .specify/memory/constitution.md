@@ -32,12 +32,15 @@ Decisions D1–D8 referenced below are recorded in `docs/architecture.md`.
 All frontend apps live in one pnpm + Nx workspace (D1). Each app is built and deployed on its
 own.
 
-- Apps live at `apps/<zone>/<name>/` and are created with the generators (`pnpm gen:shell`,
+- Apps are grouped by shell: a shell at `apps/<zone>/<shellName>/shell/` (package `@org/shell-<shellName>`), a
+  remote listed by one shell at `apps/<zone>/<shellName>/<remote>/`, a remote listed by two or more shells at
+  `apps/<zone>/shared/<remote>/` (`shared` is reserved). `pnpm check` enforces it (`remote-location`);
+  `pnpm move-remote <zone> <remote> --to shared|<shellName>` moves a remote. Apps are created with the generators (`pnpm gen:shell`,
   `pnpm gen:remote [--shell <s>] [--private] [--external]`). Every app declares Nx tags (`zone:`, `type:`,
   `access:`, `kind:`) and `mfe.port` / `mfe.federationName` (shells also `mfe.basePath`) in its `package.json`. Dev ports
   per zone: proxy x00, shells x01–x09, remotes x10–x89, tools x90–x99 (intranet 31xx,
   internet 32xx).
-- **Zones** (`intranet`, `internet`) each have one or more shells (`shell-<name>`, e.g.
+- **Zones** (`intranet`, `internet`) each have one or more shells (`apps/<zone>/<name>/shell`, e.g.
   `pnpm gen:shell internet citizen --base-path /citizen`); several shells of a zone share one
   origin, each under its own `mfe.basePath`, and a remote may be listed by several shells of
   the same zone (`pnpm gen:remote <zone> <name> --shell <s>`). Zones share nothing but
@@ -163,7 +166,7 @@ resilience are product quality, not polish.
 - Canonical app layout (generated):
 
 ```text
-apps/<zone>/<name>/src/
+apps/<zone>/<group>/<app>/src/
 ├── main.tsx          # entry (MF async startup): shell: global styles, PWA, manifest, render;
 │                     #   remote: standalone only
 ├── app/              # providers, routes, registry (shell) / apps (exposed ./App), routes (remote)
