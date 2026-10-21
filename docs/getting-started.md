@@ -103,7 +103,7 @@ pnpm --filter @org/intranet-staff-directory dev        # http://localhost:3110
 
 ```sh
 pnpm test                                                        # unit tests, every project
-pnpm --filter @org/shell-intranet exec playwright install chromium   # once per machine
+pnpm --filter @org/shell-staff exec playwright install chromium   # once per machine
 pnpm e2e:intranet                                                # zone e2e + axe (light + dark)
 ```
 
@@ -126,7 +126,7 @@ Look at a production build locally (the shell needs a manifest; the dev one work
 
 ```sh
 pnpm --filter @org/intranet-staff-directory preview &
-pnpm --filter @org/shell-intranet preview --manifest mfe-manifest.dev.json
+pnpm --filter @org/shell-staff preview --manifest mfe-manifest.dev.json
 ```
 
 Production uses the per-environment manifest and nginx from `deploy/`

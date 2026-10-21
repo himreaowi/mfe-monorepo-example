@@ -115,7 +115,7 @@ CI runs `pnpm install --frozen-lockfile` and then `pnpm lint` (which runs `pnpm 
 Every message names the package, the file and the fix, for example:
 
 ```
-error   [check-versions/tier1-pinned] @org/intranet-staff-directory (apps/intranet/staff-directory/package.json dependencies): "react": "18.3.1" — react is in the catalog (19.3.1) and is a tier-1 singleton shared at runtime, so it must be "catalog:".
+error   [check-versions/tier1-pinned] @org/intranet-staff-directory (apps/intranet/staff/staff-directory/package.json dependencies): "react": "18.3.1" — react is in the catalog (19.3.1) and is a tier-1 singleton shared at runtime, so it must be "catalog:".
     Fix: set "react": "catalog:" (or run: pnpm --filter @org/intranet-staff-directory add react@catalog:).
     If @org/intranet-staff-directory really needs 18.3.1, add an exception to version-exceptions.json: { ... }. A different major of a tier-1 package cannot share the runtime singleton: integrate the app as an isolated mount-contract module (docs/external-modules.md).
 ✖ check-versions, check-apps: 1 error. How to fix each one: docs/guardrails.md

@@ -16,8 +16,8 @@ once here. How the pipeline uses them: [docs/devops-handoff.md](../docs/devops-h
 | `nginx/zone-router.example.conf`         | example reverse proxy for several shells on one domain (`/citizen`, `/business`, `/` → default shell)                                |
 
 ```sh
-docker build -f deploy/Dockerfile --build-arg APP=@org/shell-intranet -t shell-intranet .
-docker run --rm -p 8080:8080 --env-file apps/intranet/.env shell-intranet
+docker build -f deploy/Dockerfile --build-arg APP=@org/shell-staff -t shell-staff .
+docker run --rm -p 8080:8080 --env-file apps/intranet/.env shell-staff
 ```
 
 `apps/intranet/.env` (zone level; a shell's own overrides: `apps/intranet/<shell>/.env`; copy of the committed `.env.example`, git-ignored) holds, for example:

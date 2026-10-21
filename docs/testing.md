@@ -122,11 +122,11 @@ runtime from the dev manifest, plus each remote standalone.
 pnpm e2e                    # every zone, one at a time
 pnpm e2e:intranet           # one zone
 pnpm e2e:internet --project=desktop --grep "WCAG"   # Playwright options pass through
-pnpm --filter @org/shell-intranet e2e e2e/remotes.spec.ts   # one spec
-pnpm --filter @org/shell-intranet exec playwright test --ui # debug UI
+pnpm --filter @org/shell-staff e2e e2e/remotes.spec.ts   # one spec
+pnpm --filter @org/shell-staff exec playwright test --ui # debug UI
 ```
 
-First time on a machine: `pnpm --filter @org/shell-intranet exec playwright install chromium`
+First time on a machine: `pnpm --filter @org/shell-staff exec playwright install chromium`
 (any shell; the browser is shared). Reports: `apps/<zone>/<name>/shell/playwright-report/`
 (`pnpm --filter <shell> exec playwright show-report`), traces of failed tests in `test-results/`.
 

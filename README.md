@@ -10,7 +10,7 @@ section.
 
 | Zone     | App (package)                                                  | Kind                                           | Routes                                             |
 | -------- | -------------------------------------------------------------- | ---------------------------------------------- | -------------------------------------------------- |
-| intranet | Staff Portal (`@org/shell-intranet`, :3101, at `/`)            | shell (blue header, sidebar nav)               | `/`, 404                                           |
+| intranet | Staff Portal (`@org/shell-staff`, :3101, at `/`)               | shell (blue header, sidebar nav)               | `/`, 404                                           |
 | intranet | Staff directory (`@org/intranet-staff-directory`, :3110)       | public remote                                  | `/staff-directory`, `/staff-directory/<id>`        |
 | intranet | Leave (`@org/intranet-leave-requests`, :3111)                  | public remote                                  | `/leave-requests`, `/leave-requests/new`           |
 | intranet | IT helpdesk (`@org/intranet-it-helpdesk`, :3112)               | external adapter (esm vendor)                  | `/it-helpdesk`, `…/new`, `…/tickets/<id>` (vendor) |
@@ -21,6 +21,15 @@ section.
 | internet | My profile (`@org/internet-my-profile`, :3212)                 | private remote (citizen)                       | `/my-profile`                                      |
 | internet | Payments (`@org/internet-payments`, :3213)                     | external adapter (web component vendor)        | `/payments`, `/payments/receipt/<ref>` (vendor)    |
 | internet | Business licences (`@org/internet-business-licences`, :3214)   | private remote (business)                      | `/business-licences`, `/business-licences/<id>`    |
+
+Apps are grouped by shell (`pnpm check` rule `remote-location`; `pnpm move-remote` moves a remote):
+
+```
+apps/intranet/staff/{shell, staff-directory, leave-requests, it-helpdesk}
+apps/internet/citizen/{shell, services, payments, my-profile}
+apps/internet/business/{shell, business-licences}
+apps/internet/shared/announcements          (listed by citizen and business)
+```
 
 Remote routes are below each shell's base path: `/citizen/announcements`, `/business/announcements`.
 
@@ -49,7 +58,7 @@ dev tools included. `pnpm dev:<zone>` is the template's launcher (`tools/scripts
 Ctrl-C stops every dev server of the zone and frees its ports. "Sign in" uses the template's dev
 mock, per shell: the Citizen Portal signs in the default (Singpass-style) mock user, the Business
 Portal a Corppass-style business user (`mfe.devManifest.auth.mockUser` in
-`apps/internet/shell-business/package.json`), each with its own session.
+`apps/internet/business/shell/package.json`), each with its own session.
 
 | Zone     | Dev proxy | Shells     | Remotes   | Dev tools (root `package.json` `mfe.tools`, read with `toolPort`)                                  |
 | -------- | --------- | ---------- | --------- | -------------------------------------------------------------------------------------------------- |
@@ -83,7 +92,7 @@ pnpm --filter @org/intranet-leave-requests add date-fns
 ```
 
 `catalogMode: manual` wrote a normal range (`"date-fns": "^4.4.0"`) into
-`apps/intranet/leave-requests/package.json` only: no catalog entry, no exception, `pnpm check`
+`apps/intranet/staff/leave-requests/package.json` only: no catalog entry, no exception, `pnpm check`
 stays green. If a second app needed date-fns, `pnpm check` would fail with
 `shared-not-in-catalog` until it moves to the catalog (tier 2,
 [docs/adding-dependencies.md](docs/adding-dependencies.md)). Display-only dates elsewhere use
@@ -122,7 +131,7 @@ pnpm gen:remote intranet staff-directory
 pnpm gen:remote intranet leave-requests --private
 pnpm install
 pnpm dev:intranet          # http://localhost:3100 (the zone's dev proxy)
-pnpm e2e:intranet          # e2e + axe WCAG 2.2 AA (after: pnpm --filter @org/shell-intranet exec playwright install chromium)
+pnpm e2e:intranet          # e2e + axe WCAG 2.2 AA (after: pnpm --filter @org/shell-staff exec playwright install chromium)
 ```
 
 ## What changed in v3

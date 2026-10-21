@@ -2,7 +2,7 @@ import { expect, test } from '@org/playwright-config/test';
 import { expectRemoteRendered, remotePage, zone } from './helpers';
 
 // The internet zone has two shells on one origin (the zone's dev proxy, like the production
-// reverse proxy): this one at /citizen (Singpass, top layout), shell-business at /business.
+// reverse proxy): this one at /citizen (Singpass, top layout), the business shell at /business.
 const announcements = zone.remotes.find((r) => r.name === 'announcements')!;
 
 test.describe('Citizen Portal under /citizen', () => {

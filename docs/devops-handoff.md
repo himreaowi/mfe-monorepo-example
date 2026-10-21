@@ -65,8 +65,8 @@ Each app: `{ name, package, zone, type, access, kind, port, federationName, path
   "kind": "react",
   "port": 3101,
   "federationName": "intranet_staff_directory",
-  "path": "apps/intranet/staff-directory",
-  "distDir": "apps/intranet/staff-directory/dist"
+  "path": "apps/intranet/staff/staff-directory",
+  "distDir": "apps/intranet/staff/staff-directory/dist"
 }
 ```
 
