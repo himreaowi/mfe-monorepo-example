@@ -75,6 +75,10 @@ describe('move-remote', () => {
 
   it('moves with git mv (history kept), rewrites path references, not the lockfile', () => {
     const { root, git } = repo();
+    // git-ignored leftovers move along
+    fs.mkdirSync(path.join(root, 'apps/internet/alpha/services/.mf'), {
+      recursive: true,
+    });
     const r = moveRemote({
       root,
       zone: 'internet',
@@ -85,6 +89,9 @@ describe('move-remote', () => {
       log: quiet,
     });
     assert.ok(!fs.existsSync(path.join(root, 'apps/internet/alpha/services')));
+    assert.ok(
+      fs.existsSync(path.join(root, 'apps/internet/shared/services/.mf')),
+    );
     assert.ok(
       fs.existsSync(
         path.join(root, 'apps/internet/shared/services/package.json'),
