@@ -6,15 +6,15 @@ copied from the `side` starter, `--layout`).
 
 ## Commands
 
-| Command                                     | What                                                                                         |
-| ------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `pnpm dev:intranet` (repo root)             | This shell + every intranet remote + the zone's mock API (and mock vendor) (Nx, in parallel) |
+| Command                                  | What                                                                                         |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `pnpm dev:intranet` (repo root)          | This shell + every intranet remote + the zone's mock API (and mock vendor) (Nx, in parallel) |
 | `pnpm exec nx dev @org/shell-staff`      | The shell on http://localhost:3100 + the zone's mock API                                     |
 | `pnpm --filter @org/shell-staff dev`     | Only the shell (no mock API)                                                                 |
 | `pnpm --filter @org/shell-staff build`   | Production build in `dist/`                                                                  |
 | `pnpm --filter @org/shell-staff preview` | Serve `dist/` (needs a `dist/mfe-manifest.json`, see below)                                  |
-| `lint` / `typecheck` / `test`               | ESLint, `tsc` (src + e2e), Jest                                                              |
-| `pnpm e2e:intranet` (repo root)             | The zone's e2e suite (Playwright + axe), see below                                           |
+| `lint` / `typecheck` / `test`            | ESLint, `tsc` (src + e2e), Jest                                                              |
+| `pnpm e2e:intranet` (repo root)          | The zone's e2e suite (Playwright + axe), see below                                           |
 
 ## How remotes get in
 

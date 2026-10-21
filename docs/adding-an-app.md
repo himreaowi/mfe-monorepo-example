@@ -68,7 +68,7 @@ apps/<zone>/<shell>/shell/
 | Folder          | `apps/internet/citizen/my-profile` (`--shell citizen`; `apps/internet/shared/my-profile` with `--shell citizen,business`) |
 | Package         | `@org/internet-my-profile`                                                                                                |
 | Federation name | `internet_my_profile`                                                                                                     |
-| Route           | `/my-profile/*` in the `citizen` shell (URL `/citizen/my-profile`)                                                                                  |
+| Route           | `/my-profile/*` in the `citizen` shell (URL `/citizen/my-profile`)                                                        |
 | Nav title       | `My profile` (sentence case; `--title "…"` or edit `remotes.json`)                                                        |
 | Dev port        | lowest free remote port, 3210–3289 (3200 proxy, 3201–3209 shells, 3290–3299 dev tools)                                    |
 
