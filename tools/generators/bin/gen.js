@@ -24,8 +24,8 @@ const USAGE = `Usage:
   zone: intranet | internet
 
 Options:
-  <name>                  gen:shell: the shell's name (apps/<zone>/shell-<name>); default: the
-                          zone (shell-intranet), for a zone's only shell
+  <name>                  gen:shell: the shell's name (apps/<zone>/<name>/shell); default:
+                          the zone, for a zone's only shell. "shared" is reserved
   --base-path /<path>     gen:shell: where the shell is served (default /). Several shells of a
                           zone share one origin, each under its own path (/citizen, /business);
                           pnpm dev:<zone> serves them all on the zone port through a dev proxy

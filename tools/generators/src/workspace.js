@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { ZONES, UsageError } from './names.js';
+import { SHARED_GROUP, SHELL_FOLDER } from '@org/scripts/layout';
 
 /** @typedef {import('./names.js').Zone} Zone */
 
@@ -30,20 +31,30 @@ export function readJson(file) {
 }
 
 /**
- * Every app (folder with a package.json) in `apps/<zone>/`.
+ * Every app (folder with a package.json) in `apps/<zone>/<group>/<folder>`.
  * @param {string} root
  * @param {Zone} zone
- * @returns {{ dir: string, pkg: any }[]}
+ * @returns {{ dir: string, group: string, pkg: any }[]}
  */
 export function listZoneApps(root, zone) {
   const zoneDir = path.join(root, 'apps', zone);
   if (!fs.existsSync(zoneDir)) return [];
-  return fs
-    .readdirSync(zoneDir, { withFileTypes: true })
-    .filter((d) => d.isDirectory())
-    .map((d) => path.join(zoneDir, d.name))
-    .filter((dir) => fs.existsSync(path.join(dir, 'package.json')))
-    .map((dir) => ({ dir, pkg: readJson(path.join(dir, 'package.json')) }));
+  /** @param {string} dir */
+  const subdirs = (dir) =>
+    fs
+      .readdirSync(dir, { withFileTypes: true })
+      .filter((d) => d.isDirectory() && d.name !== 'node_modules')
+      .map((d) => path.join(dir, d.name));
+  return subdirs(zoneDir)
+    .flatMap((groupDir) =>
+      subdirs(groupDir).map((dir) => ({ dir, group: path.basename(groupDir) })),
+    )
+    .filter(({ dir }) => fs.existsSync(path.join(dir, 'package.json')))
+    .map(({ dir, group }) => ({
+      dir,
+      group,
+      pkg: readJson(path.join(dir, 'package.json')),
+    }));
 }
 
 /**
@@ -83,16 +94,18 @@ export function allocatePort(root, zone, opts = {}) {
  */
 
 /**
- * The shells of a zone (apps/<zone>/shell-<name>), sorted by name.
+ * The shells of a zone (apps/<zone>/<name>/shell), sorted by name.
  * @param {string} root
  * @param {Zone} zone
  * @returns {ShellInfo[]}
  */
 export function listShells(root, zone) {
   return listZoneApps(root, zone)
-    .filter((a) => path.basename(a.dir).startsWith('shell-'))
+    .filter(
+      (a) => path.basename(a.dir) === SHELL_FOLDER && a.group !== SHARED_GROUP,
+    )
     .map((a) => ({
-      name: path.basename(a.dir).slice('shell-'.length),
+      name: a.group,
       dir: a.dir,
       pkg: a.pkg,
       basePath: String(a.pkg?.mfe?.basePath ?? '/').replace(/\/+$/, '') || '/',
