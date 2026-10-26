@@ -3,18 +3,12 @@ import { render, screen } from '@testing-library/react';
 import { scanExposedModule } from '@org/jest-config/exposed-module';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { ThemeProvider } from '@org/ui';
-import {
-  getDepartments,
-  getStaffMember,
-  searchStaff,
-} from '@/features/staff/api/staffApi';
+import { createFakeFetch } from '@org/jest-config/fetch';
 import EmbeddedApp, { StandaloneApp } from './apps';
 
-jest.mock('@/features/staff/api/staffApi');
-
-beforeEach(() => {
-  jest.mocked(getDepartments).mockResolvedValue([]);
-  jest.mocked(searchStaff).mockResolvedValue({
+// The remote fetches through @org/intranet-directory: answer the HTTP calls with a fake fetch.
+const staffResult = {
+  body: {
     items: [
       {
         id: 's-1001',
@@ -28,8 +22,18 @@ beforeEach(() => {
     ],
     total: 1,
     departments: [],
-  });
-  jest.mocked(getStaffMember).mockResolvedValue(null);
+  },
+};
+const fakeFetch = createFakeFetch({
+  'GET /staff': staffResult, // embedded: settings.apiBaseUrl of the test
+  'GET /api/staff': staffResult, // standalone: the mock API base URL
+});
+
+beforeEach(() => {
+  globalThis.fetch = fakeFetch; // jsdom has no fetch
+});
+afterEach(() => {
+  Reflect.deleteProperty(globalThis, 'fetch');
 });
 
 function renderEmbedded(url: string) {

@@ -1,11 +1,14 @@
 import { renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
-import { getDepartments } from '../api/staffApi';
+import { getDepartments } from '@org/intranet-directory';
 import { useDepartments } from './useDepartments';
 
-// Hook tests mock the feature's api/ module: no HTTP here (docs/testing.md).
-jest.mock('../api/staffApi');
+// Hook tests mock the API functions of the library: no HTTP here (docs/testing.md).
+jest.mock('@org/intranet-directory', () => ({
+  ...jest.requireActual('@org/intranet-directory'),
+  getDepartments: jest.fn(),
+}));
 
 function wrapper({ children }: { children: ReactNode }) {
   return (

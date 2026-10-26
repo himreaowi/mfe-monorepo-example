@@ -1,4 +1,4 @@
-import type { StaffSummary } from '../types/staff';
+import type { StaffSummary } from '@org/intranet-directory';
 
 export const ann: StaffSummary = {
   id: 's-1',

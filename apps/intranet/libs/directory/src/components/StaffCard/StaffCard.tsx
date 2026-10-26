@@ -1,15 +1,19 @@
 import { Link } from 'react-router';
-import { useRemotePath } from '@org/mf-runtime/remote';
-import { staffPath } from '@/core/constants/routePaths';
 import type { StaffSummary } from '../../types/staff';
 import styles from './StaffCard.module.scss';
 
-export function StaffCard({ member }: { member: StaffSummary }) {
-  const toPath = useRemotePath();
+export type StaffCardProps = {
+  member: StaffSummary;
+  /** Where the name links to (the caller resolves it, e.g. with `useRemotePath()`). */
+  to: string;
+};
+
+/** One staff member as a list item: name (link), job title, department, mail link. */
+export function StaffCard({ member, to }: StaffCardProps) {
   return (
     <li className={styles.card} data-testid="staff-card">
       <h2 className={styles.name}>
-        <Link to={toPath(staffPath(member.id))}>{member.name}</Link>
+        <Link to={to}>{member.name}</Link>
       </h2>
       <p>{member.jobTitle}</p>
       <p className={styles.muted}>

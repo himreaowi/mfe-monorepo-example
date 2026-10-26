@@ -10,7 +10,7 @@ function queryString(params: Record<string, string | undefined>): string {
   return text ? `?${text}` : '';
 }
 
-/** API paths, joined with settings.apiBaseUrl by the http client. */
+/** Staff API paths, joined with settings.apiBaseUrl by the http client. */
 export const apiRoutes = defineApiRoutes({
   staff: {
     search: (params: { q?: string; department?: string }) =>

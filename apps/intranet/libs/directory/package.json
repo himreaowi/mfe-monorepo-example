@@ -1,0 +1,56 @@
+{
+  "name": "@org/intranet-directory",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Directory: staff search API, hooks and components shared by the intranet apps",
+  "type": "module",
+  "sideEffects": [
+    "*.css",
+    "*.scss"
+  ],
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "jest"
+  },
+  "nx": {
+    "tags": [
+      "zone:intranet",
+      "type:lib"
+    ]
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@org/eslint-config": "workspace:*",
+    "@org/jest-config": "workspace:*",
+    "@org/tsconfig": "workspace:*",
+    "@testing-library/dom": "catalog:",
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@testing-library/user-event": "catalog:",
+    "@types/jest": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "eslint": "catalog:",
+    "jest": "catalog:",
+    "prettier": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "typescript": "catalog:"
+  },
+  "dependencies": {
+    "@org/http-client": "workspace:*",
+    "@org/mf-runtime": "workspace:*",
+    "@org/ui": "workspace:*",
+    "@org/use-api": "workspace:*",
+    "react-router": "catalog:"
+  }
+}

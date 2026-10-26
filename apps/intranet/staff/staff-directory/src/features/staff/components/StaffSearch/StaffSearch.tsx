@@ -1,7 +1,8 @@
+import { StaffCard, type StaffSearchResult } from '@org/intranet-directory';
+import { useRemotePath } from '@org/mf-runtime/remote';
 import { RemoteFallback } from '@org/ui';
 import type { ApiResult } from '@org/use-api';
-import type { StaffSearchResult } from '../../types/staff';
-import { StaffCard } from '../StaffCard/StaffCard';
+import { staffPath } from '@/core/constants/routePaths';
 import { StaffFilters } from '../StaffFilters/StaffFilters';
 import styles from './StaffSearch.module.scss';
 
@@ -19,6 +20,7 @@ export type StaffSearchProps = {
  * `<StaffFiltersProvider>`.
  */
 export function StaffSearch({ search, departments }: StaffSearchProps) {
+  const toPath = useRemotePath();
   const count =
     search.status === 'success'
       ? `${search.data.total} ${search.data.total === 1 ? 'person' : 'people'} found`
@@ -51,7 +53,11 @@ export function StaffSearch({ search, departments }: StaffSearchProps) {
       {search.status === 'success' && search.data.items.length > 0 ? (
         <ul className={styles.results} aria-label="Staff">
           {search.data.items.map((member) => (
-            <StaffCard key={member.id} member={member} />
+            <StaffCard
+              key={member.id}
+              member={member}
+              to={toPath(staffPath(member.id))}
+            />
           ))}
         </ul>
       ) : null}

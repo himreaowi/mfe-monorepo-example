@@ -1,10 +1,9 @@
+import { useDebouncedValue, useStaffSearch } from '@org/intranet-directory';
 import {
   StaffFiltersProvider,
   StaffSearch,
-  useDebouncedValue,
   useDepartments,
   useStaffFilters,
-  useStaffSearch,
 } from '@/features/staff';
 
 /**

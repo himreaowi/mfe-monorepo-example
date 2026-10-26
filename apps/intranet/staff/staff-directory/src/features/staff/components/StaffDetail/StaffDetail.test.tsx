@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
 import type { ApiResult } from '@org/use-api';
-import type { StaffMember } from '../../types/staff';
+import type { StaffMember } from '@org/intranet-directory';
 import { StaffDetail } from './StaffDetail';
 
 const priya: StaffMember = {

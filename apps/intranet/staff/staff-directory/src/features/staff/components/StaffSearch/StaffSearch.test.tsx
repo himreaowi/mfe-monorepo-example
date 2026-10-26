@@ -5,7 +5,7 @@ import { HostPropsProvider } from '@org/mf-runtime/remote';
 import type { ApiResult } from '@org/use-api';
 import { ann } from '../../__fixtures__/staff';
 import { StaffFiltersProvider } from '../../state/StaffFiltersContext';
-import type { StaffSearchResult } from '../../types/staff';
+import type { StaffSearchResult } from '@org/intranet-directory';
 import { StaffSearch, type StaffSearchProps } from './StaffSearch';
 
 const reload = jest.fn();

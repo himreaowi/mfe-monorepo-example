@@ -1,14 +1,30 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
+import { createFakeFetch } from '@org/jest-config/fetch';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
 import { ann } from '@/features/staff/__fixtures__/staff';
-import { getDepartments, searchStaff } from '@/features/staff/api/staffApi';
 import { OverviewPage } from './OverviewPage';
 
-// The page fetches: mock the feature's api/ module (no HTTP).
-jest.mock('@/features/staff/api/staffApi');
-const searchMock = jest.mocked(searchStaff);
+// The page fetches through @org/intranet-directory: answer the HTTP calls with a fake fetch.
+let items = [ann];
+const fakeFetch = createFakeFetch({
+  'GET /staff': () => ({
+    body: {
+      items,
+      total: items.length,
+      departments: ['Finance', 'Technology'],
+    },
+  }),
+});
+/** The `q` and `department` of the last staff search. */
+function lastSearch() {
+  const query = fakeFetch.calls.at(-1)?.query;
+  return {
+    q: query?.get('q') ?? '',
+    department: query?.get('department') ?? '',
+  };
+}
 
 function Location() {
   return <span data-testid="location">{useLocation().search}</span>;
@@ -41,9 +57,12 @@ function renderPage(url = '/staff') {
 }
 
 beforeEach(() => {
-  searchMock.mockReset();
-  searchMock.mockResolvedValue({ items: [ann], total: 1, departments: [] });
-  jest.mocked(getDepartments).mockResolvedValue(['Finance', 'Technology']);
+  items = [ann];
+  fakeFetch.calls.length = 0;
+  globalThis.fetch = fakeFetch; // jsdom has no fetch
+});
+afterEach(() => {
+  Reflect.deleteProperty(globalThis, 'fetch');
 });
 
 describe('OverviewPage', () => {
@@ -53,15 +72,11 @@ describe('OverviewPage', () => {
     expect(
       await screen.findByRole('option', { name: 'Technology' }),
     ).toBeInTheDocument();
-    expect(searchMock).toHaveBeenCalledWith(
-      expect.anything(),
-      { q: '', department: '' },
-      expect.any(AbortSignal),
-    );
+    expect(lastSearch()).toEqual({ q: '', department: '' });
   });
 
   it('searches as you type and keeps the query in the URL', async () => {
-    searchMock.mockResolvedValue({ items: [], total: 0, departments: [] });
+    items = [];
     renderPage();
     await userEvent.type(
       screen.getByRole('searchbox', { name: 'Search staff' }),
@@ -69,11 +84,7 @@ describe('OverviewPage', () => {
     );
     expect(screen.getByTestId('location')).toHaveTextContent('?q=secu');
     await waitFor(() =>
-      expect(searchMock).toHaveBeenLastCalledWith(
-        expect.anything(),
-        { q: 'secu', department: '' },
-        expect.any(AbortSignal),
-      ),
+      expect(lastSearch()).toEqual({ q: 'secu', department: '' }),
     );
     expect(await screen.findByText(/No one matches/)).toBeInTheDocument();
   });
@@ -88,11 +99,7 @@ describe('OverviewPage', () => {
       '?department=Technology',
     );
     await waitFor(() =>
-      expect(searchMock).toHaveBeenLastCalledWith(
-        expect.anything(),
-        { q: '', department: 'Technology' },
-        expect.any(AbortSignal),
-      ),
+      expect(lastSearch()).toEqual({ q: '', department: 'Technology' }),
     );
   });
 });

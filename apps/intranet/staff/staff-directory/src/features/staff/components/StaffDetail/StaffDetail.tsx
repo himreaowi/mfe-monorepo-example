@@ -3,7 +3,7 @@ import { useRemotePath } from '@org/mf-runtime/remote';
 import { RemoteFallback, Spinner } from '@org/ui';
 import type { ApiResult } from '@org/use-api';
 import { routePaths, staffPath } from '@/core/constants/routePaths';
-import type { StaffLink, StaffMember } from '../../types/staff';
+import type { StaffLink, StaffMember } from '@org/intranet-directory';
 import styles from './StaffDetail.module.scss';
 
 function PersonLink({ person }: { person: StaffLink }) {

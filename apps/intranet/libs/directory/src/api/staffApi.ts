@@ -1,5 +1,5 @@
 import { HttpClientError, type HttpClient } from '@org/http-client';
-import { apiRoutes } from '@/core/constants/apiRoutes';
+import { apiRoutes } from './apiRoutes';
 import type {
   StaffMember,
   StaffSearchQuery,

@@ -39,6 +39,7 @@
     "@org/auth": "workspace:*",
     "@org/design-tokens": "workspace:*",
     "@org/http-client": "workspace:*",
+    "@org/intranet-directory": "workspace:*",
     "@org/mf-runtime": "workspace:*",
     "@org/ui": "workspace:*",
     "@org/use-api": "workspace:*",
