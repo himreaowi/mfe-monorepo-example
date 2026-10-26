@@ -1,19 +1,21 @@
 # @org/generators
 
-Creates apps from templates. Run from the repo root:
+Creates apps and code libraries from templates. Run from the repo root:
 
 ```sh
 pnpm gen:shell <zone> [--layout top|side] [--title "<text>"]   # zone: intranet | internet
 pnpm gen:remote <zone> <name> [--private] [--external [--vendor-format esm|web-component|script]] [--title "<text>"]
                                                         # name: kebab-case, e.g. staff-directory
+pnpm gen:package <common|zone> <capability>             # a library, docs/where-code-goes.md
 pnpm install
 pnpm dev:<zone>
 ```
 
-| Generator    | Creates                                                                                                                                                                                           | Package              | Federation name                                          | Port                                            |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- | -------------------------------------------------------- | ----------------------------------------------- |
-| `gen:shell`  | `apps/<zone>/<name>/shell` (name default: the zone; `--base-path`, default `/`; incl. its e2e suite in `e2e/`)                                                                                    | `@org/shell-<name>`  | `<zone>_shell` (name = zone), else `<zone>_shell_<name>` | lowest free shell port (3101–3109 / 3201–3209)  |
-| `gen:remote` | `apps/<zone>/<shell>/<name>` (`apps/<zone>/shared/<name>` when `--shell a,b`) + entry in the `remotes.json` of the zone's shell, or of each `--shell` (regenerates their `mfe-manifest.dev.json`) | `@org/<zone>-<name>` | `<zone>_<name>`                                          | lowest free remote port (3110–3189 / 3210–3289) |
+| Generator     | Creates                                                                                                                                                                                                                                                                                                                                      | Package                                                 | Federation name                                          | Port                                            |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- | -------------------------------------------------------- | ----------------------------------------------- |
+| `gen:shell`   | `apps/<zone>/<name>/shell` (name default: the zone; `--base-path`, default `/`; incl. its e2e suite in `e2e/`)                                                                                                                                                                                                                               | `@org/shell-<name>`                                     | `<zone>_shell` (name = zone), else `<zone>_shell_<name>` | lowest free shell port (3101–3109 / 3201–3209)  |
+| `gen:remote`  | `apps/<zone>/<shell>/<name>` (`apps/<zone>/shared/<name>` when `--shell a,b`) + entry in the `remotes.json` of the zone's shell, or of each `--shell` (regenerates their `mfe-manifest.dev.json`)                                                                                                                                            | `@org/<zone>-<name>`                                    | `<zone>_<name>`                                          | lowest free remote port (3110–3189 / 3210–3289) |
+| `gen:package` | `packages/common/<capability>` (`common`) or `apps/<zone>/libs/<capability>` (a zone): package.json (platform configs as `workspace:*`, tags `type:common` / `zone:<zone>` + `type:lib`), tsconfig, eslint/jest configs, README, `src/index.ts`, a sample function + test. Common packages carry the "ships to the internet portals" warning | `@org/common-<capability>` / `@org/<zone>-<capability>` |                                                          |                                                 |
 
 Several shells per zone: `pnpm gen:shell internet citizen --base-path /citizen`, then
 `pnpm gen:shell internet business --base-path /business --layout side`; the first shell below a

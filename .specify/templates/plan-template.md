@@ -43,7 +43,8 @@ duplicate tier-1 libraries; measure remote load cost for new federated surfaces
 **Constraints**: tier-1 singletons via MF `strictVersion`; one build for all
 environments (`mfe-manifest.json` per environment); no secrets or tokens in the
 browser (BFF); shells never import remotes, remotes never import remotes, zones
-share only `packages/*`; WCAG 2.2 AA; 375 px without horizontal scroll
+share only `packages/common/*` and `packages/platform/*` (no confidential rules in common);
+WCAG 2.2 AA; 375 px without horizontal scroll
 
 **Scale/Scope**: name the zone(s) and apps, e.g.
 `Zone: internet. Apps: my-profile (private remote), the citizen shell (nav entry).
@@ -121,8 +122,11 @@ apps/
             ├── components/[Component]/
             ├── core/constants/    # routePaths, apiRoutes
             └── services/          # optional (API client: useApiClient() from @org/mf-runtime)
+apps/[zone]/libs/
+└── [capability]/                  # code shared by one zone's apps (type:lib), never deployed alone
 packages/
-└── [package]/                     # shared code (type:package), e.g. ui, mf-runtime
+├── common/[capability]/           # business logic for both zones (type:common); public
+└── platform/[package]/            # plumbing (type:package), e.g. ui, mf-runtime
 ```
 
 **Zones / apps**: [e.g. internet: citizen (shells listing it), my-profile]

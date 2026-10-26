@@ -51,6 +51,7 @@ import {
 import { loadApps, loadWorkspace, readJson } from './workspace.js';
 import { devManifestStatus } from './dev-manifest.js';
 import {
+  LIBS_GROUP,
   SHARED_GROUP,
   SHELL_FOLDER,
   remoteTarget,
@@ -549,7 +550,7 @@ export async function checkApps({ root }) {
         if (item.name === 'README.md' || item.name.startsWith('.env')) continue;
         err(
           'group-layout',
-          `apps/${zone}/${item.name}: unknown item. Below a zone only .env* files, README.md, the shell group folders (apps/${zone}/<shellName>/) and apps/${zone}/${SHARED_GROUP}/ are allowed.`,
+          `apps/${zone}/${item.name}: unknown item. Below a zone only .env* files, README.md, the portal folders (apps/${zone}/<portal>/), apps/${zone}/${SHARED_GROUP}/ (remotes of 2+ portals) and apps/${zone}/${LIBS_GROUP}/ (code libraries) are allowed.`,
         );
         continue;
       }
@@ -558,11 +559,12 @@ export async function checkApps({ root }) {
         (i) => i.zone === zone && i.group === item.name,
       );
       const shellsHere = inGroup.filter((i) => i.type === 'shell');
-      if (item.name === SHARED_GROUP) continue;
+      // apps/<zone>/libs/ holds code libraries (check-packages.js), no apps
+      if (item.name === SHARED_GROUP || item.name === LIBS_GROUP) continue;
       if (shellsHere.length !== 1) {
         err(
           'group-layout',
-          `${dir}: a group folder holds exactly one shell in ${dir}/${SHELL_FOLDER}/, found ${shellsHere.length}. Group folders are named after their shell; remotes listed by 2+ shells go to apps/${zone}/${SHARED_GROUP}/.`,
+          `${dir}: a portal folder holds exactly one shell in ${dir}/${SHELL_FOLDER}/, found ${shellsHere.length}. Portal folders are named after their shell; remotes listed by 2+ shells go to apps/${zone}/${SHARED_GROUP}/, code shared by the zone's apps to apps/${zone}/${LIBS_GROUP}/<capability> (pnpm gen:package ${zone} <capability>).`,
         );
       }
     }
@@ -1062,6 +1064,8 @@ function checkDuplicateComponents(root, infos, err) {
   }
   /** @type {Map<string, string[]>} */
   const byName = new Map();
+  /** @type {Map<string, string | undefined>} app dir → zone */
+  const zoneOf = new Map(infos.map((i) => [i.app.dir, i.zone]));
   for (const info of infos) {
     for (const name of new Set(
       appComponentNames(path.join(root, info.app.dir)),
@@ -1073,9 +1077,15 @@ function checkDuplicateComponents(root, infos, err) {
     a.localeCompare(b),
   )) {
     if (dirs.length < 2 || (allowed && Object.hasOwn(allowed, name))) continue;
+    const zones = new Set(dirs.map((d) => zoneOf.get(d)));
+    const [zone] = zones;
+    const where =
+      zones.size === 1 && zone
+        ? `the ${zone} zone library apps/${zone}/${LIBS_GROUP}/<capability> (pnpm gen:package ${zone} <capability>, then pnpm move-component <app> ${name} --to ${zone}/${LIBS_GROUP}/<capability>)`
+        : `packages/common/<capability> when it is business logic both zones may use (it ships to the public internet portals; pnpm gen:package common <capability>, then pnpm move-component <app> ${name} --to common/<capability>)`;
     err(
       'shared-component',
-      `component ${name} exists in ${dirs.length} apps (${dirs.join(', ')}). Move it to @org/ui (packages/platform/ui/src/components/${name}/, see ${UI_DOC}) and import it from '@org/ui' in each app. If each app needs its own version, rename them or list it in the root ${shape}.`,
+      `component ${name} exists in ${dirs.length} apps (${dirs.join(', ')}). Share one copy: move it to ${where}, or to @org/ui (packages/platform/ui/src/components/${name}/, see ${UI_DOC}) when it is generic UI with no business rules. See docs/where-code-goes.md. If each app needs its own version, rename them or list it in the root ${shape}.`,
     );
   }
 }

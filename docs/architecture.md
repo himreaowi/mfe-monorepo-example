@@ -105,22 +105,26 @@ the dev servers send the same rules (localhost origins), so a `<style>` element 
 
 ## Zones
 
-|             | intranet                                             | internet                                                    |
-| ----------- | ---------------------------------------------------- | ----------------------------------------------------------- |
-| Shells      | `apps/intranet/<name>/shell` (e.g. one shell at `/`) | `apps/internet/<name>/shell` (e.g. `/citizen`, `/business`) |
-| Dev proxy   | 3100 (every shell of the zone under its base path)   | 3200                                                        |
-| Shell ports | 3101–3109                                            | 3201–3209                                                   |
-| Remotes     | 3110–3189                                            | 3210–3289                                                   |
-| Dev tools   | 3190–3199 (mock API 3190, mock vendor 3191)          | 3290–3299 (3290, 3291)                                      |
-| Users       | staff (SSO via the BFF)                              | public + signed-in citizens (Singpass via the BFF)          |
-| Sharing     | only `packages/*`                                    | only `packages/*`                                           |
+|             | intranet                                                           | internet                                                           |
+| ----------- | ------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| Shells      | `apps/intranet/<name>/shell` (e.g. one shell at `/`)               | `apps/internet/<name>/shell` (e.g. `/citizen`, `/business`)        |
+| Dev proxy   | 3100 (every shell of the zone under its base path)                 | 3200                                                               |
+| Shell ports | 3101–3109                                                          | 3201–3209                                                          |
+| Remotes     | 3110–3189                                                          | 3210–3289                                                          |
+| Dev tools   | 3190–3199 (mock API 3190, mock vendor 3191)                        | 3290–3299 (3290, 3291)                                             |
+| Users       | staff (SSO via the BFF)                                            | public + signed-in citizens (Singpass via the BFF)                 |
+| Sharing     | `apps/intranet/libs/*`, `packages/common/*`, `packages/platform/*` | `apps/internet/libs/*`, `packages/common/*`, `packages/platform/*` |
 
 Zones never share remotes, and remotes never import remotes or shells. Inside a zone, a remote
-can be listed by several shells.
+can be listed by several shells (portals). Code shared by the apps of one zone lives in
+`apps/<zone>/libs/<capability>`; business logic for both zones in `packages/common/<capability>`
+(public: it ships to the internet portals, the backend enforces the same rules). The folders
+decide what may import what: [where-code-goes.md](where-code-goes.md).
 
-### Several shells per zone
+### Several shells (portals) per zone
 
-A zone has one or more shells. Each shell is its own app with its own **base path**
+A zone has one or more **portals**: `apps/<zone>/<portal>/`, one shell plus the remotes only that
+portal lists. A zone has one or more shells. Each shell is its own app with its own **base path**
 (`package.json` `mfe.basePath`, default `/`), layout, sign-in config (its manifest's `auth`),
 manifest and remotes (`remotes.json`). Example: the internet zone with the `citizen` shell at
 `/citizen` (Singpass, top layout) and the `business` shell at `/business` (Corppass, side layout),
@@ -144,7 +148,8 @@ mock sign-in is per shell too: `mfe.devManifest.auth.mockUser` picks the fake us
 Corppass business user), with its own session. Production: one container per shell behind the
 domain's reverse proxy, each BFF scoping its cookie to its path
 ([deploy/README.md](../deploy/README.md#several-shells-on-one-domain)). Enforced by
-`pnpm check` (check-apps) and ESLint (Nx module boundaries); see [guardrails.md](guardrails.md).
+`pnpm check` (check-apps, check-packages) and ESLint (Nx module boundaries); see
+[guardrails.md](guardrails.md) and [where-code-goes.md](where-code-goes.md).
 
 ### Dev tool servers
 
@@ -250,13 +255,18 @@ goes in an iframe. Details: [external-modules.md](external-modules.md).
 [Standalone HTML](diagrams/2-layers.html) · [about the diagrams](diagrams/README.md)
 
 ```
-apps/<zone>/<shell>/shell     a shell (holds the zone's e2e suite in e2e/); .env* of the shell next to it
-apps/<zone>/<shell>/<remote>  a remote listed only by that shell
-apps/<zone>/shared/<remote>   a remote listed by 2+ shells of the zone (pnpm check: remote-location;
-                              pnpm move-remote moves it)
-packages/                shared code: ui, design-tokens, mf-runtime, auth, http-client, pwa,
-                         webpack-config, jest-config, playwright-config, eslint/prettier/tsconfig,
-                         vendor-kit
+apps/<zone>/<portal>/shell      a portal's shell (holds the zone's e2e suite in e2e/); .env* of the
+                                portal next to it
+apps/<zone>/<portal>/<remote>   a remote listed only by that portal's shell
+apps/<zone>/shared/<remote>     a remote listed by 2+ portals of the zone (pnpm check: remote-location;
+                                pnpm move-remote moves it)
+apps/<zone>/libs/<capability>   code shared by the zone's apps (@org/<zone>-<capability>), never
+                                deployed alone (pnpm gen:package <zone> <capability>)
+packages/common/<capability>    business logic for both zones (@org/common-<capability>); public:
+                                ships to the internet portals (pnpm gen:package common <capability>)
+packages/platform/              plumbing: ui, design-tokens, mf-runtime, auth, http-client, pwa,
+                                webpack-config, jest-config, playwright-config,
+                                eslint/prettier/tsconfig, vendor-kit
 tools/                   generators, scripts (check, apps, dev, e2e, validate-manifest, preview),
                          mock-api, mock-vendor (dev only; ports in root package.json mfe.tools)
 deploy/                  nginx template, Dockerfile, example per-environment manifest

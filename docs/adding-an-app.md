@@ -30,13 +30,18 @@ known acronyms in capitals (`it-helpdesk` → "IT helpdesk"); `--title "Staff po
 
 ```
 apps/<zone>/.env.example              zone-level env (shared by the zone's shells)
-apps/<zone>/<shellName>/shell/        the shell (package @org/shell-<shellName>)
-apps/<zone>/<shellName>/.env.example  shell-level env override (only when needed)
-apps/<zone>/<shellName>/<remote>/     remotes listed only by that shell
-apps/<zone>/shared/<remote>/          remotes listed by two or more shells of the zone
+apps/<zone>/<portal>/shell/           the portal's shell (package @org/shell-<portal>)
+apps/<zone>/<portal>/.env.example     portal-level env override (only when needed)
+apps/<zone>/<portal>/<remote>/        remotes listed only by that portal's shell
+apps/<zone>/shared/<remote>/          remotes listed by two or more portals of the zone
+apps/<zone>/libs/<capability>/        code shared by the zone's apps (not an app, no port)
 ```
 
-Group folders are named after their shell (any name; `shared` is reserved). `gen:remote` puts a
+A **portal** is a folder named after its shell (any name; `shared` and `libs` are reserved).
+`shared/` holds remotes (apps); `libs/` holds code libraries created with
+`pnpm gen:package <zone> <capability>`; business logic for both zones goes to
+`packages/common/<capability>` (`pnpm gen:package common <capability>`). Which one to pick:
+[where-code-goes.md](where-code-goes.md). `gen:remote` puts a
 remote where it belongs from its `--shell` list. The rule is enforced by `pnpm check`
 (`remote-location`): when you add a shell to or remove one from a remote's `remotes.json`, the
 remote must move, and the error message prints the exact command:

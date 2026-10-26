@@ -864,7 +864,23 @@ describe('check-apps', () => {
       assert.deepEqual(rules(r.errors), ['shared-component']);
       assert.match(
         r.errors[0].message,
-        /component StatusPill exists in 2 apps \(apps\/intranet\/intranet\/leave, apps\/intranet\/intranet\/staff\)\. Move it to @org\/ui/,
+        /component StatusPill exists in 2 apps \(apps\/intranet\/intranet\/leave, apps\/intranet\/intranet\/staff\)\. Share one copy: move it to the intranet zone library apps\/intranet\/libs\/<capability> .*or to @org\/ui/,
+      );
+      // one copy per zone: the library is packages/common
+      r = await run(apps, {
+        ...files,
+        ...component(
+          'apps/internet/internet/services/src/components',
+          'StaffCard',
+        ),
+      });
+      assert.deepEqual(rules(r.errors), [
+        'shared-component',
+        'shared-component',
+      ]);
+      assert.match(
+        r.errors.find((e) => e.message.includes('StaffCard'))?.message ?? '',
+        /move it to packages\/common\/<capability> when it is business logic both zones may use .*pnpm move-component <app> StaffCard --to common\/<capability>/,
       );
       r = await checkApps({
         root: makeWorkspace({

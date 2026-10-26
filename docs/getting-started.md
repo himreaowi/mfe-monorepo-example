@@ -69,7 +69,21 @@ pnpm gen:remote internet licences --shell business
 Each shell gets the next free shell port (3101, 3102, …), each remote the next free remote port
 (3110, 3111, …), a route in the shell
 (`/staff-directory/*`) and an entry in the shell's dev manifest. Details:
-[adding-an-app.md](adding-an-app.md).
+[adding-an-app.md](adding-an-app.md). A shell and the remotes only it lists form a **portal**
+(`apps/<zone>/<portal>/`).
+
+Code that several apps share goes into a library, never deployed alone
+([where-code-goes.md](where-code-goes.md)):
+
+```sh
+pnpm gen:package intranet staff-search      # apps/intranet/libs/staff-search: intranet apps only
+pnpm gen:package common identity            # packages/common/identity: both zones, public
+pnpm install
+pnpm move-component @org/intranet-staff-directory StaffCard --to intranet/libs/staff-search
+```
+
+Everything in `packages/common` ships to the internet portals: no confidential or intranet-only
+rules, and the backend enforces the same rules.
 
 ## 4. Run a zone
 

@@ -15,20 +15,21 @@ APIs, manifest, vendor modules).
 
 ## Where code goes
 
-| What                   | Where                                                                                                                                                                                            |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| A new app              | `pnpm gen:shell` / `pnpm gen:remote` ([adding-an-app.md](adding-an-app.md)); never copy an app folder                                                                                            |
-| A UI component         | `@org/ui` first ([Use @org/ui first](#use-orgui-first)); an app-level component only for what is specific to that app                                                                            |
-| Code used by 2+ apps   | a package in `packages/` (tag `type:package`), `workspace:*` dependency                                                                                                                          |
-| Code used by one app   | that app's `src/`                                                                                                                                                                                |
-| Build/test/lint config | the shared config packages (`@org/webpack-config`, `@org/jest-config`, `@org/playwright-config`, `@org/eslint-config`, `@org/tsconfig`, `@org/prettier-config`); apps keep one-line config files |
-| Repo tooling           | `tools/`                                                                                                                                                                                         |
+| What                   | Where                                                                                                                                                                                                                                        |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A new app              | `pnpm gen:shell` / `pnpm gen:remote` ([adding-an-app.md](adding-an-app.md)); never copy an app folder                                                                                                                                        |
+| A UI component         | `@org/ui` first ([Use @org/ui first](#use-orgui-first)); an app-level component only for what is specific to that app                                                                                                                        |
+| Code used by 2+ apps   | one zone: `apps/<zone>/libs/<capability>`; both zones and fine to be public: `packages/common/<capability>` (`pnpm gen:package`, `workspace:*` dependency); never confidential rules in common. See [where-code-goes.md](where-code-goes.md) |
+| Code used by one app   | that app's `src/`                                                                                                                                                                                                                            |
+| Build/test/lint config | the shared config packages (`@org/webpack-config`, `@org/jest-config`, `@org/playwright-config`, `@org/eslint-config`, `@org/tsconfig`, `@org/prettier-config`); apps keep one-line config files                                             |
+| Repo tooling           | `tools/`                                                                                                                                                                                                                                     |
 
 Hard rules (enforced by `pnpm check` and ESLint, see [guardrails.md](guardrails.md)):
 
 - A shell never imports a remote; a remote never imports another remote or a shell; the zones
-  share only `packages/*`.
-- Packages never import apps.
+  share only `packages/common/*` and `packages/platform/*`.
+- Libraries and packages never import apps; `packages/common` never imports zone code;
+  `packages/platform` only platform (import table: [where-code-goes.md](where-code-goes.md)).
 - Every package declares what it imports (isolated `node_modules`, D7). Dependency versions
   follow the tiers in [adding-dependencies.md](adding-dependencies.md).
 

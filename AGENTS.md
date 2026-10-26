@@ -22,13 +22,20 @@ Instructions for AI coding agents (and humans) working in this monorepo. Details
 [--shell <s>] [--private] [--state] [--external [--vendor-format esm|web-component|script]]
 [--title "<text>"]` (`--shell` is required when the zone has several shells), then
   `pnpm install`. Never copy an app folder.
-- Layout: shell `apps/<zone>/<shellName>/shell`, its own remotes `apps/<zone>/<shellName>/<remote>`, remotes
-  listed by 2+ shells `apps/<zone>/shared/<remote>` (`shared` is reserved; nothing names a shell in
-  code). `pnpm check` rule `remote-location` fails on a misplaced remote and prints the fix:
+- Layout: a **portal** `apps/<zone>/<portal>/` = its shell `apps/<zone>/<portal>/shell` + its own
+  remotes `apps/<zone>/<portal>/<remote>`; remotes listed by 2+ portals `apps/<zone>/shared/<remote>`
+  (`shared` and `libs` are reserved; nothing names a portal in code). `pnpm check` rule `remote-location` fails on a misplaced remote and prints the fix:
   `pnpm move-remote <zone> <remote> --to shared|<shellName> [--dry-run]` (git mv + path references +
   install + check). Shell `.env*` live next to `shell/` (`apps/<zone>/<shellName>/.env`).
 - A shell never imports a remote; a remote never imports another remote or a shell; zones
-  (intranet, internet) share only `packages/*`. Shared code → a package in `packages/`.
+  (intranet, internet) share only `packages/common/*` and `packages/platform/*`. Where shared code
+  goes ([docs/where-code-goes.md](docs/where-code-goes.md)): one remote → stays there; generic UI →
+  `@org/ui`; shared within one zone → `apps/<zone>/libs/<capability>`; shared across zones and fine
+  to be public → `packages/common/<capability>`; confidential → never common. Create libraries
+  with `pnpm gen:package <common|zone> <capability>`, move components with
+  `pnpm move-component <app> <Component> --to <zone>/libs/<cap>|common/<cap>`. `packages/common`
+  ships to the internet portals: no confidential or intranet-only rules; the backend enforces the
+  same rules. `pnpm check` (`package-boundaries`) and lint enforce the import table.
 - Dependencies: add to the package that uses it (`pnpm --filter <pkg> add <dep>`). Catalog
   packages use `catalog:`; a library used by 2+ packages goes into the catalog; tier-1
   (`react`, `react-dom`, `react-router`, `@org/ui`, `@org/auth`) never differs. See

@@ -3,12 +3,15 @@
 /**
  * CLI:  gen.js shell <zone> [<name>] [--base-path /<path>] [--layout top|side] [--title "<text>"]
  *       gen.js remote <zone> <name> [--shell <shell>[,<shell>]] [--private] [--state] [--external [--vendor-format <f>]] [--title "<text>"]
- * Root scripts: `pnpm gen:shell <zone> [<name>]`, `pnpm gen:remote <zone> <name> [flags]`.
+ *       gen.js package <common|zone> <capability>
+ * Root scripts: `pnpm gen:shell <zone> [<name>]`, `pnpm gen:remote <zone> <name> [flags]`,
+ * `pnpm gen:package <common|zone> <capability>`.
  */
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import {
   UsageError,
+  generatePackage,
   generateRemote,
   generateShell,
   listShells,
@@ -21,11 +24,20 @@ const listShellCount = (root, zone) => listShells(root, zone).length;
 const USAGE = `Usage:
   pnpm gen:shell <zone> [<name>] [--base-path /<path>] [--layout top|side] [--title "<text>"]
   pnpm gen:remote <zone> <name> [--shell <shell>] [--private] [--state] [--external [--vendor-format <format>]] [--title "<text>"]
+  pnpm gen:package <common|zone> <capability>
   zone: intranet | internet
 
+  A portal is apps/<zone>/<portal>/: one shell (shell/) and the remotes only it lists.
+  gen:package creates a code library, never deployed alone (docs/where-code-goes.md):
+    common <capability>   packages/common/<capability> (@org/common-<capability>): business
+                          logic for both zones. It ships to the public internet portals: no
+                          confidential or intranet-only rules; the backend enforces the same rules
+    <zone> <capability>   apps/<zone>/libs/<capability> (@org/<zone>-<capability>): code shared
+                          by that zone's remotes and shells only
+
 Options:
-  <name>                  gen:shell: the shell's name (apps/<zone>/<name>/shell); default:
-                          the zone, for a zone's only shell. "shared" is reserved
+  <name>                  gen:shell: the portal's name (apps/<zone>/<name>/shell); default:
+                          the zone, for a zone's only portal. "shared" and "libs" are reserved
   --base-path /<path>     gen:shell: where the shell is served (default /). Several shells of a
                           zone share one origin, each under its own path (/citizen, /business);
                           pnpm dev:<zone> serves them all on the zone port through a dev proxy
@@ -138,6 +150,27 @@ async function main() {
     );
     console.log(
       `\nNext:\n  pnpm install\n  pnpm dev:${zone}            # every ${zone} shell + remote: ${r.shells.map((s) => s.url).join(', ')}\n  pnpm --filter ${r.packageName} dev   # this remote standalone`,
+    );
+    return;
+  }
+  if (kind === 'package') {
+    const flags = Object.entries(values).filter(
+      ([key, value]) =>
+        !['root', 'help'].includes(key) &&
+        value !== undefined &&
+        value !== false,
+    );
+    if (extra.length > 0 || flags.length > 0) {
+      throw new UsageError(
+        `gen:package takes a target (common or a zone) and a capability name, no options.\n\n${USAGE}`,
+      );
+    }
+    const r = await generatePackage({ root, target: zone, capability: name });
+    console.log(
+      `Created ${path.relative(root, r.dir)} (${r.packageName}, ${r.target === 'common' ? 'common: both zones, ships to the public internet portals' : `${r.target} zone library`}).`,
+    );
+    console.log(
+      `\nNext:\n  pnpm install\n  pnpm --filter <app package> add ${r.packageName}@workspace:*\n  pnpm move-component <app> <Component> --to ${r.target === 'common' ? 'common' : `${r.target}/libs`}/${name}   # move existing code in`,
     );
     return;
   }

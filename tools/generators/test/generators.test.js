@@ -5,8 +5,15 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
-import { checkApps, checkEnv, checkVersions } from '@org/scripts';
 import {
+  checkApps,
+  checkEnv,
+  checkPackages,
+  checkVersions,
+} from '@org/scripts';
+import {
+  COMMON_WARNING,
+  generatePackage,
   generateRemote,
   generateShell,
   mockVendorConfig,
@@ -1174,6 +1181,182 @@ describe('generators: layout with arbitrary shell names (nothing hardcoded)', ()
     await assert.rejects(
       generateShell({ root, zone: 'internet', name: 'shared' }),
       /"shared" is reserved/,
+    );
+  });
+});
+
+describe('gen:package', () => {
+  it('common: packages/common/<capability>, @org/common-<capability>, the public warning, passes every check', async () => {
+    const root = tempWorkspace();
+    const r = await generatePackage({
+      root,
+      target: 'common',
+      capability: 'identity',
+    });
+    assert.equal(r.dir, path.join(root, 'packages/common/identity'));
+    assert.equal(r.packageName, '@org/common-identity');
+    assert.deepEqual(listFiles(r.dir).sort(), [
+      'README.md',
+      'eslint.config.js',
+      'jest.config.js',
+      'package.json',
+      'src/index.ts',
+      'src/styles.d.ts',
+      'src/utils/formatLabel.test.ts',
+      'src/utils/formatLabel.ts',
+      'tsconfig.json',
+    ]);
+    const pkg = readJson(root, 'packages/common/identity/package.json');
+    assert.deepEqual(pkg.nx, { tags: ['type:common'] });
+    assert.equal(pkg.mfe, undefined);
+    assert.equal(pkg.exports['.'], './src/index.ts');
+    assert.equal(pkg.devDependencies['@org/eslint-config'], 'workspace:*');
+    assert.equal(pkg.devDependencies['@org/jest-config'], 'workspace:*');
+    assert.equal(pkg.devDependencies['@org/tsconfig'], 'workspace:*');
+    for (const file of ['README.md', 'src/index.ts']) {
+      assert.ok(
+        read(root, `packages/common/identity/${file}`).includes(COMMON_WARNING),
+        file,
+      );
+    }
+    assert.equal(
+      COMMON_WARNING,
+      'Everything here ships to the internet portals. No confidential or intranet-only rules. The backend must enforce the same rules.',
+    );
+    assert.match(
+      read(root, 'packages/common/identity/README.md'),
+      /\]\(\.\.\/\.\.\/\.\.\/docs\/where-code-goes\.md\)/,
+    );
+    assert.deepEqual((await checkPackages({ root })).errors, []);
+    assert.deepEqual((await checkVersions({ root })).errors, []);
+  });
+
+  it('zone: apps/<zone>/libs/<capability>, @org/<zone>-<capability>, no app, every check passes', async () => {
+    const root = tempWorkspace();
+    await generateShell({ root, zone: 'intranet' });
+    await generateRemote({ root, zone: 'intranet', name: 'staff' });
+    const r = await generatePackage({
+      root,
+      target: 'intranet',
+      capability: 'staff-search',
+    });
+    assert.equal(r.dir, path.join(root, 'apps/intranet/libs/staff-search'));
+    const pkg = readJson(root, 'apps/intranet/libs/staff-search/package.json');
+    assert.equal(pkg.name, '@org/intranet-staff-search');
+    assert.deepEqual(pkg.nx, { tags: ['zone:intranet', 'type:lib'] });
+    const index = read(root, 'apps/intranet/libs/staff-search/src/index.ts');
+    assert.match(
+      index,
+      /Never imported by the other zone or by packages\/common/,
+    );
+    assert.ok(!index.includes(COMMON_WARNING));
+    assert.match(
+      read(root, 'apps/intranet/libs/staff-search/README.md'),
+      /pnpm move-component <app> <Name> --to intranet\/libs\/staff-search/,
+    );
+    for (const check of [checkApps, checkPackages, checkVersions, checkEnv]) {
+      const result = await check({ root });
+      assert.deepEqual(result.errors, [], check.name);
+    }
+    // not an app: no port taken, the next remote gets the next remote port
+    const next = await generateRemote({
+      root,
+      zone: 'intranet',
+      name: 'leave',
+    });
+    assert.equal(next.port, 3111);
+  });
+
+  it('refuses unknown targets, invalid and reserved names, existing folders and names', async () => {
+    const root = tempWorkspace();
+    await generateShell({ root, zone: 'internet' });
+    await generateRemote({ root, zone: 'internet', name: 'services' });
+    await generatePackage({ root, target: 'common', capability: 'identity' });
+    /** @type {[string, string, RegExp][]} */
+    const cases = [
+      ['public', 'identity', /Unknown target "public"/],
+      ['common', '', /Missing capability name/],
+      ['common', 'Identity', /Invalid capability name/],
+      ['common', 'a', /Invalid capability name/],
+      ['common', 'two--dashes', /Invalid capability name/],
+      ['common', 'x'.repeat(41), /Invalid capability name/],
+      ['common', 'libs', /"libs" is reserved/],
+      ['internet', 'shared', /"shared" is reserved/],
+      ['internet', 'common', /"common" is reserved/],
+      ['common', 'intranet', /"intranet" is reserved/],
+      ['common', 'identity', /packages\/common\/identity already exists/],
+      // the remote apps/internet/internet/services is @org/internet-services
+      [
+        'internet',
+        'services',
+        /@org\/internet-services is already used by apps\/internet\/internet\/services/,
+      ],
+    ];
+    for (const [target, capability, error] of cases) {
+      await assert.rejects(
+        generatePackage({ root, target, capability }),
+        error,
+        `${target} ${capability}`,
+      );
+    }
+  });
+
+  it('arbitrary valid names generate packages that pass the checks', async () => {
+    const root = tempWorkspace();
+    const names = ['ab', 'a1', 'address-lookup', 'x9-y8-z7', 'p'.repeat(40)];
+    for (const [i, capability] of names.entries()) {
+      const target = ['common', 'intranet', 'internet'][i % 3];
+      const r = await generatePackage({ root, target, capability });
+      assert.equal(
+        readJson(root, path.relative(root, path.join(r.dir, 'package.json')))
+          .name,
+        `@org/${target}-${capability}`,
+      );
+    }
+    assert.deepEqual((await checkPackages({ root })).errors, []);
+  });
+
+  it('a remote cannot take the name of a zone library, and "libs" is no portal or remote name', async () => {
+    const root = tempWorkspace();
+    await generateShell({ root, zone: 'intranet' });
+    await generatePackage({ root, target: 'intranet', capability: 'people' });
+    await assert.rejects(
+      generateRemote({ root, zone: 'intranet', name: 'people' }),
+      /@org\/intranet-people is already used by apps\/intranet\/libs\/people/,
+    );
+    await assert.rejects(
+      generateRemote({ root, zone: 'intranet', name: 'libs' }),
+      /"libs" is reserved/,
+    );
+    await assert.rejects(
+      generateShell({ root, zone: 'intranet', name: 'libs' }),
+      /"libs" is reserved/,
+    );
+  });
+
+  it('CLI: pnpm gen:package prints the next steps and refuses options', () => {
+    const root = tempWorkspace();
+    const out = execFileSync(
+      process.execPath,
+      [BIN, 'package', 'common', 'addresses', '--root', root],
+      { encoding: 'utf8' },
+    );
+    assert.match(
+      out,
+      /Created packages\/common\/addresses \(@org\/common-addresses/,
+    );
+    assert.match(
+      out,
+      /pnpm move-component <app> <Component> --to common\/addresses/,
+    );
+    assert.throws(
+      () =>
+        execFileSync(
+          process.execPath,
+          [BIN, 'package', 'intranet', 'x2', '--private', '--root', root],
+          { encoding: 'utf8', stdio: 'pipe' },
+        ),
+      /no options/,
     );
   });
 });

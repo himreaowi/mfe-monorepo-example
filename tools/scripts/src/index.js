@@ -1,6 +1,14 @@
 // @ts-check
 export { checkVersions, validateExceptions, today } from './check-versions.js';
 export { checkApps } from './check-apps.js';
+export {
+  checkPackages,
+  allowedSentence,
+  isAllowed,
+  layerTags,
+  sideOf,
+  WHERE_CODE_GOES,
+} from './check-packages.js';
 export { checkEnv, documentedVariables } from './check-env.js';
 export {
   ENV_EXAMPLE_FILE,
@@ -52,6 +60,14 @@ export {
   writeDevManifest,
 } from './dev-manifest.js';
 export {
+  COMMON_DIR,
+  LIBS_GROUP,
+  PLATFORM_DIR,
+  RESERVED_GROUPS,
+  SCOPE,
+  libraryDir,
+  libraryPackageName,
+  packageLayer,
   SHARED_GROUP,
   SHELL_FOLDER,
   remoteTarget,
@@ -59,3 +75,8 @@ export {
   splitAppDir,
 } from './layout.js';
 export { MoveError, moveRemote, planMove } from './move-remote.js';
+export {
+  MoveComponentError,
+  moveComponent,
+  planComponentMove,
+} from './move-component.js';

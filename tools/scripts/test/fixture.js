@@ -72,7 +72,7 @@ export function entry(
  * @param {{
  *   catalog?: Record<string, string>,
  *   apps?: Record<string, object>,          // 'intranet/intranet/staff' → package.json
- *   packages?: Record<string, object>,      // 'ui' → package.json
+ *   packages?: Record<string, object>,      // 'ui' / 'common/identity' → package.json
  *   files?: Record<string, string | object>,
  *   exceptions?: unknown,
  *   rootMfe?: Record<string, unknown>,      // root package.json "mfe" (zones, tools)
@@ -96,6 +96,7 @@ export function makeWorkspace(o = {}) {
       'packages:',
       '  - apps/**',
       '  - packages/platform/*',
+      '  - packages/common/*',
       'catalog:',
       ...Object.entries(catalog).map(([k, v]) => `  '${k}': ${v}`),
       '',
@@ -111,12 +112,17 @@ export function makeWorkspace(o = {}) {
     ui: {
       name: '@org/ui',
       version: '0.1.0',
+      nx: { tags: ['type:package'] },
       peerDependencies: { react: '^19.0.0' },
       devDependencies: { react: 'catalog:', typescript: 'catalog:' },
     },
   };
   for (const [dir, pkg] of Object.entries(packages)) {
-    write(`packages/platform/${dir}/package.json`, pkg);
+    // 'ui' → packages/platform/ui; 'common/identity' → packages/common/identity
+    write(
+      `packages/${dir.includes('/') ? dir : `platform/${dir}`}/package.json`,
+      pkg,
+    );
   }
   for (const [dir, pkg] of Object.entries(o.apps ?? {})) {
     write(`apps/${dir}/package.json`, pkg);
@@ -190,3 +196,24 @@ export function validRegistries() {
 
 /** @param {{ rule: string }[]} issues */
 export const rules = (issues) => issues.map((i) => i.rule).sort();
+
+/**
+ * A code library: `common` → @org/common-<capability>, a zone → @org/<zone>-<capability>.
+ * @param {string} target
+ * @param {string} capability
+ * @param {{ deps?: Record<string, string>, extra?: Record<string, unknown> }} [o]
+ */
+export function lib(target, capability, o = {}) {
+  return {
+    name: `@org/${target}-${capability}`,
+    version: '0.0.0',
+    private: true,
+    exports: { '.': './src/index.ts' },
+    nx: {
+      tags:
+        target === 'common' ? ['type:common'] : [`zone:${target}`, 'type:lib'],
+    },
+    dependencies: { ...(o.deps ?? {}) },
+    ...(o.extra ?? {}),
+  };
+}
