@@ -53,6 +53,23 @@ describe('StaffDetail', () => {
     ).toHaveAttribute('href', '/staff');
   });
 
+  it('shows the NRIC masked and never in full', () => {
+    const { container } = renderDetail({
+      status: 'success',
+      data: { ...priya, nric: 'S1234567D' },
+      reload,
+    });
+    expect(screen.getByText('NRIC')).toBeInTheDocument();
+    expect(screen.getByTestId('staff-nric')).toHaveTextContent('S****567D');
+    expect(container.textContent).not.toContain('S1234567D');
+    expect(container.textContent).not.toContain('1234');
+  });
+
+  it('shows no NRIC row when the API sends none', () => {
+    renderDetail({ status: 'success', data: priya, reload });
+    expect(screen.queryByText('NRIC')).not.toBeInTheDocument();
+  });
+
   it('shows loading', () => {
     renderDetail({ status: 'loading', reload });
     expect(screen.getByRole('status')).toHaveTextContent('Loading');

@@ -30,6 +30,22 @@ describe('AddItemForm', () => {
     expect(input).toHaveFocus();
   });
 
+  it('requires a valid UEN: summary link and field error, nothing sent', async () => {
+    const { user, onCreate } = renderForm();
+    await user.type(screen.getByLabelText('Name'), 'Corner Cafe');
+    await user.type(screen.getByLabelText(/^UEN/), '12345');
+    await user.click(screen.getByRole('button', { name: 'Add item' }));
+    const summary = screen.getByTestId('error-summary');
+    expect(summary).toHaveFocus();
+    expect(summary).toHaveTextContent('Enter a valid UEN');
+    const field = screen.getByLabelText(/^UEN/);
+    expect(field).toBeRequired();
+    expect(field).toHaveAttribute('aria-invalid', 'true');
+    expect(onCreate).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('link', { name: /Enter a valid UEN/ }));
+    expect(field).toHaveFocus();
+  });
+
   it('submit shows loading only while sending, then reports success', async () => {
     let resolve: (value: CreateItemResult) => void = () => undefined;
     const onCreate = jest.fn(
@@ -37,8 +53,12 @@ describe('AddItemForm', () => {
     );
     const { user, onCreated } = renderForm(onCreate);
     await user.type(screen.getByLabelText('Name'), 'New item');
+    await user.type(screen.getByLabelText(/^UEN/), ' 201912345K ');
     await user.click(screen.getByRole('button', { name: 'Add item' }));
-    expect(onCreate).toHaveBeenCalledWith({ name: 'New item' });
+    expect(onCreate).toHaveBeenCalledWith({
+      name: 'New item',
+      uen: '201912345K',
+    });
     expect(screen.getByRole('button', { name: 'Adding…' })).toHaveAttribute(
       'aria-disabled',
       'true',
@@ -48,6 +68,7 @@ describe('AddItemForm', () => {
     expect(screen.getByRole('button', { name: 'Add item' })).toBeEnabled();
     expect(onCreated).toHaveBeenCalledWith(expect.objectContaining({ id: 9 }));
     expect(screen.getByLabelText('Name')).toHaveValue('');
+    expect(screen.getByLabelText(/^UEN/)).toHaveValue('');
   });
 
   it('shows server 422 field errors in the same summary and field', async () => {
@@ -59,6 +80,7 @@ describe('AddItemForm', () => {
       }),
     );
     await user.type(screen.getByLabelText('Name'), 'Getting started');
+    await user.type(screen.getByLabelText(/^UEN/), '201912345K');
     await user.click(screen.getByRole('button', { name: 'Add item' }));
     expect(await screen.findByTestId('error-summary')).toHaveTextContent(
       'An item with this name already exists.',
@@ -77,6 +99,7 @@ describe('AddItemForm', () => {
       }),
     );
     await user.type(screen.getByLabelText('Name'), 'x');
+    await user.type(screen.getByLabelText(/^UEN/), '201912345K');
     await user.click(screen.getByRole('button', { name: 'Add item' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(
       /Could not add the item/,

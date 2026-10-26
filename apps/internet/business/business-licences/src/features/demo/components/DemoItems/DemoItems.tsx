@@ -9,6 +9,11 @@ const columns: TableColumn<Item>[] = [
   { key: 'name', header: 'Name', rowHeader: true, sortable: true },
   { key: 'description', header: 'Description' },
 ];
+/** The UEN column appears once an item has one (the seed items have none). */
+const columnsWithUen: TableColumn<Item>[] = [
+  ...columns,
+  { key: 'uen', header: 'UEN' },
+];
 
 export type DemoItemsProps = {
   /** From `useItems()`, called by the page. */
@@ -68,7 +73,9 @@ export function DemoItems({
             <Table
               caption="Items"
               captionHidden
-              columns={columns}
+              columns={
+                state.items.some((item) => item.uen) ? columnsWithUen : columns
+              }
               rows={state.items}
               getRowKey={(item) => item.id}
               data-testid="demo-item-list"

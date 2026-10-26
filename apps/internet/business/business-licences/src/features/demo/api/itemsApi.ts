@@ -13,6 +13,7 @@ function toItem(value: unknown): Item {
     id: raw.id,
     name: raw.name,
     description: typeof raw.description === 'string' ? raw.description : '',
+    ...(typeof raw.uen === 'string' ? { uen: raw.uen } : {}),
   };
 }
 
@@ -34,15 +35,18 @@ export async function createItem(
   return toItem(await http.postJson<unknown>(apiRoutes.items.list(), draft));
 }
 
-/** Field errors of a 422 response (`{ errors: { name: "…" } }`), if that is what failed. */
+/** Field errors of a 422 response (`{ errors: { name: "…", uen: "…" } }`), if that is what failed. */
 export function readFieldErrors(error: unknown): ItemFieldErrors | undefined {
   if (!(error instanceof HttpClientError) || error.status !== 422) {
     return undefined;
   }
   const errors = (error.body as { errors?: unknown } | undefined)?.errors;
   if (!errors || typeof errors !== 'object') return undefined;
-  const name = (errors as Record<string, unknown>).name;
-  return typeof name === 'string' ? { name } : undefined;
+  const { name, uen } = errors as Record<string, unknown>;
+  const fieldErrors: ItemFieldErrors = {};
+  if (typeof name === 'string') fieldErrors.name = name;
+  if (typeof uen === 'string') fieldErrors.uen = uen;
+  return Object.keys(fieldErrors).length > 0 ? fieldErrors : undefined;
 }
 
 /** A message for the UI: operation + status, never a stack trace. */

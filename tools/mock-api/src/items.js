@@ -7,9 +7,16 @@
 import { json, notFound, validationError } from './server.js';
 
 /** @typedef {import('./server.js').MockResource} MockResource */
-/** @typedef {{ id: number, name: string, description: string }} Item */
+/** @typedef {{ id: number, name: string, description: string, uen?: string }} Item */
 
 export const NAME_MAX_LENGTH = 80;
+
+/**
+ * UEN shapes (business, local company, other entities). A rough copy of the rule the business
+ * form checks in the browser: a real backend applies the same rules itself, the browser check is
+ * only fast feedback.
+ */
+const UEN = /^(\d{8}[A-Z]|\d{9}[A-Z]|[TSR]\d{2}[A-Z]{2}\d{4}[A-Z])$/;
 
 /** @param {string} zone @returns {Item[]} */
 function seed(zone) {
@@ -70,7 +77,7 @@ export function createItemsResource(zone) {
         path: '/items',
         handler: ({ body }) => {
           const input =
-            /** @type {{ name?: unknown, description?: unknown }} */ (
+            /** @type {{ name?: unknown, description?: unknown, uen?: unknown }} */ (
               body ?? {}
             );
           const name = typeof input.name === 'string' ? input.name.trim() : '';
@@ -83,12 +90,18 @@ export function createItemsResource(zone) {
             items.some((i) => i.name.toLowerCase() === name.toLowerCase())
           )
             errors.name = 'An item with this name already exists.';
+          // optional (other remotes post items without one); malformed is rejected
+          const uen =
+            typeof input.uen === 'string' ? input.uen.trim().toUpperCase() : '';
+          if (input.uen !== undefined && input.uen !== '' && !UEN.test(uen))
+            errors.uen = 'Enter a valid UEN.';
           if (Object.keys(errors).length > 0) return validationError(errors);
           const item = {
             id: Math.max(0, ...items.map((i) => i.id)) + 1,
             name,
             description:
               typeof input.description === 'string' ? input.description : '',
+            ...(uen ? { uen } : {}),
           };
           items = [...items, item];
           return json(201, item);

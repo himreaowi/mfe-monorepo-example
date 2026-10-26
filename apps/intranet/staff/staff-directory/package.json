@@ -37,6 +37,7 @@
   },
   "dependencies": {
     "@org/auth": "workspace:*",
+    "@org/common-identity": "workspace:*",
     "@org/design-tokens": "workspace:*",
     "@org/http-client": "workspace:*",
     "@org/intranet-directory": "workspace:*",

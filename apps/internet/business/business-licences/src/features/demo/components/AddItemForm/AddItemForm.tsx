@@ -6,7 +6,12 @@ import type { Item, ItemDraft, ItemFieldErrors } from '../../types/item';
 import { validateItemDraft } from '../../utils/validation';
 import styles from './AddItemForm.module.scss';
 
-const NAME_ID = `${FEDERATION_NAME}-item-name`;
+const FIELD_IDS = {
+  name: `${FEDERATION_NAME}-item-name`,
+  uen: `${FEDERATION_NAME}-item-uen`,
+} as const;
+/** Order of the fields in the error summary. */
+const FIELD_ORDER = ['name', 'uen'] as const;
 
 /**
  * The form pattern of docs/coding-conventions.md: validate on submit, then an error summary
@@ -25,6 +30,7 @@ export function AddItemForm({
   onCreated: (item: Item) => void;
 }) {
   const [name, setName] = useState('');
+  const [uen, setUen] = useState('');
   const [errors, setErrors] = useState<ItemFieldErrors>({});
   const [formError, setFormError] = useState('');
   const [status, setStatus] = useState('');
@@ -32,6 +38,8 @@ export function AddItemForm({
   const [failedSubmits, setFailedSubmits] = useState(0);
   const summaryRef = useRef<HTMLDivElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
+  const uenRef = useRef<HTMLInputElement>(null);
+  const refs = { name: nameRef, uen: uenRef };
 
   // move focus to the summary after each failed submit
   useEffect(() => {
@@ -47,7 +55,7 @@ export function AddItemForm({
     event.preventDefault();
     setStatus('');
     setFormError('');
-    const draft = { name: name.trim() };
+    const draft = { name: name.trim(), uen: uen.trim() };
     const clientErrors = validateItemDraft(draft);
     if (Object.keys(clientErrors).length > 0) {
       showErrors(clientErrors);
@@ -60,6 +68,7 @@ export function AddItemForm({
     if (result.ok) {
       onCreated(result.item);
       setName('');
+      setUen('');
       setStatus(`Added “${result.item.name}”.`);
     } else if (result.fieldErrors) {
       showErrors(result.fieldErrors);
@@ -68,7 +77,7 @@ export function AddItemForm({
     }
   }
 
-  const fieldErrors = Object.entries(errors).filter(([, message]) => message);
+  const fieldErrors = FIELD_ORDER.filter((field) => errors[field]);
 
   return (
     <form
@@ -91,16 +100,16 @@ export function AddItemForm({
           data-testid="error-summary"
         >
           <ul>
-            {fieldErrors.map(([field, message]) => (
+            {fieldErrors.map((field) => (
               <li key={field}>
                 <a
-                  href={`#${NAME_ID}`}
+                  href={`#${FIELD_IDS[field]}`}
                   onClick={(event) => {
                     event.preventDefault();
-                    nameRef.current?.focus();
+                    refs[field].current?.focus();
                   }}
                 >
-                  {message}
+                  {errors[field]}
                 </a>
               </li>
             ))}
@@ -110,7 +119,7 @@ export function AddItemForm({
       {formError ? <Alert variant="error">{formError}</Alert> : null}
       <TextField
         ref={nameRef}
-        id={NAME_ID}
+        id={FIELD_IDS.name}
         label="Name"
         name="name"
         className={styles.field}
@@ -118,6 +127,20 @@ export function AddItemForm({
         autoComplete="off"
         error={errors.name}
         onChange={(event) => setName(event.target.value)}
+      />
+      <TextField
+        ref={uenRef}
+        id={FIELD_IDS.uen}
+        label="UEN"
+        hint="Unique Entity Number of the business, for example 201912345K"
+        required
+        name="uen"
+        className={styles.field}
+        value={uen}
+        autoComplete="off"
+        autoCapitalize="characters"
+        error={errors.uen}
+        onChange={(event) => setUen(event.target.value)}
       />
       <div className={styles.row}>
         <Button type="submit" loading={sending}>

@@ -32,7 +32,9 @@ describe('useCreateItem', () => {
   it('returns the created item', async () => {
     createItemMock.mockResolvedValue({ id: 3, name: 'x', description: '' });
     const { result } = renderHook(() => useCreateItem(), { wrapper });
-    await expect(result.current({ name: 'x' })).resolves.toEqual({
+    await expect(
+      result.current({ name: 'x', uen: '201912345K' }),
+    ).resolves.toEqual({
       ok: true,
       item: { id: 3, name: 'x', description: '' },
     });
@@ -45,12 +47,16 @@ describe('useCreateItem', () => {
         errors: { name: 'Already exists.' },
       }),
     );
-    await expect(result.current({ name: 'x' })).resolves.toMatchObject({
+    await expect(
+      result.current({ name: 'x', uen: '201912345K' }),
+    ).resolves.toMatchObject({
       ok: false,
       fieldErrors: { name: 'Already exists.' },
     });
     createItemMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
-    await expect(result.current({ name: 'x' })).resolves.toEqual({
+    await expect(
+      result.current({ name: 'x', uen: '201912345K' }),
+    ).resolves.toEqual({
       ok: false,
       message: 'Could not add the item. Check your connection and try again.',
     });
@@ -58,7 +64,9 @@ describe('useCreateItem', () => {
 
   it('reports a missing API instead of calling it', async () => {
     const { result } = renderHook(() => useCreateItem());
-    await expect(result.current({ name: 'x' })).resolves.toMatchObject({
+    await expect(
+      result.current({ name: 'x', uen: '201912345K' }),
+    ).resolves.toMatchObject({
       ok: false,
     });
     expect(createItemMock).not.toHaveBeenCalled();

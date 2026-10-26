@@ -15,6 +15,8 @@ export type StaffLink = { id: string; name: string };
 export type StaffMember = StaffSummary & {
   skills: string[];
   startDate: string;
+  /** NRIC number (staff-only data). Show it only through `maskNric`, never in full. */
+  nric?: string;
   manager: StaffLink | null;
   directReports: StaffLink[];
 };

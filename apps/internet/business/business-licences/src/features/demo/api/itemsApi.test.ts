@@ -39,11 +39,13 @@ describe('itemsApi', () => {
         body: { id: 4, ...(body as object) },
       }),
     });
-    await expect(createItem(http, { name: 'New' })).resolves.toMatchObject({
+    await expect(
+      createItem(http, { name: 'New', uen: '201912345K' }),
+    ).resolves.toMatchObject({
       id: 4,
       name: 'New',
     });
-    expect(fetch.calls[0].body).toEqual({ name: 'New' });
+    expect(fetch.calls[0].body).toEqual({ name: 'New', uen: '201912345K' });
   });
 
   it('reads 422 field errors, ignores other failures', async () => {
@@ -53,9 +55,10 @@ describe('itemsApi', () => {
         body: { message: 'Invalid', errors: { name: 'Already exists.' } },
       },
     });
-    const error = await createItem(http, { name: 'x' }).catch(
-      (e: unknown) => e,
-    );
+    const error = await createItem(http, {
+      name: 'x',
+      uen: '201912345K',
+    }).catch((e: unknown) => e);
     expect(error).toBeInstanceOf(HttpClientError);
     expect(readFieldErrors(error)).toEqual({ name: 'Already exists.' });
     expect(readFieldErrors(new Error('offline'))).toBeUndefined();

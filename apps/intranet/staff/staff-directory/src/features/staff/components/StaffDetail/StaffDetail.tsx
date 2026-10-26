@@ -1,4 +1,5 @@
 import { Link } from 'react-router';
+import { maskNric } from '@org/common-identity';
 import { useRemotePath } from '@org/mf-runtime/remote';
 import { RemoteFallback, Spinner } from '@org/ui';
 import type { ApiResult } from '@org/use-api';
@@ -80,6 +81,12 @@ export function StaffDetail({
         <dd>
           <a href={`tel:${person.phone.replace(/\s/g, '')}`}>{person.phone}</a>
         </dd>
+        {person.nric ? (
+          <>
+            <dt>NRIC</dt>
+            <dd data-testid="staff-nric">{maskNric(person.nric)}</dd>
+          </>
+        ) : null}
         <dt>Manager</dt>
         <dd>
           {person.manager ? <PersonLink person={person.manager} /> : 'None'}

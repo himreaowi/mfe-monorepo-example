@@ -86,6 +86,21 @@ describe('mock API (intranet)', () => {
     assert.equal((await api.call(`/api/items/${ok.body.id}`)).res.status, 200);
   });
 
+  it('accepts an optional UEN on items and rejects a malformed one', async () => {
+    const post = (/** @type {unknown} */ uen) =>
+      api.call('/api/items', {
+        method: 'POST',
+        body: JSON.stringify({ name: `Shop ${String(uen)}`, uen }),
+      });
+    const ok = await post(' 201912345k ');
+    assert.equal(ok.res.status, 201);
+    assert.equal(ok.body.uen, '201912345K');
+    assert.equal((await post('T09LL0001B')).res.status, 201);
+    const bad = await post('12345');
+    assert.equal(bad.res.status, 422);
+    assert.deepEqual(bad.body.errors, { uen: 'Enter a valid UEN.' });
+  });
+
   it('POST /__reset restores the seed', async () => {
     await api.call('/api/items', {
       method: 'POST',
