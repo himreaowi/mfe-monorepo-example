@@ -2,13 +2,14 @@
 // @ts-check
 /**
  * Repo guardrails: `pnpm check` (also part of `pnpm lint`).
- *   check.js [--only versions|apps|env] [--root <dir>]
+ *   check.js [--only versions|apps|packages|env] [--root <dir>]
  */
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import {
   checkApps,
   checkEnv,
+  checkPackages,
   checkVersions,
   formatReport,
 } from '../src/index.js';
@@ -25,13 +26,16 @@ const root = path.resolve(
 const all = {
   'check-versions': () => checkVersions({ root }),
   'check-apps': () => checkApps({ root }),
+  'check-packages': () => checkPackages({ root }),
   'check-env': () => checkEnv({ root }),
 };
 const selected = values.only
   ? Object.entries(all).filter(([name]) => name === `check-${values.only}`)
   : Object.entries(all);
 if (selected.length === 0) {
-  console.error(`Unknown --only "${values.only}" (use versions, apps or env).`);
+  console.error(
+    `Unknown --only "${values.only}" (use versions, apps, packages or env).`,
+  );
   process.exit(2);
 }
 /** @type {{ errors: import('../src/check-versions.js').Issue[], warnings: import('../src/check-versions.js').Issue[] }} */

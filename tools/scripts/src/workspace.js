@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import YAML from 'yaml';
+import { LIBS_GROUP } from './layout.js';
 
 /** Dependency fields checked (peerDependencies express compatibility ranges, not installs). */
 export const DEP_FIELDS = /** @type {const} */ ([
@@ -91,6 +92,8 @@ export function loadWorkspace(root) {
 /**
  * Package.json files of every app, apps/<zone>/<group>/<folder> (also the old flat
  * apps/<zone>/<name> and deeper paths, so misplaced apps are found and reported by the check).
+ * The zone libraries in apps/<zone>/libs/ are code packages, not apps: they are skipped here
+ * (check-packages.js checks them).
  * @param {string} root
  * @returns {WorkspacePackage[]}
  */
@@ -99,7 +102,7 @@ export function loadApps(root) {
   return fs
     .globSync('apps/**/package.json', {
       cwd: root,
-      exclude: ['**/node_modules/**', '**/dist/**'],
+      exclude: ['**/node_modules/**', '**/dist/**', `apps/*/${LIBS_GROUP}/**`],
     })
     .map(toPosix)
     .sort()

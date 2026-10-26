@@ -1,7 +1,10 @@
 packages:
-  # apps/<zone>/<shell>/{shell,<remote>} and apps/<zone>/shared/<remote> (tools/scripts/src/layout.js)
+  # apps/<zone>/<portal>/{shell,<remote>}, apps/<zone>/shared/<remote> and the zone libraries
+  # apps/<zone>/libs/<capability> (tools/scripts/src/layout.js, docs/where-code-goes.md)
   - apps/*/*/*
+  # plumbing (@org/ui, configs, runtime) and business logic for both zones (@org/common-<capability>)
   - packages/platform/*
+  - packages/common/*
   - tools/*
 
 # Isolated layout: every app/package gets its own node_modules with only its declared deps (D7).
