@@ -18,7 +18,8 @@
     "mfe-apps": "./bin/list-apps.js",
     "mfe-validate-manifest": "./bin/validate-manifest.js",
     "mfe-dev-manifest": "./bin/dev-manifest.js",
-    "mfe-move-remote": "./bin/move-remote.js"
+    "mfe-move-remote": "./bin/move-remote.js",
+    "mfe-move-component": "./bin/move-component.js"
   },
   "scripts": {
     "lint": "eslint .",

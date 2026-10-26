@@ -3,6 +3,7 @@ export { checkVersions, validateExceptions, today } from './check-versions.js';
 export { checkApps } from './check-apps.js';
 export {
   checkPackages,
+  allowedSentence,
   isAllowed,
   layerTags,
   sideOf,
@@ -74,3 +75,8 @@ export {
   splitAppDir,
 } from './layout.js';
 export { MoveError, moveRemote, planMove } from './move-remote.js';
+export {
+  MoveComponentError,
+  moveComponent,
+  planComponentMove,
+} from './move-component.js';
