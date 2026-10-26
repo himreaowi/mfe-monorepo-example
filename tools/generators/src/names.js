@@ -4,12 +4,17 @@
 /** @typedef {import('@org/scripts/zones').Zone} Zone */
 
 import { ZONES } from '@org/scripts/zones';
-import { SHARED_GROUP, SHELL_FOLDER } from '@org/scripts/layout';
+import {
+  LIBS_GROUP,
+  RESERVED_GROUPS,
+  SCOPE,
+  SHARED_GROUP,
+  SHELL_FOLDER,
+  libraryDir,
+  libraryPackageName,
+} from '@org/scripts/layout';
 
-export { ZONES };
-
-/** npm scope of every generated package. */
-export const SCOPE = '@org';
+export { ZONES, SCOPE };
 
 const REMOTE_NAME = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 const RESERVED = new Set([
@@ -25,6 +30,10 @@ const RESERVED = new Set([
   'assets',
   'static',
   'api',
+  // folders with a meaning of their own (apps/<zone>/shared, apps/<zone>/libs, packages/common, …)
+  ...RESERVED_GROUPS,
+  'common',
+  'platform',
 ]);
 
 /**
@@ -144,7 +153,12 @@ export function assertShellName(name) {
   }
   if (name === SHARED_GROUP) {
     throw new UsageError(
-      `"${SHARED_GROUP}" is reserved: apps/<zone>/${SHARED_GROUP}/ holds the remotes that two or more shells list. Pick another shell name.`,
+      `"${SHARED_GROUP}" is reserved: apps/<zone>/${SHARED_GROUP}/ holds the remotes that two or more shells list. Pick another portal name.`,
+    );
+  }
+  if (name === LIBS_GROUP) {
+    throw new UsageError(
+      `"${LIBS_GROUP}" is reserved: apps/<zone>/${LIBS_GROUP}/ holds the zone's code libraries (pnpm gen:package <zone> <capability>). Pick another portal name.`,
     );
   }
 }
@@ -193,6 +207,50 @@ export function remoteNames(zone, name, opts = {}) {
     title:
       opts.title !== undefined ? assertTitle(opts.title) : titleFromName(name),
     routePath: `/${name}`,
+  };
+}
+
+/** Where `pnpm gen:package` puts a library: `common` or a zone. */
+export const PACKAGE_TARGETS = /** @type {const} */ ([
+  'common',
+  ...Object.keys(ZONES),
+]);
+
+/**
+ * Validate a library capability name (kebab-case: folder and package name suffix).
+ * @param {unknown} name
+ * @returns {asserts name is string}
+ */
+export function assertCapabilityName(name) {
+  if (typeof name !== 'string' || name.length === 0) {
+    throw new UsageError(
+      'Missing capability name (e.g. identity, staff-search).',
+    );
+  }
+  if (!REMOTE_NAME.test(name) || name.length < 2 || name.length > 40) {
+    throw new UsageError(
+      `Invalid capability name "${name}". Use kebab-case, 2 to 40 characters: lowercase letters and digits separated by single "-", starting with a letter (e.g. identity, staff-search).`,
+    );
+  }
+  if (RESERVED.has(name) || Object.hasOwn(ZONES, name)) {
+    throw new UsageError(
+      `Invalid capability name "${name}": "${name}" is reserved. Name the library after what it does (e.g. identity, addresses).`,
+    );
+  }
+}
+
+/**
+ * Names derived for a code library (`pnpm gen:package <common|zone> <capability>`).
+ * @param {string} target `common` or a zone
+ * @param {string} capability
+ */
+export function packageNames(target, capability) {
+  return {
+    target,
+    capability,
+    dir: libraryDir(target, capability),
+    packageName: libraryPackageName(target, capability),
+    title: titleFromName(capability),
   };
 }
 

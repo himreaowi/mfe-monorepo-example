@@ -65,6 +65,7 @@
     "dev:internet": "node tools/scripts/bin/dev.js --zone=internet",
     "gen:shell": "node tools/generators/bin/gen.js shell",
     "gen:remote": "node tools/generators/bin/gen.js remote",
+    "gen:package": "node tools/generators/bin/gen.js package",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

@@ -3,7 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { ZONES, UsageError } from './names.js';
-import { SHARED_GROUP, SHELL_FOLDER } from '@org/scripts/layout';
+import { LIBS_GROUP, SHARED_GROUP, SHELL_FOLDER } from '@org/scripts/layout';
 
 /** @typedef {import('./names.js').Zone} Zone */
 
@@ -31,7 +31,8 @@ export function readJson(file) {
 }
 
 /**
- * Every app (folder with a package.json) in `apps/<zone>/<group>/<folder>`.
+ * Every app (folder with a package.json) in `apps/<zone>/<group>/<folder>` (not the zone
+ * libraries in `apps/<zone>/libs/`).
  * @param {string} root
  * @param {Zone} zone
  * @returns {{ dir: string, group: string, pkg: any }[]}
@@ -46,6 +47,7 @@ export function listZoneApps(root, zone) {
       .filter((d) => d.isDirectory() && d.name !== 'node_modules')
       .map((d) => path.join(dir, d.name));
   return subdirs(zoneDir)
+    .filter((groupDir) => path.basename(groupDir) !== LIBS_GROUP) // code, not apps
     .flatMap((groupDir) =>
       subdirs(groupDir).map((dir) => ({ dir, group: path.basename(groupDir) })),
     )

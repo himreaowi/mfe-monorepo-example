@@ -12,6 +12,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
   ENV_EXAMPLE_FILE,
+  layerTags,
+  loadWorkspace,
   renderShellEnvExample,
   syncZoneEnvExample,
   writeDevManifest,
@@ -23,17 +25,19 @@ import {
   toolPort,
 } from '@org/scripts/zones';
 import {
+  PACKAGE_TARGETS,
   UsageError,
   ZONES,
+  assertCapabilityName,
   assertRemoteName,
   assertZone,
+  packageNames,
   remoteNames,
   shellNames,
 } from './names.js';
 import {
   REGISTRY_FILE,
   allocatePort,
-  listAllApps,
   listShells,
   readJson,
   readRegistry,
@@ -305,7 +309,7 @@ function appPackageJson(o) {
 }
 
 /**
- * Refuse to write into an existing folder, or to reuse a package name.
+ * Refuse to write into an existing folder, or to reuse a package name (of any workspace package).
  * @param {string} root
  * @param {string} dir
  * @param {string} packageName
@@ -316,10 +320,13 @@ function assertFree(root, dir, packageName) {
       `${path.relative(root, dir)} already exists. Generators never overwrite; delete it first or pick another name.`,
     );
   }
-  const clash = listAllApps(root).find((a) => a.pkg?.name === packageName);
+  // every workspace package: a zone library @org/<zone>-<x> and a remote <x> would clash
+  const clash = loadWorkspace(root).packages.find(
+    (p) => p.dir !== '.' && p.name === packageName,
+  );
   if (clash) {
     throw new UsageError(
-      `Package name ${packageName} is already used by ${path.relative(root, clash.dir)}.`,
+      `Package name ${packageName} is already used by ${clash.dir}. Pick another name.`,
     );
   }
 }
@@ -612,4 +619,95 @@ export async function generateRemote({
       url: `${shellUrl(zone, s.basePath)}${names.routePath}`,
     })),
   };
+}
+
+/** The warning every packages/common package carries (README and src/index.ts). */
+export const COMMON_WARNING =
+  'Everything here ships to the internet portals. No confidential or intranet-only rules. The backend must enforce the same rules.';
+
+/** Dev tooling of a code library (components and plain functions, tests in jsdom). */
+const PACKAGE_DEV_DEPENDENCIES = {
+  '@org/eslint-config': 'workspace:*',
+  '@org/jest-config': 'workspace:*',
+  '@org/tsconfig': 'workspace:*',
+  '@testing-library/dom': 'catalog:',
+  '@testing-library/jest-dom': 'catalog:',
+  '@testing-library/react': 'catalog:',
+  '@testing-library/user-event': 'catalog:',
+  '@types/jest': 'catalog:',
+  '@types/node': 'catalog:',
+  '@types/react': 'catalog:',
+  '@types/react-dom': 'catalog:',
+  eslint: 'catalog:',
+  jest: 'catalog:',
+  prettier: 'catalog:',
+  react: 'catalog:',
+  'react-dom': 'catalog:',
+  typescript: 'catalog:',
+};
+
+/**
+ * Generate a code library: packages/common/<capability> (`target` common, package
+ * @org/common-<capability>) or apps/<zone>/libs/<capability> (`target` a zone, package
+ * @org/<zone>-<capability>). No port, no webpack config: the apps that import it bundle it.
+ * @param {{ root: string, target: string, capability: string }} options
+ * @returns {Promise<{ dir: string, packageName: string, target: string }>}
+ */
+export async function generatePackage({ root, target, capability }) {
+  if (!PACKAGE_TARGETS.includes(/** @type {any} */ (target))) {
+    throw new UsageError(
+      `Unknown target "${String(target ?? '')}". Use one of: ${PACKAGE_TARGETS.join(', ')} (common = both zones, public; a zone = that zone's apps only).`,
+    );
+  }
+  assertCapabilityName(capability);
+  const names = packageNames(target, capability);
+  const dir = path.join(root, names.dir);
+  assertFree(root, dir, names.packageName);
+  const common = target === 'common';
+  const side = common
+    ? /** @type {const} */ ({ layer: 'common' })
+    : /** @type {const} */ ({ layer: 'lib', zone: target });
+  const usedBy = common
+    ? 'the apps of both zones (intranet and internet)'
+    : `the ${target} apps only (remotes and shells of the ${target} zone)`;
+  const rules = common
+    ? [
+        COMMON_WARNING,
+        'Imports only other packages/common/* and packages/platform/* packages, never zone code.',
+      ]
+    : [
+        `Never imported by the other zone or by packages/common. Imports only apps/${target}/libs/*, packages/common/* and packages/platform/*, never a remote or shell.`,
+      ];
+  const description = common
+    ? `${names.title}: business logic shared by both zones (ships to the public internet portals)`
+    : `${names.title}: code shared by the ${target} apps`;
+  const files = await renderLayers(['package'], dir, {
+    PACKAGE_NAME: names.packageName,
+    TITLE: names.title,
+    DIR: names.dir,
+    USED_BY: usedBy,
+    RULES_DOC: rules.join('\n * '),
+    RULES_README: rules.map((r) => `> ${r}`).join('\n>\n'),
+    MOVE_TO: common ? `common/${capability}` : `${target}/libs/${capability}`,
+    DOCS_PATH: `${'../'.repeat(names.dir.split('/').length)}docs/where-code-goes.md`,
+  });
+  writeFiles(dir, files);
+  await writeJson(path.join(dir, 'package.json'), {
+    name: names.packageName,
+    version: '0.0.0',
+    private: true,
+    description,
+    type: 'module',
+    sideEffects: ['*.css', '*.scss'],
+    exports: { '.': './src/index.ts', './package.json': './package.json' },
+    scripts: {
+      lint: 'eslint .',
+      typecheck: 'tsc -p tsconfig.json',
+      test: 'jest',
+    },
+    nx: { tags: layerTags(side) },
+    peerDependencies: { react: '^19.0.0', 'react-dom': '^19.0.0' },
+    devDependencies: sorted(PACKAGE_DEV_DEPENDENCIES),
+  });
+  return { dir, packageName: names.packageName, target };
 }
