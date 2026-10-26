@@ -43,11 +43,16 @@ own.
 - **Zones** (`intranet`, `internet`) each have one or more shells (`apps/<zone>/<name>/shell`, e.g.
   `pnpm gen:shell internet citizen --base-path /citizen`); several shells of a zone share one
   origin, each under its own `mfe.basePath`, and a remote may be listed by several shells of
-  the same zone (`pnpm gen:remote <zone> <name> --shell <s>`). Zones share nothing but
-  `packages/*` (D5): no remote is used by shells of two zones.
+  the same zone (`pnpm gen:remote <zone> <name> --shell <s>`). A shell and the remotes only it
+  lists form a **portal** (`apps/<zone>/<portal>/`). Zones share nothing but
+  `packages/common/*` and `packages/platform/*` (D5): no remote is used by shells of two zones.
 - A **shell** loads its remotes at runtime from `/mfe-manifest.json`; it MUST NOT import remote
-  code. A **remote** MUST NOT import another remote or a shell. Shared code goes to
-  `packages/`.
+  code. A **remote** MUST NOT import another remote or a shell. Shared code follows the ladder in
+  `docs/where-code-goes.md`: one remote → stays there; generic UI → `@org/ui`; one zone →
+  `apps/<zone>/libs/<capability>`; both zones and public → `packages/common/<capability>`.
+  Confidential or intranet-only rules MUST NOT go to `packages/common` (it ships to the internet
+  portals; the backend MUST enforce the same rules). Libraries never import apps; common never
+  imports zone code.
 - Every remote MUST run standalone (`pnpm dev` in its folder, mock host props) and embedded in
   its shell, from the same feature code. Breaking either mode is a violation.
 - There is no hybrid layer (D5). Public vs signed-in areas of the internet zone are route
