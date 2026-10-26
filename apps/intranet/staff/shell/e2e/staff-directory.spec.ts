@@ -107,4 +107,18 @@ test.describe('Staff directory, unknown person', () => {
       }),
     ).toBeVisible();
   });
+
+  test('staff detail shows a masked NRIC and never the full number', async ({
+    page,
+  }) => {
+    await openRemote(page, remote, 's-1016');
+    const container = remotePage(page, remote);
+    await expect(
+      container.getByRole('heading', { level: 1, name: 'Priya Nair' }),
+    ).toBeVisible();
+    const nric = container.getByTestId('staff-nric');
+    await expect(nric).toHaveText(/^S\*{4}\d{3}[A-Z]$/);
+    // the API sends the number; the page must not render it anywhere in the DOM
+    expect(await page.content()).not.toMatch(/[STFGM]\d{7}[A-Z]/);
+  });
 });

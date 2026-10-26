@@ -66,4 +66,33 @@ test.describe('Business Portal under /business', () => {
     ).toBeVisible();
     await expect(page.getByTestId('user-name')).toHaveCount(0);
   });
+
+  test('licences form rejects an invalid UEN and accepts a valid one', async ({
+    page,
+  }) => {
+    await page.goto(licences.path);
+    await signInWithMock(page);
+    await expectRemoteRendered(page, licences);
+    const container = remotePage(page, licences);
+    const name = `e2e shop ${test.info().project.name} ${Date.now()}`;
+    await container.getByLabel('Name', { exact: true }).fill(name);
+
+    const uen = container.getByLabel(/^UEN/);
+    await uen.fill('12345');
+    await container.getByRole('button', { name: 'Add item' }).click();
+    const summary = container.getByTestId('error-summary');
+    await expect(summary).toBeFocused();
+    await expect(summary).toContainText('Enter a valid UEN');
+    await expect(uen).toHaveAttribute('aria-invalid', 'true');
+    await summary.getByRole('link', { name: /Enter a valid UEN/ }).click();
+    await expect(uen).toBeFocused();
+
+    await uen.fill('201912345K');
+    await container.getByRole('button', { name: 'Add item' }).click();
+    await expect(container.getByText(`Added “${name}”.`)).toBeVisible();
+    await expect(container.getByTestId('error-summary')).toHaveCount(0);
+    await expect(
+      container.getByTestId('demo-item-list').getByText('201912345K'),
+    ).toBeVisible();
+  });
 });

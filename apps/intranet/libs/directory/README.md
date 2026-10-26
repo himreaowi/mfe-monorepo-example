@@ -1,6 +1,7 @@
 # @org/intranet-directory
 
-Directory: code used by the intranet apps only (remotes and shells of the intranet zone). Lives in `apps/intranet/libs/directory`.
+Staff directory building blocks (staff search API client, types, `useStaffSearch`, `StaffCard`,
+`StaffPicker`) used by `staff-directory` and `leave-requests`. Directory: code used by the intranet apps only (remotes and shells of the intranet zone). Lives in `apps/intranet/libs/directory`.
 
 > Never imported by the other zone or by packages/common. Imports only apps/intranet/libs/_, packages/common/_ and packages/platform/*, never a remote or shell.
 
@@ -14,7 +15,10 @@ pnpm --filter <app package> add @org/intranet-directory@workspace:*
 ```
 
 ```ts
-import { formatLabel } from '@org/intranet-directory';
+import { StaffPicker, type StaffSummary } from '@org/intranet-directory';
+
+// inside a remote (needs the API client of the host props)
+<StaffPicker label="Covering colleague" value={person} onSelect={setPerson} />;
 ```
 
 ## Layout

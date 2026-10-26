@@ -13,6 +13,12 @@ page (`/staff-directory/<id>`) with contact details, manager, direct reports and
 `GET /staff`, `GET /staff/:id` of the mock API (`settings.apiBaseUrl`), through `@org/use-api`
 hooks that the pages call (`OverviewPage`, `StaffDetailPage`); the components only display.
 
+The reusable staff search pieces live in the zone library `@org/intranet-directory`
+(`apps/intranet/libs/directory`): the API client and types, `useStaffSearch`, `useDebouncedValue`
+and `StaffCard`. The remote keeps what only it needs: the pages, `StaffSearch`, `StaffFilters`,
+`StaffDetail` (which shows the NRIC masked with `maskNric` from `@org/common-identity`, never in
+full) and the filters state below.
+
 The filters are the example of the state pattern (`docs/coding-conventions.md` "State
 management"): `features/staff/state/` holds a pure reducer (`staffFiltersReducer.ts`, search
 text + department) and `StaffFiltersContext.tsx` (`<StaffFiltersProvider>`, separate state and
@@ -50,9 +56,10 @@ list. `StaffFilters` (the search form) reads and changes them, `OverviewPage` se
 src/
   main.tsx            standalone entry only: global styles + <StandaloneApp />
   app/                apps (exposed ./App: createRemoteApp + standalone props), routes
-  features/staff/     api/, hooks/, types/, __fixtures__/, state/ (filters: reducer +
-                      Context), components/ (one folder per component, no index.ts:
-                      StaffSearch/, StaffFilters/, StaffCard/, StaffDetail/), index.ts
+  features/staff/     hooks/ (useStaffMember, useDepartments), __fixtures__/, state/
+                      (filters: reducer + Context), components/ (one folder per component,
+                      no index.ts: StaffSearch/, StaffFilters/, StaffDetail/), index.ts
+                      (API client, types, useStaffSearch, StaffCard: @org/intranet-directory)
   layouts/            StandaloneLayout/ (own simple chrome, standalone only)
   pages/              OverviewPage, StaffDetailPage, NotFoundPage (they call the data hooks)
   core/constants/     app, routePaths, apiRoutes

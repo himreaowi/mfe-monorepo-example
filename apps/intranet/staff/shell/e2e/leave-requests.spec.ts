@@ -79,4 +79,47 @@ test.describe('Leave requests', () => {
       container.getByTestId('leave-request').filter({ hasText: reason }),
     ).toContainText('Waiting for approval');
   });
+
+  test('choose a covering colleague with the keyboard; the overview shows it', async ({
+    page,
+  }) => {
+    await openRemote(page, remote, 'new');
+    const container = remotePage(page, remote);
+    const { monday } = futureWeek();
+    await container
+      .getByRole('combobox', { name: 'Leave type' })
+      .selectOption({ label: 'No-pay leave' });
+    await container.getByLabel('First day').fill(monday);
+    await container.getByLabel('Last day').fill(monday);
+    const reason = `e2e cover ${test.info().project.name} ${Date.now()}`;
+    await container.getByLabel('Reason (optional)').fill(reason);
+
+    // type, pick the first result with the arrow keys and Enter (no mouse)
+    const picker = container.getByRole('combobox', {
+      name: 'Covering colleague (optional)',
+    });
+    await picker.click();
+    await picker.pressSequentially('chloe');
+    const option = container.getByRole('option', { name: /Chloe Ng/ });
+    await expect(option).toBeVisible();
+    await expect(picker).toHaveAttribute('aria-expanded', 'true');
+    await picker.press('ArrowDown');
+    await expect(picker).toHaveAttribute(
+      'aria-activedescendant',
+      (await option.getAttribute('id'))!,
+    );
+    await picker.press('Enter');
+    await expect(container.getByTestId('staff-picker')).toContainText(
+      'Frontend Engineer, Digital Services',
+    );
+    await expect(
+      container.getByRole('textbox', { name: /Covering colleague/ }),
+    ).toHaveValue('Chloe Ng');
+
+    await container.getByRole('button', { name: 'Send request' }).click();
+    await expect(page).toHaveURL(/\/leave-requests$/);
+    await expect(
+      container.getByTestId('leave-request').filter({ hasText: reason }),
+    ).toContainText('Covered by Chloe Ng');
+  });
 });

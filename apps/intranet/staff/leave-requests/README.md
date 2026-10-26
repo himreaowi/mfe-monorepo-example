@@ -10,7 +10,9 @@ The intranet shell mounts it at `/leave-requests/*` (entry in the shell's `remot
 
 Leave balance per type, the user's requests and a request form (`/leave-requests/new`) with
 validation, an error summary that takes focus, field errors linked with `aria-describedby`, and
-the API's 422 field errors shown the same way. Working days are counted with **date-fns**, a
+the API's 422 field errors shown the same way. The optional "Covering colleague" field is the
+`StaffPicker` of the zone library `@org/intranet-directory` (search staff with the keyboard); the
+choice is sent as `coverId` and the overview shows "Covered by ..." for requests that name one. Working days are counted with **date-fns**, a
 tier-3 (app-local) dependency of this remote only (`pnpm --filter @org/intranet-leave-requests
 add date-fns`, normal semver range, no catalog entry, no exception).
 

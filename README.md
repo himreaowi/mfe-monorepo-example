@@ -83,6 +83,31 @@ The generated e2e specs run unchanged. For the external adapters the generic ven
 the template's mock-vendor-only test skips with the vendor URL as the reason, and the feature
 specs (`it-helpdesk.spec.ts`, `payments.spec.ts`) cover vendor routing, events and the theme.
 
+### Zone library and common package examples
+
+Two real packages show where shared code goes (`docs/where-code-goes.md`):
+
+| Package                                                         | Lives in                                                       | Used by                                                                                            |
+| --------------------------------------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `@org/intranet-directory` (zone library, intranet only)         | [`apps/intranet/libs/directory`](apps/intranet/libs/directory) | `staff-directory` (search page, detail page) and `leave-requests` ("Covering colleague" field)     |
+| `@org/common-identity` (common package, both zones, **public**) | [`packages/common/identity`](packages/common/identity)         | `business-licences` (UEN check on its form) and `staff-directory` (masked NRIC on the detail page) |
+
+- **`@org/intranet-directory`**: the staff search API client (`searchStaff`, `getStaffMember`,
+  `getDepartments`), its types, the `useStaffSearch` / `useDebouncedValue` hooks, the `StaffCard`
+  list item (moved out of staff-directory with `pnpm move-component`) and the new `StaffPicker`
+  (an accessible combobox: search as you type, arrow keys, Enter, Escape, a Clear button). The
+  leave form sends the chosen colleague as `coverId`; the mock API stores it and answers
+  `cover: { id, name }`, which the overview shows ("Covered by ..."). staff-directory keeps its
+  pages and its filters state.
+- **`@org/common-identity`**: `isValidNric`, `isValidUen`, `maskNric`. It ships to the internet
+  portals, so it holds no confidential rules and **the backend must enforce the same rules**
+  (the mock API repeats a rough UEN check for that reason). The staff detail page shows
+  `S****567D`, never the full number (the mock API sends it only on `GET /staff/:id`; a real API
+  should send the masked value if the page never needs the rest).
+
+Both are checked by `pnpm check` (`package-boundaries`) and `pnpm lint`; their unit tests run
+with `pnpm test`, and the e2e specs cover the keyboard flow, the UEN form and the masked NRIC.
+
 ### Dependency tier 3 (decision D4): date-fns in one remote
 
 The leave form counts working days with **date-fns**, used only by the Leave remote:
