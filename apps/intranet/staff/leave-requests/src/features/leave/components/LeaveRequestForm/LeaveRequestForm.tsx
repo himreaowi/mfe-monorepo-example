@@ -1,5 +1,6 @@
 import { useId, useRef, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router';
+import { StaffPicker, type StaffSummary } from '@org/intranet-directory';
 import { useRemotePath } from '@org/mf-runtime/remote';
 import {
   Alert,
@@ -33,9 +34,16 @@ const EMPTY: LeaveRequestInput = {
   endDate: '',
   reason: '',
 };
+const NO_COVER: StaffSummary | null = null;
 
 /** Order of the fields, for the error summary. */
-const FIELD_ORDER: LeaveField[] = ['type', 'startDate', 'endDate', 'reason'];
+const FIELD_ORDER: LeaveField[] = [
+  'type',
+  'startDate',
+  'endDate',
+  'coverId',
+  'reason',
+];
 
 function balanceLabel(balance: LeaveBalance): string {
   return balance.remaining === null
@@ -59,6 +67,7 @@ export function LeaveRequestForm({
   const toPath = useRemotePath();
   const navigate = useNavigate();
   const [values, setValues] = useState<LeaveRequestInput>(EMPTY);
+  const [cover, setCover] = useState(NO_COVER);
   const [errors, setErrors] = useState<LeaveFieldErrors>({});
   const [sendError, setSendError] = useState('');
   const summaryRef = useRef<HTMLDivElement>(null);
@@ -68,6 +77,7 @@ export function LeaveRequestForm({
     startDate: `${idPrefix}-start`,
     endDate: `${idPrefix}-end`,
     reason: `${idPrefix}-reason`,
+    coverId: `${idPrefix}-cover`,
   };
   const balances = balance.status === 'success' ? balance.data.balances : [];
   const today = todayIso();
@@ -93,7 +103,9 @@ export function LeaveRequestForm({
       return;
     }
     setErrors({});
-    const outcome = await save.submit(values);
+    const outcome = await save.submit(
+      cover ? { ...values, coverId: cover.id } : values,
+    );
     if (outcome.ok) {
       const state: LeaveOverviewState = { created: outcome.data };
       navigate(toPath(routePaths.overview), { state });
@@ -197,6 +209,15 @@ export function LeaveRequestForm({
           ? `${formatDays(days)} of leave (working days, Monday to Friday).`
           : ''}
       </p>
+
+      <StaffPicker
+        id={ids.coverId}
+        label="Covering colleague (optional)"
+        hint="Search by name, job title or department."
+        error={errors.coverId}
+        value={cover}
+        onSelect={setCover}
+      />
 
       <TextArea
         id={ids.reason}

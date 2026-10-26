@@ -1143,6 +1143,9 @@ importers:
       '@org/http-client':
         specifier: workspace:*
         version: link:../../../../packages/platform/http-client
+      '@org/intranet-directory':
+        specifier: workspace:*
+        version: link:../../libs/directory
       '@org/mf-runtime':
         specifier: workspace:*
         version: link:../../../../packages/platform/mf-runtime

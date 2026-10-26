@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
+import { createFakeFetch } from '@org/jest-config/fetch';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
 import { useSubmit, type ApiResult } from '@org/use-api';
 import { LeaveValidationError } from '../../api/leaveApi';
@@ -36,10 +37,15 @@ function Overview() {
   );
 }
 
-function renderForm(balance: ApiResult<LeaveBalances> = loadedBalance) {
+function renderForm(
+  balance: ApiResult<LeaveBalances> = loadedBalance,
+  settings?: Record<string, unknown>,
+) {
   return render(
     <MemoryRouter initialEntries={['/leave/new']}>
-      <HostPropsProvider value={{ embedded: true, basePath: '/leave' }}>
+      <HostPropsProvider
+        value={{ embedded: true, basePath: '/leave', settings }}
+      >
         <Routes>
           <Route path="/leave/new" element={<Form balance={balance} />} />
           <Route path="/leave" element={<Overview />} />
@@ -120,6 +126,46 @@ describe('LeaveRequestForm', () => {
     );
   });
 
+  it('sends the covering colleague chosen with the keyboard as coverId', async () => {
+    const user = userEvent.setup();
+    globalThis.fetch = createFakeFetch({
+      'GET /staff': {
+        body: {
+          items: [
+            {
+              id: 's-1003',
+              name: 'Chloe Ng',
+              jobTitle: 'Frontend Engineer',
+              department: 'Digital Services',
+              location: 'Level 12',
+              email: 'chloe.ng@example.org',
+              phone: '+65 6555 1013',
+            },
+          ],
+          total: 1,
+          departments: [],
+        },
+      },
+    });
+    submitMock.mockResolvedValue({ ...request, id: 'LR-0043' });
+    renderForm(loadedBalance, { apiBaseUrl: 'https://api.test' });
+    await screen.findByRole('option', { name: 'No-pay leave' });
+    await fillValid(user);
+    await user.type(
+      screen.getByRole('combobox', { name: 'Covering colleague (optional)' }),
+      'chloe',
+    );
+    await screen.findByRole('option', { name: /Chloe Ng/ });
+    await user.keyboard('{ArrowDown}{Enter}');
+    expect(screen.getByDisplayValue('Chloe Ng')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Send request' }));
+    expect(await screen.findByTestId('overview')).toHaveTextContent('LR-0043');
+    expect(submitMock).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'unpaid', coverId: 's-1003' }),
+    );
+    Reflect.deleteProperty(globalThis, 'fetch');
+  });
+
   it('shows the API field errors (422) like its own', async () => {
     const user = userEvent.setup();
     submitMock.mockRejectedValue(
@@ -136,6 +182,25 @@ describe('LeaveRequestForm', () => {
       'aria-invalid',
       'true',
     );
+  });
+
+  it('shows a coverId error from the API on the covering colleague field', async () => {
+    const user = userEvent.setup();
+    submitMock.mockRejectedValue(
+      new LeaveValidationError('Check', {
+        coverId: 'Choose a colleague from the list',
+      }),
+    );
+    renderForm();
+    await screen.findByRole('option', { name: 'No-pay leave' });
+    await fillValid(user);
+    await user.click(screen.getByRole('button', { name: 'Send request' }));
+    expect(await screen.findByTestId('error-summary')).toHaveTextContent(
+      'Choose a colleague from the list',
+    );
+    expect(
+      screen.getByRole('combobox', { name: 'Covering colleague (optional)' }),
+    ).toBeInvalid();
   });
 
   it('reports other failures without losing the input', async () => {

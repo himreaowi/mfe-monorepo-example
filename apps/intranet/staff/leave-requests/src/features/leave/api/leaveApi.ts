@@ -18,7 +18,7 @@ export class LeaveValidationError extends Error {
   }
 }
 
-const FIELDS = ['type', 'startDate', 'endDate', 'reason'] as const;
+const FIELDS = ['type', 'startDate', 'endDate', 'reason', 'coverId'] as const;
 
 /** Keep only known fields with string messages from an untrusted 422 body. */
 function fieldErrors(body: unknown): LeaveFieldErrors {

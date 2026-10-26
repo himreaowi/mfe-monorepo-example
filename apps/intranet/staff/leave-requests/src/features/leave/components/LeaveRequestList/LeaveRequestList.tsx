@@ -50,6 +50,11 @@ export function LeaveRequestList({
             {formatDays(request.days)}
             {request.reason ? ` · ${request.reason}` : ''}
           </p>
+          {request.cover ? (
+            <p className={styles.full} data-testid="leave-cover">
+              Covered by {request.cover.name}
+            </p>
+          ) : null}
           <p className={`${styles.full} ${styles.muted}`}>
             {request.id}, requested {formatDate(request.createdAt)}
           </p>

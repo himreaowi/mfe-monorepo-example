@@ -8,6 +8,8 @@ import styles from './StaffPicker.module.scss';
 const MAX_OPTIONS = 8;
 
 export type StaffPickerProps = {
+  /** Id of the search input (to link to it, e.g. from an error summary). Default: generated. */
+  id?: string;
   /** Visible label of the field. */
   label: string;
   /** The chosen person (controlled). `null`/`undefined`: nobody chosen. */
@@ -28,6 +30,7 @@ export type StaffPickerProps = {
  * API client (`useApiClient()`), so render it inside a remote (embedded or standalone).
  */
 export function StaffPicker({
+  id,
   label,
   value = null,
   onSelect,
@@ -37,7 +40,7 @@ export function StaffPicker({
   required,
 }: StaffPickerProps) {
   const listId = useId();
-  const inputId = `${listId}-input`;
+  const inputId = id ?? `${listId}-input`;
   const [text, setText] = useState('');
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);

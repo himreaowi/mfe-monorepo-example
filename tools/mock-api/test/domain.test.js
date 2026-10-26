@@ -95,6 +95,8 @@ describe('intranet API', () => {
     assert.equal(byDept.body.total, 2);
     const detail = await api.call('/staff/s-1016');
     assert.equal(detail.body.manager.name, 'Oliver Chan');
+    assert.match(detail.body.nric, /^S\d{7}[A-Z]$/);
+    assert.equal(all.body.items[0].nric, undefined); // the search list never carries it
     assert.ok(Array.isArray(detail.body.skills));
     assert.equal((await api.call('/staff/nope')).res.status, 404);
   });
@@ -144,6 +146,26 @@ describe('intranet API', () => {
       }),
     });
     assert.match(tooMany.body.errors.endDate, /days of childcare leave left/);
+  });
+
+  it('stores an optional covering colleague and rejects an unknown one', async () => {
+    const start = nextMonday();
+    const request = (/** @type {string} */ coverId) => ({
+      method: 'POST',
+      body: JSON.stringify({
+        type: 'unpaid',
+        startDate: start,
+        endDate: start,
+        reason: '',
+        coverId,
+      }),
+    });
+    const ok = await api.call('/leave/requests', request('s-1003'));
+    assert.equal(ok.res.status, 201);
+    assert.deepEqual(ok.body.cover, { id: 's-1003', name: 'Chloe Ng' });
+    const bad = await api.call('/leave/requests', request('nope'));
+    assert.equal(bad.res.status, 422);
+    assert.match(bad.body.errors.coverId, /Choose a colleague/);
   });
 
   it('creates a leave request and updates the balance', async () => {

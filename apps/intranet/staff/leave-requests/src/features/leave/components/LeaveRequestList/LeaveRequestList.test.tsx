@@ -56,4 +56,21 @@ describe('LeaveRequestList', () => {
     expect(sick).not.toHaveTextContent('·');
     expect(rejected).toHaveTextContent('Not approved');
   });
+
+  it('shows the covering colleague when the request names one', () => {
+    render(
+      <LeaveRequestList
+        requests={[
+          { ...request, cover: { id: 's-1003', name: 'Chloe Ng' } },
+          approved,
+        ]}
+        balances={balances.balances}
+      />,
+    );
+    const [withCover, without] = screen.getAllByTestId('leave-request');
+    expect(within(withCover).getByTestId('leave-cover')).toHaveTextContent(
+      'Covered by Chloe Ng',
+    );
+    expect(without).not.toHaveTextContent('Covered by');
+  });
 });

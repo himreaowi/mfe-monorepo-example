@@ -2,10 +2,11 @@
 /**
  * DEV ONLY: mock APIs of the intranet zone (Staff Portal).
  *   GET  /staff?q=&department=     staff search          (staff-directory)
- *   GET  /staff/:id                one staff member      (staff-directory)
+ *   GET  /staff/:id                one staff member      (staff-directory; includes the fictional NRIC)
  *   GET  /leave/balance            leave balance         (leave-requests)
  *   GET  /leave/requests           my leave requests     (leave-requests)
- *   POST /leave/requests           submit a request      (leave-requests, 422 with field errors)
+ *   POST /leave/requests           submit a request      (leave-requests, 422 with field errors;
+ *                                  optional coverId = a staff id, answered as cover: { id, name })
  *   GET  /helpdesk/tickets         vendor helpdesk API   (it-helpdesk vendor module)
  *   GET  /helpdesk/tickets/:id
  *   POST /helpdesk/tickets
@@ -15,6 +16,18 @@ import { countWorkingDays, daysAgo, isIsoDate } from './dates.js';
 import { json, notFound } from './server.js';
 
 /** @typedef {import('./server.js').MockResource} ZoneApi */
+
+/**
+ * A fictional but valid NRIC for the demo staff: S + 7 digits + check letter (weights
+ * 2,7,6,5,4,3,2; sum mod 11; letters JZIHGFEDCBA).
+ * @param {number} index
+ */
+function fictionalNric(index) {
+  const digits = String(8000000 + index * 7919).padStart(7, '0');
+  const weights = [2, 7, 6, 5, 4, 3, 2];
+  const sum = weights.reduce((total, w, i) => total + w * Number(digits[i]), 0);
+  return `S${digits}${'JZIHGFEDCBA'[sum % 11]}`;
+}
 
 const STAFF = [
   [
@@ -251,6 +264,7 @@ const STAFF = [
       managerId: /** @type {string | null} */ (managerId),
       skills: /** @type {string[]} */ (skills),
       startDate: `20${String(10 + (index % 14)).padStart(2, '0')}-0${(index % 9) + 1}-01`,
+      nric: fictionalNric(index),
     };
   },
 );
@@ -278,7 +292,8 @@ const MAX_REASON = 500;
 
 /**
  * @typedef {{ id: string, type: string, startDate: string, endDate: string, days: number,
- *   reason: string, status: 'pending' | 'approved' | 'rejected', createdAt: string }} LeaveRequest
+ *   reason: string, status: 'pending' | 'approved' | 'rejected', createdAt: string,
+ *   cover?: { id: string, name: string } }} LeaveRequest
  * @typedef {{ id: string, category: string, priority: string, summary: string,
  *   description: string, status: 'open' | 'in-progress' | 'resolved', createdAt: string,
  *   updatedAt: string }} Ticket
@@ -418,7 +433,19 @@ function validateLeave(body, /** @type {LeaveRequest[]} */ requests) {
       errors.endDate = `You have ${remaining} day${remaining === 1 ? '' : 's'} of ${type.label.toLowerCase()} left`;
     }
   }
-  return { errors, days, reason, type: type?.type ?? '' };
+  // optional covering colleague: the id of a staff member
+  /** @type {{ id: string, name: string } | undefined} */
+  let cover;
+  if (
+    input.coverId !== undefined &&
+    input.coverId !== null &&
+    input.coverId !== ''
+  ) {
+    const colleague = STAFF.find((s) => s.id === input.coverId);
+    if (colleague) cover = { id: colleague.id, name: colleague.name };
+    else errors.coverId = 'Choose a colleague from the list';
+  }
+  return { errors, days, reason, type: type?.type ?? '', cover };
 }
 
 /** @returns {ZoneApi} */
@@ -468,6 +495,7 @@ export function createIntranetApi() {
             ...staffSummary(member),
             skills: member.skills,
             startDate: member.startDate,
+            nric: member.nric,
             manager: manager ? { id: manager.id, name: manager.name } : null,
             directReports: reports.map((r) => ({ id: r.id, name: r.name })),
           });
@@ -496,7 +524,10 @@ export function createIntranetApi() {
         method: 'POST',
         path: '/leave/requests',
         handler: ({ body }) => {
-          const { errors, days, reason, type } = validateLeave(body, leave);
+          const { errors, days, reason, type, cover } = validateLeave(
+            body,
+            leave,
+          );
           if (Object.keys(errors).length > 0) {
             return json(422, { message: 'Check the leave request', errors });
           }
@@ -513,6 +544,7 @@ export function createIntranetApi() {
             reason,
             status: 'pending',
             createdAt: new Date().toISOString(),
+            ...(cover ? { cover } : {}),
           };
           nextLeave += 1;
           leave.push(created);

@@ -24,6 +24,8 @@ export type LeaveRequest = {
   reason: string;
   status: LeaveStatus;
   createdAt: string;
+  /** The colleague covering during the leave, when the request named one. */
+  cover?: { id: string; name: string } | null;
 };
 
 /** What the form sends. Dates are `yyyy-MM-dd`. */
@@ -32,6 +34,8 @@ export type LeaveRequestInput = {
   startDate: string;
   endDate: string;
   reason: string;
+  /** Staff id of the covering colleague (optional). */
+  coverId?: string;
 };
 
 export type LeaveField = keyof LeaveRequestInput;
