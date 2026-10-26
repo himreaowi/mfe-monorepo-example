@@ -94,6 +94,20 @@ or a function of the call (`{ url, method, pathname, query, body, init }`); unkn
 response (for `jest.fn().mockResolvedValue(...)`). A file that needs Node's real `fetch` (rare;
 never against a shared server) can start with the docblock `/** @jest-environment node */`.
 
+**After code moves into a library** (`apps/<zone>/libs/<capability>`), an app test cannot
+`jest.mock` the library's internal modules (`'../api/itemsApi'` no longer exists in the app, and
+the library calls its own copy). Mock at the package boundary with a partial mock, or answer the
+HTTP calls with the fake fetch above:
+
+```ts
+jest.mock('@org/intranet-directory', () => ({
+  ...jest.requireActual('@org/intranet-directory'),
+  getDepartments: jest.fn(), // only works for code in the app that calls it
+}));
+// hooks inside the library call their own getDepartments: use createFakeFetch instead
+globalThis.fetch = createFakeFetch({ 'GET /staff': { body: { items: [] } } });
+```
+
 ## Node and contract tests
 
 Code that runs in Node (configs, CLIs, generators) is tested with `node --test`, not Jest
