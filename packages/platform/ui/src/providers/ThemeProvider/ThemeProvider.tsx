@@ -246,7 +246,7 @@ function IndependentThemeProvider({
  * `@org/design-tokens/tokens.css`).
  *
  * Safe to render in both a shell and the remotes it loads: only one provider ever owns the
- * document theme. See `ThemeProviderProps.mode` and packages/ui/README.md.
+ * document theme. See `ThemeProviderProps.mode` and packages/platform/ui/README.md.
  */
 export function ThemeProvider({
   children,

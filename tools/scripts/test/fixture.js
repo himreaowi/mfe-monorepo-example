@@ -95,7 +95,7 @@ export function makeWorkspace(o = {}) {
     [
       'packages:',
       '  - apps/**',
-      '  - packages/*',
+      '  - packages/platform/*',
       'catalog:',
       ...Object.entries(catalog).map(([k, v]) => `  '${k}': ${v}`),
       '',
@@ -116,7 +116,7 @@ export function makeWorkspace(o = {}) {
     },
   };
   for (const [dir, pkg] of Object.entries(packages)) {
-    write(`packages/${dir}/package.json`, pkg);
+    write(`packages/platform/${dir}/package.json`, pkg);
   }
   for (const [dir, pkg] of Object.entries(o.apps ?? {})) {
     write(`apps/${dir}/package.json`, pkg);

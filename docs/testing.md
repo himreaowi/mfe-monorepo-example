@@ -1,12 +1,12 @@
 # Testing
 
-| Layer                 | Tool                                                         | Where                                                                   | Run                                                |
-| --------------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------- | -------------------------------------------------- |
-| Unit / component      | Jest 30 + React Testing Library (jsdom)                      | `src/**/*.test.ts(x)` in every app and React package                    | `pnpm test` (all), `pnpm --filter <pkg> test`      |
-| Node / contract tests | `node --test`                                                | `tools/*`, `packages/webpack-config`, `vendor-kit`, `playwright-config` | part of `pnpm test`                                |
-| End-to-end (per zone) | Playwright (Chromium), desktop + 375 px                      | `apps/<zone>/<name>/shell/e2e/`                                         | `pnpm e2e`, `pnpm e2e:<zone>`                      |
-| Accessibility         | axe-core (`@axe-core/playwright`), WCAG 2.2 AA, light + dark | `e2e/a11y.spec.ts` in each shell                                        | part of `pnpm e2e`                                 |
-| Static checks         | `pnpm check`, ESLint, `tsc`, Prettier                        | everywhere                                                              | `pnpm lint`, `pnpm typecheck`, `pnpm format:check` |
+| Layer                 | Tool                                                         | Where                                                                            | Run                                                |
+| --------------------- | ------------------------------------------------------------ | -------------------------------------------------------------------------------- | -------------------------------------------------- |
+| Unit / component      | Jest 30 + React Testing Library (jsdom)                      | `src/**/*.test.ts(x)` in every app and React package                             | `pnpm test` (all), `pnpm --filter <pkg> test`      |
+| Node / contract tests | `node --test`                                                | `tools/*`, `packages/platform/webpack-config`, `vendor-kit`, `playwright-config` | part of `pnpm test`                                |
+| End-to-end (per zone) | Playwright (Chromium), desktop + 375 px                      | `apps/<zone>/<name>/shell/e2e/`                                                  | `pnpm e2e`, `pnpm e2e:<zone>`                      |
+| Accessibility         | axe-core (`@axe-core/playwright`), WCAG 2.2 AA, light + dark | `e2e/a11y.spec.ts` in each shell                                                 | part of `pnpm e2e`                                 |
+| Static checks         | `pnpm check`, ESLint, `tsc`, Prettier                        | everywhere                                                                       | `pnpm lint`, `pnpm typecheck`, `pnpm format:check` |
 
 ## Unit tests (Jest + React Testing Library)
 
@@ -100,17 +100,17 @@ Code that runs in Node (configs, CLIs, generators) is tested with `node --test`,
 (the webpack configs are plain ESM JavaScript, see [toolchain.md](toolchain.md)). These also hold the **contract
 tests** that keep generated or shared artefacts honest:
 
-| Package                      | Covers                                                                                                                                                                                                                                                                                                                    |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `tools/generators`           | generates both zones into a temp workspace (one shell per starter layout, `top` and `side`), checks files, metadata, registry, dev manifest; `check-apps`/`check-versions` pass                                                                                                                                           |
-| `tools/scripts`              | every guardrail rule with fixture workspaces; `list-apps` (incl. `--affected`); the `deploy/` templates; `validate-manifest`                                                                                                                                                                                              |
-| `packages/webpack-config`    | config shape (singletons, publicPath, HTML entry, CSS extraction in dev and prod, dev CSP, history fallback), real builds (readable `Component_class__hash` CSS module names salted per app, hashed `.css` per chunk in prod, unhashed `.css` + linked `.css.map` in dev with the same class names, absolute script URLs) |
-| `packages/vendor-kit`        | `mount-contract.d.ts` is up to date with `mf-runtime`; the kit builds and zips                                                                                                                                                                                                                                            |
-| `packages/mf-runtime` (Jest) | the generated manifest validator is up to date with `mfe-manifest.schema.json`; remote CSS is left to the chunk loader (`remoteCssPlugin`)                                                                                                                                                                                |
-| `packages/playwright-config` | zone loading, config (projects, servers, CI), URL waiting, axe report formatting                                                                                                                                                                                                                                          |
-| `packages/jest-config`       | the fake fetch helpers                                                                                                                                                                                                                                                                                                    |
-| `tools/mock-vendor`          | the mock vendor implements the mount contract (esm, web-component, script), styles via a constructable stylesheet                                                                                                                                                                                                         |
-| `tools/mock-api`             | health, items (list/filter/create, 422), reset, CORS for localhost with credentials, per-zone ports                                                                                                                                                                                                                       |
+| Package                               | Covers                                                                                                                                                                                                                                                                                                                    |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tools/generators`                    | generates both zones into a temp workspace (one shell per starter layout, `top` and `side`), checks files, metadata, registry, dev manifest; `check-apps`/`check-versions` pass                                                                                                                                           |
+| `tools/scripts`                       | every guardrail rule with fixture workspaces; `list-apps` (incl. `--affected`); the `deploy/` templates; `validate-manifest`                                                                                                                                                                                              |
+| `packages/platform/webpack-config`    | config shape (singletons, publicPath, HTML entry, CSS extraction in dev and prod, dev CSP, history fallback), real builds (readable `Component_class__hash` CSS module names salted per app, hashed `.css` per chunk in prod, unhashed `.css` + linked `.css.map` in dev with the same class names, absolute script URLs) |
+| `packages/platform/vendor-kit`        | `mount-contract.d.ts` is up to date with `mf-runtime`; the kit builds and zips                                                                                                                                                                                                                                            |
+| `packages/platform/mf-runtime` (Jest) | the generated manifest validator is up to date with `mfe-manifest.schema.json`; remote CSS is left to the chunk loader (`remoteCssPlugin`)                                                                                                                                                                                |
+| `packages/platform/playwright-config` | zone loading, config (projects, servers, CI), URL waiting, axe report formatting                                                                                                                                                                                                                                          |
+| `packages/platform/jest-config`       | the fake fetch helpers                                                                                                                                                                                                                                                                                                    |
+| `tools/mock-vendor`                   | the mock vendor implements the mount contract (esm, web-component, script), styles via a constructable stylesheet                                                                                                                                                                                                         |
+| `tools/mock-api`                      | health, items (list/filter/create, 422), reset, CORS for localhost with credentials, per-zone ports                                                                                                                                                                                                                       |
 
 ## End-to-end tests (Playwright)
 
@@ -245,7 +245,7 @@ Target: **WCAG 2.2 AA** ([contracts/a11y-wcag.md](contracts/a11y-wcag.md)).
   menus in feature tests: axe only sees what is rendered.
 - Components of `@org/ui`: `pnpm test:ui` runs the same axe tags (WCAG 2.2 AA) against every
   Storybook story in light and dark, plus screenshot comparisons
-  ([packages/ui/README.md](../packages/ui/README.md#storybook-dev-only)).
+  ([packages/platform/ui/README.md](../packages/platform/ui/README.md#storybook-dev-only)).
 - Do not disable rules to get green. If a rule must be skipped (third-party widget you cannot
   fix), use `exclude`/`disableRules` next to a comment with the ticket.
 - axe finds roughly a third of WCAG issues. Keyboard order, focus visibility, screen reader
@@ -266,7 +266,7 @@ pnpm build
 pnpm --filter @org/shell-<name> exec playwright install --with-deps chromium
 CI=true pnpm e2e:<zone>       # one job per zone (or pnpm e2e for all, sequentially)
 pnpm --filter @org/ui exec playwright install --with-deps chromium
-CI=true pnpm test:ui          # when packages/ui changed: axe + screenshots of every story
+CI=true pnpm test:ui          # when packages/platform/ui changed: axe + screenshots of every story
 ```
 
 `pnpm test:ui` skips the screenshot comparison on a platform without committed baselines (only

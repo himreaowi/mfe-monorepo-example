@@ -65,7 +65,7 @@ splat: `/apps/staff/route-1` under `apps/staff/*` gives `/apps/staff`.
 ```
 
 `auth` is read by `@org/auth` `loadAuthClient` (BFF endpoints, or `{ "mock": true }` in
-development; see [docs/auth-contract.md](../../docs/auth-contract.md)). Without `auth` the shell
+development; see [docs/auth-contract.md](../../../docs/auth-contract.md)). Without `auth` the shell
 disables sign-in.
 
 Remote names must be the federation names (JS identifiers). `entry` must be an http(s) URL or a
@@ -140,7 +140,7 @@ createRoot(el).render(<StandaloneApp />);
 
 The **mount contract** for modules built outside this repo (vendors, other frameworks, other
 React majors) and the host component that drives it. Full guide:
-[docs/external-modules.md](../../docs/external-modules.md).
+[docs/external-modules.md](../../../docs/external-modules.md).
 
 ```tsx
 import { ExternalModule } from '@org/mf-runtime/external';

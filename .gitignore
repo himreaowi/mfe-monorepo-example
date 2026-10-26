@@ -1,8 +1,8 @@
 node_modules/
 dist/
 build/
-# packages/pwa/build is source (the webpack/Workbox plugin), not output
-!packages/pwa/build/
+# packages/platform/pwa/build is source (the webpack/Workbox plugin), not output
+!packages/platform/pwa/build/
 coverage/
 *.log
 .env

@@ -8,7 +8,7 @@ import tseslint from 'typescript-eslint';
 
 /** Paths no package should lint. */
 export const ignores = [
-  // also nested build output, e.g. packages/webpack-config/test/fixture/dist written by its tests
+  // also nested build output, e.g. packages/platform/webpack-config/test/fixture/dist written by its tests
   '**/dist/**',
   'build/**',
   'coverage/**',

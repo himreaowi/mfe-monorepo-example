@@ -211,7 +211,7 @@ describe('validate-manifest', () => {
     });
   }
   const VALIDATOR =
-    'packages/mf-runtime/src/manifest/validateSchema.generated.js';
+    'packages/platform/mf-runtime/src/manifest/validateSchema.generated.js';
 
   it('several shells in a zone: --shell picks whose remotes.json applies', async () => {
     const root = makeWorkspace({
@@ -609,17 +609,17 @@ describe('same-origin /api and /auth (entrypoint + nginx templates)', () => {
         },
       },
     });
-    fs.mkdirSync(path.join(root, 'packages/mf-runtime/src/manifest'), {
+    fs.mkdirSync(path.join(root, 'packages/platform/mf-runtime/src/manifest'), {
       recursive: true,
     });
     fs.copyFileSync(
       path.join(
         ROOT,
-        'packages/mf-runtime/src/manifest/validateSchema.generated.js',
+        'packages/platform/mf-runtime/src/manifest/validateSchema.generated.js',
       ),
       path.join(
         root,
-        'packages/mf-runtime/src/manifest/validateSchema.generated.js',
+        'packages/platform/mf-runtime/src/manifest/validateSchema.generated.js',
       ),
     );
     const r = await validateManifestFile({

@@ -38,11 +38,11 @@ function tempWorkspace() {
     'pnpm-workspace.yaml',
     'version-exceptions.json',
     'package.json',
-    'packages/webpack-config/src/tier1.js',
+    'packages/platform/webpack-config/src/tier1.js',
   ]) {
     copy(rel);
   }
-  for (const group of ['packages', 'tools']) {
+  for (const group of ['packages/platform', 'tools']) {
     for (const d of fs.readdirSync(path.join(REPO, group))) {
       if (fs.existsSync(path.join(REPO, group, d, 'package.json'))) {
         copy(`${group}/${d}/package.json`);

@@ -1,6 +1,6 @@
 // Accessibility (axe, WCAG 2.2 AA) and screenshot tests of every @org/ui story, light and dark,
 // against the static Storybook build. `pnpm test:ui` (builds Storybook first, Nx cached);
-// `pnpm test:ui:update` writes new baselines. See packages/ui/README.md.
+// `pnpm test:ui:update` writes new baselines. See packages/platform/ui/README.md.
 import { defineConfig, devices } from '@playwright/test';
 import { toolPort } from '../.storybook/tool-port.js';
 

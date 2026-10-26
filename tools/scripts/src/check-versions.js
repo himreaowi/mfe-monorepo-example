@@ -171,7 +171,14 @@ function suggestVersion(specs) {
  * @returns {Promise<string[] | null>}
  */
 export async function loadTier1Singletons(root) {
-  const file = path.join(root, 'packages', 'webpack-config', 'src', 'tier1.js');
+  const file = path.join(
+    root,
+    'packages',
+    'platform',
+    'webpack-config',
+    'src',
+    'tier1.js',
+  );
   if (!fs.existsSync(file)) return null;
   const mod = await import(new URL(`file://${file}`).href);
   return mod.TIER1_SINGLETONS ?? null;
@@ -343,7 +350,7 @@ export async function checkVersions({
       const extra = b.filter((x) => !a.includes(x));
       err(
         'tier1-drift',
-        `The tier-1 list (tools/scripts/src/tiers.js: ${a.join(', ')}) differs from TIER1_SINGLETONS in packages/webpack-config/src/tier1.js (${b.join(', ')}).` +
+        `The tier-1 list (tools/scripts/src/tiers.js: ${a.join(', ')}) differs from TIER1_SINGLETONS in packages/platform/webpack-config/src/tier1.js (${b.join(', ')}).` +
           (missing.length
             ? ` Not shared as singleton: ${missing.join(', ')}.`
             : '') +
@@ -354,7 +361,7 @@ export async function checkVersions({
   } else {
     warn(
       'tier1-unverified',
-      'packages/webpack-config/src/tier1.js not found; tier-1 list not compared with the Module Federation singletons.',
+      'packages/platform/webpack-config/src/tier1.js not found; tier-1 list not compared with the Module Federation singletons.',
     );
   }
   for (const dep of tier1) {

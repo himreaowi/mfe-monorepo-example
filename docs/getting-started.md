@@ -109,7 +109,7 @@ pnpm e2e:intranet                                                # zone e2e + ax
 
 Components: `pnpm storybook` shows every `@org/ui` component in light and dark
 (http://localhost:3193); `pnpm test:ui` runs axe and screenshot tests of all of them
-([packages/ui/README.md](../packages/ui/README.md)).
+([packages/platform/ui/README.md](../packages/platform/ui/README.md)).
 
 `pnpm e2e:intranet` starts `pnpm dev:intranet` itself (or reuses it if it is already running),
 tests every remote in the shell and standalone, on desktop and 375 px, and stops the servers
@@ -138,7 +138,7 @@ production builds, so private remotes show "Sign-in unavailable" in this preview
 ```sh
 pnpm check && pnpm lint && pnpm typecheck && pnpm test && pnpm format:check
 pnpm build && pnpm e2e
-pnpm test:ui                                 # when packages/ui changed
+pnpm test:ui                                 # when packages/platform/ui changed
 ```
 
 CI runs the same gates ([devops-handoff.md](devops-handoff.md)).

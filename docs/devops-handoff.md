@@ -76,7 +76,7 @@ string values (`{}` when nothing is affected), usable as `strategy.matrix`.
 How `--affected` decides:
 
 - Nx (`nx show projects --affected`) with the package-based project graph: a change in an app
-  affects that app; a change in `packages/ui` affects every app depending on `@org/ui`
+  affects that app; a change in `packages/platform/ui` affects every app depending on `@org/ui`
   (in practice all of them); `tools/generators` affects no app. Without Nx it falls back to the
   git diff mapped onto the same `package.json` dependency graph.
 - Changes to `package.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`, `nx.json`,
@@ -157,8 +157,8 @@ The shell fetches `mfe-manifest.json` below its base path at start-up (`/mfe-man
 `/citizen/mfe-manifest.json` for a shell with `mfe.basePath` `/citizen`). It is never built in; per environment it
 lists where each remote lives, the BFF endpoints, vendor module URLs and free-form settings.
 Example: [`deploy/mfe-manifest.example.json`](../deploy/mfe-manifest.example.json); schema:
-`packages/mf-runtime/src/manifest/mfe-manifest.schema.json`; field reference:
-[packages/mf-runtime/README.md](../packages/mf-runtime/README.md),
+`packages/platform/mf-runtime/src/manifest/mfe-manifest.schema.json`; field reference:
+[packages/platform/mf-runtime/README.md](../packages/platform/mf-runtime/README.md),
 [auth-contract.md](auth-contract.md), [external-modules.md](external-modules.md).
 
 - **Preferred: no hand-written manifest.** The container generates it at start from variables
@@ -306,14 +306,14 @@ Azure Repos branch policies on `main`:
 - Build validation: this pipeline is required; PRs need the gates green.
 - Automatically included reviewers by path (code owners):
 
-| Path                                                                             | Owner                                                        |
-| -------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| `apps/intranet/**`                                                               | intranet team(s), per app folder if teams own single remotes |
-| `apps/internet/**`                                                               | internet team(s)                                             |
-| `packages/**`, `tools/**`                                                        | platform / frontend core team                                |
-| `pnpm-workspace.yaml`, `version-exceptions.json`, `nx.json`, root `package.json` | platform team (dependency tiers, exceptions)                 |
-| `deploy/**`, `docs/devops-handoff.md`                                            | DevOps + platform team                                       |
-| `packages/mf-runtime/src/external/**`, `packages/vendor-kit/**`                  | platform team + vendor owner (contract changes)              |
+| Path                                                                              | Owner                                                        |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `apps/intranet/**`                                                                | intranet team(s), per app folder if teams own single remotes |
+| `apps/internet/**`                                                                | internet team(s)                                             |
+| `packages/**`, `tools/**`                                                         | platform / frontend core team                                |
+| `pnpm-workspace.yaml`, `version-exceptions.json`, `nx.json`, root `package.json`  | platform team (dependency tiers, exceptions)                 |
+| `deploy/**`, `docs/devops-handoff.md`                                             | DevOps + platform team                                       |
+| `packages/platform/mf-runtime/src/external/**`, `packages/platform/vendor-kit/**` | platform team + vendor owner (contract changes)              |
 
 - Require linked work items and comment resolution as usual. Squash merge keeps `--base`
   detection simple.

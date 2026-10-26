@@ -21,8 +21,8 @@ avoid). Until then: template tokens only, no external brand._
 
 ## Design tokens
 
-**Location:** `packages/design-tokens/src/tokens.css` (CSS custom properties) + base styles in
-`packages/design-tokens/src/global.scss`. Imported once by the shell (`@org/design-tokens/global.scss`);
+**Location:** `packages/platform/design-tokens/src/tokens.css` (CSS custom properties) + base styles in
+`packages/platform/design-tokens/src/global.scss`. Imported once by the shell (`@org/design-tokens/global.scss`);
 remotes inherit the variables from `<html>`.
 
 | Token / group                               | Purpose                                |
@@ -153,7 +153,7 @@ Rules:
 
 ## Component conventions
 
-- Shared components: `packages/ui/src/components/<Component>/` (`Component.tsx`,
+- Shared components: `packages/platform/ui/src/components/<Component>/` (`Component.tsx`,
   `Component.module.scss`, `types.ts`, `Component.test.tsx`; no `index.ts`: the package's
   `src/index.ts` exports each component from its file). App-only components:
   the app's `src/components/<Component>/`. Feature UI: `src/features/<name>/components/<Component>/`,
@@ -278,11 +278,11 @@ Target WCAG 2.2 AA: [contracts/a11y-wcag.md](contracts/a11y-wcag.md). UI rules:
 
 ## Links
 
-| Doc                                              | Role                          |
-| ------------------------------------------------ | ----------------------------- |
-| [coding-conventions.md](coding-conventions.md)   | code structure, data fetching |
-| [project-overview.md](project-overview.md)       | product framing               |
-| [contracts/theming.md](contracts/theming.md)     | theme/token rules             |
-| [contracts/a11y-wcag.md](contracts/a11y-wcag.md) | WCAG 2.2 AA                   |
-| `packages/design-tokens/src/tokens.css`          | live token values             |
-| `packages/ui/src/providers/ThemeProvider/`       | theme implementation          |
+| Doc                                                 | Role                          |
+| --------------------------------------------------- | ----------------------------- |
+| [coding-conventions.md](coding-conventions.md)      | code structure, data fetching |
+| [project-overview.md](project-overview.md)          | product framing               |
+| [contracts/theming.md](contracts/theming.md)        | theme/token rules             |
+| [contracts/a11y-wcag.md](contracts/a11y-wcag.md)    | WCAG 2.2 AA                   |
+| `packages/platform/design-tokens/src/tokens.css`    | live token values             |
+| `packages/platform/ui/src/providers/ThemeProvider/` | theme implementation          |

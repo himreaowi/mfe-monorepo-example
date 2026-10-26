@@ -76,7 +76,7 @@ import { Alert, Button, Select, TextField } from '@org/ui';
 | Command                | What                                                                                                      |
 | ---------------------- | --------------------------------------------------------------------------------------------------------- |
 | `pnpm storybook`       | Storybook dev server on http://localhost:3193 in this repo (root `package.json` `mfe.tools.storybook`)    |
-| `pnpm build-storybook` | static build in `packages/ui/storybook-static/` (git-ignored, Nx cached)                                  |
+| `pnpm build-storybook` | static build in `packages/platform/ui/storybook-static/` (git-ignored, Nx cached)                         |
 | `pnpm test:ui`         | builds Storybook, then axe (WCAG 2.2 AA) + screenshots of every story in light and dark (port 3194)       |
 | `pnpm test:ui:update`  | the same, writing new screenshot baselines (`visual/__screenshots__/<platform>/`); review and commit them |
 

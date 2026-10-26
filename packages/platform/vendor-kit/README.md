@@ -3,7 +3,7 @@
 What we hand to external vendors (decision D3: vendors have **no repo access**). They build a
 module against the mount contract, test it with the standalone test host and deliver a hosted
 bundle. Internal guide (decision table, onboarding, security):
-[docs/external-modules.md](../../docs/external-modules.md).
+[docs/external-modules.md](../../../docs/external-modules.md).
 
 | Path                            | What                                                                                                  |
 | ------------------------------- | ----------------------------------------------------------------------------------------------------- |

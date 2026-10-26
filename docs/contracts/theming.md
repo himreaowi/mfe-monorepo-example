@@ -5,14 +5,14 @@ Normative rules for every app and package. Implementation: `@org/design-tokens` 
 
 ## Tokens
 
-| Artifact      | Requirement                                                                 |
-| ------------- | --------------------------------------------------------------------------- |
-| CSS variables | `packages/design-tokens/src/tokens.css`, imported once by the page owner    |
-| Light         | `:root` / `[data-theme='light']`                                            |
-| Dark          | `[data-theme='dark']`                                                       |
-| Usage         | themeable values use `var(--…)`; no hardcoded colours on themeable surfaces |
-| Contrast      | every text/background token pair meets WCAG 2.2 AA in both themes           |
-| UI kit        | no third-party component library required                                   |
+| Artifact      | Requirement                                                                       |
+| ------------- | --------------------------------------------------------------------------------- |
+| CSS variables | `packages/platform/design-tokens/src/tokens.css`, imported once by the page owner |
+| Light         | `:root` / `[data-theme='light']`                                                  |
+| Dark          | `[data-theme='dark']`                                                             |
+| Usage         | themeable values use `var(--…)`; no hardcoded colours on themeable surfaces       |
+| Contrast      | every text/background token pair meets WCAG 2.2 AA in both themes                 |
+| UI kit        | no third-party component library required                                         |
 
 ## Shell layout colours
 
