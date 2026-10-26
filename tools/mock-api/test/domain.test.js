@@ -95,7 +95,8 @@ describe('intranet API', () => {
     assert.equal(byDept.body.total, 2);
     const detail = await api.call('/staff/s-1016');
     assert.equal(detail.body.manager.name, 'Oliver Chan');
-    assert.match(detail.body.nric, /^S\d{7}[A-Z]$/);
+    assert.match(detail.body.nric, /^S\*{4}\d{3}[A-Z]$/); // masked by the server
+    assert.doesNotMatch(JSON.stringify(detail.body), /[STFGM]\d{7}[A-Z]/);
     assert.equal(all.body.items[0].nric, undefined); // the search list never carries it
     assert.ok(Array.isArray(detail.body.skills));
     assert.equal((await api.call('/staff/nope')).res.status, 404);

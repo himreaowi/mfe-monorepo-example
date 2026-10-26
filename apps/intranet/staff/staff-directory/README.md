@@ -16,7 +16,7 @@ hooks that the pages call (`OverviewPage`, `StaffDetailPage`); the components on
 The reusable staff search pieces live in the zone library `@org/intranet-directory`
 (`apps/intranet/libs/directory`): the API client and types, `useStaffSearch`, `useDebouncedValue`
 and `StaffCard`. The remote keeps what only it needs: the pages, `StaffSearch`, `StaffFilters`,
-`StaffDetail` (which shows the NRIC masked with `maskNric` from `@org/common-identity`, never in
+`StaffDetail` (which shows the NRIC masked with `maskNric` from `@org/common-identity`: the backend sends it masked and the frontend masks again defensively; never in
 full) and the filters state below.
 
 The filters are the example of the state pattern (`docs/coding-conventions.md` "State

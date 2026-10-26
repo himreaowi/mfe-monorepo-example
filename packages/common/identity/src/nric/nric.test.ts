@@ -7,9 +7,15 @@ describe('isValidNric', () => {
     'T1234567J', // T series (offset 4)
     'F1234567N', // F series
     'G1234567X', // G series (offset 4)
-    'M1234567K', // M series (offset 3)
   ])('accepts %s', (id) => {
     expect(isValidNric(id)).toBe(true);
+  });
+
+  it('checks only the format of the M series (check letters not verified)', () => {
+    expect(isValidNric('M1234567K')).toBe(true);
+    expect(isValidNric('M1234567A')).toBe(true);
+    expect(isValidNric('M123456A')).toBe(false);
+    expect(isValidNric('M12345678')).toBe(false);
   });
 
   it('ignores case and surrounding spaces', () => {
@@ -18,12 +24,12 @@ describe('isValidNric', () => {
 
   it('computes the check letter of every series for the same digits', () => {
     expect(
-      ['S', 'T', 'F', 'G', 'M'].map((s) => nricCheckLetter(s, '1234567')),
-    ).toEqual(['D', 'J', 'N', 'X', 'K']);
+      ['S', 'T', 'F', 'G'].map((s) => nricCheckLetter(s, '1234567')),
+    ).toEqual(['D', 'J', 'N', 'X']);
   });
 
   it('accepts a number made with each series and a computed letter', () => {
-    for (const series of ['S', 'T', 'F', 'G', 'M']) {
+    for (const series of ['S', 'T', 'F', 'G']) {
       for (const digits of ['0000000', '9999999', '8512345', '0102030']) {
         expect(
           isValidNric(`${series}${digits}${nricCheckLetter(series, digits)}`),
@@ -64,6 +70,7 @@ describe('isValidNric', () => {
 describe('nricCheckLetter', () => {
   it('returns an empty string for an unknown series or bad digits', () => {
     expect(nricCheckLetter('A', '1234567')).toBe('');
+    expect(nricCheckLetter('M', '1234567')).toBe('');
     expect(nricCheckLetter('S', '123')).toBe('');
   });
 });
@@ -78,6 +85,11 @@ describe('maskNric', () => {
     const masked = maskNric('S1234567D');
     expect(masked).not.toContain('1234');
     expect(masked).toHaveLength(9);
+  });
+
+  it('is idempotent: an already masked value stays the same', () => {
+    expect(maskNric('S****567D')).toBe('S****567D');
+    expect(maskNric(maskNric('S1234567D'))).toBe('S****567D');
   });
 
   it('masks short or odd values without throwing', () => {

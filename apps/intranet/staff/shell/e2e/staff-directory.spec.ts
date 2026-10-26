@@ -111,6 +111,13 @@ test.describe('Staff directory, unknown person', () => {
   test('staff detail shows a masked NRIC and never the full number', async ({
     page,
   }) => {
+    // the API response itself must not carry the full number
+    const bodies: string[] = [];
+    page.on('response', (response) => {
+      if (/\/staff\/s-1016$/.test(response.url())) {
+        void response.text().then((text) => bodies.push(text));
+      }
+    });
     await openRemote(page, remote, 's-1016');
     const container = remotePage(page, remote);
     await expect(
@@ -118,7 +125,10 @@ test.describe('Staff directory, unknown person', () => {
     ).toBeVisible();
     const nric = container.getByTestId('staff-nric');
     await expect(nric).toHaveText(/^S\*{4}\d{3}[A-Z]$/);
-    // the API sends the number; the page must not render it anywhere in the DOM
+    // neither the API nor the DOM has the full number
     expect(await page.content()).not.toMatch(/[STFGM]\d{7}[A-Z]/);
+    await expect.poll(() => bodies.length).toBeGreaterThan(0);
+    expect(bodies.join('')).toContain('"nric":"S****');
+    expect(bodies.join('')).not.toMatch(/[STFGM]\d{7}[A-Z]/);
   });
 });

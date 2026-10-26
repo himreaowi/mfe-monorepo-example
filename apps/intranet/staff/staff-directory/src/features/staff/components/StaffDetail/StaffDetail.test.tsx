@@ -65,6 +65,15 @@ describe('StaffDetail', () => {
     expect(container.textContent).not.toContain('1234');
   });
 
+  it('shows an NRIC the backend already masked unchanged', () => {
+    renderDetail({
+      status: 'success',
+      data: { ...priya, nric: 'S****567D' },
+      reload,
+    });
+    expect(screen.getByTestId('staff-nric')).toHaveTextContent('S****567D');
+  });
+
   it('shows no NRIC row when the API sends none', () => {
     renderDetail({ status: 'success', data: priya, reload });
     expect(screen.queryByText('NRIC')).not.toBeInTheDocument();

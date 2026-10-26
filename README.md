@@ -102,8 +102,8 @@ Two real packages show where shared code goes (`docs/where-code-goes.md`):
 - **`@org/common-identity`**: `isValidNric`, `isValidUen`, `maskNric`. It ships to the internet
   portals, so it holds no confidential rules and **the backend must enforce the same rules**
   (the mock API repeats a rough UEN check for that reason). The staff detail page shows
-  `S****567D`, never the full number (the mock API sends it only on `GET /staff/:id`; a real API
-  should send the masked value if the page never needs the rest).
+  `S****567D`, never the full number (the backend sends it already masked, the full number never leaves the server;
+  the frontend masks again defensively).
 
 Both are checked by `pnpm check` (`package-boundaries`) and `pnpm lint`; their unit tests run
 with `pnpm test`, and the e2e specs cover the keyboard flow, the UEN form and the masked NRIC.

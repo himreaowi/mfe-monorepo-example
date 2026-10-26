@@ -11,17 +11,17 @@ sources (`"exports": { ".": "./src/index.ts" }`).
 
 ## What it checks
 
-| Function         | Checks                                                                                                                                                    | Does not check                                                     |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `isValidNric(v)` | NRIC/FIN format (series `S T F G M`, 7 digits, letter) and the check letter (weights 2,7,6,5,4,3,2; mod 11; offset 0 for S and F, 4 for T and G, 3 for M) | that the number was issued or belongs to the person                |
-| `isValidUen(v)`  | the common UEN shapes: business `nnnnnnnnX`, local company `yyyynnnnnX`, other entities `T/S/R` + `yy` + 2-letter entity type + `nnnn` + `X`              | the check letter, the entity type code, that the UEN is registered |
-| `maskNric(v)`    | nothing: keeps the first character and the last 4 (`S1234567D` becomes `S****567D`); anything shorter than 5 characters is fully masked                   |                                                                    |
+| Function         | Checks                                                                                                                                                                                                                                          | Does not check                                                     |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `isValidNric(v)` | NRIC/FIN format (series `S T F G M`, 7 digits, letter) and the check letter for S, T, F, G (weights 2,7,6,5,4,3,2; mod 11; offset 0 for S and F, 4 for T and G). **M**: format only (M, 7 digits, letter), the check letter is **not verified** | that the number was issued or belongs to the person                |
+| `isValidUen(v)`  | the common UEN shapes: business `nnnnnnnnX`, local company `yyyynnnnnX`, other entities `T/S/R` + `yy` + 2-letter entity type + `nnnn` + `X`                                                                                                    | the check letter, the entity type code, that the UEN is registered |
+| `maskNric(v)`    | nothing: keeps the first character and the last 4 (`S1234567D` becomes `S****567D`); anything shorter than 5 characters is fully masked                                                                                                         |                                                                    |
 
 Input is trimmed and upper-cased first, so `" s1234567d "` counts as `S1234567D`. Send the
 normalised value to the backend or have it normalise the same way.
 
-> The M-series check letters (long-term FINs from 2022) follow the published table as understood
-> when this was written; confirm them against an official list before relying on them.
+> M-series FINs (long-term, from 2022) get a format check only: their check letters are not
+> verified here. Do not rely on this package to reject a wrong M check letter; the backend must.
 
 ## The backend must enforce the same rules
 

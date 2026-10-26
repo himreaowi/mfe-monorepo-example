@@ -6,9 +6,6 @@ const CHECK_LETTERS: Record<string, { offset: number; letters: string }> = {
   T: { offset: 4, letters: 'JZIHGFEDCBA' },
   F: { offset: 0, letters: 'XWUTRQPNMLK' },
   G: { offset: 4, letters: 'XWUTRQPNMLK' },
-  // M-series (FIN issued from 2022): offset 3, the letters of the F/G table reversed
-  // (written here already indexed by the remainder), with J where that table has M
-  M: { offset: 3, letters: 'XWUTRQPNJLK' },
 };
 
 const NRIC_FORMAT = /^[STFGM]\d{7}[A-Z]$/;
@@ -36,20 +33,22 @@ export function nricCheckLetter(series: string, digits: string): string {
  * Is `value` a Singapore NRIC or FIN: a series letter (S or T citizens and PRs, F or G foreign
  * residents, M long-term FIN from 2022), 7 digits and the right check letter?
  *
- * Checks the format and the check letter only. It cannot tell whether the number was issued or
+ * S, T, F and G: format and check letter. M (long-term FIN from 2022): format only (M, 7 digits,
+ * a letter), because the M check letters are not verified here. Checks nothing else. It cannot tell whether the number was issued or
  * belongs to the person; the backend must check that and must apply the same rules.
  * Surrounding spaces and lower case are ignored (see `normaliseId`).
  */
 export function isValidNric(value: unknown): boolean {
   if (typeof value !== 'string') return false;
   const id = normaliseId(value);
-  return (
-    NRIC_FORMAT.test(id) && nricCheckLetter(id[0], id.slice(1, 8)) === id[8]
-  );
+  if (!NRIC_FORMAT.test(id)) return false;
+  if (id[0] === 'M') return true; // M check letters are not verified: format only
+  return nricCheckLetter(id[0], id.slice(1, 8)) === id[8];
 }
 
 /**
  * Hide all but the series letter and the last 4 characters: `S1234567D` becomes `S****567D`.
+ * Masking an already masked value gives the same value (safe to apply twice).
  * Use it wherever an NRIC is shown; never render the full number. Anything shorter than 5
  * characters is masked completely.
  */

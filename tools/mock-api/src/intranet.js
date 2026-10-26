@@ -2,7 +2,7 @@
 /**
  * DEV ONLY: mock APIs of the intranet zone (Staff Portal).
  *   GET  /staff?q=&department=     staff search          (staff-directory)
- *   GET  /staff/:id                one staff member      (staff-directory; includes the fictional NRIC)
+ *   GET  /staff/:id                one staff member      (staff-directory; the NRIC arrives masked)
  *   GET  /leave/balance            leave balance         (leave-requests)
  *   GET  /leave/requests           my leave requests     (leave-requests)
  *   POST /leave/requests           submit a request      (leave-requests, 422 with field errors;
@@ -16,6 +16,15 @@ import { countWorkingDays, daysAgo, isIsoDate } from './dates.js';
 import { json, notFound } from './server.js';
 
 /** @typedef {import('./server.js').MockResource} ZoneApi */
+
+/**
+ * First character and last 4, the rest `*` (same rule as maskNric in @org/common-identity; the
+ * mock is plain JS and does not depend on workspace packages, so the rule is repeated here).
+ * @param {string} nric
+ */
+function maskNric(nric) {
+  return `${nric[0]}${'*'.repeat(Math.max(0, nric.length - 5))}${nric.slice(-4)}`;
+}
 
 /**
  * A fictional but valid NRIC for the demo staff: S + 7 digits + check letter (weights
@@ -495,7 +504,7 @@ export function createIntranetApi() {
             ...staffSummary(member),
             skills: member.skills,
             startDate: member.startDate,
-            nric: member.nric,
+            nric: maskNric(member.nric), // the full number never leaves the server
             manager: manager ? { id: manager.id, name: manager.name } : null,
             directReports: reports.map((r) => ({ id: r.id, name: r.name })),
           });
