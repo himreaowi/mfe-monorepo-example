@@ -92,7 +92,7 @@ test.describe('Business Portal under /business', () => {
     await expect(container.getByText(`Added “${name}”.`)).toBeVisible();
     await expect(container.getByTestId('error-summary')).toHaveCount(0);
     await expect(
-      container.getByTestId('demo-item-list').getByText('201912345K'),
-    ).toBeVisible();
+      container.getByRole('row', { name: new RegExp(name) }),
+    ).toContainText('201912345K');
   });
 });
