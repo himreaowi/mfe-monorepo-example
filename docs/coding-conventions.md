@@ -35,7 +35,7 @@ Hard rules (enforced by `pnpm check` and ESLint, see [guardrails.md](guardrails.
 ## Use @org/ui first
 
 Before writing a component, use the in-house library `@org/ui`
-([packages/ui/README.md](../packages/ui/README.md), browse it with `pnpm storybook`): Button,
+([packages/platform/ui/README.md](../packages/platform/ui/README.md), browse it with `pnpm storybook`): Button,
 Link, TextField, TextArea, Select, DateField, Checkbox, RadioGroup, Dialog, Alert, Card, Badge,
 Spinner, Table, Tabs, VisuallyHidden. They are built on native elements, use the tokens, work in
 both themes and pass axe (WCAG 2.2 AA) in every state.

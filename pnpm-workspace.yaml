@@ -1,7 +1,7 @@
 packages:
   # apps/<zone>/<shell>/{shell,<remote>} and apps/<zone>/shared/<remote> (tools/scripts/src/layout.js)
   - apps/*/*/*
-  - packages/*
+  - packages/platform/*
   - tools/*
 
 # Isolated layout: every app/package gets its own node_modules with only its declared deps (D7).

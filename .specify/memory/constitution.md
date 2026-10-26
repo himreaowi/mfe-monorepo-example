@@ -119,7 +119,7 @@ single faulty or compromised module from reaching user sessions.
 
 ### V. Composition-First UI and One Design System
 
-- Shared components (the `@org/ui` library, documented in Storybook), tokens and theme live in `packages/ui` and `packages/design-tokens`;
+- Shared components (the `@org/ui` library, documented in Storybook), tokens and theme live in `packages/platform/ui` and `packages/platform/design-tokens`;
   apps consume `var(--…)` tokens instead of hardcoded colours and spacing.
 - Prefer composition (children, slots, small hooks) over boolean-prop sprawl. No Atomic Design
   folder taxonomy; one folder per component (`<Component>.tsx`, own `.module.scss`, test;

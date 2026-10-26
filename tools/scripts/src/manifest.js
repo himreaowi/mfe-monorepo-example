@@ -21,7 +21,7 @@ import { SHARED_GROUP, SHELL_FOLDER } from './layout.js';
 /** @typedef {{ rule: string, message: string }} ManifestIssue */
 
 const VALIDATOR =
-  'packages/mf-runtime/src/manifest/validateSchema.generated.js';
+  'packages/platform/mf-runtime/src/manifest/validateSchema.generated.js';
 
 /** @param {string} pointer */
 const at = (pointer) =>

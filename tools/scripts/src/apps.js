@@ -204,7 +204,7 @@ export function nxAffected({ root, base, head }) {
 
 /**
  * Apps affected by the changes since `base`. Nx decides which projects are affected (package-based
- * graph: a change in packages/ui affects every app depending on it); without Nx the git diff is
+ * graph: a change in packages/platform/ui affects every app depending on it); without Nx the git diff is
  * mapped onto the workspace dependency graph. Changes to GLOBAL_FILES (e.g. deploy/) affect
  * every app in both modes.
  * @param {{ root: string, base: string, head?: string, zone?: string, nx?: boolean }} options

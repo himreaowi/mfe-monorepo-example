@@ -139,7 +139,7 @@ describe('affectedFromFiles (git fallback)', () => {
     const root = workspace();
     const set = affectedFromFiles({
       root,
-      files: ['packages/ui/src/Button.tsx'],
+      files: ['packages/platform/ui/src/Button.tsx'],
     });
     assert.deepEqual([...(set ?? [])].sort(), [
       '@org/charts',
@@ -191,8 +191,11 @@ describe('affectedApps', () => {
       ['staff'],
     );
 
-    fs.mkdirSync(path.join(root, 'packages/charts/src'));
-    fs.writeFileSync(path.join(root, 'packages/charts/src/new.ts'), '');
+    fs.mkdirSync(path.join(root, 'packages/platform/charts/src'));
+    fs.writeFileSync(
+      path.join(root, 'packages/platform/charts/src/new.ts'),
+      '',
+    );
     result = affectedApps({ root, base, zone: 'intranet' });
     assert.deepEqual(
       result.apps.map((a) => a.name),

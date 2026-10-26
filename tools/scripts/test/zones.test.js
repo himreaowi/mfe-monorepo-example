@@ -94,7 +94,7 @@ describe('zones', () => {
   it('@org/playwright-config reads the same tool ports (and mirrors the zone tool ranges)', async () => {
     const file = path.resolve(
       import.meta.dirname,
-      '../../../packages/playwright-config/src/zone.js',
+      '../../../packages/platform/playwright-config/src/zone.js',
     );
     const { TOOL_PORTS, ZONE_TOOL_RANGES, ZONE_PORTS } = await import(
       pathToFileURL(file).href

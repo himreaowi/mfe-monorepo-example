@@ -35,7 +35,7 @@ const http = createHttpClient({ baseUrl: 'http://api.test/api', fetch });
 jest.fn().mockResolvedValue(jsonResponse({ message: 'x' }, { status: 500 }));
 ```
 
-See [docs/testing.md](../../docs/testing.md#testing-api-code-jsdom-has-no-fetch).
+See [docs/testing.md](../../../docs/testing.md#testing-api-code-jsdom-has-no-fetch).
 
 ## Exposed-module guard
 

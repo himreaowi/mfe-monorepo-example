@@ -2,7 +2,7 @@
 
 How to integrate UI that is **not** built in this repo with our React/Module Federation stack:
 vendor products (decision D3: vendors have no repo access), apps on another framework, or apps on
-another React major. Vendor-facing material is in `packages/vendor-kit` (packed as a zip).
+another React major. Vendor-facing material is in `packages/platform/vendor-kit` (packed as a zip).
 
 ## Which integration?
 
@@ -22,7 +22,7 @@ everything else goes in an iframe.
 
 ## The mount contract (v1)
 
-Source of truth: `packages/mf-runtime/src/external/contract.ts` (`MOUNT_CONTRACT_VERSION`),
+Source of truth: `packages/platform/mf-runtime/src/external/contract.ts` (`MOUNT_CONTRACT_VERSION`),
 shipped to vendors as `mount-contract.d.ts` in the vendor kit (generated, checked by tests).
 
 ```ts
@@ -185,7 +185,7 @@ Not generated; build it inside an adapter remote when needed:
    `config` keys, events/error codes, and the origins they need (script, connect, style, img,
    font).
 3. **Send the vendor kit**: `pnpm --filter @org/vendor-kit pack:kit` →
-   `packages/vendor-kit/dist/org-vendor-kit-<version>.zip` (or publish it to Azure Artifacts).
+   `packages/platform/vendor-kit/dist/org-vendor-kit-<version>.zip` (or publish it to Azure Artifacts).
    It contains the contract types, the test host, examples and `CHECKLIST.md`.
 4. The vendor builds and tests with the **test host** (`node test-host/serve.mjs`), then delivers:
    versioned HTTPS URL per environment, SRI hash, origin list, release notes, support contact.
@@ -232,4 +232,4 @@ When the app catches up with our React version, it can become a plain remote aga
 | Started automatically  | the adapter's `nx.targets.dev.dependsOn` (`@org/mock-vendor:serve:<zone>`) → `pnpm dev:<zone>` and `pnpm exec nx dev <adapter>` start it                                                                                                                             |
 | e2e                    | the zone suite checks **any** vendor generically (mounted content, no fallback, no console errors, unmount); mock-vendor-only checks skip with a reason when `props.vendor` points elsewhere                                                                         |
 | Test a vendor bundle   | `pnpm --filter @org/vendor-kit serve` → http://localhost:3998/test-host/?url=…&format=esm&autoMount=1                                                                                                                                                                |
-| Change the contract    | edit `packages/mf-runtime/src/external/contract.ts`, then `pnpm --filter @org/vendor-kit generate:contract` and bump the kit version                                                                                                                                 |
+| Change the contract    | edit `packages/platform/mf-runtime/src/external/contract.ts`, then `pnpm --filter @org/vendor-kit generate:contract` and bump the kit version                                                                                                                        |

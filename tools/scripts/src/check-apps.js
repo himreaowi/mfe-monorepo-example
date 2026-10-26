@@ -26,7 +26,7 @@
  * - no barrel files: the only `index.ts` in an app is a feature's public API
  *   (`src/features/<feature>/index.ts`); everything else is imported from its file
  *   (`@/components/Card/Card`)
- * - @org/ui component library (packages/ui/src/components/<Name>/): every component folder has
+ * - @org/ui component library (packages/platform/ui/src/components/<Name>/): every component folder has
  *   <Name>.tsx, <Name>.module.scss, <Name>.test.tsx and <Name>.stories.tsx
  * - shared components belong in @org/ui: a component folder name (src/components/<Name>,
  *   features/<feature>/components/<Name>) found in two or more apps is an error, unless the
@@ -965,7 +965,7 @@ function checkTools(root, err) {
   }
 }
 
-const UI_DOC = 'packages/ui/README.md ("Adding a component")';
+const UI_DOC = 'packages/platform/ui/README.md ("Adding a component")';
 
 /**
  * @org/ui: `src/components/<Name>/` holds `<Name>.tsx`, `<Name>.module.scss`, `<Name>.test.tsx`
@@ -1075,7 +1075,7 @@ function checkDuplicateComponents(root, infos, err) {
     if (dirs.length < 2 || (allowed && Object.hasOwn(allowed, name))) continue;
     err(
       'shared-component',
-      `component ${name} exists in ${dirs.length} apps (${dirs.join(', ')}). Move it to @org/ui (packages/ui/src/components/${name}/, see ${UI_DOC}) and import it from '@org/ui' in each app. If each app needs its own version, rename them or list it in the root ${shape}.`,
+      `component ${name} exists in ${dirs.length} apps (${dirs.join(', ')}). Move it to @org/ui (packages/platform/ui/src/components/${name}/, see ${UI_DOC}) and import it from '@org/ui' in each app. If each app needs its own version, rename them or list it in the root ${shape}.`,
     );
   }
 }

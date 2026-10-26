@@ -18,6 +18,7 @@ export function toolPort(name) {
     '..',
     '..',
     '..',
+    '..',
     'package.json',
   );
   const offset = JSON.parse(fs.readFileSync(file, 'utf8')).mfe?.tools?.[name]

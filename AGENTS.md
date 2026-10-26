@@ -84,7 +84,7 @@ Instructions for AI coding agents (and humans) working in this monorepo. Details
 | Generators + templates        | `tools/generators/`                                                                                                                                 |
 | Guardrails (`pnpm check`)     | `tools/scripts/src/check-*.js`, [docs/guardrails.md](docs/guardrails.md)                                                                            |
 | Shell registry / dev manifest | `apps/<zone>/<name>/shell/remotes.json`; `mfe-manifest.dev.json` is generated (`pnpm dev-manifest`) from it + ports + the shell's `mfe.devManifest` |
-| Manifest schema               | `packages/mf-runtime/src/manifest/mfe-manifest.schema.json`                                                                                         |
+| Manifest schema               | `packages/platform/mf-runtime/src/manifest/mfe-manifest.schema.json`                                                                                |
 | Host props (remote side)      | `@org/mf-runtime/remote` (`useHostProps`, `useRemotePath`, `createRemoteApp`)                                                                       |
 | Auth                          | `@org/auth`, [docs/auth-contract.md](docs/auth-contract.md)                                                                                         |
 | Vendor modules                | `@org/mf-runtime/external`, [docs/external-modules.md](docs/external-modules.md)                                                                    |

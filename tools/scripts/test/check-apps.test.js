@@ -794,7 +794,7 @@ describe('check-apps', () => {
   });
 
   describe('component library (@org/ui) and shared components', () => {
-    const uiDir = 'packages/ui/src/components';
+    const uiDir = 'packages/platform/ui/src/components';
     const uiComponent = (/** @type {string} */ name, skip = '') =>
       Object.fromEntries(
         ['.tsx', '.module.scss', '.test.tsx', '.stories.tsx']

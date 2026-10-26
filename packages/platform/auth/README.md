@@ -5,7 +5,7 @@ Provider-agnostic sign-in for shells and remotes, using the **backend session (B
 does the Singpass / SSO dance, keeps the tokens server-side and gives the browser an HttpOnly
 session cookie. The frontend only asks the BFF "who is signed in?".
 
-The BFF endpoints and what the backend must provide: [docs/auth-contract.md](../../docs/auth-contract.md).
+The BFF endpoints and what the backend must provide: [docs/auth-contract.md](../../../docs/auth-contract.md).
 
 ## Shell
 

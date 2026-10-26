@@ -314,7 +314,7 @@ importers:
     devDependencies:
       '@org/prettier-config':
         specifier: workspace:*
-        version: link:packages/prettier-config
+        version: link:packages/platform/prettier-config
       nx:
         specifier: 'catalog:'
         version: 23.3.0(@swc/core@1.16.18)
@@ -322,7 +322,7 @@ importers:
         specifier: 'catalog:'
         version: 3.9.10
 
-  packages/auth:
+  packages/platform/auth:
     dependencies:
       '@org/ui':
         specifier: workspace:*
@@ -386,7 +386,7 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
 
-  packages/design-tokens:
+  packages/platform/design-tokens:
     devDependencies:
       '@org/eslint-config':
         specifier: workspace:*
@@ -416,7 +416,7 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
 
-  packages/eslint-config:
+  packages/platform/eslint-config:
     dependencies:
       '@eslint/js':
         specifier: 'catalog:'
@@ -450,7 +450,7 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
 
-  packages/http-client:
+  packages/platform/http-client:
     devDependencies:
       '@org/eslint-config':
         specifier: workspace:*
@@ -480,7 +480,7 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
 
-  packages/jest-config:
+  packages/platform/jest-config:
     dependencies:
       '@swc/core':
         specifier: 'catalog:'
@@ -514,7 +514,7 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
 
-  packages/mf-runtime:
+  packages/platform/mf-runtime:
     dependencies:
       '@module-federation/enhanced':
         specifier: 'catalog:'
@@ -587,7 +587,7 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
 
-  packages/playwright-config:
+  packages/platform/playwright-config:
     devDependencies:
       '@axe-core/playwright':
         specifier: 'catalog:'
@@ -614,13 +614,13 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
 
-  packages/prettier-config:
+  packages/platform/prettier-config:
     dependencies:
       prettier:
         specifier: ^3.0.0
         version: 3.9.10
 
-  packages/pwa:
+  packages/platform/pwa:
     dependencies:
       workbox-build:
         specifier: 'catalog:'
@@ -678,7 +678,7 @@ importers:
         specifier: 'catalog:'
         version: 5.111.1(@swc/core@1.16.18)(clean-css@5.3.3)(cssnano@7.1.9(postcss@8.5.31))(csso@5.0.5)(esbuild@0.28.2)(html-minifier-terser@6.1.0)(lightningcss@1.33.0)(postcss@8.5.31)(svgo@4.1.0)
 
-  packages/tsconfig:
+  packages/platform/tsconfig:
     devDependencies:
       '@org/eslint-config':
         specifier: workspace:*
@@ -696,7 +696,7 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
 
-  packages/ui:
+  packages/platform/ui:
     dependencies:
       '@org/design-tokens':
         specifier: workspace:*
@@ -790,7 +790,7 @@ importers:
         specifier: 'catalog:'
         version: 5.111.1(@swc/core@1.16.18)(clean-css@5.3.3)(cssnano@7.1.9(postcss@8.5.31))(csso@5.0.5)(esbuild@0.28.2)(html-minifier-terser@6.1.0)(lightningcss@1.33.0)(postcss@8.5.31)(svgo@4.1.0)
 
-  packages/vendor-kit:
+  packages/platform/vendor-kit:
     devDependencies:
       '@org/eslint-config':
         specifier: workspace:*
@@ -814,7 +814,7 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
 
-  packages/webpack-config:
+  packages/platform/webpack-config:
     dependencies:
       '@module-federation/enhanced':
         specifier: 'catalog:'
@@ -903,7 +903,7 @@ importers:
     dependencies:
       '@org/prettier-config':
         specifier: workspace:*
-        version: link:../../packages/prettier-config
+        version: link:../../packages/platform/prettier-config
       '@org/scripts':
         specifier: workspace:*
         version: link:../scripts
@@ -913,10 +913,10 @@ importers:
     devDependencies:
       '@org/eslint-config':
         specifier: workspace:*
-        version: link:../../packages/eslint-config
+        version: link:../../packages/platform/eslint-config
       '@org/tsconfig':
         specifier: workspace:*
-        version: link:../../packages/tsconfig
+        version: link:../../packages/platform/tsconfig
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.2
@@ -935,10 +935,10 @@ importers:
     devDependencies:
       '@org/eslint-config':
         specifier: workspace:*
-        version: link:../../packages/eslint-config
+        version: link:../../packages/platform/eslint-config
       '@org/tsconfig':
         specifier: workspace:*
-        version: link:../../packages/tsconfig
+        version: link:../../packages/platform/tsconfig
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.2
@@ -960,13 +960,13 @@ importers:
     devDependencies:
       '@org/eslint-config':
         specifier: workspace:*
-        version: link:../../packages/eslint-config
+        version: link:../../packages/platform/eslint-config
       '@org/tsconfig':
         specifier: workspace:*
-        version: link:../../packages/tsconfig
+        version: link:../../packages/platform/tsconfig
       '@org/vendor-kit':
         specifier: workspace:*
-        version: link:../../packages/vendor-kit
+        version: link:../../packages/platform/vendor-kit
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.2
@@ -988,10 +988,10 @@ importers:
     devDependencies:
       '@org/eslint-config':
         specifier: workspace:*
-        version: link:../../packages/eslint-config
+        version: link:../../packages/platform/eslint-config
       '@org/tsconfig':
         specifier: workspace:*
-        version: link:../../packages/tsconfig
+        version: link:../../packages/platform/tsconfig
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.2
