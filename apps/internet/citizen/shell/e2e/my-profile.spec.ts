@@ -85,9 +85,17 @@ test.describe('My profile: the cache belongs to the signed-in user', () => {
     const readsAfterFirstSignIn = reads;
     expect(readsAfterFirstSignIn).toBeGreaterThanOrEqual(1);
 
-    // sign out and in again without a page load: the module-level cache would still have it
+    // sign out and in again without a page load: a surviving cache would still have it
     await signOut(page);
     await expect(page.getByTestId('sign-in-prompt')).toBeVisible();
+    // on phones the header panel stays open after signing out and covers the prompt
+    const menu = page.getByRole('button', { name: 'Menu' });
+    if (
+      (await menu.isVisible()) &&
+      (await menu.getAttribute('aria-expanded')) === 'true'
+    ) {
+      await menu.click();
+    }
     holding = true;
     await signInWithMock(page);
 
