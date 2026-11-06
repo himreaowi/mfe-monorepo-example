@@ -29,7 +29,9 @@ export function RemotePage({ remote }: { remote: RemoteEntry }) {
   return (
     <div data-testid={`remote-page-${remote.name}`}>
       {remote.access === 'private' ? (
-        <RequireAuth title={`Sign in to use ${remote.title}`}>{app}</RequireAuth>
+        <RequireAuth title={`Sign in to use ${remote.title}`}>
+          {app}
+        </RequireAuth>
       ) : (
         app
       )}
