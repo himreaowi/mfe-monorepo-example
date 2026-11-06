@@ -77,7 +77,7 @@ comma-separated: `--shell citizen,business`).
   come from the zone's tools range and the root `package.json` `mfe.tools` (`toolPort()` in
   `tools/scripts/src/zones.js`), so `pnpm dev:intranet` and `pnpm dev:internet` run side by side.
 - The remote's demo feature (`src/features/demo`) loads `/items` from that API through
-  `useApiClient()` (api/ → hooks/ → the page, which passes data down → display-only components) and has an "Add item" form with the
+  `useApiClient()` (api/ → hooks/ with TanStack Query and `queryKeys.ts` → the page, which passes the results down → display-only components) and has an "Add item" form with the
   validate-on-submit / error-summary pattern (docs/coding-conventions.md).
 - Every generated feature uses **one folder per component** (docs/coding-conventions.md):
   `features/<feature>/components/<Name>/{<Name>.tsx, <Name>.module.scss, <Name>.test.tsx}` (no

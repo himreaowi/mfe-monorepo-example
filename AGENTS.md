@@ -51,8 +51,11 @@ Instructions for AI coding agents (and humans) working in this monorepo. Details
   the exposed `src/app/apps.tsx` (and what it imports) must not import global styles or register a
   service worker; links use `useRemotePath()`; keep standalone mode working.
 - No hardcoded API or app paths in components (`apiRoutes`, `routePaths`); no API calls in
-  component `useEffect` (use `features/*/api` + `features/*/hooks`). Fetching is page-level: pages
-  call the data hooks and pass data down; feature components only display. Shared UI state: React
+  component `useEffect` (use `features/*/api` + `features/*/hooks`). Data hooks use TanStack Query
+  (`useQuery` / `useMutation`, imported only in `hooks/` folders; keys in
+  `features/*/queryKeys.ts`); `axios` is imported only in `@org/http-client`. Fetching is
+  page-level: pages call the data hooks and pass the results down; feature components only
+  display. Shared UI state: React
   Context + reducer in `state/`, shareable filters in the URL
   ([docs/coding-conventions.md](docs/coding-conventions.md#data-fetching)).
 - One folder per component: `features/<feature>/components/<Name>/` (and `src/components/<Name>/`)

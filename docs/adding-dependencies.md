@@ -64,13 +64,19 @@ the negative control in [toolchain.md](toolchain.md)).
 
 ## Tier 1: core singletons
 
-`react`, `react-dom`, `react-router`, `@org/ui` and `@org/auth` are listed in `TIER1` in
+Core means shared state (it holds React context) **or** loaded once to avoid duplicate downloads:
+`react`, `react-dom`, `react-router`, `@org/ui`, `@org/auth` and `@tanstack/react-query` hold
+state, `axios` is only here so the browser does not download it once per remote.
+
+They are listed in `TIER1` in
 `tools/scripts/src/tiers.js` and in `TIER1_SINGLETONS` in `packages/platform/webpack-config/src/tier1.js`
 (check-versions fails if the two lists differ). `@org/webpack-config` shares them with
 `singleton: true, strictVersion: true, requiredVersion: <catalog version>`: an app built against
 another version fails loudly when the shell loads it, and the shell shows `RemoteFallback`.
 
 Apps always reference them as `catalog:` (`workspace:*` for `@org/ui` and `@org/auth`). The generators do this.
+`axios` is the exception: it is a dependency of `@org/http-client` only (`pnpm check` rule
+`axios-import`), and `@org/webpack-config` finds its version through the app's `@org/*` packages.
 
 ### Requesting an exception
 

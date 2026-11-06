@@ -12,6 +12,8 @@ those versions were chosen.
 | pnpm                                                                | 12.14.0                  | `packageManager` (Corepack)   | `corepack enable` once, or run `corepack pnpm`                                    |
 | react / react-dom                                                   | 19.3.1                   | catalog (tier 1)              | MF singleton                                                                      |
 | react-router                                                        | 8.4.0                    | catalog (tier 1)              | MF singleton. Package is ESM-only                                                 |
+| @tanstack/react-query                                               | 5.104.5                  | catalog (tier 1)              | MF singleton. `@org/query`                                                        |
+| axios                                                               | 1.20.0                   | catalog (tier 1)              | MF singleton, loaded once. Used by `@org/http-client` only (fetch adapter)        |
 | @types/react / @types/react-dom                                     | 19.3.0                   | catalog (tier 1)              |                                                                                   |
 | webpack                                                             | **5.111.1**              | catalog                       | NOT 5.112.0, see "webpack / Module Federation" below                              |
 | webpack-cli / webpack-dev-server                                    | 7.2.3 / 6.1.0            | catalog                       | `webpack serve` / `webpack build` in every app                                    |
@@ -580,3 +582,11 @@ answered 503 showed `RemoteFallback` (then rendered styled after "Try again").
 - Development used style-loader at first (13 `<style>` elements in the standalone remote); it
   now extracts CSS the same way, and the dev servers send a CSP without `'unsafe-inline'`
   (see "webpack / Module Federation" above).
+
+## TanStack Query devtools: not used
+
+`@tanstack/react-query-devtools` 5.104.5 was tried in a generated remote under the dev CSP. Its
+panel opens but unstyled: it injects a `<style>` element (goober) and sets `style` attributes at
+runtime, and `style-src` has no `'unsafe-inline'` (117 CSP violations on the first render). Adding
+it would mean weakening the dev CSP, so it is not in the catalog. Read the cache in a test with
+`queryClient` from `@org/query/test` instead.

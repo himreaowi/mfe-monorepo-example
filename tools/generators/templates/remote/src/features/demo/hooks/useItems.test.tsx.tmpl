@@ -45,7 +45,7 @@ describe('useItems', () => {
     await waitFor(() => expect(result.current.status).toBe('error'));
     expect(result.current.error).toBe(failure);
     await act(() => result.current.refetch());
-    expect(result.current.status).toBe('success');
+    await waitFor(() => expect(result.current.status).toBe('success'));
   });
 
   it('fails without calling the API when none is configured', async () => {

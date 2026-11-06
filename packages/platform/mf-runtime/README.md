@@ -121,16 +121,20 @@ createRoot(el).render(<StandaloneApp />);
   (one component or a list, outermost first) wrap the routes in both modes, inside the router
   and the host props (they may use `useHostProps()`, `useNavigate()`); standalone they wrap the
   `StandaloneLayout` too. For remote-wide state (`src/state/`, docs/coding-conventions.md
-  "State management").
+  "State management"). It also makes one QueryClient for the remote (`@org/query`, module level,
+  so the cache survives leaving and returning) and wraps the routes in it, inside the host props;
+  the cache is cleared when `user` changes identity.
 - `useHostProps()`: the host props.
 - `useApiClient()`: the remote's API client (`createApiClient` from `@org/http-client`): base URL
   from host props `settings.apiBaseUrl`, `credentials: 'include'`, memoised per base URL;
   `undefined` when the environment has no `settings.apiBaseUrl`. Use it in feature hooks; no
-  per-remote `services/http.ts`.
+  per-remote `services/http.ts`. A 401 calls host prop `onUnauthorized`.
 - `useRemotePath()(to)`: absolute path inside the remote (`/apps/staff/route-2` embedded,
   `/route-2` standalone). Use it for links between remote pages: relative links inside a splat
   route are easy to get wrong.
 - `HostProps`, `HostUser`, `normalizeBasePath`, `joinBasePath`.
+- `onUnauthorized` is set by the generated shell to `useAuth().refresh`: a 401 re-checks the
+  session. In a shell, `MfeManifestProvider` takes the same `onUnauthorized` prop.
 - `user` (`HostUser`: `{ id, name?, roles? }`) is set by the generated shell from `@org/auth`:
   the user when signed in, `null` when signed out, `undefined` when the environment has no auth.
   A remote may also call `useAuth()` from `@org/auth` (shared singleton) for `csrfToken`,

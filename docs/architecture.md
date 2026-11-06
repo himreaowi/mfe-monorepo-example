@@ -62,8 +62,8 @@ sequenceDiagram
 
 ### Shared singletons (tier 1)
 
-`react`, `react-dom`, `react-router`, `@org/ui`, `@org/auth` are shared with
-`singleton: true, strictVersion: true` and the catalog version. The shell provides them; remotes
+`react`, `react-dom`, `react-router`, `@org/ui`, `@org/auth`, `@tanstack/react-query` and `axios`
+are shared with `singleton: true, strictVersion: true` and the catalog version. The shell provides them; remotes
 never download their own copy. A remote built against another version fails to load (fallback)
 instead of running with two Reacts. Everything else is bundled per app.
 

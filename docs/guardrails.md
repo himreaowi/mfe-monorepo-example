@@ -84,10 +84,12 @@ platform; `packages/platform/*` only platform. Never the other zone.
 | `library-tags`            | the Nx tags do not follow the folder (`zone:<zone>` + `type:lib`; `type:common`; platform `type:package`)                                         | set the tags the message prints                                                                                                          |
 | `library-shape`           | a library has an `mfe` block (port, federation name), a webpack config, or no `src/index.ts`                                                      | remove them / add the front door; libraries are bundled by the apps that import them                                                     |
 | `library-component-files` | a library's `src/components/<Name>/` is not PascalCase or lacks `<Name>.tsx` / `<Name>.test.tsx`                                                  | one folder per component (`<Name>.module.scss` when styled, stories optional)                                                            |
+| `axios-import`            | a package other than `@org/http-client` depends on or imports `axios`                                                                             | call the API through `useApiClient()` and the feature's `api/` folder                                                                    |
+| `query-hook-import`       | `useQuery`, `useMutation`, `useInfiniteQuery` (and `useQueries`, `useSuspense*`) are imported outside a `hooks/` folder                           | put the query in a data hook; the page calls it and passes the result down                                                               |
 
 ## ESLint (in every project, `pnpm lint`)
 
-`@org/eslint-config` adds two boundary rules:
+`@org/eslint-config` adds these boundary rules:
 
 - **`@nx/enforce-module-boundaries`** with the tags above (the import table of
   [where-code-goes.md](where-code-goes.md); a test in `tools/scripts` keeps it equal to
@@ -106,7 +108,9 @@ platform; `packages/platform/*` only platform. Never the other zone.
   (`apps/<zone>/<portal>/<folder>/package.json`, not `apps/<zone>/libs/`). Nx maps a package
   import to a project only when that package declares `exports`/`main`, which apps do not, so
   app imports by name are blocked here. Zone libraries share the `@org/<zone>-` prefix and are
-  imported by name.
+  imported by name. The same rule reports `axios` outside `@org/http-client` and `useQuery` & co.
+  outside `hooks/` folders, in the editor; `axios-import` and `query-hook-import` above are the
+  backstop (a test keeps both lists of hooks equal).
 
 Fix: move the shared code into a library ([where-code-goes.md](where-code-goes.md)) and depend on
 it with `workspace:*`.

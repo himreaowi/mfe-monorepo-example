@@ -56,12 +56,12 @@ jsdom implements no Fetch API: in a plain `jest-environment-jsdom`, `fetch`, `He
 
 Recommended split (the generated remote's `features/demo` does exactly this):
 
-| Layer                     | How to test                                                                                                                                 |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `features/*/api/` (pure)  | real `@org/http-client` + a fake fetch: `createFakeFetch` from `@org/jest-config/fetch`; assert URLs, bodies, parsed results, errors        |
-| `features/*/hooks/`       | `jest.mock('../api/itemsApi')` + `renderHook` inside `HostPropsProvider` (`settings.apiBaseUrl`): loading, data, error, retry, unconfigured |
-| feature components        | props only (pages fetch, components display): render each state from props, assert callbacks; no API mock needed                            |
-| Real API / mock API flows | e2e (`tools/mock-api` runs with `pnpm dev:<zone>`)                                                                                          |
+| Layer                     | How to test                                                                                                                                                                                 |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `features/*/api/` (pure)  | real `@org/http-client` + a fake fetch: `createFakeFetch` from `@org/jest-config/fetch`; assert URLs, bodies, parsed results, errors                                                        |
+| `features/*/hooks/`       | `jest.mock('../api/itemsApi')` + `renderHookWithQuery` from `@org/query/test` inside `HostPropsProvider` (`settings.apiBaseUrl`): pending, data, error, refetch, invalidation, unconfigured |
+| feature components        | props only (pages fetch, components display): render each state from props, assert callbacks; no API mock needed                                                                            |
+| Real API / mock API flows | e2e (`tools/mock-api` runs with `pnpm dev:<zone>`)                                                                                                                                          |
 
 ```ts
 import { createFakeFetch } from '@org/jest-config/fetch';
@@ -87,6 +87,11 @@ it('exposes 422 field errors', async () => {
   });
 });
 ```
+
+`renderWithQuery` / `renderHookWithQuery` (`@org/query/test`) render inside a fresh QueryClient
+with the app defaults and no retries, return `queryClient` (look at the cache, `setQueryData`) and
+take your `wrapper` (host props) inside it. Display components need neither: they get the query
+result as props, so their tests pass `{ status: 'pending' }` and the like.
 
 `createFakeFetch(routes)`: keys `"<METHOD> <pathname>"`, values `{ status?, body? }`, a `Response`
 or a function of the call (`{ url, method, pathname, query, body, init }`); unknown routes answer
