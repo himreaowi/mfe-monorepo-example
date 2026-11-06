@@ -272,12 +272,13 @@ describe('createRemoteApp', () => {
 
     it('clears the cache when the host user changes', () => {
       let client: QueryClient | undefined;
+      function Capture({ children }: { children: ReactNode }) {
+        client = useQueryClient();
+        return children;
+      }
       const app = createRemoteApp({
         routes: [{ index: true, element: <CachePage seed="private" /> }],
-        providers: ({ children }) => {
-          client = useQueryClient();
-          return children;
-        },
+        providers: Capture,
       });
       const { rerender } = render(embedded(app.EmbeddedApp, { id: 'ada' }));
       expect(client?.getQueryData(['k'])).toBe('private');

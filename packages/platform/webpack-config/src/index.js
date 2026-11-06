@@ -126,7 +126,9 @@ function reachableVersion(rootDir, pkg) {
     for (const name of names) {
       let next;
       try {
-        next = path.dirname(fs.realpathSync(req.resolve(`${name}/package.json`)));
+        next = path.dirname(
+          fs.realpathSync(req.resolve(`${name}/package.json`)),
+        );
       } catch {
         continue;
       }

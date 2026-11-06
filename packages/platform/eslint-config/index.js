@@ -143,6 +143,7 @@ export const queryHooks = [
  * query hooks (hooks/ folders only, pages call hooks and components display). tools/scripts
  * check-packages is the backstop (axios-import, query-hook-import).
  * @param {{ axios?: boolean, query?: boolean }} [allow]
+ * @returns {['error', object]}
  */
 export function restrictedImports(allow = {}) {
   return [
