@@ -1,6 +1,7 @@
-import { act, renderHook, waitFor } from '@testing-library/react';
+import { act, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
+import { renderHookWithQuery } from '@org/query/test';
 import { getLeaveRequests } from '../api/leaveApi';
 import { request } from '../__fixtures__/leave';
 import { useLeaveRequests } from './useLeaveRequests';
@@ -25,19 +26,21 @@ function wrapper({ children }: { children: ReactNode }) {
 beforeEach(() => jest.resetAllMocks());
 
 describe('useLeaveRequests', () => {
-  it('reports an error; reload() tries again', async () => {
+  it('reports an error; refetch() tries again', async () => {
     jest
       .mocked(getLeaveRequests)
       .mockRejectedValueOnce(new Error('502 Bad Gateway'))
       .mockResolvedValueOnce([request]);
-    const { result } = renderHook(() => useLeaveRequests(), { wrapper });
+    const { result } = renderHookWithQuery(() => useLeaveRequests(), {
+      wrapper,
+    });
     await waitFor(() =>
       expect(result.current).toMatchObject({
         status: 'error',
         error: { message: '502 Bad Gateway' },
       }),
     );
-    act(() => result.current.reload());
+    await act(() => result.current.refetch());
     await waitFor(() =>
       expect(result.current).toMatchObject({
         status: 'success',

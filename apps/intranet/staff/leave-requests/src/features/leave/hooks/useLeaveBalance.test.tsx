@@ -1,7 +1,8 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
-import { API_NOT_CONFIGURED } from '@org/use-api';
+import { API_NOT_CONFIGURED } from '@org/http-client';
+import { renderHookWithQuery } from '@org/query/test';
 import { getLeaveBalance } from '../api/leaveApi';
 import { balances } from '../__fixtures__/leave';
 import { useLeaveBalance } from './useLeaveBalance';
@@ -24,10 +25,10 @@ beforeEach(() => jest.resetAllMocks());
 describe('useLeaveBalance', () => {
   it('loads the balance with the client of settings.apiBaseUrl', async () => {
     jest.mocked(getLeaveBalance).mockResolvedValue(balances);
-    const { result } = renderHook(() => useLeaveBalance(), {
+    const { result } = renderHookWithQuery(() => useLeaveBalance(), {
       wrapper: withSettings({ apiBaseUrl: 'https://api.test/api' }),
     });
-    expect(result.current.status).toBe('loading');
+    expect(result.current.status).toBe('pending');
     await waitFor(() =>
       expect(result.current).toMatchObject({
         status: 'success',
@@ -38,10 +39,13 @@ describe('useLeaveBalance', () => {
     expect(http.url('/leave/balance')).toBe(
       'https://api.test/api/leave/balance',
     );
+    expect(jest.mocked(getLeaveBalance).mock.calls[0][1]).toBeInstanceOf(
+      AbortSignal,
+    );
   });
 
   it('is an error without settings.apiBaseUrl, and calls nothing', async () => {
-    const { result } = renderHook(() => useLeaveBalance(), {
+    const { result } = renderHookWithQuery(() => useLeaveBalance(), {
       wrapper: withSettings({}),
     });
     await waitFor(() => expect(result.current.status).toBe('error'));

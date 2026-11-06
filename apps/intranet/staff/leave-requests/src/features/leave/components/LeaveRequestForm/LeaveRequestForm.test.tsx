@@ -1,30 +1,45 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { useState } from 'react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import { createFakeFetch } from '@org/jest-config/fetch';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
-import { useSubmit, type ApiResult } from '@org/use-api';
+import { renderWithQuery } from '@org/query/test';
 import { LeaveValidationError } from '../../api/leaveApi';
-import type {
-  LeaveBalances,
-  LeaveRequest,
-  LeaveRequestInput,
-} from '../../types/leave';
+import type { LeaveBalanceQuery } from '../../hooks/useLeaveBalance';
+import type { SubmitLeaveRequestMutation } from '../../hooks/useSubmitLeaveRequest';
+import type { LeaveRequest, LeaveRequestInput } from '../../types/leave';
 import { LeaveRequestForm } from './LeaveRequestForm';
 import { balances, request } from '../../__fixtures__/leave';
 
 /** What the page's `useSubmitLeaveRequest()` would send: a fake here (no API). */
 const submitMock = jest.fn<Promise<LeaveRequest>, [LeaveRequestInput]>();
-const reload = jest.fn();
-const loadedBalance: ApiResult<LeaveBalances> = {
+const refetch = jest.fn();
+/** The part of a Query result the form reads (the page passes the real one). */
+const loadedBalance = {
   status: 'success',
   data: balances,
-  reload,
-};
+  refetch,
+} as unknown as LeaveBalanceQuery;
 
-/** The form gets balance and save from the page; a real useSubmit gives it the same states. */
-function Form({ balance }: { balance: ApiResult<LeaveBalances> }) {
-  const save = useSubmit((input: LeaveRequestInput) => submitMock(input));
+/** The form gets balance and save from the page; this stand-in has the same `mutate`/`isPending`. */
+function Form({ balance }: { balance: LeaveBalanceQuery }) {
+  const [isPending, setPending] = useState(false);
+  const save = {
+    isPending,
+    mutate: (
+      input: LeaveRequestInput,
+      options: {
+        onSuccess: (created: LeaveRequest) => void;
+        onError: (error: Error) => void;
+      },
+    ) => {
+      setPending(true);
+      submitMock(input)
+        .then(options.onSuccess, options.onError)
+        .finally(() => setPending(false));
+    },
+  } as unknown as SubmitLeaveRequestMutation;
   return <LeaveRequestForm balance={balance} save={save} />;
 }
 
@@ -38,10 +53,11 @@ function Overview() {
 }
 
 function renderForm(
-  balance: ApiResult<LeaveBalances> = loadedBalance,
+  balance: LeaveBalanceQuery = loadedBalance,
   settings?: Record<string, unknown>,
 ) {
-  return render(
+  // StaffPicker (covering colleague) searches with a query
+  return renderWithQuery(
     <MemoryRouter initialEntries={['/leave/new']}>
       <HostPropsProvider
         value={{ embedded: true, basePath: '/leave', settings }}
@@ -76,7 +92,7 @@ async function fillValid(user: ReturnType<typeof userEvent.setup>) {
 
 beforeEach(() => {
   submitMock.mockReset();
-  reload.mockReset();
+  refetch.mockReset();
 });
 
 describe('LeaveRequestForm', () => {
@@ -219,7 +235,7 @@ describe('LeaveRequestForm', () => {
   });
 
   it('says "Loading…" in the type list while the balance loads', () => {
-    renderForm({ status: 'loading', reload });
+    renderForm({ status: 'pending', refetch } as unknown as LeaveBalanceQuery);
     expect(
       screen.getByRole('option', { name: 'Loading…' }),
     ).toBeInTheDocument();
@@ -229,12 +245,12 @@ describe('LeaveRequestForm', () => {
     renderForm({
       status: 'error',
       error: new Error('502 Bad Gateway'),
-      reload,
-    });
+      refetch,
+    } as unknown as LeaveBalanceQuery);
     expect(screen.getByRole('alert')).toHaveTextContent(
       'Could not load your leave balance',
     );
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
-    expect(reload).toHaveBeenCalledTimes(1);
+    expect(refetch).toHaveBeenCalledTimes(1);
   });
 });

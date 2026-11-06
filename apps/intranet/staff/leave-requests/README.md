@@ -46,7 +46,7 @@ add date-fns`, normal semver range, no catalog entry, no exception).
 src/
   main.tsx            standalone entry only: global styles + <StandaloneApp />
   app/                apps (exposed ./App: createRemoteApp + standalone props), routes
-  features/leave/     api/, hooks/, types/, utils/, __fixtures__/, components/ (one folder per
+  features/leave/     api/, hooks/, queryKeys.ts, types/, utils/, __fixtures__/, components/ (one folder per
                       component: LeaveOverview/, LeaveBalanceCards/, LeaveRequestList/,
                       LeaveRequestForm/ with its private Field.tsx)
   layouts/            StandaloneLayout/ (own simple chrome, standalone only)

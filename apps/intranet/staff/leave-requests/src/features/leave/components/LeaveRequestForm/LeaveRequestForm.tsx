@@ -11,15 +11,14 @@ import {
   Select,
   TextArea,
 } from '@org/ui';
-import type { ApiResult, SubmitResult } from '@org/use-api';
 import { routePaths } from '@/core/constants/routePaths';
 import { LeaveValidationError } from '../../api/leaveApi';
+import type { LeaveBalanceQuery } from '../../hooks/useLeaveBalance';
+import type { SubmitLeaveRequestMutation } from '../../hooks/useSubmitLeaveRequest';
 import type {
   LeaveBalance,
-  LeaveBalances,
   LeaveField,
   LeaveFieldErrors,
-  LeaveRequest,
   LeaveRequestInput,
   LeaveType,
 } from '../../types/leave';
@@ -61,8 +60,8 @@ export function LeaveRequestForm({
   balance,
   save,
 }: {
-  balance: ApiResult<LeaveBalances>;
-  save: SubmitResult<LeaveRequestInput, LeaveRequest>;
+  balance: LeaveBalanceQuery;
+  save: SubmitLeaveRequestMutation;
 }) {
   const toPath = useRemotePath();
   const navigate = useNavigate();
@@ -83,7 +82,7 @@ export function LeaveRequestForm({
   const today = todayIso();
   const days = countWorkingDays(values.startDate, values.endDate);
   const errorList = FIELD_ORDER.filter((field) => errors[field]);
-  const submitting = save.state.status === 'submitting';
+  const submitting = save.isPending;
 
   const set = (field: LeaveField, value: string) =>
     setValues((current) => ({ ...current, [field]: value }));
@@ -94,7 +93,7 @@ export function LeaveRequestForm({
     requestAnimationFrame(() => summaryRef.current?.focus());
   };
 
-  const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSendError('');
     const found = validateLeave(values, balances, today);
@@ -103,19 +102,20 @@ export function LeaveRequestForm({
       return;
     }
     setErrors({});
-    const outcome = await save.submit(
-      cover ? { ...values, coverId: cover.id } : values,
-    );
-    if (outcome.ok) {
-      const state: LeaveOverviewState = { created: outcome.data };
-      navigate(toPath(routePaths.overview), { state });
-    } else if (outcome.error instanceof LeaveValidationError) {
-      showErrors(outcome.error.errors);
-    } else if (!outcome.aborted) {
-      setSendError(
-        `Your request could not be sent (${outcome.error.message}). Try again.`,
-      );
-    }
+    save.mutate(cover ? { ...values, coverId: cover.id } : values, {
+      onSuccess: (created) => {
+        const state: LeaveOverviewState = { created };
+        navigate(toPath(routePaths.overview), { state });
+      },
+      onError: (error) => {
+        if (error instanceof LeaveValidationError) showErrors(error.errors);
+        else {
+          setSendError(
+            `Your request could not be sent (${error.message}). Try again.`,
+          );
+        }
+      },
+    });
   };
 
   if (balance.status === 'error') {
@@ -123,7 +123,7 @@ export function LeaveRequestForm({
       <RemoteFallback
         title="Could not load your leave balance"
         reason={balance.error.message}
-        onRetry={balance.reload}
+        onRetry={() => void balance.refetch()}
       />
     );
   }
@@ -174,7 +174,7 @@ export function LeaveRequestForm({
         value={values.type}
         onChange={(event) => set('type', event.target.value as LeaveType)}
         placeholder={
-          balance.status === 'loading' ? 'Loading…' : 'Choose a leave type'
+          balance.status === 'pending' ? 'Loading…' : 'Choose a leave type'
         }
         options={balances.map((b) => ({
           value: b.type,

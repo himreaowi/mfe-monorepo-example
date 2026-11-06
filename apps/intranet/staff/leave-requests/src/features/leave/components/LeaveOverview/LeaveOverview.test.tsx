@@ -2,22 +2,23 @@ import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import userEvent from '@testing-library/user-event';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
-import type { ApiResult } from '@org/use-api';
-import type { LeaveBalances, LeaveRequest } from '../../types/leave';
+import type { LeaveBalanceQuery } from '../../hooks/useLeaveBalance';
+import type { LeaveRequestsQuery } from '../../hooks/useLeaveRequests';
 import { LeaveOverview } from './LeaveOverview';
 import { balances, request } from '../../__fixtures__/leave';
 
-const reload = jest.fn();
-const loadedBalance: ApiResult<LeaveBalances> = {
+const refetch = jest.fn();
+/** The part of a Query result the component reads (the page passes the real one). */
+const loadedBalance = {
   status: 'success',
   data: balances,
-  reload,
-};
-const loadedRequests: ApiResult<LeaveRequest[]> = {
+  refetch,
+} as unknown as LeaveBalanceQuery;
+const loadedRequests = {
   status: 'success',
   data: [request],
-  reload,
-};
+  refetch,
+} as unknown as LeaveRequestsQuery;
 
 // A display component: the page loads balance and requests and passes them in (no API here).
 function renderOverview(
@@ -26,8 +27,8 @@ function renderOverview(
     balance = loadedBalance,
     requests = loadedRequests,
   }: {
-    balance?: ApiResult<LeaveBalances>;
-    requests?: ApiResult<LeaveRequest[]>;
+    balance?: LeaveBalanceQuery;
+    requests?: LeaveRequestsQuery;
   } = {},
 ) {
   return render(
@@ -39,7 +40,7 @@ function renderOverview(
   );
 }
 
-beforeEach(() => reload.mockReset());
+beforeEach(() => refetch.mockReset());
 
 describe('LeaveOverview', () => {
   it('shows the balance per type and the requests', () => {
@@ -74,8 +75,8 @@ describe('LeaveOverview', () => {
 
   it('shows loading for each part', () => {
     renderOverview(undefined, {
-      balance: { status: 'loading', reload },
-      requests: { status: 'loading', reload },
+      balance: { status: 'pending', refetch } as unknown as LeaveBalanceQuery,
+      requests: { status: 'pending', refetch } as unknown as LeaveRequestsQuery,
     });
     expect(screen.getByText('Loading your balance…')).toBeInTheDocument();
     expect(screen.getByText('Loading your requests…')).toBeInTheDocument();
@@ -83,12 +84,16 @@ describe('LeaveOverview', () => {
 
   it('offers a retry when the balance fails', async () => {
     renderOverview(undefined, {
-      balance: { status: 'error', error: new Error('502 Bad Gateway'), reload },
+      balance: {
+        status: 'error',
+        error: new Error('502 Bad Gateway'),
+        refetch,
+      } as unknown as LeaveBalanceQuery,
     });
     expect(screen.getByRole('alert')).toHaveTextContent(
       'Could not load your leave balance',
     );
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
-    expect(reload).toHaveBeenCalledTimes(1);
+    expect(refetch).toHaveBeenCalledTimes(1);
   });
 });

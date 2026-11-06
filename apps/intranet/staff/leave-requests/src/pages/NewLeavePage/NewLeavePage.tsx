@@ -7,7 +7,7 @@ import styles from './NewLeavePage.module.scss';
 
 /**
  * Page-level data fetching: the page loads the balance (leave types and what is left) and owns
- * the "send request" request; `LeaveRequestForm` validates, displays and calls `save.submit`.
+ * the "send request" request; `LeaveRequestForm` validates, displays and calls `save.mutate`.
  */
 export function NewLeavePage() {
   const balance = useLeaveBalance();

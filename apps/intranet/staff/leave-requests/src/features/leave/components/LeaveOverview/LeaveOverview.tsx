@@ -2,9 +2,10 @@ import { useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router';
 import { useRemotePath } from '@org/mf-runtime/remote';
 import { Alert, RemoteFallback, Spinner } from '@org/ui';
-import type { ApiResult } from '@org/use-api';
 import { routePaths } from '@/core/constants/routePaths';
-import type { LeaveBalances, LeaveRequest } from '../../types/leave';
+import type { LeaveBalanceQuery } from '../../hooks/useLeaveBalance';
+import type { LeaveRequestsQuery } from '../../hooks/useLeaveRequests';
+import type { LeaveRequest } from '../../types/leave';
 import { formatDays, formatRange } from '../../utils/dates';
 import { LeaveBalanceCards } from '../LeaveBalanceCards/LeaveBalanceCards';
 import { LeaveRequestList } from '../LeaveRequestList/LeaveRequestList';
@@ -27,8 +28,8 @@ export function LeaveOverview({
   balance,
   requests,
 }: {
-  balance: ApiResult<LeaveBalances>;
-  requests: ApiResult<LeaveRequest[]>;
+  balance: LeaveBalanceQuery;
+  requests: LeaveRequestsQuery;
 }) {
   const toPath = useRemotePath();
   const created = createdFrom(useLocation().state);
@@ -67,14 +68,14 @@ export function LeaveOverview({
           Your balance
           {balance.status === 'success' ? ` for ${balance.data.year}` : ''}
         </h2>
-        {balance.status === 'loading' ? (
+        {balance.status === 'pending' ? (
           <Spinner label="Loading your balance…" labelVisible />
         ) : null}
         {balance.status === 'error' ? (
           <RemoteFallback
             title="Could not load your leave balance"
             reason={balance.error.message}
-            onRetry={balance.reload}
+            onRetry={() => void balance.refetch()}
           />
         ) : null}
         {balance.status === 'success' ? (
@@ -86,14 +87,14 @@ export function LeaveOverview({
         <h2 id="leave-requests-title" className={styles.sectionTitle}>
           Your requests
         </h2>
-        {requests.status === 'loading' ? (
+        {requests.status === 'pending' ? (
           <Spinner label="Loading your requests…" labelVisible />
         ) : null}
         {requests.status === 'error' ? (
           <RemoteFallback
             title="Could not load your leave requests"
             reason={requests.error.message}
-            onRetry={requests.reload}
+            onRetry={() => void requests.refetch()}
           />
         ) : null}
         {requests.status === 'success' ? (
