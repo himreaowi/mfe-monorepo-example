@@ -57,6 +57,9 @@ catalog:
   react-router: 8.4.0
   '@types/react': 19.3.0
   '@types/react-dom': 19.3.0
+  # tier 1, loaded once (not React state, but one download for every app)
+  '@tanstack/react-query': 5.104.5
+  axios: 1.20.0
   # toolchain
   '@eslint/js': 10.0.1
   '@nx/eslint-plugin': 23.3.0

@@ -2,7 +2,7 @@
   "name": "@org/http-client",
   "version": "0.1.0",
   "private": true,
-  "description": "Small fetch wrapper (JSON helpers, typed errors) with a runtime-injected base URL and an apiRoutes pattern",
+  "description": "Small axios wrapper on the fetch adapter (JSON helpers, typed errors, timeout, 401 hook) with a runtime-injected base URL and an apiRoutes pattern",
   "type": "module",
   "sideEffects": false,
   "exports": {
@@ -18,6 +18,9 @@
     "tags": [
       "type:package"
     ]
+  },
+  "dependencies": {
+    "axios": "catalog:"
   },
   "devDependencies": {
     "@org/eslint-config": "workspace:*",
