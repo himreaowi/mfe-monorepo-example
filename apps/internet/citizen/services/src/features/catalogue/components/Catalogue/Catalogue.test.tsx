@@ -2,22 +2,24 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
-import type { ApiResult } from '@org/use-api';
 import { dogLicence } from '../../__fixtures__/services';
-import type { CatalogueResult } from '../../types/service';
+import type { CategoriesQuery, ServicesQuery } from '../../hooks/useCatalogue';
 import { Catalogue, type CatalogueProps } from './Catalogue';
 
-const reload = jest.fn();
-const topics: ApiResult<string[]> = {
+const refetch = jest.fn();
+/** The part of a Query result the component reads (the page passes the real one). */
+const asServices = (result: object) => result as unknown as ServicesQuery;
+const topics = {
   status: 'success',
   data: ['Pets and animals', 'Transport'],
-  reload,
-};
-const oneService: ApiResult<CatalogueResult> = {
+  refetch,
+} as unknown as CategoriesQuery;
+const oneService = asServices({
   status: 'success',
+  isPlaceholderData: false,
   data: { items: [dogLicence], total: 1, categories: [] },
-  reload,
-};
+  refetch,
+});
 
 // A display component: query, data and callbacks come in as props (the page owns them).
 function renderCatalogue(props: Partial<CatalogueProps> = {}) {
@@ -38,7 +40,7 @@ function renderCatalogue(props: Partial<CatalogueProps> = {}) {
   return all;
 }
 
-beforeEach(() => reload.mockReset());
+beforeEach(() => refetch.mockReset());
 
 describe('Catalogue', () => {
   it('shows service cards with fee and channel, linking below the mount', () => {
@@ -74,17 +76,26 @@ describe('Catalogue', () => {
   });
 
   it('shows "Searching…" while the services load', () => {
-    renderCatalogue({ services: { status: 'loading', reload } });
+    renderCatalogue({ services: asServices({ status: 'pending', refetch }) });
     expect(screen.getByTestId('service-count')).toHaveTextContent('Searching…');
+  });
+
+  it('keeps the previous list while a new search loads', () => {
+    renderCatalogue({
+      services: asServices({ ...oneService, isPlaceholderData: true }),
+    });
+    expect(screen.getByTestId('service-count')).toHaveTextContent('Searching…');
+    expect(screen.getByText('Renew a dog licence')).toBeInTheDocument();
   });
 
   it('says when nothing matches', () => {
     renderCatalogue({
-      services: {
+      services: asServices({
         status: 'success',
+        isPlaceholderData: false,
         data: { items: [], total: 0, categories: [] },
-        reload,
-      },
+        refetch,
+      }),
     });
     expect(screen.getByText(/No services match/)).toBeInTheDocument();
     expect(screen.getByTestId('service-count')).toHaveTextContent('0 services');
@@ -92,10 +103,14 @@ describe('Catalogue', () => {
 
   it('offers a retry when the services cannot be loaded', async () => {
     renderCatalogue({
-      services: { status: 'error', error: new Error('503 Busy'), reload },
+      services: asServices({
+        status: 'error',
+        error: new Error('503 Busy'),
+        refetch,
+      }),
     });
     expect(screen.getByRole('alert')).toHaveTextContent('503 Busy');
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
-    expect(reload).toHaveBeenCalledTimes(1);
+    expect(refetch).toHaveBeenCalledTimes(1);
   });
 });

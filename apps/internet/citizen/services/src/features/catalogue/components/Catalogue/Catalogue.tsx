@@ -1,7 +1,7 @@
 import { useId } from 'react';
 import { RemoteFallback, Select, TextField } from '@org/ui';
-import type { ApiResult } from '@org/use-api';
-import type { CatalogueQuery, CatalogueResult } from '../../types/service';
+import type { CategoriesQuery, ServicesQuery } from '../../hooks/useCatalogue';
+import type { CatalogueQuery } from '../../types/service';
 import { ServiceCard } from '../ServiceCard/ServiceCard';
 import styles from './Catalogue.module.scss';
 
@@ -11,9 +11,9 @@ export type CatalogueProps = {
   /** The user changed the search text or the topic. */
   onQueryChange: (key: keyof CatalogueQuery, value: string) => void;
   /** From `useServices()`, called by the page. */
-  services: ApiResult<CatalogueResult>;
+  services: ServicesQuery;
   /** From `useCategories()`, called by the page. */
-  categories: ApiResult<string[]>;
+  categories: CategoriesQuery;
 };
 
 /**
@@ -31,9 +31,9 @@ export function Catalogue({
   const categoryId = useId();
 
   const count =
-    services.status === 'success'
+    services.status === 'success' && !services.isPlaceholderData
       ? `${services.data.total} ${services.data.total === 1 ? 'service' : 'services'}`
-      : services.status === 'loading'
+      : services.status === 'pending' || services.isPlaceholderData
         ? 'Searching…'
         : '';
 
@@ -79,7 +79,7 @@ export function Catalogue({
         <RemoteFallback
           title="Could not load the services"
           reason={services.error.message}
-          onRetry={services.reload}
+          onRetry={() => void services.refetch()}
         />
       ) : null}
       {services.status === 'success' && services.data.items.length === 0 ? (

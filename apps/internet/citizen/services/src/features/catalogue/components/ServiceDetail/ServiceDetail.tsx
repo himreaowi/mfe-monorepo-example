@@ -1,21 +1,16 @@
 import { Link } from 'react-router';
 import { useRemotePath } from '@org/mf-runtime/remote';
 import { RemoteFallback, Spinner } from '@org/ui';
-import type { ApiResult } from '@org/use-api';
 import { routePaths } from '@/core/constants/routePaths';
 import { formatFee } from '@/core/utils/formatMoney';
-import type { Service } from '../../types/service';
+import type { ServiceQuery } from '../../hooks/useCatalogue';
 import styles from './ServiceDetail.module.scss';
 
 /**
  * One service: what it is, who can use it, what you need, the steps, fee and timing. Displays
  * only: the page loads it (`useService(slug)`; `null` = unknown slug) and passes the result down.
  */
-export function ServiceDetail({
-  service,
-}: {
-  service: ApiResult<Service | null>;
-}) {
+export function ServiceDetail({ service }: { service: ServiceQuery }) {
   const toPath = useRemotePath();
   const back = (
     <p>
@@ -25,7 +20,7 @@ export function ServiceDetail({
     </p>
   );
 
-  if (service.status === 'loading') {
+  if (service.status === 'pending') {
     return (
       <section className={styles.page} data-testid="service-detail">
         <h1 className={styles.title}>Service</h1>
@@ -43,7 +38,7 @@ export function ServiceDetail({
           <RemoteFallback
             title="Could not load this service"
             reason={service.error.message}
-            onRetry={service.reload}
+            onRetry={() => void service.refetch()}
           />
         ) : (
           <p>There is no service with this name. It may have moved.</p>

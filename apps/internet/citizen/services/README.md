@@ -42,7 +42,7 @@ Services catalogue with search and a topic filter (query in the URL) and a page 
 src/
   main.tsx            standalone entry only: global styles + <StandaloneApp />
   app/                apps (exposed ./App: createRemoteApp + standalone props), routes
-  features/catalogue/ api/, hooks/, types/, __fixtures__/, components/ (one folder per
+  features/catalogue/ api/, hooks/, queryKeys.ts, types/, __fixtures__/, components/ (one folder per
                       component: Catalogue/, ServiceCard/, ServiceDetail/)
   layouts/            StandaloneLayout/ (own simple chrome, standalone only)
   pages/              OverviewPage, ServicePage, NotFoundPage (they call the data hooks)

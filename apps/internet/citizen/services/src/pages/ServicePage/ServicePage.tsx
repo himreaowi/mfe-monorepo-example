@@ -3,7 +3,7 @@ import { ServiceDetail, useService } from '@/features/catalogue';
 
 /**
  * Page-level data fetching: the page loads the service of the URL, `ServiceDetail` displays
- * it. Another slug starts from a fresh loading state (`useApi` resets when its loader changes).
+ * it. Another slug has its own query key, so it starts from a fresh pending state.
  */
 export function ServicePage() {
   const { slug = '' } = useParams();
