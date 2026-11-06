@@ -240,6 +240,8 @@ menu.buttonRef; menu.panelRef; menu.panelId;
   and leaves focus where the user put it;
 - a **followed link inside the panel** (a click on `a[href]`, also Enter on a link) and
   **browser back/forward** (`popstate`) close it;
+- a **click on a control marked `data-menu-close`** inside the panel closes it (Sign in and Sign
+  out in `UserMenu` use this);
 - closing while focus is inside the panel moves focus to the button (never lost on `<body>`);
 - listeners are attached only while it is open.
 

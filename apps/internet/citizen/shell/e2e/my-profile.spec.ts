@@ -88,13 +88,10 @@ test.describe('My profile: the cache belongs to the signed-in user', () => {
     // sign out and in again without a page load: a surviving cache would still have it
     await signOut(page);
     await expect(page.getByTestId('sign-in-prompt')).toBeVisible();
-    // on phones the header panel stays open after signing out and covers the prompt
+    // on phones the header panel closes, so it does not cover the prompt
     const menu = page.getByRole('button', { name: 'Menu' });
-    if (
-      (await menu.isVisible()) &&
-      (await menu.getAttribute('aria-expanded')) === 'true'
-    ) {
-      await menu.click();
+    if (await menu.isVisible()) {
+      await expect(menu).toHaveAttribute('aria-expanded', 'false');
     }
     holding = true;
     await signInWithMock(page);

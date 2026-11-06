@@ -81,8 +81,15 @@ describe('AuthProvider + RequireAuth', () => {
     const client = fakeClient({ status: 'signedIn', user: USER });
     renderWith(client);
     await screen.findByTestId('protected');
-    await userEvent.click(screen.getByRole('button', { name: 'Sign out' }));
+    const signOut = screen.getByRole('button', { name: 'Sign out' });
+    // closes a phone menu, so the panel does not cover the prompt
+    expect(signOut).toHaveAttribute('data-menu-close');
+    await userEvent.click(signOut);
     expect(await screen.findByTestId('sign-in-prompt')).toBeInTheDocument();
+    // the header's Sign in closes it too; the first one is the header's
+    expect(
+      screen.getAllByRole('button', { name: 'Sign in' })[0],
+    ).toHaveAttribute('data-menu-close');
     expect(screen.queryByTestId('protected')).toBeNull();
   });
 

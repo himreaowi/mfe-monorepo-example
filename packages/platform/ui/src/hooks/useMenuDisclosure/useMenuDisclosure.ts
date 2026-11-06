@@ -52,6 +52,8 @@ export type MenuDisclosure<
  *   where the user put it;
  * - a **followed link inside the panel** (click on `a[href]`, i.e. a client-side navigation)
  *   and **browser back/forward** (`popstate`) close it;
+ * - a **click on a control marked `data-menu-close`** inside the panel closes it: for a button
+ *   that changes the page behind the panel, such as Sign out;
  * - closing while focus is inside the panel moves focus to the button (never lost on `<body>`).
  *
  * The listeners are only attached while the panel is open.
@@ -104,9 +106,10 @@ export function useMenuDisclosure<
     };
   }, [open, close]);
 
-  // click delegation only: links inside handle keyboard activation themselves (Enter = click)
+  // click delegation only: links and buttons handle keyboard activation themselves (Enter = click)
   const onPanelClick = (event: MouseEvent<TPanel>) => {
-    if (open && (event.target as Element).closest('a[href]')) close(false);
+    const target = event.target as Element;
+    if (open && target.closest('a[href], [data-menu-close]')) close(false);
   };
 
   return {

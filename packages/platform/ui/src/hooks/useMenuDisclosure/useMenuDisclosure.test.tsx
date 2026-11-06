@@ -20,6 +20,9 @@ function Header({ withContainer = true }: { withContainer?: boolean }) {
           <Link to="/a">Alpha</Link>
         </nav>
         <button type="button">Use dark theme</button>
+        <button type="button" data-menu-close>
+          Sign out
+        </button>
       </div>
     </header>
   );
@@ -106,6 +109,15 @@ describe('useMenuDisclosure', () => {
     expect(button()).toHaveAttribute('aria-expanded', 'true');
     await user.click(screen.getByText('Portal'));
     expect(button()).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('a control marked data-menu-close closes it, focus back on the button', async () => {
+    const user = userEvent.setup();
+    renderHeader();
+    await user.click(button());
+    await user.click(screen.getByRole('button', { name: 'Sign out' }));
+    expect(button()).toHaveAttribute('aria-expanded', 'false');
+    expect(button()).toHaveFocus();
   });
 
   it('closes on browser back/forward (popstate)', async () => {

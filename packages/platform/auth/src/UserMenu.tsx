@@ -5,7 +5,8 @@ import styles from './UserMenu.module.scss';
 /**
  * Header control: "Sign in" when signed out, the user's name + "Sign out" when signed in.
  * Renders nothing while loading or when auth is disabled. Place it in the shell layout's
- * header (the generated `ShellLayout` puts it after the theme toggle).
+ * header (the generated `ShellLayout` puts it after the theme toggle). Both buttons carry
+ * `data-menu-close`, so a phone menu closes instead of covering the page that changed.
  */
 export function UserMenu() {
   const auth = useAuth();
@@ -15,7 +16,11 @@ export function UserMenu() {
         <span className={styles.name} data-testid="user-name">
           {auth.user.name ?? auth.user.id}
         </span>
-        <Button variant="ghost" onClick={() => void auth.signOut()}>
+        <Button
+          variant="ghost"
+          data-menu-close
+          onClick={() => void auth.signOut()}
+        >
           Sign out
         </Button>
       </div>
@@ -24,7 +29,11 @@ export function UserMenu() {
   if (auth.status === 'signedOut') {
     return (
       <div className={styles.menu} data-testid="user-menu">
-        <Button variant="secondary" onClick={() => void auth.signIn()}>
+        <Button
+          variant="secondary"
+          data-menu-close
+          onClick={() => void auth.signIn()}
+        >
           Sign in
         </Button>
       </div>
