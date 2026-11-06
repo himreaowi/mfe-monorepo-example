@@ -1,30 +1,34 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { ItemsState } from '../../hooks/useItems';
+import { API_NOT_CONFIGURED } from '@org/http-client';
+import type { CreateItemMutation } from '../../hooks/useCreateItem';
+import type { ItemsQuery } from '../../hooks/useItems';
 import { DemoItems } from './DemoItems';
 
-// A display component: states and callbacks come in as props (the page calls the hooks).
-function renderItems(state: ItemsState) {
-  const props = {
-    state,
-    onRetry: jest.fn(),
-    onCreate: jest.fn(),
-    onCreated: jest.fn(),
-  };
-  render(<DemoItems {...props} />);
-  return props;
+// A display component: the query and mutation results come in as props (the page calls the hooks).
+function renderItems(query: Partial<ItemsQuery>) {
+  const refetch = jest.fn();
+  render(
+    <DemoItems
+      items={{ refetch, ...query } as unknown as ItemsQuery}
+      createItem={
+        { mutate: jest.fn(), isPending: false } as unknown as CreateItemMutation
+      }
+    />,
+  );
+  return { refetch };
 }
 
 describe('DemoItems', () => {
   it('shows loading', () => {
-    renderItems({ status: 'loading' });
+    renderItems({ status: 'pending' });
     expect(screen.getByRole('status')).toHaveTextContent('Loading items…');
   });
 
   it('shows the items and the add form', () => {
     renderItems({
       status: 'success',
-      items: [{ id: 1, name: 'First', description: 'One' }],
+      data: [{ id: 1, name: 'First', description: 'One' }],
     });
     expect(screen.getByText('First')).toBeInTheDocument();
     expect(screen.getByText(/One/)).toBeInTheDocument();
@@ -34,24 +38,24 @@ describe('DemoItems', () => {
   });
 
   it('shows an empty list', () => {
-    renderItems({ status: 'success', items: [] });
+    renderItems({ status: 'success', data: [] });
     expect(screen.getByText('No items yet.')).toBeInTheDocument();
   });
 
   it('shows an error with a retry', async () => {
-    const { onRetry } = renderItems({
+    const { refetch } = renderItems({
       status: 'error',
-      message: 'Could not load the items. Check your connection and try again.',
+      error: new TypeError('Failed to fetch'),
     });
     expect(screen.getByRole('alert')).toHaveTextContent(
       /Could not load the items/,
     );
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
-    expect(onRetry).toHaveBeenCalledTimes(1);
+    expect(refetch).toHaveBeenCalledTimes(1);
   });
 
   it('explains a missing settings.apiBaseUrl', () => {
-    renderItems({ status: 'unconfigured' });
+    renderItems({ status: 'error', error: new Error(API_NOT_CONFIGURED) });
     expect(screen.getByText(/No API configured/)).toBeInTheDocument();
     expect(screen.queryByRole('button')).toBeNull();
   });

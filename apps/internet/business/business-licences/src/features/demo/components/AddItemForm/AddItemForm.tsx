@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Alert, Button, TextField } from '@org/ui';
 import { FEDERATION_NAME } from '@/core/constants/app';
-import type { CreateItemResult } from '../../hooks/useCreateItem';
-import type { Item, ItemDraft, ItemFieldErrors } from '../../types/item';
+import type { CreateItemMutation } from '../../hooks/useCreateItem';
+import type { ItemFieldErrors } from '../../types/item';
+import { describeError, readFieldErrors } from '../../utils/itemErrors';
 import { validateItemDraft } from '../../utils/validation';
 import styles from './AddItemForm.module.scss';
 
@@ -19,22 +20,19 @@ const FIELD_ORDER = ['name', 'uen'] as const;
  * the same places; while sending, the submit button shows `loading` (it keeps focus).
  * Fields and messages come from @org/ui (TextField wires label, error and aria-* itself).
  *
- * It sends nothing itself: `onCreate` comes from the page (`useCreateItem()`), the form keeps
- * only its own UI state (field value, errors, "sending").
+ * It owns no request: `createItem` comes from the page (`useCreateItem()`) and says when it is
+ * sending; the form keeps only its own UI state (field values, errors).
  */
 export function AddItemForm({
-  onCreate,
-  onCreated,
+  createItem,
 }: {
-  onCreate: (draft: ItemDraft) => Promise<CreateItemResult>;
-  onCreated: (item: Item) => void;
+  createItem: CreateItemMutation;
 }) {
   const [name, setName] = useState('');
   const [uen, setUen] = useState('');
   const [errors, setErrors] = useState<ItemFieldErrors>({});
   const [formError, setFormError] = useState('');
   const [status, setStatus] = useState('');
-  const [sending, setSending] = useState(false);
   const [failedSubmits, setFailedSubmits] = useState(0);
   const summaryRef = useRef<HTMLDivElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
@@ -51,7 +49,7 @@ export function AddItemForm({
     setFailedSubmits((n) => n + 1);
   };
 
-  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+  function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setStatus('');
     setFormError('');
@@ -62,19 +60,18 @@ export function AddItemForm({
       return;
     }
     setErrors({});
-    setSending(true);
-    const result = await onCreate(draft);
-    setSending(false);
-    if (result.ok) {
-      onCreated(result.item);
-      setName('');
-      setUen('');
-      setStatus(`Added “${result.item.name}”.`);
-    } else if (result.fieldErrors) {
-      showErrors(result.fieldErrors);
-    } else {
-      setFormError(result.message);
-    }
+    createItem.mutate(draft, {
+      onSuccess: (item) => {
+        setName('');
+        setUen('');
+        setStatus(`Added “${item.name}”.`);
+      },
+      onError: (error) => {
+        const serverErrors = readFieldErrors(error);
+        if (serverErrors) showErrors(serverErrors);
+        else setFormError(describeError(error, 'Could not add the item'));
+      },
+    });
   }
 
   const fieldErrors = FIELD_ORDER.filter((field) => errors[field]);
@@ -143,8 +140,8 @@ export function AddItemForm({
         onChange={(event) => setUen(event.target.value)}
       />
       <div className={styles.row}>
-        <Button type="submit" loading={sending}>
-          {sending ? 'Adding…' : 'Add item'}
+        <Button type="submit" loading={createItem.isPending}>
+          {createItem.isPending ? 'Adding…' : 'Add item'}
         </Button>
         <p className={styles.copy} role="status">
           {status}

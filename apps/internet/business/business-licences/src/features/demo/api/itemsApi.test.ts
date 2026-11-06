@@ -1,11 +1,6 @@
-import { createHttpClient, HttpClientError } from '@org/http-client';
+import { createHttpClient } from '@org/http-client';
 import { createFakeFetch } from '@org/jest-config/fetch';
-import {
-  createItem,
-  describeError,
-  listItems,
-  readFieldErrors,
-} from './itemsApi';
+import { createItem, listItems } from './itemsApi';
 
 // API functions run against the real @org/http-client with a fake fetch (docs/testing.md).
 function client(routes: Parameters<typeof createFakeFetch>[0]) {
@@ -46,32 +41,5 @@ describe('itemsApi', () => {
       name: 'New',
     });
     expect(fetch.calls[0].body).toEqual({ name: 'New', uen: '201912345K' });
-  });
-
-  it('reads 422 field errors, ignores other failures', async () => {
-    const { http } = client({
-      'POST /api/items': {
-        status: 422,
-        body: { message: 'Invalid', errors: { name: 'Already exists.' } },
-      },
-    });
-    const error = await createItem(http, {
-      name: 'x',
-      uen: '201912345K',
-    }).catch((e: unknown) => e);
-    expect(error).toBeInstanceOf(HttpClientError);
-    expect(readFieldErrors(error)).toEqual({ name: 'Already exists.' });
-    expect(readFieldErrors(new Error('offline'))).toBeUndefined();
-  });
-
-  it('describes errors with the operation and status', async () => {
-    const { http } = client({ 'GET /api/items': { status: 503 } });
-    const error = await listItems(http).catch((e: unknown) => e);
-    expect(describeError(error, 'Could not load items')).toBe(
-      'Could not load items (HTTP 503). Try again.',
-    );
-    expect(
-      describeError(new TypeError('Failed to fetch'), 'Could not load items'),
-    ).toMatch(/Check your connection/);
   });
 });

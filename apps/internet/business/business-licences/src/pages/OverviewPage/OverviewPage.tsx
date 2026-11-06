@@ -1,8 +1,8 @@
 import { Demo, DemoItems, useCreateItem, useItems } from '@/features/demo';
 
 /**
- * Page-level data fetching: the page calls the feature's data hooks and passes data and
- * callbacks down; the feature components only display. Every API call of this page is visible
+ * Page-level data fetching: the page calls the feature's data hooks and passes their results
+ * down; the feature components only display. Every API call of this page is visible
  * here, so a duplicate call (two components loading the same list) cannot hide in the tree
  * (docs/coding-conventions.md "Data fetching").
  */
@@ -12,12 +12,7 @@ export function OverviewPage() {
   return (
     <div data-testid="overview-page">
       <Demo>
-        <DemoItems
-          state={items.state}
-          onRetry={items.reload}
-          onCreate={createItem}
-          onCreated={items.add}
-        />
+        <DemoItems items={items} createItem={createItem} />
       </Demo>
     </div>
   );

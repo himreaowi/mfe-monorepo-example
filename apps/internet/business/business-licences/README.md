@@ -46,8 +46,8 @@ features:
 | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | paths                                    | `src/core/constants/apiRoutes.ts`                                                                                      |
 | client                                   | `useApiClient()` from `@org/mf-runtime/remote` (base URL from `settings.apiBaseUrl`, `credentials: 'include'`)         |
-| requests, response validation, errors    | `src/features/demo/api/itemsApi.ts` (+ test with a fake fetch)                                                         |
-| state (loading / error / data, abort)    | `src/features/demo/hooks/useItems.ts`, `useCreateItem.ts` (+ tests with the api mocked)                                |
+| requests, response validation            | `src/features/demo/api/itemsApi.ts` (+ test with a fake fetch)                                                         |
+| queries and mutations (TanStack Query)   | `src/features/demo/hooks/useItems.ts`, `useCreateItem.ts`, `queryKeys.ts` (+ tests with the api mocked)                |
 | page (calls the hooks, passes data down) | `src/pages/OverviewPage/OverviewPage.tsx`                                                                              |
 | UI (display only, props in)              | `src/features/demo/components/DemoItems/`, `AddItemForm/` (validate on submit, error summary, server 422 field errors) |
 
@@ -62,7 +62,7 @@ src/
   app/                apps (exposed ./App: createRemoteApp + standalone props), routes
   components/         ModeBadge/
   features/demo/      sample feature (host props, counter, links, items from the API + form)
-    api/ hooks/ types/ utils/
+    api/ hooks/ types/ utils/ queryKeys.ts
     state/            only with `gen:remote --state`: feature state (reducer + Context)
     components/       one folder per component: Demo/, DemoDetails/, DemoItems/, AddItemForm/
                       (<Name>.tsx, <Name>.module.scss, <Name>.test.tsx; no index.ts)

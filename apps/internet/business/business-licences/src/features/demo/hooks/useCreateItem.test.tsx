@@ -1,9 +1,10 @@
-import { renderHook } from '@testing-library/react';
+import { act } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { HttpClientError } from '@org/http-client';
-import { jsonResponse } from '@org/jest-config/fetch';
+import { API_NOT_CONFIGURED, HttpClientError } from '@org/http-client';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
+import { renderHookWithQuery } from '@org/query/test';
 import { createItem } from '../api/itemsApi';
+import { demoKeys } from '../queryKeys';
 import { useCreateItem } from './useCreateItem';
 
 jest.mock('../api/itemsApi', () => ({
@@ -29,45 +30,52 @@ function wrapper({ children }: { children: ReactNode }) {
 describe('useCreateItem', () => {
   beforeEach(() => createItemMock.mockReset());
 
-  it('returns the created item', async () => {
+  it('returns the created item and invalidates the list', async () => {
     createItemMock.mockResolvedValue({ id: 3, name: 'x', description: '' });
-    const { result } = renderHook(() => useCreateItem(), { wrapper });
-    await expect(
-      result.current({ name: 'x', uen: '201912345K' }),
-    ).resolves.toEqual({
-      ok: true,
-      item: { id: 3, name: 'x', description: '' },
+    const { result, queryClient } = renderHookWithQuery(() => useCreateItem(), {
+      wrapper,
     });
+    queryClient.setQueryData(demoKeys.items(), []);
+    await act(async () => {
+      await expect(
+        result.current.mutateAsync({ name: 'x', uen: '201912345K' }),
+      ).resolves.toEqual({
+        id: 3,
+        name: 'x',
+        description: '',
+      });
+    });
+    expect(queryClient.getQueryState(demoKeys.items())?.isInvalidated).toBe(
+      true,
+    );
   });
 
-  it('maps a 422 to field errors and anything else to a message', async () => {
-    const { result } = renderHook(() => useCreateItem(), { wrapper });
-    createItemMock.mockRejectedValueOnce(
-      new HttpClientError(jsonResponse(null, { status: 422 }), {
-        errors: { name: 'Already exists.' },
-      }),
+  it('rejects with the API error and leaves the list alone', async () => {
+    const failure = new HttpClientError(
+      { status: 422, statusText: '', url: '/items' },
+      { errors: { name: 'Already exists.' } },
     );
-    await expect(
-      result.current({ name: 'x', uen: '201912345K' }),
-    ).resolves.toMatchObject({
-      ok: false,
-      fieldErrors: { name: 'Already exists.' },
+    createItemMock.mockRejectedValue(failure);
+    const { result, queryClient } = renderHookWithQuery(() => useCreateItem(), {
+      wrapper,
     });
-    createItemMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
-    await expect(
-      result.current({ name: 'x', uen: '201912345K' }),
-    ).resolves.toEqual({
-      ok: false,
-      message: 'Could not add the item. Check your connection and try again.',
+    queryClient.setQueryData(demoKeys.items(), []);
+    await act(async () => {
+      await expect(
+        result.current.mutateAsync({ name: 'x', uen: '201912345K' }),
+      ).rejects.toBe(failure);
     });
+    expect(queryClient.getQueryState(demoKeys.items())?.isInvalidated).toBe(
+      false,
+    );
   });
 
   it('reports a missing API instead of calling it', async () => {
-    const { result } = renderHook(() => useCreateItem());
-    await expect(
-      result.current({ name: 'x', uen: '201912345K' }),
-    ).resolves.toMatchObject({
-      ok: false,
+    const { result } = renderHookWithQuery(() => useCreateItem());
+    await act(async () => {
+      await expect(
+        result.current.mutateAsync({ name: 'x', uen: '201912345K' }),
+      ).rejects.toThrow(API_NOT_CONFIGURED);
     });
     expect(createItemMock).not.toHaveBeenCalled();
   });

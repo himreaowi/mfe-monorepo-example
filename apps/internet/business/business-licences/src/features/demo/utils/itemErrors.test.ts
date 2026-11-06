@@ -1,0 +1,43 @@
+import { HttpClientError } from '@org/http-client';
+import { describeError, readFieldErrors } from './itemErrors';
+
+const httpError = (status: number, body?: unknown) =>
+  new HttpClientError({ status, statusText: '', url: '/items' }, body);
+
+describe('itemErrors', () => {
+  it('reads 422 field errors, ignores other failures', () => {
+    expect(
+      readFieldErrors(httpError(422, { errors: { name: 'Already exists.' } })),
+    ).toEqual({ name: 'Already exists.' });
+    expect(
+      readFieldErrors(httpError(422, { errors: { uen: 'Not valid.' } })),
+    ).toEqual({ uen: 'Not valid.' });
+    expect(readFieldErrors(httpError(500))).toBeUndefined();
+    expect(readFieldErrors(new Error('offline'))).toBeUndefined();
+  });
+
+  it('describes errors with the operation and status', () => {
+    expect(describeError(httpError(503), 'Could not load items')).toBe(
+      'Could not load items (HTTP 503). Try again.',
+    );
+    expect(
+      describeError(new TypeError('Failed to fetch'), 'Could not load items'),
+    ).toMatch(/Check your connection/);
+  });
+
+  it('describes a request without a response', () => {
+    const noResponse = { status: 0, statusText: '', url: '/items' };
+    expect(
+      describeError(
+        new HttpClientError(noResponse, undefined, 'timeout'),
+        'Could not load items',
+      ),
+    ).toBe('Could not load items: the server took too long. Try again.');
+    expect(
+      describeError(
+        new HttpClientError(noResponse, undefined, 'network'),
+        'Could not load items',
+      ),
+    ).toMatch(/Check your connection/);
+  });
+});
