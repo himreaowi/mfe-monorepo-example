@@ -23,6 +23,10 @@
  * - library-component-files: src/components/<Name>/ holds <Name>.tsx and <Name>.test.tsx
  *   (<Name>.module.scss when it has styles; stories optional)
  * - package-name: every workspace package has its own name
+ * - axios-import: axios is a dependency and an import of @org/http-client only
+ * - query-hook-import: useQuery & co. are imported in hooks/ folders only (pages call hooks,
+ *   components display). ESLint (`importGuards` of @org/eslint-config) reports the same two in
+ *   the editor; a test keeps the lists equal
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -55,6 +59,21 @@ const SOURCE_EXT = /\.(?:[cm]?[jt]sx?)$/;
 const IMPORT_RE =
   /(?:\bfrom\s*|\bimport\s*\(\s*|\brequire\s*\(\s*|^\s*import\s+)['"]([^'"]+)['"]/gm;
 const COMPONENT_NAME = /^[A-Z][A-Za-z0-9]*$/;
+const DATA_DOC = 'docs/coding-conventions.md ("Data fetching")';
+/** The one package that may use axios. */
+const AXIOS_OWNER = `${PLATFORM_DIR}/http-client`;
+/** Reading or changing server data with TanStack Query: only in a hook of a hooks/ folder. */
+export const QUERY_HOOKS = [
+  'useInfiniteQuery',
+  'useMutation',
+  'useQueries',
+  'useQuery',
+  'useSuspenseInfiniteQuery',
+  'useSuspenseQueries',
+  'useSuspenseQuery',
+];
+const QUERY_PACKAGE = /['"]@tanstack\/react-query['"]/;
+const AXIOS_SPEC = /^axios(?:\/|$)/;
 
 /**
  * The side of a workspace package in the import table, from its folder. `undefined` for the
@@ -193,6 +212,35 @@ function sourceFiles(dir) {
         !f.includes(`${path.sep}node_modules${path.sep}`) &&
         !f.includes(`${path.sep}dist${path.sep}`),
     );
+}
+
+/**
+ * The query hooks a file imports by name, or `*` for a namespace import or a dynamic import,
+ * which hide what is used. Type imports do not count.
+ * @param {string} code
+ * @returns {string[]}
+ */
+export function importedQueryHooks(code) {
+  if (!QUERY_PACKAGE.test(code)) return [];
+  /** @type {string[]} */
+  const found = [];
+  const statement =
+    /\bimport\s+(type\s+)?([^'";]*?)\s*from\s*['"]@tanstack\/react-query['"]/g;
+  for (const [, typeOnly, clause] of code.matchAll(statement)) {
+    if (typeOnly) continue;
+    if (/\*\s*as\s/.test(clause)) found.push('*');
+    for (const name of clause.match(/\{([^}]*)\}/)?.[1].split(',') ?? []) {
+      const [imported, ...rest] = name.trim().split(/\s+/);
+      if (imported === 'type') continue;
+      if (QUERY_HOOKS.includes(imported) && rest.length <= 2) {
+        found.push(imported);
+      }
+    }
+  }
+  if (/\b(?:import|require)\s*\(\s*['"]@tanstack\/react-query['"]/.test(code)) {
+    found.push('*');
+  }
+  return found;
 }
 
 /**
@@ -448,6 +496,37 @@ export async function checkPackages({ root }) {
         err(
           'package-boundaries',
           `${rel} imports "${spec}" from ${describe(pair.target, target)}. ${allowedSentence(pair.source)} ${fixFor(pair.source, pair.target)} See ${WHERE_CODE_GOES}.`,
+        );
+      }
+    }
+  }
+
+  // --- data layer: axios and query hooks ------------------------------------------------------
+  for (const pkg of packages) {
+    for (const field of DEP_FIELDS) {
+      if (pkg.dir === AXIOS_OWNER || !pkg.pkg[field]?.axios) continue;
+      err(
+        'axios-import',
+        `${pkg.name} (${pkg.file} ${field}) depends on axios. Only @org/http-client (${AXIOS_OWNER}) uses it: remove "axios" from ${field} and call the API through useApiClient(), see ${DATA_DOC}.`,
+      );
+    }
+    for (const file of sourceFiles(path.join(root, pkg.dir))) {
+      const code = fs.readFileSync(file, 'utf8');
+      const rel = toPosix(path.relative(root, file));
+      if (pkg.dir !== AXIOS_OWNER) {
+        for (const match of code.matchAll(IMPORT_RE)) {
+          if (!AXIOS_SPEC.test(match[1])) continue;
+          err(
+            'axios-import',
+            `${rel} imports "${match[1]}". axios is private to @org/http-client (${AXIOS_OWNER}): add a request function to the feature's api/ folder that takes the client from useApiClient(), see ${DATA_DOC}.`,
+          );
+        }
+      }
+      if (rel.split('/').includes('hooks')) continue;
+      for (const name of importedQueryHooks(code)) {
+        err(
+          'query-hook-import',
+          `${rel} imports ${name === '*' ? 'all of @tanstack/react-query' : `${name} from @tanstack/react-query`} outside a hooks/ folder. Queries and mutations live in a data hook (src/features/<feature>/hooks/): the page calls the hook and passes the result down, components only display. See ${DATA_DOC}.`,
         );
       }
     }

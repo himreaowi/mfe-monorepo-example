@@ -167,9 +167,13 @@ describe('createHttpClient', () => {
       .fn()
       .mockResolvedValue(response('{}', { status: 200 }));
     const http = createHttpClient({ baseUrl: '/api', fetch: fetchMock });
-    await http.request('/x', { cache: 'no-store' }, {
-      headers: { Accept: 'text/csv' },
-    });
+    await http.request(
+      '/x',
+      { cache: 'no-store' },
+      {
+        headers: { Accept: 'text/csv' },
+      },
+    );
     const [, init] = fetchMock.mock.calls[0];
     expect((init.headers as Headers).get('accept')).toBe('text/csv');
     expect(init.cache).toBe('no-store');
@@ -205,7 +209,9 @@ describe('createHttpClient', () => {
   });
 
   it('resolves undefined for an empty 200 body', async () => {
-    const fetchMock = jest.fn().mockResolvedValue(response('', { status: 200 }));
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValue(response('', { status: 200 }));
     const http = createHttpClient({ baseUrl: '/api', fetch: fetchMock });
     await expect(http.getJson('/x')).resolves.toBeUndefined();
   });
@@ -307,9 +313,9 @@ describe('createHttpClient', () => {
     it('takes a timeout per request, and passes 30 s by default', async () => {
       expect(DEFAULT_TIMEOUT_MS).toBe(30_000);
       const http = createHttpClient({ baseUrl: '/api', fetch: hangingFetch });
-      await expect(
-        http.getJson('/slow', { timeout: 5 }),
-      ).rejects.toMatchObject({ timedOut: true });
+      await expect(http.getJson('/slow', { timeout: 5 })).rejects.toMatchObject(
+        { timedOut: true },
+      );
     });
   });
 

@@ -127,6 +127,88 @@ export const appImportPatterns = workspaceRoot
   ? appPackageNames(workspaceRoot).flatMap((name) => [name, `${name}/*`])
   : FALLBACK_APP_PATTERNS;
 
+/** Reading or changing server data with TanStack Query: only in a hook of a hooks/ folder. */
+export const queryHooks = [
+  'useInfiniteQuery',
+  'useMutation',
+  'useQueries',
+  'useQuery',
+  'useSuspenseInfiniteQuery',
+  'useSuspenseQueries',
+  'useSuspenseQuery',
+];
+
+/**
+ * `no-restricted-imports` of every project: apps, axios (private to @org/http-client) and the
+ * query hooks (hooks/ folders only, pages call hooks and components display). tools/scripts
+ * check-packages is the backstop (axios-import, query-hook-import).
+ * @param {{ axios?: boolean, query?: boolean }} [allow]
+ */
+export function restrictedImports(allow = {}) {
+  return [
+    'error',
+    {
+      paths: [
+        ...(allow.axios
+          ? []
+          : [
+              {
+                name: 'axios',
+                message:
+                  'axios is private to @org/http-client. Add a request function to the feature\'s api/ folder that takes the client from useApiClient(). See docs/coding-conventions.md "Data fetching".',
+              },
+            ]),
+        ...(allow.query
+          ? []
+          : [
+              {
+                name: '@tanstack/react-query',
+                importNames: queryHooks,
+                message:
+                  'Queries and mutations live in a data hook in a hooks/ folder: the page calls the hook and passes the result down, components only display. See docs/coding-conventions.md "Data fetching".',
+              },
+            ]),
+      ],
+      patterns: [
+        ...(allow.axios
+          ? []
+          : [
+              {
+                group: ['axios/*'],
+                message: 'axios is private to @org/http-client.',
+              },
+            ]),
+        ...(appImportPatterns.length === 0
+          ? []
+          : [
+              {
+                group: appImportPatterns,
+                message:
+                  'Apps are never imported (shells load remotes at runtime, remotes never import remotes or shells, libraries never import apps). Move shared code to apps/<zone>/libs/<capability> (one zone) or packages/common/<capability> (both zones, public). See docs/where-code-goes.md.',
+              },
+            ]),
+      ],
+    },
+  ];
+}
+
+/** The import rule of every file, and of hooks/ folders. Part of the config below. */
+export const importGuards = [
+  {
+    files: ['**/*.{js,mjs,cjs,ts,tsx}'],
+    rules: { 'no-restricted-imports': restrictedImports() },
+  },
+  {
+    files: ['**/hooks/**/*.{js,mjs,cjs,ts,tsx}'],
+    rules: { 'no-restricted-imports': restrictedImports({ query: true }) },
+  },
+];
+
+/** For the eslint.config.js of @org/http-client only: the package that wraps axios. */
+export const allowAxios = {
+  rules: { 'no-restricted-imports': restrictedImports({ axios: true }) },
+};
+
 /**
  * Shared flat config for every app and package (ported from starter-mfe).
  * Usage in a package's eslint.config.js:
@@ -163,21 +245,6 @@ const config = tseslint.config(
       // Classic React Hooks rules (React Compiler-only rules are not enabled).
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
-      'no-restricted-imports': [
-        'error',
-        {
-          patterns:
-            appImportPatterns.length === 0
-              ? []
-              : [
-                  {
-                    group: appImportPatterns,
-                    message:
-                      'Apps are never imported (shells load remotes at runtime, remotes never import remotes or shells, libraries never import apps). Move shared code to apps/<zone>/libs/<capability> (one zone) or packages/common/<capability> (both zones, public). See docs/where-code-goes.md.',
-                  },
-                ],
-        },
-      ],
       '@nx/enforce-module-boundaries': [
         'error',
         {
@@ -188,6 +255,7 @@ const config = tseslint.config(
       ],
     },
   },
+  ...importGuards,
   {
     files: ['**/*.cjs'],
     languageOptions: {
