@@ -7,12 +7,15 @@ TanStack Query setup shared by every app. Nothing of TanStack Query is re-export
 - `createQueryClient()`: `staleTime` 30 s, no refetch on window focus; queries retry once, and only
   network errors (connection failed, timeout) and status >= 500, never a 4xx or an abort
   (`shouldRetryQuery`); mutations never retry.
-- `<QueryProvider client userId>`: `QueryClientProvider` that calls `client.clear()` when `userId`
+- `<QueryProvider client? userId>`: `QueryClientProvider` that calls `client.clear()` when `userId`
   changes (sign-out, sign-in), before the children render, so a user never sees the previous
-  user's data. It also notices a change that happened while it was unmounted.
+  user's data. Without `client` it creates one when it mounts and drops it on unmount.
 
-Remotes get all this from `createRemoteApp` (one client per remote, at module level, so the cache
-survives leaving and returning to the remote). A shell makes its own client in `src/app/App.tsx`.
+Remotes get all this from `createRemoteApp`, with no `client`: the cache lives while the remote is
+open (navigation inside it keeps it) and is discarded when the remote unmounts, i.e. on leaving
+it or on sign-out of a private remote. Why: personal data must not stay in memory after the user
+left or signed out, and a remote that is unmounted cannot see the sign-out happen. A shell is
+never unmounted, so it makes its own client at module level in `src/app/App.tsx` and passes it.
 
 ## Tests
 

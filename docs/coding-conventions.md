@@ -232,12 +232,14 @@ shell's dev manifest entry is generated (`pnpm dev-manifest`).
   - **Defaults** (`createQueryClient` in `@org/query`): data is fresh for 30 s, a window focus does
     not refetch, queries retry once and only network errors, timeouts and status >= 500 (never a
     4xx, never an abort), mutations never retry. Override per query only with a reason.
-  - **One cache per app**: `createRemoteApp` makes one QueryClient per remote, a shell its own in
-    `src/app/App.tsx`. Remotes do not share a cache. The cache lives as long as the page, so
-    leaving and returning to a remote within 30 s shows the data without a new request.
+  - **One cache per app**: `createRemoteApp` gives each remote its own QueryClient, a shell its own
+    in `src/app/App.tsx`. Remotes do not share a cache. A remote's cache lives while the remote
+    is open: moving between its pages within 30 s makes no new request, but leaving the remote
+    (or signing out of a private one) discards it, because personal data must not stay in memory
+    and an unmounted remote cannot notice a sign-out. Coming back loads again.
   - **Sign-out**: the cache belongs to the user. `QueryProvider` calls `queryClient.clear()` when
-    the user's id changes (sign-out, sign-in, another account), so nobody sees the previous user's
-    data; nothing to do in a feature.
+    the user's id changes while it is mounted (the shell, or a remote that stays open), and a
+    remote's cache is gone anyway once it unmounts; nothing to do in a feature.
 
 - **Page-level data fetching.** Pages (`src/pages/<Name>Page/`) call the feature's data hooks
   (exported from the feature's `index.ts`) and pass the query and mutation results down as props.

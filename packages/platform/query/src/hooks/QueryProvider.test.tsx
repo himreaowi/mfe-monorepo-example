@@ -98,6 +98,26 @@ describe('QueryProvider', () => {
     expect(load).toHaveBeenCalledTimes(1);
   });
 
+  it('without a client: one per mount, a remount starts with an empty cache', async () => {
+    const load = jest.fn().mockResolvedValue('private');
+    const own = (key: string) => (
+      <QueryProvider userId="ada">
+        <Secret key={key} load={load} />
+      </QueryProvider>
+    );
+    const first = render(own('a'));
+    await screen.findByText('private');
+    first.rerender(own('b')); // still mounted: same client, the cache is kept
+    expect(screen.getByTestId('secret')).toHaveTextContent('private');
+    first.unmount();
+    render(
+      <QueryProvider userId="ada">
+        <Secret load={() => new Promise<string>(() => {})} />
+      </QueryProvider>,
+    );
+    expect(screen.getByTestId('secret')).toHaveTextContent('none');
+  });
+
   it('treats undefined and null as the same: no user', async () => {
     const client = createQueryClient();
     const load = jest.fn().mockResolvedValue('public');
