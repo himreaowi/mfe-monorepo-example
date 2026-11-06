@@ -121,9 +121,10 @@ createRoot(el).render(<StandaloneApp />);
   (one component or a list, outermost first) wrap the routes in both modes, inside the router
   and the host props (they may use `useHostProps()`, `useNavigate()`); standalone they wrap the
   `StandaloneLayout` too. For remote-wide state (`src/state/`, docs/coding-conventions.md
-  "State management"). It also makes one QueryClient for the remote (`@org/query`, module level,
-  so the cache survives leaving and returning) and wraps the routes in it, inside the host props;
-  the cache is cleared when `user` changes identity.
+  "State management"). It also gives the remote a QueryClient of its own (`@org/query`, created
+  when the remote mounts and dropped when it unmounts: the cache lives while the remote is open,
+  and leaving it or signing out discards it) and wraps the routes in it, inside the host props;
+  the cache is also cleared when `user` changes identity while the remote stays mounted.
 - `useHostProps()`: the host props.
 - `useApiClient()`: the remote's API client (`createApiClient` from `@org/http-client`): base URL
   from host props `settings.apiBaseUrl`, `credentials: 'include'`, memoised per base URL;

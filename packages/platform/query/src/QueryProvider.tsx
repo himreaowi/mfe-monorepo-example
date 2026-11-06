@@ -1,9 +1,15 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { QueryClientProvider, type QueryClient } from '@tanstack/react-query';
+import { createQueryClient } from './createQueryClient';
 
 export type QueryProviderProps = {
-  /** Created once, at module level: the cache outlives this component. */
-  client: QueryClient;
+  /**
+   * Omit it (remotes): the provider creates a client when it mounts and drops it with the
+   * provider, so the cache lives while the remote is open and nothing personal stays in memory
+   * after leaving it or signing out. Pass one, created once at module level, for an app that is
+   * never unmounted (a shell).
+   */
+  client?: QueryClient;
   /** Id of the signed-in user (`undefined` or `null` when there is none). */
   userId?: string | null;
   children: ReactNode;
@@ -19,10 +25,12 @@ const cacheOwners = new WeakMap<QueryClient, string | null>();
  * while nothing was mounted (the user signed out while a remote was closed).
  */
 export function QueryProvider({
-  client,
+  client: given,
   userId = null,
   children,
 }: QueryProviderProps) {
+  const [own] = useState(() => (given ? undefined : createQueryClient()));
+  const client = given ?? own ?? createQueryClient();
   if (cacheOwners.has(client) && cacheOwners.get(client) !== userId) {
     // clear() alone tells nobody: a mounted component that does not re-render keeps showing the
     // old data. reset() makes its observer update first (asynchronously, not during this render).

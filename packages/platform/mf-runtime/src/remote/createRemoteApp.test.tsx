@@ -243,7 +243,7 @@ describe('createRemoteApp', () => {
       );
     }
 
-    it('embedded: one client per remote, the cache survives leaving and returning', () => {
+    it('embedded: navigating inside the remote keeps the cache, leaving it drops it', () => {
       const first = createRemoteApp({
         routes: [
           { path: 'seed', element: <CachePage seed="kept" /> },
@@ -257,9 +257,17 @@ describe('createRemoteApp', () => {
       );
       const visit = render(shell('/seed'));
       expect(screen.getByTestId('cached')).toHaveTextContent('kept');
+      // another page of the same remote (mounted): same client
+      visit.rerender(
+        <MemoryRouter initialEntries={['/seed']}>
+          <first.EmbeddedApp embedded basePath="/" user={{ id: 'u1' }} />
+        </MemoryRouter>,
+      );
+      expect(screen.getByTestId('cached')).toHaveTextContent('kept');
+      // leaving the remote (sign-out of a private one does the same): the cache is gone
       visit.unmount();
       render(shell('/'));
-      expect(screen.getByTestId('cached')).toHaveTextContent('kept');
+      expect(screen.getByTestId('cached')).toHaveTextContent('undefined');
     });
 
     it('two remotes have separate caches', () => {
