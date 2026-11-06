@@ -70,11 +70,13 @@ test.describe('My profile: the cache belongs to the signed-in user', () => {
     page,
   }) => {
     let reads = 0;
-    let hold: Promise<void> | undefined;
+    let holding = false;
+    let release: () => void = () => undefined;
+    const hold = new Promise<void>((resolve) => (release = resolve));
     await page.route(/\/profile\/me$/, async (route) => {
       if (route.request().method() === 'GET') {
         reads += 1;
-        await hold;
+        if (holding) await hold;
       }
       await route.continue();
     });
@@ -90,8 +92,7 @@ test.describe('My profile: the cache belongs to the signed-in user', () => {
     // sign out and in again without a page load: the module-level cache would still have it
     await signOut(page);
     await expect(page.getByTestId('sign-in-prompt')).toBeVisible();
-    let release: () => void = () => undefined;
-    hold = new Promise<void>((resolve) => (release = resolve));
+    holding = true;
     await signInWithMock(page);
 
     // the profile is requested again, and while that is under way nothing of the old data shows
