@@ -1,20 +1,25 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
-import type { ApiResult, SubmitResult } from '@org/use-api';
 import { profile } from '../../__fixtures__/profile';
-import type { Preferences, Profile } from '../../types/profile';
+import type {
+  ProfileQuery,
+  SavePreferencesMutation,
+} from '../../hooks/useProfile';
 import { MyProfile } from './MyProfile';
 
-const idleSave: SubmitResult<Preferences, Profile> = {
-  state: { status: 'idle' },
-  submit: jest.fn(),
+const idleSave = {
+  isPending: false,
+  isSuccess: false,
+  isError: false,
+  error: null,
+  mutate: jest.fn(),
   reset: jest.fn(),
-};
-const reload = jest.fn();
+} as unknown as SavePreferencesMutation;
+const refetch = jest.fn();
 
 // A display component: the page loads the profile and passes it in (no API here).
-function renderProfile(result: ApiResult<Profile>) {
+function renderProfile(result: object) {
   return render(
     <HostPropsProvider
       value={{
@@ -23,14 +28,14 @@ function renderProfile(result: ApiResult<Profile>) {
         user: { id: 'mock-user-1', name: 'Dev User (mock)' },
       }}
     >
-      <MyProfile profile={result} save={idleSave} />
+      <MyProfile profile={result as ProfileQuery} save={idleSave} />
     </HostPropsProvider>,
   );
 }
 
 describe('MyProfile', () => {
   it("shows the signed-in user's details and the notification choices", () => {
-    renderProfile({ status: 'success', data: profile, reload });
+    renderProfile({ status: 'success', data: profile, refetch });
     expect(
       screen.getByRole('heading', { level: 1, name: 'My profile' }),
     ).toBeInTheDocument();
@@ -47,7 +52,7 @@ describe('MyProfile', () => {
   });
 
   it('shows loading', () => {
-    renderProfile({ status: 'loading', reload });
+    renderProfile({ status: 'pending', refetch });
     expect(screen.getByRole('status')).toHaveTextContent(
       'Loading your profile…',
     );
@@ -58,12 +63,12 @@ describe('MyProfile', () => {
     renderProfile({
       status: 'error',
       error: new Error('401 Unauthorized'),
-      reload,
+      refetch,
     });
     expect(screen.getByRole('alert')).toHaveTextContent(
       'Could not load your profile',
     );
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
-    expect(reload).toHaveBeenCalledTimes(1);
+    expect(refetch).toHaveBeenCalledTimes(1);
   });
 });

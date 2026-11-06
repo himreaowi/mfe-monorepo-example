@@ -1,57 +1,44 @@
-import { useCallback } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@org/auth';
-import { HttpClientError } from '@org/http-client';
-import { requireApiClient, useApi, useSubmit } from '@org/use-api';
+import { requireApiClient } from '@org/http-client';
 import { useApiClient } from '@org/mf-runtime/remote';
 import { getProfile, updatePreferences } from '../api/profileApi';
+import { profileKeys } from '../queryKeys';
 import type { Preferences } from '../types/profile';
 
-/** A 401 means the session ended: let the shell re-check it (the guard then shows sign-in). */
-function useOnUnauthorized() {
-  const { refresh } = useAuth();
-  return useCallback(
-    (error: unknown) => {
-      if (error instanceof HttpClientError && error.status === 401) {
-        void refresh();
-      }
-    },
-    [refresh],
-  );
-}
-
+/**
+ * The signed-in user's profile as a query result. A 401 re-checks the session by itself:
+ * `useApiClient()` calls the host's `onUnauthorized` (the shell's `useAuth().refresh`), the
+ * guard then shows sign-in.
+ */
 export function useProfile() {
   const http = useApiClient();
-  const onUnauthorized = useOnUnauthorized();
-  const load = useCallback(
-    async (signal: AbortSignal) => {
-      try {
-        return await getProfile(requireApiClient(http), signal);
-      } catch (error) {
-        onUnauthorized(error);
-        throw error;
-      }
-    },
-    [http, onUnauthorized],
-  );
-  return useApi(load);
+  return useQuery({
+    queryKey: profileKeys.me(),
+    queryFn: ({ signal }) => getProfile(requireApiClient(http), signal),
+  });
 }
 
-/** PUT the preferences with the session's CSRF header (docs/auth-contract.md). */
+export type ProfileQuery = ReturnType<typeof useProfile>;
+
+/**
+ * PUT the preferences with the session's CSRF header (docs/auth-contract.md). On success the
+ * profile is invalidated and loaded again.
+ */
 export function useSavePreferences() {
   const http = useApiClient();
+  const queryClient = useQueryClient();
   const { csrfToken, csrfHeaderName } = useAuth();
-  const onUnauthorized = useOnUnauthorized();
-  return useSubmit(async (preferences: Preferences, signal: AbortSignal) => {
-    try {
-      return await updatePreferences(
+  return useMutation({
+    mutationFn: (preferences: Preferences) =>
+      updatePreferences(
         requireApiClient(http),
         preferences,
         csrfToken ? { [csrfHeaderName]: csrfToken } : {},
-        signal,
-      );
-    } catch (error) {
-      onUnauthorized(error);
-      throw error;
-    }
+      ),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: profileKeys.all }),
   });
 }
+
+export type SavePreferencesMutation = ReturnType<typeof useSavePreferences>;

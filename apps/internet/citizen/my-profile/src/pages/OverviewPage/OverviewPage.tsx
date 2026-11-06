@@ -2,7 +2,7 @@ import { MyProfile, useProfile, useSavePreferences } from '@/features/profile';
 
 /**
  * Page-level data fetching: the page loads the profile and owns the "save preferences"
- * request; `MyProfile` and its form only display and call `save.submit` (docs/coding-conventions.md
+ * request; `MyProfile` and its form only display and call `save.mutate` (docs/coding-conventions.md
  * "Data fetching").
  */
 export function OverviewPage() {

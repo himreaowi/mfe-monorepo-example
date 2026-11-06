@@ -1,8 +1,8 @@
 import { useId, useRef, useState, type FormEvent } from 'react';
 import { HttpClientError } from '@org/http-client';
 import { Alert, Button, Checkbox, VisuallyHidden } from '@org/ui';
-import type { SubmitResult } from '@org/use-api';
-import type { Preferences, Profile } from '../../types/profile';
+import type { SavePreferencesMutation } from '../../hooks/useProfile';
+import type { Preferences } from '../../types/profile';
 import styles from './PreferencesForm.module.scss';
 
 /** The `preferences` field error of a 422 (`{ errors: { preferences } }`), if there is one. */
@@ -21,7 +21,7 @@ function preferencesError(error: Error): string | undefined {
  * invalid on the client, so only the server validates: a 422 is shown like any form error
  * (focused error summary linking to the choices + the error next to them,
  * docs/coding-conventions.md), other failures as a form-level error. The button shows `loading`
- * only while saving. It sends nothing itself: `save` comes from the page
+ * only while saving. It sends nothing itself: `save` (a mutation) comes from the page
  * (`useSavePreferences()`); the form keeps only its own UI state (choices, field error).
  */
 export function PreferencesForm({
@@ -29,11 +29,11 @@ export function PreferencesForm({
   save,
 }: {
   initial: Preferences;
-  save: SubmitResult<Preferences, Profile>;
+  save: SavePreferencesMutation;
 }) {
   const [values, setValues] = useState(initial);
   const [fieldError, setFieldError] = useState<string>();
-  const saving = save.state.status === 'submitting';
+  const saving = save.isPending;
   const summaryRef = useRef<HTMLDivElement>(null);
   const id = useId();
   const firstChoiceId = `${id}-email`;
@@ -44,26 +44,23 @@ export function PreferencesForm({
     setValues((current) => ({ ...current, [key]: checked }));
   };
 
-  const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFieldError(undefined);
-    const outcome = await save.submit(values);
-    if (outcome.ok) {
-      setValues(outcome.data.preferences);
-      return;
-    }
-    const message = outcome.aborted
-      ? undefined
-      : preferencesError(outcome.error);
-    if (message) {
-      setFieldError(message);
-      // after React rendered the summary
-      requestAnimationFrame(() => summaryRef.current?.focus());
-    }
+    save.mutate(values, {
+      onSuccess: (profile) => setValues(profile.preferences),
+      onError: (error) => {
+        const message = preferencesError(error);
+        if (message) {
+          setFieldError(message);
+          // after React rendered the summary
+          requestAnimationFrame(() => summaryRef.current?.focus());
+        }
+      },
+    });
   };
 
-  const formError =
-    save.state.status === 'error' && !fieldError ? save.state.error : null;
+  const formError = save.isError && !fieldError ? save.error : null;
 
   return (
     <form
@@ -135,7 +132,7 @@ export function PreferencesForm({
           role="status"
           data-testid="preferences-status"
         >
-          {save.state.status === 'success' ? 'Your choices are saved.' : ''}
+          {save.isSuccess ? 'Your choices are saved.' : ''}
         </p>
       </div>
       {formError ? (

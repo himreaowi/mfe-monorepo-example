@@ -1,20 +1,49 @@
+import { useState } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { HttpClientError } from '@org/http-client';
-import { useSubmit } from '@org/use-api';
 import { profile } from '../../__fixtures__/profile';
+import type { SavePreferencesMutation } from '../../hooks/useProfile';
 import type { Preferences, Profile } from '../../types/profile';
 import { PreferencesForm } from './PreferencesForm';
 
+type Options = {
+  onSuccess: (profile: Profile) => void;
+  onError: (error: Error) => void;
+};
+
 /**
- * The form sends nothing itself: the page passes `save` (useSavePreferences()). Here a real
- * useSubmit around a fake `send` gives it the same idle → submitting → success | error states.
+ * The form sends nothing itself: the page passes `save` (useSavePreferences()). This stand-in
+ * has the same states (idle → pending → success | error) around a fake `send`.
  */
 function renderForm(
   send: (preferences: Preferences) => Promise<Profile> = jest.fn(),
 ) {
   function Harness() {
-    const save = useSubmit((preferences: Preferences) => send(preferences));
+    const [state, setState] = useState<{
+      status: 'idle' | 'pending' | 'success' | 'error';
+      error?: Error;
+    }>({ status: 'idle' });
+    const save = {
+      isPending: state.status === 'pending',
+      isSuccess: state.status === 'success',
+      isError: state.status === 'error',
+      error: state.error ?? null,
+      reset: () => setState({ status: 'idle' }),
+      mutate: (preferences: Preferences, { onSuccess, onError }: Options) => {
+        setState({ status: 'pending' });
+        send(preferences).then(
+          (saved) => {
+            setState({ status: 'success' });
+            onSuccess(saved);
+          },
+          (error: Error) => {
+            setState({ status: 'error', error });
+            onError(error);
+          },
+        );
+      },
+    } as unknown as SavePreferencesMutation;
     return <PreferencesForm initial={profile.preferences} save={save} />;
   }
   render(<Harness />);

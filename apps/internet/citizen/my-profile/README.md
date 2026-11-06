@@ -44,7 +44,7 @@ A 401 from the API calls `useAuth().refresh()`. Standalone there is no session, 
 src/
   main.tsx            standalone entry only: global styles + <StandaloneApp />
   app/                apps (exposed ./App: createRemoteApp + standalone props), routes
-  features/profile/   api/, hooks/, types/, __fixtures__/, components/ (one folder per
+  features/profile/   api/, hooks/, queryKeys.ts, types/, __fixtures__/, components/ (one folder per
                       component: MyProfile/, ProfileDetails/, PreferencesForm/)
   layouts/            StandaloneLayout/ (own simple chrome, standalone only)
   pages/              OverviewPage, NotFoundPage (they call the data hooks)

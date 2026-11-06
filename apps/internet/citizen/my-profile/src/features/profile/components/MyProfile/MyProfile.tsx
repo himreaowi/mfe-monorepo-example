@@ -1,7 +1,9 @@
 import { useHostProps } from '@org/mf-runtime/remote';
 import { RemoteFallback, Spinner } from '@org/ui';
-import type { ApiResult, SubmitResult } from '@org/use-api';
-import type { Preferences, Profile } from '../../types/profile';
+import type {
+  ProfileQuery,
+  SavePreferencesMutation,
+} from '../../hooks/useProfile';
 import { PreferencesForm } from '../PreferencesForm/PreferencesForm';
 import { ProfileDetails } from '../ProfileDetails/ProfileDetails';
 import styles from './MyProfile.module.scss';
@@ -15,9 +17,9 @@ export function MyProfile({
   profile,
   save,
 }: {
-  profile: ApiResult<Profile>;
+  profile: ProfileQuery;
   /** Saves the notification choices (`useSavePreferences()`, called by the page). */
-  save: SubmitResult<Preferences, Profile>;
+  save: SavePreferencesMutation;
 }) {
   const { user } = useHostProps();
   return (
@@ -28,14 +30,14 @@ export function MyProfile({
           Signed in as {user?.name ?? user?.id ?? 'unknown user'}.
         </p>
       </div>
-      {profile.status === 'loading' ? (
+      {profile.status === 'pending' ? (
         <Spinner label="Loading your profile…" labelVisible />
       ) : null}
       {profile.status === 'error' ? (
         <RemoteFallback
           title="Could not load your profile"
           reason={profile.error.message}
-          onRetry={profile.reload}
+          onRetry={() => void profile.refetch()}
         />
       ) : null}
       {profile.status === 'success' ? (
