@@ -280,6 +280,11 @@ describe('generators', () => {
       /loadAuthClient\(manifest\.auth\)/,
     );
     assert.match(read(root, `${dir}/src/app/App.tsx`), /<AuthProvider/);
+    // the shell's own query cache, tied to the signed-in user
+    assert.match(
+      read(root, `${dir}/src/app/App.tsx`),
+      /<QueryProvider client=\{queryClient\} userId=\{user\?\.id\}>/,
+    );
     const page = read(root, `${dir}/src/pages/RemotePage/RemotePage.tsx`);
     assert.match(page, /<RequireAuth/);
     assert.match(page, /remote\.access === 'private'/);
@@ -510,10 +515,18 @@ describe('generators', () => {
         c,
       );
     }
+    const useItems = read(root, `${dir}/src/features/demo/hooks/useItems.ts`);
     assert.match(
-      read(root, `${dir}/src/features/demo/hooks/useItems.ts`),
+      useItems,
       /import \{ useApiClient \} from '@org\/mf-runtime\/remote';/,
     );
+    assert.match(useItems, /useQuery\(\{/);
+    assert.match(useItems, /demoKeys\.items\(\)/);
+    assert.match(
+      read(root, `${dir}/src/features/demo/hooks/useCreateItem.ts`),
+      /useMutation\(\{/,
+    );
+    assert.ok(files.includes('src/features/demo/queryKeys.ts'));
     // the exposed module is src/app/apps.tsx (no RemoteApp.tsx / standaloneProps.ts)
     for (const f of ['src/app/RemoteApp.tsx', 'src/app/standaloneProps.ts']) {
       assert.ok(!files.includes(f), `${f} should not exist`);

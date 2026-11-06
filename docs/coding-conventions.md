@@ -189,24 +189,76 @@ shell's dev manifest entry is generated (`pnpm dev-manifest`).
   configured. No per-app `services/http.ts`.
 - Do **not** hardcode app paths: use `routePaths` / `useRemotePath()`.
 - Do **not** call APIs in a component's `useEffect`. Use `features/<feature>/api/` (pure request
-  functions) + `features/<feature>/hooks/` (loading / success / error, abort on unmount or
-  dependency change).
+  functions) + `features/<feature>/hooks/` (TanStack Query: `useQuery` / `useMutation`).
+- **Data hooks use TanStack Query.** Reading is `useQuery`, changing is `useMutation`, and both
+  are imported only in `hooks/` folders (lint and `pnpm check` rule `query-hook-import`). `axios`
+  stays inside `@org/http-client`; hooks and `api/` files never see it (rule `axios-import`).
+
+  ```ts
+  // features/items/queryKeys.ts: general to specific, one place per feature
+  export const itemKeys = {
+    all: ['items'] as const,
+    list: () => [...itemKeys.all, 'list'] as const,
+    detail: (id: number) => [...itemKeys.all, 'detail', id] as const,
+  };
+
+  // features/items/hooks/useItems.ts
+  export function useItems() {
+    const http = useApiClient();
+    return useQuery({
+      queryKey: itemKeys.list(),
+      // signal: leaving the page aborts the request; requireApiClient: no API, an error state
+      queryFn: ({ signal }) => listItems(requireApiClient(http), signal),
+    });
+  }
+
+  // features/items/hooks/useCreateItem.ts
+  export function useCreateItem() {
+    const http = useApiClient();
+    const queryClient = useQueryClient();
+    return useMutation({
+      mutationFn: (draft: ItemDraft) =>
+        createItem(requireApiClient(http), draft),
+      onSuccess: () =>
+        queryClient.invalidateQueries({ queryKey: itemKeys.list() }),
+    });
+  }
+  ```
+
+  - **Query keys**: everything a request depends on is in its key (`itemKeys.detail(id)`), so a
+    new id loads new data. Keys live in `features/<feature>/queryKeys.ts`, never as inline arrays.
+  - **Invalidation**: a mutation invalidates the keys it makes stale, and returns that promise so
+    `isPending` lasts until the fresh data is there. No copying server data into `useState`.
+  - **Defaults** (`createQueryClient` in `@org/query`): data is fresh for 30 s, a window focus does
+    not refetch, queries retry once and only network errors, timeouts and status >= 500 (never a
+    4xx, never an abort), mutations never retry. Override per query only with a reason.
+  - **One cache per app**: `createRemoteApp` makes one QueryClient per remote, a shell its own in
+    `src/app/App.tsx`. Remotes do not share a cache. The cache lives as long as the page, so
+    leaving and returning to a remote within 30 s shows the data without a new request.
+  - **Sign-out**: the cache belongs to the user. `QueryProvider` calls `queryClient.clear()` when
+    the user's id changes (sign-out, sign-in, another account), so nobody sees the previous user's
+    data; nothing to do in a feature.
+
 - **Page-level data fetching.** Pages (`src/pages/<Name>Page/`) call the feature's data hooks
-  (exported from the feature's `index.ts`) and pass the data, and callbacks such as `reload` or
-  `onCreate`, down as props. Feature components only display: they never call a data hook or
-  `useApiClient()` themselves (a form keeps its own UI state: field values, errors, "sending").
+  (exported from the feature's `index.ts`) and pass the query and mutation results down as props.
+  Feature components only display: they branch on `status === 'pending'`, call `refetch()` or
+  `mutate()` from those props, and never call a data hook or `useApiClient()` themselves (a form
+  keeps its own UI state: field values, errors).
   Why: every API call of a page is visible in one file, so two components quietly loading the
   same list, or a list loaded again on every navigation inside the page, show up in review;
   components are easy to test (props in, markup out, no API mocks) and to reuse with other
   data. A component deep in the tree gets its data through props or `children` composition
-  (`<Demo><DemoItems state={…} /></Demo>`); UI state shared by many components of a feature may live in a
-  feature Context, but API data is still loaded by the page. There is
-  no query cache (no TanStack Query): when two pages need the same data, each page loads it.
+  (`<Demo><DemoItems items={…} /></Demo>`); UI state shared by many components of a feature may live in a
+  feature Context, but API data is still loaded by the page. When two pages need the same data,
+  each page calls the same hook, and the query cache makes that one request.
   Generated example: `pages/OverviewPage` calls `useItems()` and `useCreateItem()`, `DemoItems`
   and `AddItemForm` only display.
 - Cookies, not tokens: requests to the BFF/API use the session cookie
   (`credentials: 'include'` when cross-origin) and send the CSRF header on state-changing
-  requests ([auth-contract.md](auth-contract.md)). On 401 call `useAuth().refresh()`.
+  requests ([auth-contract.md](auth-contract.md)). A 401 re-checks the session by itself:
+  `useApiClient()` calls host prop `onUnauthorized` (the generated shell passes
+  `useAuth().refresh`), in a shell the `onUnauthorized` of `MfeManifestProvider`.
+- Requests time out after 30 s (`HttpClientError` with `timedOut: true`, `status` 0).
 - Normalise response shapes in `api/` so hooks and components do not branch on transport details.
 
 ## State management

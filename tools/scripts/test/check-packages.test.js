@@ -1,12 +1,15 @@
 // @ts-check
 import assert from 'node:assert/strict';
 import { after, describe, it } from 'node:test';
-import { depConstraints } from '@org/eslint-config';
+import { depConstraints, importGuards, queryHooks } from '@org/eslint-config';
+import { Linter } from 'eslint';
 import { checkApps } from '../src/check-apps.js';
 import {
   checkPackages,
+  importedQueryHooks,
   isAllowed,
   layerTags,
+  QUERY_HOOKS,
   sideOf,
 } from '../src/check-packages.js';
 import { loadApps } from '../src/workspace.js';
@@ -386,5 +389,163 @@ describe('check-packages', () => {
       /apps\/intranet\/libs\/empty\/: a library folder needs a package\.json.*pnpm gen:package intranet empty/,
     );
     assert.match(text, /@org\/intranet-staff is the name of 2 packages/);
+  });
+});
+
+describe('data layer guardrails', () => {
+  const http = {
+    name: '@org/http-client',
+    version: '0.1.0',
+    nx: { tags: ['type:package'] },
+    dependencies: { axios: 'catalog:' },
+  };
+  /** @param {Record<string, string>} files @param {Record<string, object>} [packages] */
+  const check = (files, packages = {}) =>
+    checkPackages({
+      root: makeWorkspace({
+        packages: { 'http-client': http, ...packages },
+        apps: validApps(),
+        files: { ...validRegistries(), ...files },
+      }),
+    });
+  const remote = 'apps/intranet/intranet/staff/src';
+
+  it('allows axios in @org/http-client and query hooks in hooks/ folders', async () => {
+    const r = await check({
+      'packages/platform/http-client/src/httpClient.ts': `import axios from 'axios';`,
+      [`${remote}/features/demo/hooks/useItems.ts`]: `import { useQuery } from '@tanstack/react-query';`,
+      'packages/platform/http-client/src/hooks/useThing.ts': `import { useMutation } from '@tanstack/react-query';`,
+    });
+    assert.deepEqual(rules(r.errors), []);
+  });
+
+  it('axios-import: any other import, or dependency, of axios', async () => {
+    const r = await check(
+      {
+        [`${remote}/features/demo/api/itemsApi.ts`]: `import axios from 'axios';`,
+        'packages/platform/ui/src/x.ts': `import { create } from "axios/lib";`,
+      },
+      {
+        ui: {
+          name: '@org/ui',
+          version: '0.1.0',
+          nx: { tags: ['type:package'] },
+          dependencies: { axios: 'catalog:' },
+        },
+      },
+    );
+    assert.deepEqual(rules(r.errors), [
+      'axios-import',
+      'axios-import',
+      'axios-import',
+    ]);
+    assert.match(
+      r.errors.map((e) => e.message).join('\n'),
+      /depends on axios\. Only @org\/http-client/,
+    );
+    assert.match(
+      r.errors.map((e) => e.message).join('\n'),
+      /itemsApi\.ts imports "axios"\. axios is private to @org\/http-client/,
+    );
+  });
+
+  it('query-hook-import: query hooks in a component or page file', async () => {
+    const r = await check({
+      [`${remote}/features/demo/components/Demo/Demo.tsx`]: `import { useQuery } from '@tanstack/react-query';`,
+      [`${remote}/pages/OverviewPage/OverviewPage.tsx`]: `import {\n  useMutation as send,\n  useQueryClient,\n} from '@tanstack/react-query';`,
+    });
+    assert.deepEqual(rules(r.errors), [
+      'query-hook-import',
+      'query-hook-import',
+    ]);
+    assert.match(
+      r.errors.map((e) => e.message).join('\n'),
+      /Demo\.tsx imports useQuery from @tanstack\/react-query outside a hooks\/ folder/,
+    );
+    assert.match(
+      r.errors.map((e) => e.message).join('\n'),
+      /OverviewPage\.tsx imports useMutation/,
+    );
+  });
+
+  it('importedQueryHooks reads what a file imports', () => {
+    const pkg = `'@tanstack/react-query'`;
+    assert.deepEqual(importedQueryHooks(`import { useQuery } from ${pkg};`), [
+      'useQuery',
+    ]);
+    assert.deepEqual(importedQueryHooks(`import * as query from ${pkg};`), [
+      '*',
+    ]);
+    assert.deepEqual(importedQueryHooks(`await import(${pkg});`), ['*']);
+    // types and non-hooks are fine anywhere
+    for (const ok of [
+      `import type { UseQueryResult } from ${pkg};`,
+      `import { type UseMutationResult, useQueryClient } from ${pkg};`,
+      `import { QueryClient } from ${pkg};`,
+      `import { useQuery } from 'other';`,
+    ]) {
+      assert.deepEqual(importedQueryHooks(ok), []);
+    }
+  });
+
+  it('check and ESLint guard the same hooks', () => {
+    assert.deepEqual(QUERY_HOOKS, queryHooks);
+  });
+
+  describe('ESLint', () => {
+    const linter = new Linter({ configType: 'flat', cwd: '/repo' });
+    const parse = { languageOptions: { sourceType: 'module' } };
+    /** @param {string} code @param {string} filename */
+    const lint = (code, filename) =>
+      linter
+        .verify(code, /** @type {any} */ ([parse, ...importGuards]), {
+          filename: `/repo/${filename}`,
+        })
+        .map((m) => m.message);
+
+    it('reports axios anywhere', () => {
+      const [message] = lint(
+        `import axios from 'axios';`,
+        'src/features/a/api/aApi.js',
+      );
+      assert.match(message, /axios is private to @org\/http-client/);
+    });
+
+    it('reports query hooks outside hooks/ folders, with the reason', () => {
+      for (const file of [
+        'src/features/a/components/A/A.js',
+        'src/pages/P/P.js',
+      ]) {
+        const [message] = lint(
+          `import { useQuery } from '@tanstack/react-query';`,
+          file,
+        );
+        assert.match(message, /live in a data hook in a hooks\/ folder/);
+      }
+    });
+
+    it('allows query hooks in hooks/ folders and other imports anywhere', () => {
+      assert.deepEqual(
+        lint(
+          `import { useMutation, useQuery } from '@tanstack/react-query';`,
+          'src/features/a/hooks/useA.js',
+        ),
+        [],
+      );
+      assert.deepEqual(
+        lint(
+          `import { useQueryClient } from '@tanstack/react-query';`,
+          'src/pages/P/P.js',
+        ),
+        [],
+      );
+    });
+
+    it('still reports axios in a hooks/ folder', () => {
+      assert.equal(
+        lint(`import axios from 'axios';`, 'src/hooks/useA.js').length,
+        1,
+      );
+    });
   });
 });

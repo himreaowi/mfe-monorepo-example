@@ -60,7 +60,7 @@ apps/<zone>/<shell>/<name>/         new remote (package @org/<zone>-<name>); app
   package.json                      nx.tags zone/type/access(/kind), mfe.port, mfe.federationName
   webpack.config.js                  createRemoteConfig (reads mfe from package.json)
   src/                              app/, features/demo, pages/, layouts/, components/, core/
-    features/demo/                  api/, hooks/, types/, utils/, components/<Name>/ (one folder per component), index.ts (public API)
+    features/demo/                  api/, hooks/, types/, utils/, components/<Name>/ (one folder per component), queryKeys.ts, index.ts (public API)
     features/demo/state/            only with --state: demoReducer.ts (+ test), DemoContext.tsx (+ test), used by ItemPicker + SelectionSummary
 apps/<zone>/<shell>/shell/
   remotes.json                      + { name, title, path, federationName, package, access, kind }

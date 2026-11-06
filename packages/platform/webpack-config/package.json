@@ -52,6 +52,7 @@
   "devDependencies": {
     "@org/auth": "workspace:*",
     "@org/eslint-config": "workspace:*",
+    "@org/query": "workspace:*",
     "@org/tsconfig": "workspace:*",
     "@org/ui": "workspace:*",
     "@types/node": "catalog:",

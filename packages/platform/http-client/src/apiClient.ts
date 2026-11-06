@@ -1,4 +1,8 @@
-import { createHttpClient, type HttpClient } from './httpClient';
+import {
+  createHttpClient,
+  type HttpClient,
+  type HttpClientConfig,
+} from './httpClient';
 
 /** `settings.apiBaseUrl` (from mfe-manifest.json), or '' when the environment has none. */
 export function apiBaseUrlFrom(
@@ -7,10 +11,10 @@ export function apiBaseUrlFrom(
   return typeof settings?.apiBaseUrl === 'string' ? settings.apiBaseUrl : '';
 }
 
-export type ApiClientOptions = {
-  /** Custom fetch (tests, instrumentation). Default: global fetch. */
-  fetch?: typeof fetch;
-};
+export type ApiClientOptions = Pick<
+  HttpClientConfig,
+  'fetch' | 'timeout' | 'onUnauthorized'
+>;
 
 /**
  * The app's API client: base URL from `settings.apiBaseUrl` (runtime config from
@@ -27,6 +31,6 @@ export function createApiClient(
   return createHttpClient({
     baseUrl: () => apiBaseUrlFrom(settings),
     credentials: 'include',
-    fetch: options.fetch,
+    ...options,
   });
 }

@@ -1,0 +1,23 @@
+import { HttpClientError } from '@org/http-client';
+import type { ItemFieldErrors } from '../types/item';
+
+/** Field errors of a 422 response (`{ errors: { name: "…" } }`), if that is what failed. */
+export function readFieldErrors(error: unknown): ItemFieldErrors | undefined {
+  if (!(error instanceof HttpClientError) || error.status !== 422) {
+    return undefined;
+  }
+  const errors = (error.body as { errors?: unknown } | undefined)?.errors;
+  if (!errors || typeof errors !== 'object') return undefined;
+  const name = (errors as Record<string, unknown>).name;
+  return typeof name === 'string' ? { name } : undefined;
+}
+
+/** A message for the UI: operation + status, never a stack trace. */
+export function describeError(error: unknown, operation: string): string {
+  if (error instanceof HttpClientError) {
+    return error.timedOut
+      ? `${operation}: the server took too long. Try again.`
+      : `${operation} (HTTP ${error.status}). Try again.`;
+  }
+  return `${operation}. Check your connection and try again.`;
+}

@@ -7,7 +7,9 @@ import { useHostProps } from './HostPropsContext';
  * mfe-manifest.json; the standalone mock props in `src/app/apps.tsx`; in development the zone's
  * mock API), `credentials: 'include'` (backend session cookie, never tokens). `undefined` when
  * the environment has no `settings.apiBaseUrl`: show "not configured" instead of calling.
+ * A 401 calls host prop `onUnauthorized`, so the shell re-checks the session.
  */
 export function useApiClient(): HttpClient | undefined {
-  return useApiClientFor(useHostProps().settings);
+  const { settings, onUnauthorized } = useHostProps();
+  return useApiClientFor(settings, onUnauthorized);
 }

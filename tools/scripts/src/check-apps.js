@@ -674,7 +674,7 @@ function checkComponentLayout(root, appDir, err) {
         const base = file.name.replace(/\.(test\.)?tsx$|\.module\.s?css$/, '');
         err(
           'component-folder',
-          `${rel(path.join(featureDir, file.name))}: components and their styles live in features/${feature.name}/components/<Name>/ (move it to components/${base}/${file.name}). The feature root keeps only api/, hooks/, state/, types/, utils/, components/ and index.ts. See ${LAYOUT_DOC}.`,
+          `${rel(path.join(featureDir, file.name))}: components and their styles live in features/${feature.name}/components/<Name>/ (move it to components/${base}/${file.name}). The feature root keeps only api/, hooks/, state/, types/, utils/, components/, queryKeys.ts and index.ts. See ${LAYOUT_DOC}.`,
         );
       }
     }

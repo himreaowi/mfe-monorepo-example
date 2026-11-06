@@ -1,54 +1,20 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { requireApiClient } from '@org/http-client';
 import { useApiClient } from '@org/mf-runtime/remote';
-import { describeError, listItems } from '../api/itemsApi';
-import type { Item } from '../types/item';
-
-export type ItemsState =
-  | { status: 'unconfigured' }
-  | { status: 'loading' }
-  | { status: 'error'; message: string }
-  | { status: 'success'; items: Item[] };
+import { listItems } from '../api/itemsApi';
+import { demoKeys } from '../queryKeys';
 
 /**
- * Loads the item list (loading / success / error), aborts on unmount or when the API changes,
- * `reload()` retries, `add(item)` shows a newly created item without refetching.
+ * The item list as a query result, which the page passes down: `status` is `pending`, `error` or
+ * `success`, `refetch()` tries again. A leaving page aborts the request (`signal`). Without
+ * `settings.apiBaseUrl` the query fails with `API_NOT_CONFIGURED`, nothing is sent.
  */
 export function useItems() {
   const http = useApiClient();
-  const [state, setState] = useState<ItemsState>({ status: 'loading' });
-  const [attempt, setAttempt] = useState(0);
-
-  useEffect(() => {
-    if (!http) return undefined;
-    const controller = new AbortController();
-    setState({ status: 'loading' });
-    listItems(http, controller.signal).then(
-      (items) => setState({ status: 'success', items }),
-      (error: unknown) => {
-        if (controller.signal.aborted) return;
-        setState({
-          status: 'error',
-          message: describeError(error, 'Could not load the items'),
-        });
-      },
-    );
-    return () => controller.abort();
-  }, [http, attempt]);
-
-  const reload = useCallback(() => setAttempt((n) => n + 1), []);
-  const add = useCallback(
-    (item: Item) =>
-      setState((current) =>
-        current.status === 'success'
-          ? { status: 'success', items: [...current.items, item] }
-          : current,
-      ),
-    [],
-  );
-
-  return {
-    state: http ? state : ({ status: 'unconfigured' } as const),
-    reload,
-    add,
-  };
+  return useQuery({
+    queryKey: demoKeys.items(),
+    queryFn: ({ signal }) => listItems(requireApiClient(http), signal),
+  });
 }
+
+export type ItemsQuery = ReturnType<typeof useItems>;

@@ -1,6 +1,8 @@
 export {
   createHttpClient,
+  DEFAULT_TIMEOUT_MS,
   HttpClientError,
+  isNetworkError,
   joinUrl,
   type HttpClient,
   type HttpClientConfig,
@@ -12,3 +14,4 @@ export {
   createApiClient,
   type ApiClientOptions,
 } from './apiClient';
+export { API_NOT_CONFIGURED, requireApiClient } from './requireApiClient';

@@ -1,7 +1,9 @@
+import { API_NOT_CONFIGURED } from '@org/http-client';
 import { Alert, Button, Spinner, Table, type TableColumn } from '@org/ui';
-import type { CreateItemResult } from '../../hooks/useCreateItem';
-import type { ItemsState } from '../../hooks/useItems';
-import type { Item, ItemDraft } from '../../types/item';
+import type { CreateItemMutation } from '../../hooks/useCreateItem';
+import type { ItemsQuery } from '../../hooks/useItems';
+import type { Item } from '../../types/item';
+import { describeError } from '../../utils/itemErrors';
 import { AddItemForm } from '../AddItemForm/AddItemForm';
 import styles from './DemoItems.module.scss';
 
@@ -12,28 +14,19 @@ const columns: TableColumn<Item>[] = [
 
 export type DemoItemsProps = {
   /** From `useItems()`, called by the page. */
-  state: ItemsState;
-  /** Load again after an error (`useItems().reload`). */
-  onRetry: () => void;
-  /** Send a new item (`useCreateItem()`, called by the page). */
-  onCreate: (draft: ItemDraft) => Promise<CreateItemResult>;
-  /** A new item was created: show it (`useItems().add`). */
-  onCreated: (item: Item) => void;
+  items: ItemsQuery;
+  /** From `useCreateItem()`, called by the page. */
+  createItem: CreateItemMutation;
 };
 
 /**
  * Displays the items and the "Add item" form. It fetches nothing: the page calls the feature's
- * data hooks (`useItems`, `useCreateItem`) and passes data and callbacks down, so every API call
- * of a page is visible in one place (docs/coding-conventions.md "Data fetching"). The chain:
- * apiRoutes → useApiClient() → api/ → hooks/ → page → this component.
+ * data hooks (`useItems`, `useCreateItem`) and passes their results down, so every API call of a
+ * page is visible in one place (docs/coding-conventions.md "Data fetching"). The chain:
+ * apiRoutes → useApiClient() → api/ → hooks/ (TanStack Query) → page → this component.
  * In development the data comes from the zone's mock API (tools/mock-api).
  */
-export function DemoItems({
-  state,
-  onRetry,
-  onCreate,
-  onCreated,
-}: DemoItemsProps) {
+export function DemoItems({ items, createItem }: DemoItemsProps) {
   return (
     <section
       className={styles.items}
@@ -43,38 +36,44 @@ export function DemoItems({
       <h2 id="demo-items-title" className={styles.subtitle}>
         Items from the API
       </h2>
-      {state.status === 'unconfigured' ? (
+      {items.status === 'pending' ? (
+        <Spinner label="Loading items…" labelVisible />
+      ) : null}
+      {items.status === 'error' &&
+      items.error.message === API_NOT_CONFIGURED ? (
         <p className={styles.copy}>
           No API configured: set <code>settings.apiBaseUrl</code> in the
           manifest.
         </p>
       ) : null}
-      {state.status === 'loading' ? (
-        <Spinner label="Loading items…" labelVisible />
-      ) : null}
-      {state.status === 'error' ? (
+      {items.status === 'error' &&
+      items.error.message !== API_NOT_CONFIGURED ? (
         <Alert variant="error">
-          <p>{state.message}</p>
-          <Button variant="secondary" onClick={onRetry}>
+          <p>{describeError(items.error, 'Could not load the items')}</p>
+          <Button
+            variant="secondary"
+            loading={items.isFetching}
+            onClick={() => void items.refetch()}
+          >
             Try again
           </Button>
         </Alert>
       ) : null}
-      {state.status === 'success' ? (
+      {items.status === 'success' ? (
         <>
-          {state.items.length === 0 ? (
+          {items.data.length === 0 ? (
             <p className={styles.copy}>No items yet.</p>
           ) : (
             <Table
               caption="Items"
               captionHidden
               columns={columns}
-              rows={state.items}
+              rows={items.data}
               getRowKey={(item) => item.id}
               data-testid="demo-item-list"
             />
           )}
-          <AddItemForm onCreate={onCreate} onCreated={onCreated} />
+          <AddItemForm createItem={createItem} />
         </>
       ) : null}
     </section>
