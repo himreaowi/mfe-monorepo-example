@@ -1,6 +1,8 @@
-import { act, renderHook, waitFor } from '@testing-library/react';
+import { act, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
+import { API_NOT_CONFIGURED } from '@org/http-client';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
+import { renderHookWithQuery } from '@org/query/test';
 import { listItems } from '../api/itemsApi';
 import { useItems } from './useItems';
 
@@ -25,38 +27,33 @@ const api = withSettings({ apiBaseUrl: 'http://api.test/api' });
 describe('useItems', () => {
   beforeEach(() => listItemsMock.mockReset());
 
-  it('loads the items (loading → success), add() appends without a refetch', async () => {
+  it('loads the items (pending → success) and passes the abort signal on', async () => {
     listItemsMock.mockResolvedValue([{ id: 1, name: 'First', description: '' }]);
-    const { result } = renderHook(() => useItems(), { wrapper: api });
-    expect(result.current.state).toEqual({ status: 'loading' });
-    await waitFor(() => expect(result.current.state.status).toBe('success'));
-    act(() => result.current.add({ id: 2, name: 'Second', description: '' }));
-    expect(result.current.state).toMatchObject({
-      items: [{ id: 1 }, { id: 2 }],
-    });
-    expect(listItemsMock).toHaveBeenCalledTimes(1);
+    const { result } = renderHookWithQuery(() => useItems(), { wrapper: api });
+    expect(result.current.status).toBe('pending');
+    await waitFor(() => expect(result.current.status).toBe('success'));
+    expect(result.current.data).toEqual([
+      { id: 1, name: 'First', description: '' },
+    ]);
+    expect(listItemsMock.mock.calls[0][1]).toBeInstanceOf(AbortSignal);
   });
 
-  it('reports an error; reload() tries again', async () => {
-    listItemsMock
-      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
-      .mockResolvedValueOnce([]);
-    const { result } = renderHook(() => useItems(), { wrapper: api });
-    await waitFor(() => expect(result.current.state.status).toBe('error'));
-    expect(result.current.state).toMatchObject({
-      message: expect.stringMatching(/Could not load the items/),
-    });
-    act(() => result.current.reload());
-    await waitFor(() =>
-      expect(result.current.state).toEqual({ status: 'success', items: [] }),
-    );
+  it('reports an error; refetch() tries again', async () => {
+    const failure = new TypeError('Failed to fetch');
+    listItemsMock.mockRejectedValueOnce(failure).mockResolvedValueOnce([]);
+    const { result } = renderHookWithQuery(() => useItems(), { wrapper: api });
+    await waitFor(() => expect(result.current.status).toBe('error'));
+    expect(result.current.error).toBe(failure);
+    await act(() => result.current.refetch());
+    expect(result.current.status).toBe('success');
   });
 
-  it('is "unconfigured" without settings.apiBaseUrl and calls nothing', () => {
-    const { result } = renderHook(() => useItems(), {
+  it('fails without calling the API when none is configured', async () => {
+    const { result } = renderHookWithQuery(() => useItems(), {
       wrapper: withSettings({}),
     });
-    expect(result.current.state).toEqual({ status: 'unconfigured' });
+    await waitFor(() => expect(result.current.status).toBe('error'));
+    expect(result.current.error?.message).toBe(API_NOT_CONFIGURED);
     expect(listItemsMock).not.toHaveBeenCalled();
   });
 });

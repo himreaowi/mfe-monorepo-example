@@ -9,8 +9,8 @@ import {
 } from '@/features/demo';
 
 /**
- * Page-level data fetching: the page calls the feature's data hooks and passes data and
- * callbacks down; the feature components only display. Every API call of this page is visible
+ * Page-level data fetching: the page calls the feature's data hooks and passes their results
+ * down; the feature components only display. Every API call of this page is visible
  * here (docs/coding-conventions.md "Data fetching").
  *
  * `<DemoProvider>` holds the feature's UI state shared by several components (the selection:
@@ -24,16 +24,10 @@ export function OverviewPage() {
     <div data-testid="overview-page">
       <DemoProvider>
         <Demo>
-          <DemoItems
-            state={items.state}
-            onRetry={items.reload}
-            onCreate={createItem}
-            onCreated={items.add}
-          />
-          {items.state.status === 'success' &&
-          items.state.items.length > 0 ? (
+          <DemoItems items={items} createItem={createItem} />
+          {items.status === 'success' && items.data.length > 0 ? (
             <>
-              <ItemPicker items={items.state.items} />
+              <ItemPicker items={items.data} />
               <SelectionSummary />
             </>
           ) : null}

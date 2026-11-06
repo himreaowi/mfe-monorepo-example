@@ -40,7 +40,7 @@ features:
 | paths                                  | `src/core/constants/apiRoutes.ts`                          |
 | client                                 | `useApiClient()` from `@org/mf-runtime/remote` (base URL from `settings.apiBaseUrl`, `credentials: 'include'`) |
 | requests, response validation, errors  | `src/features/demo/api/itemsApi.ts` (+ test with a fake fetch) |
-| state (loading / error / data, abort)  | `src/features/demo/hooks/useItems.ts`, `useCreateItem.ts` (+ tests with the api mocked) |
+| queries and mutations (TanStack Query) | `src/features/demo/hooks/useItems.ts`, `useCreateItem.ts`, `queryKeys.ts` (+ tests with the api mocked) |
 | page (calls the hooks, passes data down) | `src/pages/OverviewPage/OverviewPage.tsx`              |
 | UI (display only, props in)            | `src/features/demo/components/DemoItems/`, `AddItemForm/` (validate on submit, error summary, server 422 field errors) |
 
