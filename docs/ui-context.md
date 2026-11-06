@@ -21,8 +21,8 @@ avoid). Until then: template tokens only, no external brand._
 
 ## Design tokens
 
-**Location:** `packages/design-tokens/src/tokens.css` (CSS custom properties) + base styles in
-`packages/design-tokens/src/global.scss`. Imported once by the shell (`@org/design-tokens/global.scss`);
+**Location:** `packages/platform/design-tokens/src/tokens.css` (CSS custom properties) + base styles in
+`packages/platform/design-tokens/src/global.scss`. Imported once by the shell (`@org/design-tokens/global.scss`);
 remotes inherit the variables from `<html>`.
 
 | Token / group                               | Purpose                                |
@@ -59,9 +59,8 @@ _TODO: product-specific theme UX (e.g. high-contrast theme), if any._
 
 ## Layout: the shell owns it
 
-Each shell owns its layout: `apps/<zone>/shell-<zone>/src/layouts/ShellLayout/` is ordinary
-code of that shell (`ShellLayout.tsx`, `ShellLayout.module.scss`, `ShellLayout.test.tsx`,
-`index.ts`). `pnpm gen:shell <zone> [--layout top|side]` copies a **starter** there once; after
+Each shell owns its layout: `apps/<zone>/<name>/shell/src/layouts/ShellLayout/` is ordinary
+code of that shell (`ShellLayout.tsx`, `ShellLayout.module.scss`, `ShellLayout.test.tsx`). `pnpm gen:shell <zone> [--layout top|side]` copies a **starter** there once; after
 that there is no layout option anywhere: the team edits the files. `@org/ui` gives building
 blocks only (`SkipLink`, `Brand`, `ThemeToggle`, `useMenuDisclosure`, `useFitLayout`, …), so
 the hard parts (accessibility, the collapsing header) behave the same in every shell while the
@@ -149,13 +148,14 @@ Rules:
   and they cannot import a shell (`app-import`). Standalone, a remote shows its own small
   `StandaloneLayout`.
 - **Do not target another app's or package's class names** (`@org/ui`'s `.skipLink`, a remote's
-  classes, …): they are CSS Modules classes, renamed to a hash per build and per app, so such a
+  classes, …): they are CSS Modules classes, renamed per app (`SkipLink_skipLink__x3Yb1`, with a hash that changes), so such a
   selector silently stops matching. Pass a `className` to the building block instead.
 
 ## Component conventions
 
-- Shared components: `packages/ui/src/components/<Component>/` (`Component.tsx`,
-  `Component.module.scss`, `types.ts`, `Component.test.tsx`, `index.ts`). App-only components:
+- Shared components: `packages/platform/ui/src/components/<Component>/` (`Component.tsx`,
+  `Component.module.scss`, `types.ts`, `Component.test.tsx`; no `index.ts`: the package's
+  `src/index.ts` exports each component from its file). App-only components:
   the app's `src/components/<Component>/`. Feature UI: `src/features/<name>/components/<Component>/`,
   same files (one folder per component, its own `.module.scss`, never shared; see
   [coding-conventions.md](coding-conventions.md#one-folder-per-component)).
@@ -278,11 +278,11 @@ Target WCAG 2.2 AA: [contracts/a11y-wcag.md](contracts/a11y-wcag.md). UI rules:
 
 ## Links
 
-| Doc                                              | Role                          |
-| ------------------------------------------------ | ----------------------------- |
-| [coding-conventions.md](coding-conventions.md)   | code structure, data fetching |
-| [project-overview.md](project-overview.md)       | product framing               |
-| [contracts/theming.md](contracts/theming.md)     | theme/token rules             |
-| [contracts/a11y-wcag.md](contracts/a11y-wcag.md) | WCAG 2.2 AA                   |
-| `packages/design-tokens/src/tokens.css`          | live token values             |
-| `packages/ui/src/providers/ThemeProvider/`       | theme implementation          |
+| Doc                                                 | Role                          |
+| --------------------------------------------------- | ----------------------------- |
+| [coding-conventions.md](coding-conventions.md)      | code structure, data fetching |
+| [project-overview.md](project-overview.md)          | product framing               |
+| [contracts/theming.md](contracts/theming.md)        | theme/token rules             |
+| [contracts/a11y-wcag.md](contracts/a11y-wcag.md)    | WCAG 2.2 AA                   |
+| `packages/platform/design-tokens/src/tokens.css`    | live token values             |
+| `packages/platform/ui/src/providers/ThemeProvider/` | theme implementation          |

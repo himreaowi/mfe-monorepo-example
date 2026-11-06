@@ -11,7 +11,10 @@
       "default",
       "!{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)",
       "!{projectRoot}/**/__tests__/**",
-      "!{projectRoot}/e2e/**"
+      "!{projectRoot}/e2e/**",
+      "!{projectRoot}/**/*.stories.[jt]s?(x)",
+      "!{projectRoot}/.storybook/**",
+      "!{projectRoot}/visual/**"
     ]
   },
   "targetDefaults": {
@@ -22,7 +25,12 @@
       "cache": true
     },
     "lint": {
-      "inputs": ["default", "^default"],
+      "inputs": [
+        "default",
+        "^default",
+        "{workspaceRoot}/apps/*/*/*/package.json",
+        "{workspaceRoot}/packages/*/*/package.json"
+      ],
       "cache": true
     },
     "test": {

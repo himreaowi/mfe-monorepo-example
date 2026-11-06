@@ -1,0 +1,44 @@
+import {
+  Demo,
+  DemoItems,
+  DemoProvider,
+  ItemPicker,
+  SelectionSummary,
+  useCreateItem,
+  useItems,
+} from '@/features/demo';
+
+/**
+ * Page-level data fetching: the page calls the feature's data hooks and passes data and
+ * callbacks down; the feature components only display. Every API call of this page is visible
+ * here (docs/coding-conventions.md "Data fetching").
+ *
+ * `<DemoProvider>` holds the feature's UI state shared by several components (the selection:
+ * ItemPicker changes it, SelectionSummary shows it); the items themselves stay API data from
+ * `useItems()` (docs/coding-conventions.md "State management").
+ */
+export function OverviewPage() {
+  const items = useItems();
+  const createItem = useCreateItem();
+  return (
+    <div data-testid="overview-page">
+      <DemoProvider>
+        <Demo>
+          <DemoItems
+            state={items.state}
+            onRetry={items.reload}
+            onCreate={createItem}
+            onCreated={items.add}
+          />
+          {items.state.status === 'success' &&
+          items.state.items.length > 0 ? (
+            <>
+              <ItemPicker items={items.state.items} />
+              <SelectionSummary />
+            </>
+          ) : null}
+        </Demo>
+      </DemoProvider>
+    </div>
+  );
+}

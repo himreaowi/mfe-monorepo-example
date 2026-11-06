@@ -29,7 +29,7 @@ node docs/diagrams/source/shoot.cjs                       # writes the .png file
 ```
 
 `shoot.cjs` uses the repo's own Playwright (`@playwright/test`, a devDependency of
-`packages/playwright-config`), so run `pnpm install` first. If Chromium is missing:
+`packages/platform/playwright-config`), so run `pnpm install` first. If Chromium is missing:
 `pnpm --filter @org/playwright-config exec playwright install chromium`. Both scripts take
 optional directories (`shoot.cjs [html-dir] [png-dir]`) if you want to write somewhere else.
 

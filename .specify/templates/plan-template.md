@@ -20,21 +20,21 @@
 
 **Language/Version**: TypeScript (catalog version) + React 19, Node 24 for tooling
 
-**Primary Dependencies**: React, React Router, Rspack + Module Federation 2 via
-`@org/rspack-config`; workspace packages `@org/ui`, `@org/design-tokens`,
+**Primary Dependencies**: React, React Router, webpack 5 + Module Federation 2 via
+`@org/webpack-config`; workspace packages `@org/ui`, `@org/design-tokens`,
 `@org/mf-runtime`, `@org/auth`, `@org/http-client`, `@org/pwa` (as needed). New
 third-party dependencies: state the tier (1 / 2 / 3, `docs/adding-dependencies.md`)
 
 **Storage**: N/A for UI (data via the BFF / APIs; browser storage only if in scope)
 
 **Testing**: Jest + React Testing Library co-located in `src/`; `node --test` for
-tooling/contracts; the zone e2e suite in `apps/<zone>/shell-<zone>/e2e/`
+tooling/contracts; the zone e2e suite in `apps/<zone>/<zone>/shell/e2e/`
 (Playwright + axe WCAG 2.2 AA, light + dark, desktop + 375 px)
 
 **Target Platform**: Modern evergreen browsers incl. phone-width; PWA shell
 
 **Project Type**: pnpm + Nx monorepo, zones `intranet` / `internet`, apps under
-`apps/<zone>/<name>` (shell or remote, `access: public|private`, optional
+`apps/<zone>/<shell>/<name>` or `apps/<zone>/shared/<name>` (shell or remote, `access: public|private`, optional
 `kind: external` adapter)
 
 **Performance Goals**: interactive route usable under ~2 s on broadband; no
@@ -43,10 +43,11 @@ duplicate tier-1 libraries; measure remote load cost for new federated surfaces
 **Constraints**: tier-1 singletons via MF `strictVersion`; one build for all
 environments (`mfe-manifest.json` per environment); no secrets or tokens in the
 browser (BFF); shells never import remotes, remotes never import remotes, zones
-share only `packages/*`; WCAG 2.2 AA; 375 px without horizontal scroll
+share only `packages/common/*` and `packages/platform/*` (no confidential rules in common);
+WCAG 2.2 AA; 375 px without horizontal scroll
 
 **Scale/Scope**: name the zone(s) and apps, e.g.
-`Zone: internet. Apps: my-profile (private remote), shell-internet (nav entry).
+`Zone: internet. Apps: my-profile (private remote), the citizen shell (nav entry).
 Packages: @org/ui (new Card). Out: intranet zone, other remotes.`
 
 ## Constitution Check
@@ -100,31 +101,35 @@ specs/[###-feature]/
 ```text
 apps/
 └── [zone]/
-    ├── shell-[zone]/              # host: routes from remotes.json, e2e/ suite
-    │   ├── remotes.json           # registry (gen:remote)
-    │   ├── mfe-manifest.dev.json  # dev manifest (prod: per environment, DevOps)
-    │   ├── e2e/                   # zone e2e + a11y suite
-    │   └── src/
-    └── [remote]/                  # remote (or --external adapter)
-        └── src/
-            ├── app/               # RemoteApp (exposed ./App), apps, routes
+    ├── [shell]/                   # group folder, named after the shell
+    │   ├── shell/                 # host: routes from remotes.json, e2e/ suite
+    │   │   ├── remotes.json       # registry (gen:remote)
+    │   │   ├── mfe-manifest.dev.json  # generated dev manifest (pnpm dev-manifest; prod: per environment, DevOps)
+    │   │   ├── e2e/               # zone e2e + a11y suite
+    │   │   └── src/
+    │   └── [remote]/              # remote listed only by this shell (or --external adapter)
+    │       └── src/
+            ├── app/               # apps (exposed ./App), routes
             ├── features/[feature]/
             │   ├── api/
             │   ├── hooks/
             │   ├── types/
             │   ├── utils/
-            │   ├── components/[Component]/  # [Component].tsx, .module.scss, .test.tsx, index.ts
+            │   ├── components/[Component]/  # [Component].tsx, .module.scss, .test.tsx (no index.ts)
             │   ├── __fixtures__/            # shared test data
-            │   └── index.ts
+            │   └── index.ts       # the feature's public API (the only barrel)
             ├── pages/
             ├── components/[Component]/
             ├── core/constants/    # routePaths, apiRoutes
-            └── services/
+            └── services/          # optional (API client: useApiClient() from @org/mf-runtime)
+apps/[zone]/libs/
+└── [capability]/                  # code shared by one zone's apps (type:lib), never deployed alone
 packages/
-└── [package]/                     # shared code (type:package), e.g. ui, mf-runtime
+├── common/[capability]/           # business logic for both zones (type:common); public
+└── platform/[package]/            # plumbing (type:package), e.g. ui, mf-runtime
 ```
 
-**Zones / apps**: [e.g. internet: shell-internet, my-profile]
+**Zones / apps**: [e.g. internet: citizen (shells listing it), my-profile]
 
 **Structure Decision**: [Concrete paths used by this feature. Unit tests beside
 the source; feature flows in the zone's `e2e/`. For a remote: standalone and

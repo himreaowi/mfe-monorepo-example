@@ -39,10 +39,15 @@ pnpm test
 
 `apps/` is empty: the template ships shared packages, tools and docs only.
 
+Local settings live in `.env` files (git-ignored), next to a committed `.env.example` that lists
+every variable: after generating a shell, `cp apps/<zone>/.env.example apps/<zone>/.env` only if
+you want to change a default (for instance `API_UPSTREAM` to develop against a real UAT API).
+Nothing is needed for the mock API. See [configuration.md](configuration.md).
+
 ## 3. Create apps
 
-Each zone (`intranet`, `internet`) has one shell and any number of remotes. Create the shell
-first:
+Each zone (`intranet`, `internet`) has one or more shells and any number of remotes. Create
+the shell first:
 
 ```sh
 pnpm gen:shell intranet                                 # --layout side: sidebar starter layout
@@ -52,9 +57,33 @@ pnpm gen:remote intranet it-helpdesk --external         # adapter for a vendor m
 pnpm install
 ```
 
-Each remote gets the next free port (shell 3100, remotes 3101, 3102, …), a route in the shell
+A zone with several shells (each under its own base path, with its own layout and sign-in):
+
+```sh
+pnpm gen:shell internet citizen --base-path /citizen                  # / redirects here
+pnpm gen:shell internet business --base-path /business --layout side
+pnpm gen:remote internet announcements --shell citizen,business       # listed by both
+pnpm gen:remote internet licences --shell business
+```
+
+Each shell gets the next free shell port (3101, 3102, …), each remote the next free remote port
+(3110, 3111, …), a route in the shell
 (`/staff-directory/*`) and an entry in the shell's dev manifest. Details:
-[adding-an-app.md](adding-an-app.md).
+[adding-an-app.md](adding-an-app.md). A shell and the remotes only it lists form a **portal**
+(`apps/<zone>/<portal>/`).
+
+Code that several apps share goes into a library, never deployed alone
+([where-code-goes.md](where-code-goes.md)):
+
+```sh
+pnpm gen:package intranet staff-search      # apps/intranet/libs/staff-search: intranet apps only
+pnpm gen:package common identity            # packages/common/identity: both zones, public
+pnpm install
+pnpm move-component @org/intranet-staff-directory StaffCard --to intranet/libs/staff-search
+```
+
+Everything in `packages/common` ships to the internet portals: no confidential or intranet-only
+rules, and the backend enforces the same rules.
 
 ## 4. Run a zone
 
@@ -62,20 +91,26 @@ Each remote gets the next free port (shell 3100, remotes 3101, 3102, …), a rou
 pnpm dev:intranet
 ```
 
-Open http://localhost:3100. The shell loads every remote from its own dev server at runtime.
+Open http://localhost:3100: the zone's dev proxy, which serves every shell of the zone under its
+base path (a zone with shells at `/citizen` and `/business` redirects `/` to the default one).
+The shell loads every remote from its own dev server at runtime.
 "Sign in" uses the development mock (no backend needed). The remotes' demo feature loads data
 from the zone's **mock API** (`tools/mock-api`, http://localhost:3190/api, started
-automatically; its URL is `settings.apiBaseUrl` in the shell's `mfe-manifest.dev.json`).
+automatically). Pages call `<base path>/api/...` on the proxy origin (`settings.apiBaseUrl` in
+the shell's generated `mfe-manifest.dev.json`, from `mfe.devManifest` in its `package.json`); the
+proxy forwards it to `API_UPSTREAM`, by default that mock API. To change it (e.g. a real UAT API),
+copy the zone's `.env.example` to `.env` and edit it, see [configuration.md](configuration.md).
 `it-helpdesk` mounts the mock vendor module (started automatically on port 3191). Stop with
 Ctrl+C.
 
-The other zone can run at the same time (`pnpm dev:internet`: shell on 3200, mock API 3290,
-mock vendor 3291): every zone has its own port range, tools included (3190–3199 / 3290–3299).
+The other zone can run at the same time (`pnpm dev:internet`: proxy on 3200, mock API 3290,
+mock vendor 3291): every zone has its own port range (proxy x00, shells x01–x09, remotes
+x10–x89, tools x90–x99).
 
 One remote on its own (standalone mode, mock host props):
 
 ```sh
-pnpm --filter @org/intranet-staff-directory dev        # http://localhost:3101
+pnpm --filter @org/intranet-staff-directory dev        # http://localhost:3110
 ```
 
 ## 5. Test
@@ -86,6 +121,10 @@ pnpm --filter @org/shell-intranet exec playwright install chromium   # once per 
 pnpm e2e:intranet                                                # zone e2e + axe (light + dark)
 ```
 
+Components: `pnpm storybook` shows every `@org/ui` component in light and dark
+(http://localhost:3192); `pnpm test:ui` runs axe and screenshot tests of all of them
+([packages/platform/ui/README.md](../packages/platform/ui/README.md)).
+
 `pnpm e2e:intranet` starts `pnpm dev:intranet` itself (or reuses it if it is already running),
 tests every remote in the shell and standalone, on desktop and 375 px, and stops the servers
 afterwards. `pnpm e2e` runs every zone, one after the other. See [testing.md](testing.md).
@@ -93,7 +132,7 @@ afterwards. `pnpm e2e` runs every zone, one after the other. See [testing.md](te
 ## 6. Build
 
 ```sh
-pnpm build                                   # every app → apps/<zone>/<name>/dist
+pnpm build                                   # every app → <app folder>/dist
 pnpm -s apps                                 # what was built, with ports
 ```
 
@@ -113,22 +152,24 @@ production builds, so private remotes show "Sign-in unavailable" in this preview
 ```sh
 pnpm check && pnpm lint && pnpm typecheck && pnpm test && pnpm format:check
 pnpm build && pnpm e2e
+pnpm test:ui                                 # when packages/platform/ui changed
 ```
 
 CI runs the same gates ([devops-handoff.md](devops-handoff.md)).
 
 ## Daily commands
 
-| Command                                                                                                 | What                                                                |
-| ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| `pnpm dev:<zone>`                                                                                       | shell + every remote of the zone                                    |
-| `pnpm --filter <package> dev`                                                                           | one app (`pnpm -s apps` lists package names)                        |
-| `pnpm gen:shell <zone> [--layout top\|side]` / `pnpm gen:remote <zone> <name> [--private] [--external]` | new apps (`--layout`: which starter layout the shell copies)        |
-| `pnpm --filter <package> add <dep>`                                                                     | add a dependency ([adding-dependencies.md](adding-dependencies.md)) |
-| `pnpm lint` / `typecheck` / `test` / `build`                                                            | all projects (Nx, cached)                                           |
-| `pnpm e2e` / `pnpm e2e:<zone>`                                                                          | zone e2e suites                                                     |
-| `pnpm -s apps [--zone=<zone>] [--affected --base=<sha>] [--json]`                                       | list apps (CI matrix)                                               |
-| `pnpm format`                                                                                           | Prettier                                                            |
+| Command                                                                                                                                                   | What                                                                                                  |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `pnpm dev:<zone>`                                                                                                                                         | every shell + remote of the zone, dev proxy on 3100 / 3200                                            |
+| `pnpm --filter <package> dev`                                                                                                                             | one app (`pnpm -s apps` lists package names)                                                          |
+| `pnpm gen:shell <zone> [<name>] [--base-path /x] [--layout top\|side]` / `pnpm gen:remote <zone> <name> [--shell <s>] [--private] [--state] [--external]` | new apps (`--layout`: which starter layout the shell copies; `--shell`: which shells list the remote) |
+| `pnpm --filter <package> add <dep>`                                                                                                                       | add a dependency ([adding-dependencies.md](adding-dependencies.md))                                   |
+| `pnpm lint` / `typecheck` / `test` / `build`                                                                                                              | all projects (Nx, cached)                                                                             |
+| `pnpm e2e` / `pnpm e2e:<zone>`                                                                                                                            | zone e2e suites                                                                                       |
+| `pnpm storybook` / `pnpm build-storybook` / `pnpm test:ui`                                                                                                | `@org/ui` components (dev server on 3192 / static build / axe + screenshots)                          |
+| `pnpm -s apps [--zone=<zone>] [--affected --base=<sha>] [--json]`                                                                                         | list apps (CI matrix)                                                                                 |
+| `pnpm format`                                                                                                                                             | Prettier                                                                                              |
 
 ## Next
 
@@ -167,12 +208,12 @@ but without the template's history; the first `git merge template/main` then nee
 
 ## Troubleshooting
 
-| Symptom                                                        | Fix                                                                                                                  |
-| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `pnpm: command not found` or a different pnpm version          | `corepack enable`; a `packageManager` field in a parent folder (e.g. `~/package.json`) can confuse Corepack          |
-| `ERR_PNPM_IGNORED_BUILDS` after adding a dependency            | the package has an install script: decide in `allowBuilds` (`pnpm-workspace.yaml`), see [toolchain.md](toolchain.md) |
-| a remote shows "unavailable" in the shell                      | is its dev server running? `pnpm dev:<zone>` starts all; check the shell's `mfe-manifest.dev.json` port              |
-| changed `rspack.config.js` or a shared config, nothing happens | restart the dev server (Rspack does not reload config files)                                                         |
-| e2e: "Executable doesn't exist"                                | `pnpm --filter @org/shell-<zone> exec playwright install chromium`                                                   |
-| e2e: "Not responding after 180 s"                              | a port is taken by a stale server (`lsof -i :3101`) or a remote fails to compile (`pnpm dev:<zone>` shows why)       |
-| `pnpm check` fails                                             | every message names the fix; [guardrails.md](guardrails.md)                                                          |
+| Symptom                                                         | Fix                                                                                                                  |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `pnpm: command not found` or a different pnpm version           | `corepack enable`; a `packageManager` field in a parent folder (e.g. `~/package.json`) can confuse Corepack          |
+| `ERR_PNPM_IGNORED_BUILDS` after adding a dependency             | the package has an install script: decide in `allowBuilds` (`pnpm-workspace.yaml`), see [toolchain.md](toolchain.md) |
+| a remote shows "unavailable" in the shell                       | is its dev server running? `pnpm dev:<zone>` starts all; check the shell's `mfe-manifest.dev.json` port              |
+| changed `webpack.config.js` or a shared config, nothing happens | restart the dev server (webpack-dev-server does not reload config files)                                             |
+| e2e: "Executable doesn't exist"                                 | `pnpm --filter @org/shell-<name> exec playwright install chromium`                                                   |
+| e2e: "Not responding after 180 s"                               | a port is taken by a stale server (`lsof -i :3110`) or a remote fails to compile (`pnpm dev:<zone>` shows why)       |
+| `pnpm check` fails                                              | every message names the fix; [guardrails.md](guardrails.md)                                                          |

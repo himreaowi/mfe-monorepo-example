@@ -5,7 +5,9 @@
 # CSP notes:
 # - script-src/connect-src: shells load remotes' remoteEntry.js and chunks (<script>) and their
 #   mf-manifest.json (fetch) → CSP_REMOTE_ORIGINS. Same-origin remotes need nothing ('self').
-# - connect-src: the BFF (session/login/logout) and APIs → CSP_BFF_ORIGINS, CSP_API_ORIGINS.
+# - connect-src: the shell's API and sign-in BFF are same-origin (<base>/api, <base>/auth, proxied
+#   by nginx to API_UPSTREAM / AUTH_UPSTREAM, which never appear in the browser): 'self' covers
+#   them. Only remotes and vendors (below) add origins.
 # - vendor modules (mount contract): exactly the origins the vendor declared → CSP_VENDOR_ORIGINS;
 #   iframes → CSP_FRAME_SRC (default 'none').
 # - style-src: no 'unsafe-inline'. Production builds ship extracted, content-hashed .css files that
@@ -15,7 +17,7 @@
 #   from their origin. React `style` props are set through the CSSOM and are allowed; inline
 #   `<style>` elements and `style="..."` attributes in HTML are blocked.
 # - No 'unsafe-eval' anywhere: the manifest validator is precompiled (no Ajv eval at runtime).
-add_header Content-Security-Policy "default-src 'self'; script-src 'self' ${CSP_REMOTE_ORIGINS} ${CSP_VENDOR_ORIGINS}; style-src 'self' ${CSP_REMOTE_ORIGINS} ${CSP_VENDOR_ORIGINS}; img-src 'self' data: ${CSP_REMOTE_ORIGINS} ${CSP_VENDOR_ORIGINS}; font-src 'self' ${CSP_REMOTE_ORIGINS} ${CSP_VENDOR_ORIGINS}; connect-src 'self' ${CSP_REMOTE_ORIGINS} ${CSP_BFF_ORIGINS} ${CSP_API_ORIGINS} ${CSP_VENDOR_ORIGINS}; frame-src ${CSP_FRAME_SRC}; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self' ${CSP_BFF_ORIGINS}; frame-ancestors 'none'; upgrade-insecure-requests; ${CSP_EXTRA}" always;
+add_header Content-Security-Policy "default-src 'self'; script-src 'self' ${CSP_REMOTE_ORIGINS} ${CSP_VENDOR_ORIGINS}; style-src 'self' ${CSP_REMOTE_ORIGINS} ${CSP_VENDOR_ORIGINS}; img-src 'self' data: ${CSP_REMOTE_ORIGINS} ${CSP_VENDOR_ORIGINS}; font-src 'self' ${CSP_REMOTE_ORIGINS} ${CSP_VENDOR_ORIGINS}; connect-src 'self' ${CSP_REMOTE_ORIGINS} ${CSP_VENDOR_ORIGINS}; frame-src ${CSP_FRAME_SRC}; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests; ${CSP_EXTRA}" always;
 add_header X-Content-Type-Options "nosniff" always;
 add_header X-Frame-Options "DENY" always;
 add_header Referrer-Policy "strict-origin-when-cross-origin" always;

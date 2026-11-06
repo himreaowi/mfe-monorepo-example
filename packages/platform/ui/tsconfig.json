@@ -1,0 +1,9 @@
+{
+  "extends": "@org/tsconfig/library.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["jest", "node", "@testing-library/jest-dom"],
+    "allowJs": true
+  },
+  "include": ["src", ".storybook", "visual"]
+}

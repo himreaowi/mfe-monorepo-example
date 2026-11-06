@@ -55,4 +55,17 @@ describe('Demo', () => {
     await userEvent.click(screen.getByRole('button', { name: /clicked 0/i }));
     expect(screen.getByRole('button', { name: /clicked 1/i })).toBeInTheDocument();
   });
+
+  it('renders the content the page passes in (children)', () => {
+    render(
+      <MemoryRouter>
+        <Demo>
+          <p>From the page</p>
+        </Demo>
+      </MemoryRouter>,
+    );
+    expect(screen.getByTestId('demo-feature')).toHaveTextContent(
+      'From the page',
+    );
+  });
 });

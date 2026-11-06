@@ -1,0 +1,14 @@
+@use '../../styles/mixins' as *;
+
+.input {
+  @include control;
+
+  align-self: flex-start;
+  max-width: 100%;
+  // the native picker (icon, popup) follows the page theme, not the OS
+  color-scheme: light;
+}
+
+:global([data-theme='dark']) .input {
+  color-scheme: dark;
+}

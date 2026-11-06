@@ -6,14 +6,15 @@ D8: this repo contains **no pipeline code**; the YAML below is illustrative. Ref
 
 ## In one paragraph
 
-One repository, one pipeline. Every app under `apps/<zone>/<name>` is a separate static web app
+One repository, one pipeline. Every app under `apps/<zone>/<shell>/` or `apps/<zone>/shared/` is a separate static web app
 (a shell or a remote) with its own build output and its own deployment. On each PR/merge the
 pipeline runs the gates once for the repo, asks `pnpm -s apps --affected` which apps changed
 (a change in `packages/` affects every app that depends on it), and builds/deploys only those,
 one matrix job per app, each into its own nginx image from the one shared `deploy/Dockerfile`.
 The same image is promoted through every environment; what differs per environment is the
-shell's `/mfe-manifest.json` (remote URLs, BFF URLs, vendor URLs) and the nginx environment
-variables (CORS, CSP).
+shell container's environment variables ([configuration.md](configuration.md)): the API and BFF
+upstreams nginx proxies to, the remotes' URLs (from which the container generates the shell's
+`/mfe-manifest.json`) and the CORS/CSP values.
 
 ## Toolchain
 
@@ -24,7 +25,7 @@ variables (CORS, CSP).
 | Chromium | via Playwright (`@playwright/test` in the catalog)                            | e2e only: `pnpm --filter <shell> exec playwright install --with-deps chromium`                            |
 | Docker   | BuildKit (for `deploy/Dockerfile` cache mounts and `Dockerfile.dockerignore`) | image per app                                                                                             |
 
-No other global tools. Everything else (Nx, Rspack, TypeScript, Jest, ESLint) is a workspace
+No other global tools. Everything else (Nx, webpack, TypeScript, Jest, ESLint) is a workspace
 dependency installed by `pnpm install --frozen-lockfile`.
 
 ## Gates (in this order)
@@ -36,7 +37,7 @@ dependency installed by `pnpm install --frozen-lockfile`.
 | 3   | `pnpm lint`                           | ESLint incl. module boundaries (runs `pnpm check` again; skip 2 if you like)                             |
 | 4   | `pnpm typecheck`                      | TypeScript                                                                                               |
 | 5   | `pnpm test`                           | Jest + node tests ([testing.md](testing.md))                                                             |
-| 6   | `pnpm build` (or per app, see matrix) | Rspack production builds                                                                                 |
+| 6   | `pnpm build` (or per app, see matrix) | webpack production builds                                                                                |
 | 7   | `pnpm e2e:<zone>` (per affected zone) | Playwright e2e + axe WCAG 2.2 AA, light and dark ([testing.md](testing.md))                              |
 | (8) | `pnpm format:check`                   | Prettier (optional gate; recommended)                                                                    |
 
@@ -75,7 +76,7 @@ string values (`{}` when nothing is affected), usable as `strategy.matrix`.
 How `--affected` decides:
 
 - Nx (`nx show projects --affected`) with the package-based project graph: a change in an app
-  affects that app; a change in `packages/ui` affects every app depending on `@org/ui`
+  affects that app; a change in `packages/platform/ui` affects every app depending on `@org/ui`
   (in practice all of them); `tools/generators` affects no app. Without Nx it falls back to the
   git diff mapped onto the same `package.json` dependency graph.
 - Changes to `package.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`, `nx.json`,
@@ -112,7 +113,7 @@ Source maps (`*.map`) are emitted next to the files; the nginx template does not
 (404). Upload them to the error tracker in the pipeline if you use one.
 
 They are **hidden, source-less maps** (`hidden-nosources-source-map`, set in
-`@org/rspack-config`): mappings and source file names only, no `sourcesContent`, and the bundles
+`@org/webpack-config`): mappings and source file names only, no `sourcesContent`, and the bundles
 have no `sourceMappingURL` comment. Why: the original sources contain development-only branches
 (e.g. `if (process.env.NODE_ENV !== 'production')` fallbacks to the mock vendor / mock API on
 `http://localhost:…`) that the minifier removes from the bundles, but a classic `source-map`
@@ -139,36 +140,61 @@ The Dockerfile installs only that app and its workspace dependencies
 `dist/` into `nginxinc/nginx-unprivileged` (non-root, port 8080, `/healthz`). Pin both base
 images by digest in your registry.
 
+## Several shells per zone (one domain, base paths)
+
+A zone can have several shells (e.g. the internet zone: `citizen` at `/citizen` with Singpass,
+`business` at `/business` with Corppass), each its own deployable with its own base path
+(`mfe.basePath` in its package.json, `pnpm -s apps --json` lists it), manifest, CSP variables and
+BFF. Deploy one container per shell and route the paths on the domain's reverse proxy without
+rewriting them; `/` redirects to the zone's default shell (root package.json
+`mfe.zones.<zone>.defaultShell`). Each BFF scopes its session cookie to its shell
+(`Path=/citizen`, `Path=/business`, or distinct names). Details and an nginx example:
+[deploy/README.md](../deploy/README.md#several-shells-on-one-domain).
+
 ## One build, many environments: the manifest
 
-The shell fetches `/mfe-manifest.json` at start-up. It is never built in; per environment it
+The shell fetches `mfe-manifest.json` below its base path at start-up (`/mfe-manifest.json`, or
+`/citizen/mfe-manifest.json` for a shell with `mfe.basePath` `/citizen`). It is never built in; per environment it
 lists where each remote lives, the BFF endpoints, vendor module URLs and free-form settings.
 Example: [`deploy/mfe-manifest.example.json`](../deploy/mfe-manifest.example.json); schema:
-`packages/mf-runtime/src/manifest/mfe-manifest.schema.json`; field reference:
-[packages/mf-runtime/README.md](../packages/mf-runtime/README.md),
+`packages/platform/mf-runtime/src/manifest/mfe-manifest.schema.json`; field reference:
+[packages/platform/mf-runtime/README.md](../packages/platform/mf-runtime/README.md),
 [auth-contract.md](auth-contract.md), [external-modules.md](external-modules.md).
 
-- Keep one manifest per shell per environment (e.g. a config repo or secure files:
-  `intranet/dev.json`, `intranet/prod.json`). It is public (served to browsers): no secrets.
-- Validate before deploying:
+- **Preferred: no hand-written manifest.** The container generates it at start from variables
+  (`API_UPSTREAM`, `AUTH_UPSTREAM`, `REMOTE_<FEDERATION_NAME>_URL`, optional `MFE_ENVIRONMENT`),
+  validates them and refuses to start with a list of what is wrong. Keep one Azure DevOps variable
+  group per zone/shell and environment (`internet-citizen-uat`, `intranet-prod`, ...), the
+  committed `apps/<zone>/.env.example` lists the variables. Everything in
+  [configuration.md](configuration.md).
+- The manifest holds relative URLs only (`apiBaseUrl: "<base>/api"`, auth under `<base>/auth/...`):
+  nginx forwards `<base>/api` to `API_UPSTREAM` and `<base>/auth` to `AUTH_UPSTREAM`, so the
+  browser never sees (or needs CORS/CSP for) a backend host. It is public (served to browsers): no
+  secrets, and the upstream hosts are not in it.
+- Alternatively keep a complete manifest per shell per environment (config repo or secure files:
+  `intranet/dev.json`, `intranet/prod.json`), used instead of the variables.
+- Validate before deploying (a complete manifest, or the file a test container generated):
 
   ```sh
   pnpm -s validate-manifest intranet/prod.json --zone=intranet
+  pnpm -s validate-manifest internet/citizen/prod.json --zone=internet --shell=citizen
   ```
+
+  (`--shell=<name>` is required when the zone has several shells: each has its own manifest.)
 
   Fails on schema errors, on a remote the shell routes to but the manifest lacks, on
   `"auth": { "mock": true }` and on `http://` entries; warns on unknown remotes.
 
 - Provide it to the shell container either as a mounted file at
-  `/etc/mfe/mfe-manifest.json` (ConfigMap / App Service file mount) or as the env var
-  `MFE_MANIFEST_JSON` (the image writes it at start-up). nginx serves it with
-  `Cache-Control: no-cache`.
+  `/etc/mfe/mfe-manifest.json` (ConfigMap / App Service file mount, read-only) or as the env var
+  `MFE_MANIFEST_JSON` (the image writes it at start-up). Both take precedence over the
+  variables. nginx serves it with `Cache-Control: no-cache`.
 - Remote URL, vendor version, BFF location changes = manifest change + shell container
   restart (or file update). No rebuild.
-- `settings.apiBaseUrl`: the API base URL of that environment (absolute, or a same-origin path
-  such as `/api` behind the BFF). The generated `mfe-manifest.dev.json` points it at the
-  dev-only mock API (`tools/mock-api`, `http://localhost:3190/api` / `:3290`), which is never
-  built or deployed.
+- `settings.apiBaseUrl`: the shell's same-origin API path, `<base>/api` (`/api` for a shell at
+  `/`). The generated `mfe-manifest.dev.json` uses the same path: the zone's dev proxy forwards it
+  to `API_UPSTREAM`, by default the dev-only mock API (`tools/mock-api`, `http://localhost:3190/api`
+  / `:3290`), which is never built or deployed.
 
 ## nginx and Docker: one template for every app
 
@@ -176,18 +202,20 @@ Example: [`deploy/mfe-manifest.example.json`](../deploy/mfe-manifest.example.jso
 every app; change caching, headers or CSP once there. The image renders them at start-up with
 these environment variables (defaults in `deploy/Dockerfile`):
 
-| Variable                 | Default                                                | Set to                                                                                             |
-| ------------------------ | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| `NGINX_PORT`             | `8080`                                                 |                                                                                                    |
-| `MFE_CORS_ORIGINS_REGEX` | `^$` (no CORS)                                         | **remotes**: the shell origins, e.g. `^https://(portal\|staff)\.example\.sg$`                      |
-| `CSP_REMOTE_ORIGINS`     | empty                                                  | **shells**: origins of the remotes in the manifest (`https://staff-directory.portal.example.sg …`) |
-| `CSP_BFF_ORIGINS`        | empty                                                  | BFF origin if not same-origin (recommended: same origin via the gateway)                           |
-| `CSP_API_ORIGINS`        | empty                                                  | API origins called from the browser                                                                |
-| `CSP_VENDOR_ORIGINS`     | empty                                                  | origins each vendor declared (bundle, chunks, APIs, fonts)                                         |
-| `CSP_FRAME_SRC`          | `'none'`                                               | iframe origins (iframe-integrated vendors)                                                         |
-| `CSP_EXTRA`              | empty                                                  | extra directives, e.g. `report-to csp`                                                             |
-| `PERMISSIONS_POLICY`     | `camera=(), microphone=(), geolocation=(), payment=()` | relax per app if a feature needs it (`payment=(self "https://pay.vendor.example")`)                |
-| `MFE_MANIFEST_JSON`      | empty                                                  | shells: the environment's manifest (or mount the file)                                             |
+| Variable                 | Default                                                | Set to                                                                                                  |
+| ------------------------ | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| `NGINX_PORT`             | `8080`                                                 |                                                                                                         |
+| `MFE_CORS_ORIGINS_REGEX` | `^$` (no CORS)                                         | **remotes**: the shell origins, e.g. `^https://(portal\|staff)\.example\.sg$`                           |
+| `CSP_REMOTE_ORIGINS`     | empty                                                  | **shells**: origins of the remotes in the manifest (`https://staff-directory.portal.example.sg …`)      |
+| `CSP_VENDOR_ORIGINS`     | empty                                                  | origins each vendor declared (bundle, chunks, APIs, fonts)                                              |
+| `CSP_FRAME_SRC`          | `'none'`                                               | iframe origins (iframe-integrated vendors)                                                              |
+| `CSP_EXTRA`              | empty                                                  | extra directives, e.g. `report-to csp`                                                                  |
+| `PERMISSIONS_POLICY`     | `camera=(), microphone=(), geolocation=(), payment=()` | relax per app if a feature needs it (`payment=(self "https://pay.vendor.example")`)                     |
+| `API_UPSTREAM`           | empty                                                  | **shells**: backend `<base>/api` is proxied to (server-side only), e.g. `https://api.uat.example.sg/v1` |
+| `AUTH_UPSTREAM`          | empty                                                  | **shells with sign-in**: the BFF `<base>/auth` is proxied to (required for them)                        |
+| `REMOTE_<NAME>_URL`      | unset                                                  | **shells**: entry URL of each registered remote (`<NAME>` = federation name upper-cased; required)      |
+| `MFE_ENVIRONMENT`        | empty                                                  | shells: `settings.environment`                                                                          |
+| `MFE_MANIFEST_JSON`      | empty                                                  | shells: a complete manifest instead of the variables (or mount the file)                                |
 
 What the template does:
 
@@ -214,8 +242,8 @@ The template's policy (shell responses are what matters):
 ```
 default-src 'self'; script-src 'self' <remotes> <vendors>; style-src 'self' <remotes> <vendors>;
 img-src 'self' data: <remotes> <vendors>; font-src 'self' <remotes> <vendors>;
-connect-src 'self' <remotes> <bff> <apis> <vendors>; frame-src <frames|'none'>; worker-src 'self';
-manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self' <bff>; frame-ancestors 'none';
+connect-src 'self' <remotes> <vendors>; frame-src <frames|'none'>; worker-src 'self';
+manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';
 upgrade-insecure-requests
 ```
 
@@ -254,8 +282,10 @@ Either works; the build is the same:
   entries (`/remotes/staff-directory/mf-manifest.json`). Remote chunks load relative to
   `remoteEntry.js` (`publicPath: 'auto'`). A remote's standalone `index.html` is then only
   reachable at its own root; it is a developer tool, not a user page.
-- Route `/bff/*` (and APIs) through the shell's origin if possible: no CORS, `__Host-` cookies
-  (see [auth-contract.md](auth-contract.md)).
+- The API and the sign-in BFF are always reached through the shell's own origin
+  (`<base>/api`, `<base>/auth`, proxied by the shell container): no CORS, no API/BFF origins in the
+  CSP, `__Host-` cookies possible (see [auth-contract.md](auth-contract.md),
+  [configuration.md](configuration.md)).
 
 ### Rollouts and rollbacks
 
@@ -276,14 +306,14 @@ Azure Repos branch policies on `main`:
 - Build validation: this pipeline is required; PRs need the gates green.
 - Automatically included reviewers by path (code owners):
 
-| Path                                                                             | Owner                                                        |
-| -------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| `apps/intranet/**`                                                               | intranet team(s), per app folder if teams own single remotes |
-| `apps/internet/**`                                                               | internet team(s)                                             |
-| `packages/**`, `tools/**`                                                        | platform / frontend core team                                |
-| `pnpm-workspace.yaml`, `version-exceptions.json`, `nx.json`, root `package.json` | platform team (dependency tiers, exceptions)                 |
-| `deploy/**`, `docs/devops-handoff.md`                                            | DevOps + platform team                                       |
-| `packages/mf-runtime/src/external/**`, `packages/vendor-kit/**`                  | platform team + vendor owner (contract changes)              |
+| Path                                                                              | Owner                                                        |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `apps/intranet/**`                                                                | intranet team(s), per app folder if teams own single remotes |
+| `apps/internet/**`                                                                | internet team(s)                                             |
+| `packages/**`, `tools/**`                                                         | platform / frontend core team                                |
+| `pnpm-workspace.yaml`, `version-exceptions.json`, `nx.json`, root `package.json`  | platform team (dependency tiers, exceptions)                 |
+| `deploy/**`, `docs/devops-handoff.md`                                             | DevOps + platform team                                       |
+| `packages/platform/mf-runtime/src/external/**`, `packages/platform/vendor-kit/**` | platform team + vendor owner (contract changes)              |
 
 - Require linked work items and comment resolution as usual. Squash merge keeps `--base`
   detection simple.
@@ -369,7 +399,7 @@ stages:
             condition: always()
             inputs:
               {
-                testResultsFiles: 'apps/$(zone)/shell-$(zone)/test-results/junit.xml',
+                testResultsFiles: 'apps/$(zone)/<shell>/shell/test-results/junit.xml',
               }
 ```
 
@@ -381,11 +411,13 @@ stages:
 - [ ] Matrix from `pnpm -s apps --affected --base=<sha> --matrix`; one image per app from
       `deploy/Dockerfile` (`--build-arg APP=<package>`); images promoted unchanged across
       environments
-- [ ] Per environment and shell: `mfe-manifest.json` validated with
-      `pnpm -s validate-manifest <file> --zone=<zone>`, mounted at `/etc/mfe/mfe-manifest.json`
-      (or `MFE_MANIFEST_JSON`)
+- [ ] Per environment and shell: a variable group (`<zone>-<shell>-<env>`) with `API_UPSTREAM`,
+      `AUTH_UPSTREAM`, `REMOTE_<NAME>_URL`, ...; the container generates and validates the manifest
+      (optionally `pnpm -s validate-manifest <file> --zone=<zone>` on a test run's output, or a
+      complete manifest mounted at `/etc/mfe/mfe-manifest.json` / `MFE_MANIFEST_JSON`)
 - [ ] nginx env vars per app/environment: `MFE_CORS_ORIGINS_REGEX` (remotes), `CSP_*` (shells)
-- [ ] TLS + HSTS at the gateway; `/bff/*` routed through the shell origin if possible
+- [ ] TLS + HSTS at the gateway; `<base>/api` and `<base>/auth` reach the upstreams from the shell
+      container (network rules, upstream CA trusted)
 - [ ] Old hashed assets kept during rollouts; tier-1 upgrades deployed zone-wide together
 - [ ] Branch policies: build validation + path-based reviewers
 - [ ] Vendor origins in the CSP; vendor URLs + SRI in the manifest; mock vendor never deployed

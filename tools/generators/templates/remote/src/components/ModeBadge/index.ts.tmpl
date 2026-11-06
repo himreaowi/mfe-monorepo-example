@@ -1,1 +1,0 @@
-export { ModeBadge } from './ModeBadge';

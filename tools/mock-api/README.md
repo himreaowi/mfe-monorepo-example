@@ -3,8 +3,10 @@
 A small **mock JSON API per zone** for local development and e2e: `node:http`, in-memory data,
 no dependencies. Apps never hard-code its URL: each shell's `mfe-manifest.dev.json` sets
 `settings.apiBaseUrl`, the shell passes `settings` to every remote as a host prop, and the
-remotes build their HTTP client (`@org/http-client`) from it. Production manifests point
-`apiBaseUrl` at the real API (or the BFF route) instead. Never deploy this package.
+remotes build their HTTP client (`@org/http-client`) from it. In dev `apiBaseUrl` is the shell's
+same-origin `<base>/api` on the zone's dev proxy, which forwards it here by default
+(`API_UPSTREAM` in a `.env` points it at another API); production manifests use the same relative
+path and nginx forwards it to the real API. Never deploy this package.
 
 ```sh
 pnpm --filter @org/mock-api serve:intranet   # http://localhost:3190/api

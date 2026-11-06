@@ -30,9 +30,9 @@ validated by `mfe-manifest.schema.json`):
 ```json
 {
   "auth": {
-    "sessionUrl": "/bff/session",
-    "loginUrl": "/bff/login",
-    "logoutUrl": "/bff/logout",
+    "sessionUrl": "/citizen/auth/session",
+    "loginUrl": "/citizen/auth/login",
+    "logoutUrl": "/citizen/auth/logout",
     "csrfHeaderName": "X-CSRF-Token",
     "returnToParam": "returnTo",
     "timeoutMs": 10000
@@ -51,6 +51,24 @@ validated by `mfe-manifest.schema.json`):
 No `auth` section = sign-in disabled: public routes work, private routes show "Sign-in
 unavailable" (fail closed). Client secrets never go in the manifest (it is public); unknown keys
 are rejected by the schema.
+
+## Where the BFF is reached: `<base>/auth`
+
+The browser never calls the BFF's own host. The shell's container proxies **`<base>/auth/...`**
+(`/auth/...` for a shell at `/`, `/citizen/auth/...` for base path `/citizen`) to `AUTH_UPSTREAM`
+with the prefix stripped, so the BFF endpoints below are served at its root (or below the path in
+`AUTH_UPSTREAM`): `GET <AUTH_UPSTREAM>/session`, `GET /login`, `POST /logout`. Generated
+manifests contain exactly these relative URLs ([configuration.md](configuration.md)).
+
+- The BFF sees `X-Forwarded-Host`, `X-Forwarded-Proto` and `X-Forwarded-Prefix`
+  (`/citizen/auth`): build absolute callback and `returnTo` URLs from them. The IdP's registered
+  redirect URI is therefore on the public domain, e.g. `https://portal.example.sg/citizen/auth/callback`.
+- Session cookie `Path`: `/` is fine for a shell at `/`; for shells below a base path use
+  `Path=/citizen` (`/business`) or distinct cookie names, so the two sessions never mix. `__Host-`
+  needs `Path=/`, so use a distinct name per shell (`__Host-citizen`, `__Host-business`) or
+  `__Secure-` with a `Path` there. nginx passes `Set-Cookie` through unchanged.
+- API calls (`<base>/api`) carry the same cookie because they are on the same origin and path
+  scope: keep `Path` at the shell's base (or `/`), not at `<base>/auth`.
 
 ## Endpoints the BFF must provide
 
@@ -89,7 +107,7 @@ feature that needs such data fetches it from its own API, authorised server-side
 ### `GET loginUrl?returnTo=<absolute URL>`: start sign-in (browser navigation)
 
 The shell navigates the whole page (`window.location.assign`), e.g.
-`/bff/login?returnTo=https%3A%2F%2Fportal.example.sg%2Fmy-profile`. The BFF:
+`/auth/login?returnTo=https%3A%2F%2Fportal.example.sg%2Fmy-profile`. The BFF:
 
 - validates `returnTo` against an **allow-list of frontend origins** (no open redirect); reject
   or replace anything else,
@@ -147,9 +165,10 @@ for a redirect-based callback (or `None; Secure` if the IdP posts the callback w
 
 ## CORS: when the BFF or an API is on another origin
 
-Recommended: route `/bff/*` (and APIs) through the shell's origin (reverse proxy in the shell's
-nginx or the gateway). Then there is no CORS, the cookie can be `__Host-`, and no third-party
-cookie rules apply.
+The platform default is **same origin**: the shell container proxies `<base>/auth` and `<base>/api`
+(see above), so there is no CORS, the cookie can be `__Host-`, and no third-party cookie rules
+apply. The rest of this section only applies if you deliberately put absolute URLs in a
+hand-written manifest (`validate-manifest` warns about them).
 
 If the BFF must be on another origin:
 
@@ -163,7 +182,9 @@ If the BFF must be on another origin:
   `Access-Control-Allow-Headers: Accept, Content-Type, X-CSRF-Token`, `Access-Control-Max-Age`.
 - Remotes are often served from other origins (CDN). That does not matter for auth: their code
   runs in the shell's page, so their requests have the shell's `Origin`.
-- CSP of the shell: `connect-src` must include the BFF/API origins.
+- CSP of the shell: `connect-src` must list the BFF/API origins. The template has no variable for
+  them any more (same origin is the supported setup); add them in
+  `deploy/nginx/security-headers.inc.template` if you need this.
 
 ## Session expiry
 
@@ -200,8 +221,8 @@ protected by the BFF/API checking the session on every request.
       `200 { redirectUrl }` for IdP logout
 - [ ] Session cookie `HttpOnly; Secure; SameSite=Lax` (`__Host-` when same origin)
 - [ ] CSRF token on every state-changing request + `Origin` check
-- [ ] Same origin via reverse proxy (preferred) or credentialed CORS with an exact origin
-      allow-list, same-site only
+- [ ] Reached at `<base>/auth` through the shell container (`AUTH_UPSTREAM`), cookie `Path`
+      scoped to the shell; credentialed CORS only as a fallback (exact origin allow-list, same-site)
 - [ ] Idle/absolute timeouts; 401 from every API when the session is gone
 - [ ] Tokens (access/ID/refresh) never leave the server
 
@@ -209,9 +230,10 @@ protected by the BFF/API checking the session on every request.
 
 - `mfe-manifest.dev.json` (generated) uses `"auth": { "mock": true }`: "Sign in" signs in as
   `Dev User (mock)` without a backend (`@org/auth/mock`, stripped from production builds).
-- To develop against a real or fake BFF, replace it with the BFF URLs. The BFF must then allow
-  `http://localhost:<shell port>` (CORS + `returnTo` allow-list), or proxy `/bff` through the
-  dev server.
+- To develop against a real or fake BFF, set `AUTH_UPSTREAM` in the shell's `.env` and give
+  `mfe.devManifest.auth` the relative URLs (`<base>/auth/session|login|logout`): the zone's dev
+  proxy forwards them like nginx does. The BFF must allow `http://localhost:<zone proxy port>`
+  (3100 / 3200) in its `returnTo` allow-list.
 - The A6 verification used a ~150-line fake BFF (HttpOnly `Secure; SameSite=Lax` cookie,
   credentialed CORS, CSRF-checked logout, fake IdP page) against a production build; see the
   phase report.

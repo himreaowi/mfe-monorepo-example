@@ -1,0 +1,26 @@
+import { demoReducer, initialDemoState } from './demoReducer';
+
+describe('demoReducer', () => {
+  it('toggles an item in and out of the selection', () => {
+    const one = demoReducer(initialDemoState, { type: 'itemToggled', id: 1 });
+    const two = demoReducer(one, { type: 'itemToggled', id: 2 });
+    expect(two.selectedIds).toEqual([1, 2]);
+    expect(demoReducer(two, { type: 'itemToggled', id: 1 }).selectedIds).toEqual([2]);
+  });
+
+  it('clears the selection (same object when already empty)', () => {
+    const state = { selectedIds: [3, 4] };
+    expect(demoReducer(state, { type: 'selectionCleared' })).toEqual(
+      initialDemoState,
+    );
+    expect(demoReducer(initialDemoState, { type: 'selectionCleared' })).toBe(
+      initialDemoState,
+    );
+  });
+
+  it('never mutates the previous state', () => {
+    const state = Object.freeze({ selectedIds: Object.freeze([1]) as number[] });
+    expect(() => demoReducer(state, { type: 'itemToggled', id: 2 })).not.toThrow();
+    expect(state.selectedIds).toEqual([1]);
+  });
+});

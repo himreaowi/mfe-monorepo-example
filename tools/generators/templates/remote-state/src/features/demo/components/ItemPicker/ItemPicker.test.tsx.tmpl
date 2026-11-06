@@ -1,0 +1,41 @@
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { DemoProvider } from '../../state/DemoContext';
+import { SelectionSummary } from '../SelectionSummary/SelectionSummary';
+import { ItemPicker } from './ItemPicker';
+
+const items = [
+  { id: 1, name: 'First', description: '' },
+  { id: 2, name: 'Second', description: '' },
+];
+
+describe('ItemPicker', () => {
+  it('toggles items in the shared selection', async () => {
+    render(
+      <DemoProvider>
+        <ItemPicker items={items} />
+        <SelectionSummary />
+      </DemoProvider>,
+    );
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Second' }));
+    expect(screen.getByRole('checkbox', { name: 'Second' })).toBeChecked();
+    expect(screen.getByRole('status')).toHaveTextContent('1 item selected');
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Second' }));
+    expect(screen.getByRole('checkbox', { name: 'Second' })).not.toBeChecked();
+  });
+
+  it('shows the initial selection and nothing without items', () => {
+    const { rerender } = render(
+      <DemoProvider initialState={{ selectedIds: [1] }}>
+        <ItemPicker items={items} />
+      </DemoProvider>,
+    );
+    expect(screen.getByRole('checkbox', { name: 'First' })).toBeChecked();
+    rerender(
+      <DemoProvider>
+        <ItemPicker items={[]} />
+      </DemoProvider>,
+    );
+    expect(screen.queryByTestId('item-picker')).toBeNull();
+  });
+});

@@ -28,8 +28,8 @@ between overview and `details/<n>` via `props.path` + `onNavigate`, sends `demo:
 `config.message` come from the manifest (`props.vendor.config`). Test ids: `mock-vendor`,
 `mock-vendor-path`, `mock-vendor-theme`, `mock-vendor-user`, `mock-vendor-details`.
 
-The generated `--external` adapter remotes use it in development: the shell's
-`mfe-manifest.dev.json` points at it (format from `pnpm gen:remote … --external
+The generated `--external` adapter remotes use it in development: the shell's generated
+`mfe-manifest.dev.json` points at it (`mfe.devManifest` in the shell's `package.json`) (format from `pnpm gen:remote … --external
 --vendor-format esm|web-component|script`), the adapter falls back to it in development builds
 when no `vendor` config is set, and `pnpm dev:<zone>` / `nx dev <adapter>` start it (task
 dependency `serve:<zone>`). Production builds contain neither the fallback nor the URL. Never
