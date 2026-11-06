@@ -115,7 +115,12 @@ test.describe('Staff directory, unknown person', () => {
     const bodies: string[] = [];
     page.on('response', (response) => {
       if (/\/staff\/s-1016$/.test(response.url())) {
-        void response.text().then((text) => bodies.push(text));
+        // the page's own URL matches too and its body is gone after a navigation: skip it;
+        // a lost API body still fails below, because the masked NRIC must be found
+        void response.text().then(
+          (text) => bodies.push(text),
+          () => undefined,
+        );
       }
     });
     await openRemote(page, remote, 's-1016');
