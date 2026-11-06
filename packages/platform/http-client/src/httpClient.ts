@@ -29,6 +29,12 @@ export type HttpRequestInit = Pick<
   'method' | 'headers' | 'signal' | 'credentials'
 > & { body?: string | FormData | URLSearchParams | Blob };
 
+/** Safe to show to a user: the URL is in `error.url`. */
+const FAILURE_MESSAGES = {
+  network: 'Could not reach the server.',
+  timeout: 'The server took too long to answer.',
+};
+
 export class HttpClientError extends Error {
   status: number;
   statusText: string;
@@ -48,7 +54,7 @@ export class HttpClientError extends Error {
   ) {
     super(
       failure
-        ? `Request failed (${failure}): ${response.url}`
+        ? FAILURE_MESSAGES[failure]
         : `${response.status} ${response.statusText || 'HTTP request failed'}`.trim(),
     );
     this.name = 'HttpClientError';

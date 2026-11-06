@@ -227,7 +227,11 @@ describe('createHttpClient', () => {
     });
     const error = await http.getJson('/x').catch((e: unknown) => e);
     expect(error).toBeInstanceOf(HttpClientError);
-    expect(error).toMatchObject({ status: 0, failure: 'network' });
+    expect(error).toMatchObject({
+      status: 0,
+      failure: 'network',
+      message: 'Could not reach the server.',
+    });
     expect(isNetworkError(error)).toBe(true);
   });
 
@@ -275,7 +279,7 @@ describe('createHttpClient', () => {
         status: 0,
         failure: 'timeout',
         url: `${API}/slow`,
-        message: `Request failed (timeout): ${API}/slow`,
+        message: 'The server took too long to answer.',
       });
       expect(isNetworkError(error)).toBe(true);
     });
