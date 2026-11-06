@@ -1,7 +1,8 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
-import { API_NOT_CONFIGURED } from '@org/use-api';
+import { API_NOT_CONFIGURED } from '@org/http-client';
+import { renderHookWithQuery } from '@org/query/test';
 import { getAnnouncement, listAnnouncements } from '../api/announcementsApi';
 import { maintenance } from '../__fixtures__/announcements';
 import { useAnnouncement, useAnnouncements } from './useAnnouncements';
@@ -25,8 +26,10 @@ beforeEach(() => jest.resetAllMocks());
 describe('useAnnouncements', () => {
   it('loads the list with the client of settings.apiBaseUrl', async () => {
     jest.mocked(listAnnouncements).mockResolvedValue([maintenance]);
-    const { result } = renderHook(() => useAnnouncements(), { wrapper: api });
-    expect(result.current.status).toBe('loading');
+    const { result } = renderHookWithQuery(() => useAnnouncements(), {
+      wrapper: api,
+    });
+    expect(result.current.status).toBe('pending');
     await waitFor(() => expect(result.current.status).toBe('success'));
     expect(result.current).toMatchObject({ data: [maintenance] });
     const [http] = jest.mocked(listAnnouncements).mock.calls[0];
@@ -36,7 +39,7 @@ describe('useAnnouncements', () => {
   });
 
   it('is an error without settings.apiBaseUrl, and calls nothing', async () => {
-    const { result } = renderHook(() => useAnnouncements(), {
+    const { result } = renderHookWithQuery(() => useAnnouncements(), {
       wrapper: withSettings({}),
     });
     await waitFor(() => expect(result.current.status).toBe('error'));
@@ -50,14 +53,17 @@ describe('useAnnouncements', () => {
 describe('useAnnouncement', () => {
   it('loads one announcement by id and again for another id', async () => {
     jest.mocked(getAnnouncement).mockResolvedValue(maintenance);
-    const { result, rerender } = renderHook(({ id }) => useAnnouncement(id), {
-      wrapper: api,
-      initialProps: { id: 'a-2026-031' },
-    });
+    const { result, rerender } = renderHookWithQuery(
+      ({ id }) => useAnnouncement(id),
+      {
+        wrapper: api,
+        initialProps: { id: 'a-2026-031' },
+      },
+    );
     await waitFor(() => expect(result.current.status).toBe('success'));
     jest.mocked(getAnnouncement).mockResolvedValue(null);
     rerender({ id: 'gone' });
-    expect(result.current.status).toBe('loading');
+    expect(result.current.status).toBe('pending');
     await waitFor(() =>
       expect(result.current).toMatchObject({ status: 'success', data: null }),
     );

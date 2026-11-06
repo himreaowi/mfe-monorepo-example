@@ -1,27 +1,26 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
-import type { ApiResult } from '@org/use-api';
 import { maintenance } from '../../__fixtures__/announcements';
-import type { Announcement } from '../../types/announcement';
+import type { AnnouncementQuery } from '../../hooks/useAnnouncements';
 import { AnnouncementDetail } from './AnnouncementDetail';
 
 // A display component: the page loads the announcement and passes the result in.
-function renderDetail(announcement: ApiResult<Announcement | null>) {
+function renderDetail(announcement: object) {
   return render(
     <MemoryRouter>
       <HostPropsProvider value={{ embedded: true, basePath: '/announcements' }}>
-        <AnnouncementDetail announcement={announcement} />
+        <AnnouncementDetail announcement={announcement as AnnouncementQuery} />
       </HostPropsProvider>
     </MemoryRouter>,
   );
 }
 
-const reload = jest.fn();
+const refetch = jest.fn();
 
 describe('AnnouncementDetail', () => {
   it('shows the title, date and paragraphs', () => {
-    renderDetail({ status: 'success', data: maintenance, reload });
+    renderDetail({ status: 'success', data: maintenance, refetch });
     expect(
       screen.getByRole('heading', {
         level: 1,
@@ -41,14 +40,14 @@ describe('AnnouncementDetail', () => {
   });
 
   it('handles a missing announcement', () => {
-    renderDetail({ status: 'success', data: null, reload });
+    renderDetail({ status: 'success', data: null, refetch });
     expect(
       screen.getByRole('heading', { name: 'Announcement not found' }),
     ).toBeInTheDocument();
   });
 
   it('shows loading without the back link', () => {
-    renderDetail({ status: 'loading', reload });
+    renderDetail({ status: 'pending', refetch });
     expect(screen.getByRole('status')).toHaveTextContent('Loading');
     expect(
       screen.queryByRole('link', { name: 'Back to all announcements' }),
@@ -59,7 +58,7 @@ describe('AnnouncementDetail', () => {
     renderDetail({
       status: 'error',
       error: new Error('500 Internal Server Error'),
-      reload,
+      refetch,
     });
     expect(screen.getByRole('alert')).toHaveTextContent(
       'Could not load this announcement',

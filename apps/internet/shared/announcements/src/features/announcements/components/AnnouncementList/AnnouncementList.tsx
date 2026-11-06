@@ -1,20 +1,19 @@
 import { useRemotePath } from '@org/mf-runtime/remote';
 import { Card, Link, RemoteFallback, Spinner } from '@org/ui';
-import type { ApiResult } from '@org/use-api';
 import { announcementPath } from '@/core/constants/routePaths';
 import { formatDate } from '@/core/utils/formatDate';
-import type { AnnouncementSummary } from '../../types/announcement';
+import type { AnnouncementsQuery } from '../../hooks/useAnnouncements';
 import styles from './AnnouncementList.module.scss';
 
 /**
  * The announcements, newest first. Displays only: the page loads them (`useAnnouncements()`)
- * and passes the result down, "Try again" is its `reload` (docs/coding-conventions.md "Data
+ * and passes the result down, "Try again" is its `refetch` (docs/coding-conventions.md "Data
  * fetching").
  */
 export function AnnouncementList({
   announcements,
 }: {
-  announcements: ApiResult<AnnouncementSummary[]>;
+  announcements: AnnouncementsQuery;
 }) {
   const toPath = useRemotePath();
   return (
@@ -23,14 +22,14 @@ export function AnnouncementList({
       <p className={styles.lead}>
         News about our services, fees and planned maintenance.
       </p>
-      {announcements.status === 'loading' ? (
+      {announcements.status === 'pending' ? (
         <Spinner label="Loading announcements…" labelVisible />
       ) : null}
       {announcements.status === 'error' ? (
         <RemoteFallback
           title="Could not load the announcements"
           reason={announcements.error.message}
-          onRetry={announcements.reload}
+          onRetry={() => void announcements.refetch()}
         />
       ) : null}
       {announcements.status === 'success' && announcements.data.length === 0 ? (

@@ -1,10 +1,9 @@
 import { Link } from 'react-router';
 import { useRemotePath } from '@org/mf-runtime/remote';
 import { RemoteFallback, Spinner } from '@org/ui';
-import type { ApiResult } from '@org/use-api';
 import { routePaths } from '@/core/constants/routePaths';
 import { formatDate } from '@/core/utils/formatDate';
-import type { Announcement } from '../../types/announcement';
+import type { AnnouncementQuery } from '../../hooks/useAnnouncements';
 import styles from './AnnouncementDetail.module.scss';
 
 /**
@@ -15,7 +14,7 @@ import styles from './AnnouncementDetail.module.scss';
 export function AnnouncementDetail({
   announcement,
 }: {
-  announcement: ApiResult<Announcement | null>;
+  announcement: AnnouncementQuery;
 }) {
   const toPath = useRemotePath();
   const back = (
@@ -34,16 +33,16 @@ export function AnnouncementDetail({
         <h1 className={styles.title}>
           {notFound ? 'Announcement not found' : 'Announcement'}
         </h1>
-        {announcement.status === 'loading' ? <Spinner labelVisible /> : null}
+        {announcement.status === 'pending' ? <Spinner labelVisible /> : null}
         {announcement.status === 'error' ? (
           <RemoteFallback
             title="Could not load this announcement"
             reason={announcement.error.message}
-            onRetry={announcement.reload}
+            onRetry={() => void announcement.refetch()}
           />
         ) : null}
         {notFound ? <p>It may have been removed.</p> : null}
-        {announcement.status === 'loading' ? null : back}
+        {announcement.status === 'pending' ? null : back}
       </section>
     );
   }

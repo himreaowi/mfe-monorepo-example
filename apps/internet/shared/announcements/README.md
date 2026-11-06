@@ -41,7 +41,7 @@ plain-text paragraphs; no HTML from the API is rendered.
 src/
   main.tsx            standalone entry only: global styles + <StandaloneApp />
   app/                apps (exposed ./App: createRemoteApp + standalone props), routes
-  features/announcements/  api/, hooks/, types/, __fixtures__/, components/ (one folder
+  features/announcements/  api/, hooks/, queryKeys.ts, types/, __fixtures__/, components/ (one folder
                       per component: AnnouncementList/, AnnouncementDetail/)
   layouts/            StandaloneLayout/ (own simple chrome, standalone only)
   pages/              OverviewPage, AnnouncementPage, NotFoundPage (they call the data hooks)
