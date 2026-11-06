@@ -52,7 +52,11 @@ export function readFieldErrors(error: unknown): ItemFieldErrors | undefined {
 /** A message for the UI: operation + status, never a stack trace. */
 export function describeError(error: unknown, operation: string): string {
   if (error instanceof HttpClientError) {
-    return `${operation} (HTTP ${error.status}). Try again.`;
+    if (error.failure === 'timeout') {
+      return `${operation}: the server took too long. Try again.`;
+    }
+    if (!error.failure)
+      return `${operation} (HTTP ${error.status}). Try again.`;
   }
   return `${operation}. Check your connection and try again.`;
 }
