@@ -2026,6 +2026,10 @@ importers:
         version: 5.111.1(@swc/core@1.16.18)(clean-css@5.3.3)(cssnano@7.1.9(postcss@8.5.31))(csso@5.0.5)(esbuild@0.28.2)(html-minifier-terser@6.1.0)(lightningcss@1.33.0)(postcss@8.5.31)(svgo@4.1.0)(webpack-cli@7.2.3)
 
   packages/platform/use-api:
+    dependencies:
+      '@org/http-client':
+        specifier: workspace:*
+        version: link:../http-client
     devDependencies:
       '@org/eslint-config':
         specifier: workspace:*

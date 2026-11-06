@@ -11,4 +11,5 @@ export {
   type SubmitResult,
   type SubmitState,
 } from './useSubmit';
-export { API_NOT_CONFIGURED, requireApiClient } from './requireApiClient';
+// moved to @org/http-client; re-exported until the hooks are on TanStack Query
+export { API_NOT_CONFIGURED, requireApiClient } from '@org/http-client';

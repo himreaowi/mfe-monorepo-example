@@ -19,6 +19,9 @@
       "type:package"
     ]
   },
+  "dependencies": {
+    "@org/http-client": "workspace:*"
+  },
   "peerDependencies": {
     "react": "^19.0.0"
   },
