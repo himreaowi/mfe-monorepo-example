@@ -38,7 +38,10 @@ const exception = (/** @type {Record<string, string>} */ over = {}) => ({
 
 const pinnedReact = () => ({
   ...validApps(),
-  'intranet/staff': app('staff', { port: 3101, deps: { react: '18.3.1' } }),
+  'intranet/intranet/staff': app('staff', {
+    port: 3101,
+    deps: { react: '18.3.1' },
+  }),
 });
 
 after(cleanupWorkspaces);
@@ -70,7 +73,7 @@ describe('check-versions', () => {
     const r = await run({
       apps: {
         ...validApps(),
-        'intranet/staff': app('staff', {
+        'intranet/intranet/staff': app('staff', {
           port: 3101,
           devDeps: { typescript: '^6.0.0' },
         }),
@@ -91,7 +94,7 @@ describe('check-versions', () => {
   it('accepts a range spec matching the exception version', async () => {
     const apps = {
       ...validApps(),
-      'intranet/staff': app('staff', {
+      'intranet/intranet/staff': app('staff', {
         port: 3101,
         deps: { react: '^18.3.1' },
       }),
@@ -182,7 +185,10 @@ describe('check-versions', () => {
     const r = await run({
       apps: {
         ...validApps(),
-        'intranet/staff': app('staff', { port: 3101, deps: { zod: '^4.6.7' } }),
+        'intranet/intranet/staff': app('staff', {
+          port: 3101,
+          deps: { zod: '^4.6.7' },
+        }),
       },
     });
     assert.deepEqual(r.errors, []);
@@ -192,8 +198,11 @@ describe('check-versions', () => {
     const r = await run({
       apps: {
         ...validApps(),
-        'intranet/staff': app('staff', { port: 3101, deps: { zod: '^4.6.7' } }),
-        'internet/services': app('services', {
+        'intranet/intranet/staff': app('staff', {
+          port: 3101,
+          deps: { zod: '^4.6.7' },
+        }),
+        'internet/internet/services': app('services', {
           zone: 'internet',
           port: 3201,
           deps: { zod: '^4.5.0' },
@@ -234,7 +243,7 @@ describe('check-versions', () => {
     const r = await run({
       apps: {
         ...validApps(),
-        'intranet/staff': app('staff', {
+        'intranet/intranet/staff': app('staff', {
           port: 3101,
           deps: {
             '@org/ui': '^0.1.0',

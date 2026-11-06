@@ -1,4 +1,4 @@
-import { Link } from 'react-router';
+import { Badge, Link } from '@org/ui';
 import { APP_TITLE } from '@/core/constants/app';
 import type { RemoteEntry } from '@/core/types/remotes';
 import styles from './Welcome.module.scss';
@@ -23,7 +23,7 @@ export function Welcome({ remotes }: { remotes: RemoteEntry[] }) {
               <li key={remote.name} className={styles.card}>
                 <Link to={remote.path}>{remote.title}</Link>
                 {remote.access === 'private' ? (
-                  <span className={styles.badge}>sign-in required</span>
+                  <Badge>sign-in required</Badge>
                 ) : null}
               </li>
             ))}

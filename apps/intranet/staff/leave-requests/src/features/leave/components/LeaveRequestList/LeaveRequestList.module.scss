@@ -1,0 +1,39 @@
+.muted {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.requests {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+// a two-column grid inside the @org/ui Card (`.requests` raises specificity)
+.requests .request {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-1) var(--space-4);
+  padding: var(--space-4);
+  box-shadow: none;
+  overflow-wrap: anywhere;
+
+  p {
+    margin: 0;
+  }
+}
+
+.requestTitle {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.status {
+  align-self: start;
+}
+
+.full {
+  grid-column: 1 / -1;
+}

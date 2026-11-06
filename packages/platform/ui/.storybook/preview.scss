@@ -1,0 +1,46 @@
+// Layout helpers for the stories only (never part of the library).
+.sb-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.sb-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 40rem;
+}
+
+.sb-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sb-flush {
+  margin: 0;
+}
+
+.sb-narrow {
+  max-width: 12rem;
+}
+
+.sb-fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+
+  legend {
+    padding: 0 var(--space-1);
+    font-weight: 600;
+  }
+}

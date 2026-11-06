@@ -1,8 +1,8 @@
 node_modules/
 dist/
 build/
-# packages/pwa/build is source (the Rspack/Workbox plugin), not output
-!packages/pwa/build/
+# packages/platform/pwa/build is source (the webpack/Workbox plugin), not output
+!packages/platform/pwa/build/
 coverage/
 *.log
 .env
@@ -23,3 +23,7 @@ test-results/
 *.tsbuildinfo
 .nx/cache/
 .nx/workspace-data/
+storybook-static/
+
+# Module Federation diagnostics written next to each app by the dev servers
+.mf

@@ -53,10 +53,10 @@ when using Speckit.
   One row per app (generated with pnpm gen:shell / gen:remote). `pnpm -s apps` lists them.
 -->
 
-| Zone     | App              | Type / access                       | Owner  | Purpose |
-| -------- | ---------------- | ----------------------------------- | ------ | ------- |
-| intranet | `shell-intranet` | shell                               | _TODO_ | _TODO_  |
-| _TODO_   | _TODO_           | remote, public / private / external | _TODO_ | _TODO_  |
+| Zone     | App                                               | Type / access                       | Owner  | Purpose |
+| -------- | ------------------------------------------------- | ----------------------------------- | ------ | ------- |
+| intranet | `intranet` shell (`apps/intranet/intranet/shell`) | shell                               | _TODO_ | _TODO_  |
+| _TODO_   | _TODO_                                            | remote, public / private / external | _TODO_ | _TODO_  |
 
 External (vendor) modules: _TODO: vendor, product, integration (adapter / iframe), contact._
 

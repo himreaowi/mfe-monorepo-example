@@ -9,7 +9,7 @@
  *   }
  *
  * Development builds fall back to the zone's mock vendor (tools/mock-vendor, port
- * __MOCK_VENDOR_PORT__) so the adapter also works standalone. Rspack replaces
+ * __MOCK_VENDOR_PORT__) so the adapter also works standalone. webpack replaces
  * `process.env.NODE_ENV` in production builds and drops this branch, so the mock URL is not in
  * production bundles (and production source maps carry no sources).
  */

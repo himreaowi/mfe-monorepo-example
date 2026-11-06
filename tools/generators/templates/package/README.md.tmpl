@@ -1,0 +1,30 @@
+# __PACKAGE_NAME__
+
+__TITLE__: code used by __USED_BY__. Lives in `__DIR__`.
+
+__RULES_README__
+
+It is never deployed alone: no port, no webpack config. The apps that import it bundle its
+sources (`"exports": { ".": "./src/index.ts" }`).
+
+## Use it in an app
+
+```sh
+pnpm --filter <app package> add __PACKAGE_NAME__@workspace:*
+```
+
+```ts
+import { formatLabel } from '__PACKAGE_NAME__';
+```
+
+## Layout
+
+- `src/index.ts`: the front door; export everything the apps may use from here.
+- `src/components/<Name>/`: one folder per component, `<Name>.tsx`, `<Name>.module.scss`,
+  `<Name>.test.tsx` (stories optional).
+- `src/utils/`, `src/hooks/`, …: plain functions and hooks, each with its test.
+
+Move a component out of an app: `pnpm move-component <app> <Name> --to __MOVE_TO__`.
+
+`pnpm check` (rule `package-boundaries`) and `pnpm lint` keep the imports in line with
+[docs/where-code-goes.md](__DOCS_PATH__).

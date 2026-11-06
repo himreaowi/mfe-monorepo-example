@@ -1,0 +1,70 @@
+import path from 'node:path';
+import { render, screen } from '@testing-library/react';
+import { scanExposedModule } from '@org/jest-config/exposed-module';
+import { MemoryRouter, Route, Routes } from 'react-router';
+import { ThemeProvider } from '@org/ui';
+import { listItems } from '@/features/demo/api/itemsApi';
+import EmbeddedApp, { StandaloneApp } from './apps';
+
+// the demo feature loads items from the API: no HTTP in unit tests
+jest.mock('@/features/demo/api/itemsApi', () => ({
+  ...jest.requireActual('@/features/demo/api/itemsApi'),
+  listItems: jest.fn().mockResolvedValue([]),
+}));
+
+describe('Business licences remote', () => {
+  it('embedded: renders below the shell mount with host props', () => {
+    render(
+      <ThemeProvider>
+        <MemoryRouter initialEntries={['/business-licences']}>
+          <Routes>
+            <Route
+              path="business-licences/*"
+              element={
+                <EmbeddedApp
+                  embedded
+                  basePath="/business-licences"
+                  title="From shell"
+                  user={{ id: 'u1', name: 'Shell User' }}
+                />
+              }
+            />
+          </Routes>
+        </MemoryRouter>
+      </ThemeProvider>,
+    );
+    expect(screen.getByTestId('mode-badge')).toHaveTextContent('Embedded');
+    expect(screen.getByText('From shell')).toBeInTheDocument();
+    expect(screen.getByTestId('demo-user')).toHaveTextContent('Shell User');
+    expect(screen.getByRole('link', { name: /details/i })).toHaveAttribute(
+      'href',
+      '/business-licences/details',
+    );
+  });
+
+  it('standalone: renders with mock host props and its own chrome', async () => {
+    window.history.pushState({}, '', '/');
+    render(<StandaloneApp />);
+    expect(screen.getByTestId('mode-badge')).toHaveTextContent('Standalone');
+    expect(screen.getByTestId('demo-user')).toHaveTextContent('Dev User');
+    expect(
+      screen.getByRole('button', { name: 'Use dark theme' }),
+    ).toBeInTheDocument();
+    // the standalone host props point the demo at the mock API in development
+    expect(await screen.findByText('No items yet.')).toBeInTheDocument();
+    expect(jest.mocked(listItems)).toHaveBeenCalled();
+  });
+
+  it('exposed module: nothing it reaches imports global styles or registers a service worker', () => {
+    const { files, violations } = scanExposedModule(
+      path.join(__dirname, 'apps.tsx'),
+    );
+    expect(violations).toEqual([]);
+    // the walk reached the feature components (features/<name>/components/<Name>/<Name>.tsx)
+    expect(
+      files.some((file) =>
+        /[\\/]features[\\/][^\\/]+[\\/]components[\\/]/.test(file),
+      ),
+    ).toBe(true);
+  });
+});

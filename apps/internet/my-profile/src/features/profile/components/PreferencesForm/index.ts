@@ -1,1 +1,0 @@
-export { PreferencesForm } from './PreferencesForm';

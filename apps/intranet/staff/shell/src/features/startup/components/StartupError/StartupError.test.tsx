@@ -1,0 +1,38 @@
+import { act, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { StartupError } from './StartupError';
+
+function setOnline(value: boolean) {
+  Object.defineProperty(window.navigator, 'onLine', {
+    configurable: true,
+    get: () => value,
+  });
+}
+
+describe('StartupError', () => {
+  afterEach(() => setOnline(true));
+
+  it('shows the manifest error when online and retries', async () => {
+    setOnline(true);
+    const onRetry = jest.fn();
+    render(<StartupError error={new Error('HTTP 404')} onRetry={onRetry} />);
+    expect(screen.getByRole('alert')).toHaveTextContent('HTTP 404');
+    expect(screen.queryByTestId('connection-required')).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows connection required when offline', () => {
+    setOnline(false);
+    render(<StartupError error={new Error('Failed to fetch')} />);
+    expect(screen.getByTestId('connection-required')).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'You are offline' }),
+    ).toBeInTheDocument();
+    act(() => {
+      setOnline(true);
+      window.dispatchEvent(new Event('online'));
+    });
+    expect(screen.queryByTestId('connection-required')).toBeNull();
+  });
+});

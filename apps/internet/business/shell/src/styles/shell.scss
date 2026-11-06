@@ -1,0 +1,10 @@
+// Business Portal: shell-wide global styles, imported once in src/main.tsx right after
+// @org/design-tokens/global.scss (so these rules come later and win). Empty by default.
+//
+// Use it for what really is page-wide in this shell, e.g. self-hosted fonts (@font-face) or a
+// page token override for the whole shell and its remotes (`:root { --color-accent: …; }`,
+// both themes, WCAG 2.2 AA contrast).
+//
+// Header / sidebar colours and the layout itself are NOT here: they live in the shell's own
+// layout, src/layouts/ShellLayout/ShellLayout.module.scss ("HEADER COLOURS"). See
+// docs/ui-context.md "Layout: the shell owns it" at the repo root.

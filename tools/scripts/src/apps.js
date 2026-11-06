@@ -6,7 +6,8 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { ZONES } from './zones.js';
+import { ZONES, shellBasePath } from './zones.js';
+import { splitAppDir } from './layout.js';
 import { DEP_FIELDS, loadApps, loadWorkspace } from './workspace.js';
 
 /**
@@ -18,6 +19,7 @@ import { DEP_FIELDS, loadApps, loadWorkspace } from './workspace.js';
  *   access: 'public' | 'private',
  *   kind: 'react' | 'external',
  *   port: number,
+ *   basePath?: string,
  *   federationName: string,
  *   path: string,
  *   distDir: string,
@@ -47,7 +49,19 @@ const tagValue = (tags, prefix) =>
   tags.find((t) => t.startsWith(`${prefix}:`))?.slice(prefix.length + 1);
 
 /**
- * Every app under apps/<zone>/<name> with its metadata, shells first within a zone.
+ * Short app name: `shell-<shellName>` for a shell (its group folder), the folder name for a
+ * remote.
+ * @param {string} dir apps/<zone>/<group>/<folder>
+ * @param {string | undefined} type
+ */
+function appName(dir, type) {
+  const parts = splitAppDir(dir);
+  if (type === 'shell' && parts) return `shell-${parts.group}`;
+  return path.posix.basename(dir);
+}
+
+/**
+ * Every app under apps/<zone>/<group>/<folder> with its metadata, shells first within a zone.
  * @param {{ root: string, zone?: string }} options
  * @returns {AppInfo[]}
  */
@@ -57,13 +71,17 @@ export function listApps({ root, zone }) {
     .map((app) => {
       const tags = /** @type {string[]} */ (app.pkg.nx?.tags ?? []);
       return /** @type {AppInfo} */ ({
-        name: path.posix.basename(app.dir),
+        name: appName(app.dir, tagValue(tags, 'type')),
         package: app.name,
         zone: tagValue(tags, 'zone') ?? '',
         type: tagValue(tags, 'type') ?? '',
         access: tagValue(tags, 'access') ?? 'public',
         kind: tagValue(tags, 'kind') === 'external' ? 'external' : 'react',
         port: app.pkg.mfe?.port,
+        // shells: where the shell is served (mfe.basePath, default "/")
+        ...(tagValue(tags, 'type') === 'shell'
+          ? { basePath: shellBasePath(app.pkg.mfe?.basePath) }
+          : {}),
         federationName: app.pkg.mfe?.federationName,
         path: app.dir,
         distDir: `${app.dir}/dist`,
@@ -186,7 +204,7 @@ export function nxAffected({ root, base, head }) {
 
 /**
  * Apps affected by the changes since `base`. Nx decides which projects are affected (package-based
- * graph: a change in packages/ui affects every app depending on it); without Nx the git diff is
+ * graph: a change in packages/platform/ui affects every app depending on it); without Nx the git diff is
  * mapped onto the workspace dependency graph. Changes to GLOBAL_FILES (e.g. deploy/) affect
  * every app in both modes.
  * @param {{ root: string, base: string, head?: string, zone?: string, nx?: boolean }} options

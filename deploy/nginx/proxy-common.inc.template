@@ -1,0 +1,33 @@
+# Settings every same-origin proxy location has in common (<base>/api -> API_UPSTREAM,
+# <base>/auth -> AUTH_UPSTREAM). The locations themselves are written at container start by
+# docker-entrypoint.d/40-mfe-manifest.sh into /etc/mfe/mfe-proxy.inc; they include this file.
+# No variables here (nothing for envsubst to replace).
+#
+# - the browser's cookies, Authorization and CSRF header pass unchanged; Set-Cookie comes back
+#   unchanged (the backend scopes its cookie, e.g. Path=<base>; docs/auth-contract.md)
+# - Host is the upstream's; the browser's is in X-Forwarded-Host
+# - responses are never cached by nginx (proxy_cache off) nor the browser (Cache-Control: no-store
+#   is added by the location)
+proxy_http_version 1.1;
+proxy_set_header Connection "";
+proxy_set_header Host $proxy_host;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Proto $mfe_forwarded_proto;
+proxy_set_header X-Forwarded-Host $host;
+proxy_redirect off;
+proxy_cache off;
+proxy_connect_timeout 5s;
+proxy_send_timeout 60s;
+proxy_read_timeout 60s;
+client_max_body_size 10m;
+proxy_ssl_server_name on;
+proxy_ssl_protocols TLSv1.2 TLSv1.3;
+# one set of security headers per response: the location adds ours
+proxy_hide_header X-Powered-By;
+proxy_hide_header Content-Security-Policy;
+proxy_hide_header X-Content-Type-Options;
+proxy_hide_header X-Frame-Options;
+proxy_hide_header Referrer-Policy;
+proxy_hide_header Permissions-Policy;
+proxy_hide_header Cross-Origin-Opener-Policy;
+proxy_hide_header Strict-Transport-Security;

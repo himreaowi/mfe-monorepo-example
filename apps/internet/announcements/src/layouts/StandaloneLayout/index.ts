@@ -1,1 +1,0 @@
-export { StandaloneLayout } from './StandaloneLayout';

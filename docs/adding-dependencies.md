@@ -65,8 +65,8 @@ the negative control in [toolchain.md](toolchain.md)).
 ## Tier 1: core singletons
 
 `react`, `react-dom`, `react-router`, `@org/ui` and `@org/auth` are listed in `TIER1` in
-`tools/scripts/src/tiers.js` and in `TIER1_SINGLETONS` in `packages/rspack-config/src/tier1.js`
-(check-versions fails if the two lists differ). `@org/rspack-config` shares them with
+`tools/scripts/src/tiers.js` and in `TIER1_SINGLETONS` in `packages/platform/webpack-config/src/tier1.js`
+(check-versions fails if the two lists differ). `@org/webpack-config` shares them with
 `singleton: true, strictVersion: true, requiredVersion: <catalog version>`: an app built against
 another version fails loudly when the shell loads it, and the shell shows `RemoteFallback`.
 
@@ -106,8 +106,8 @@ Only when an app truly cannot use the catalog version (tier 1 or tier 2), add an
 ### Adding a new tier-1 package
 
 Add it to the default catalog, to `TIER1` in `tools/scripts/src/tiers.js` and to
-`TIER1_SINGLETONS` in `packages/rspack-config/src/tier1.js` in one pull request, then restart every
-dev server (Rspack does not reload config files).
+`TIER1_SINGLETONS` in `packages/platform/webpack-config/src/tier1.js` in one pull request, then restart every
+dev server (webpack-dev-server does not reload config files).
 
 ## What CI says
 
@@ -115,7 +115,7 @@ CI runs `pnpm install --frozen-lockfile` and then `pnpm lint` (which runs `pnpm 
 Every message names the package, the file and the fix, for example:
 
 ```
-error   [check-versions/tier1-pinned] @org/intranet-staff-directory (apps/intranet/staff-directory/package.json dependencies): "react": "18.3.1" — react is in the catalog (19.3.1) and is a tier-1 singleton shared at runtime, so it must be "catalog:".
+error   [check-versions/tier1-pinned] @org/intranet-staff-directory (apps/intranet/staff/staff-directory/package.json dependencies): "react": "18.3.1" — react is in the catalog (19.3.1) and is a tier-1 singleton shared at runtime, so it must be "catalog:".
     Fix: set "react": "catalog:" (or run: pnpm --filter @org/intranet-staff-directory add react@catalog:).
     If @org/intranet-staff-directory really needs 18.3.1, add an exception to version-exceptions.json: { ... }. A different major of a tier-1 package cannot share the runtime singleton: integrate the app as an isolated mount-contract module (docs/external-modules.md).
 ✖ check-versions, check-apps: 1 error. How to fix each one: docs/guardrails.md

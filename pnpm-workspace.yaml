@@ -1,6 +1,10 @@
 packages:
-  - apps/**
-  - packages/*
+  # apps/<zone>/<portal>/{shell,<remote>}, apps/<zone>/shared/<remote> and the zone libraries
+  # apps/<zone>/libs/<capability> (tools/scripts/src/layout.js, docs/where-code-goes.md)
+  - apps/*/*/*
+  # plumbing (@org/ui, configs, runtime) and business logic for both zones (@org/common-<capability>)
+  - packages/platform/*
+  - packages/common/*
   - tools/*
 
 # Isolated layout: every app/package gets its own node_modules with only its declared deps (D7).
@@ -20,6 +24,8 @@ allowBuilds:
   '@parcel/watcher': false
   '@swc/core': false
   unrs-resolver: false
+  # Storybook (dev only) bundles with esbuild; its binary comes as an optional dependency.
+  esbuild: false
 
 # react-router's .d.ts files import 'react' but it does not declare @types/react. In the isolated
 # layout TypeScript then walks up past the repo and may pick up a stray @types/react (e.g. v18 in
@@ -30,6 +36,12 @@ packageExtensions:
       '@types/react': '*'
     peerDependenciesMeta:
       '@types/react':
+        optional: true
+  # @module-federation/enhanced depends on its rspack plugin, which lists @rspack/core as a required
+  # peer. We build with webpack only; optional keeps pnpm from auto-installing Rspack.
+  '@module-federation/rspack':
+    peerDependenciesMeta:
+      '@rspack/core':
         optional: true
   # @nx/eslint-plugin (enforce-module-boundaries) requires 'typescript' without declaring it.
   # In the isolated layout it is then not found. Declaring the peer links the catalog version.
@@ -49,9 +61,6 @@ catalog:
   '@eslint/js': 10.0.1
   '@nx/eslint-plugin': 23.3.0
   '@module-federation/enhanced': 2.9.2
-  '@rspack/cli': 2.2.9
-  '@rspack/core': 2.2.9
-  '@rspack/dev-server': 2.2.1
   '@types/node': 24.19.2
   eslint: 10.12.0
   eslint-config-prettier: 10.1.8
@@ -62,7 +71,17 @@ catalog:
   prettier: 3.9.10
   typescript: 6.0.3
   typescript-eslint: 8.71.2
-  # build (rspack-config, pwa)
+  # build (webpack-config, pwa)
+  webpack: 5.111.1
+  webpack-cli: 7.2.3
+  webpack-dev-server: 6.1.0
+  swc-loader: 0.2.7
+  mini-css-extract-plugin: 2.10.2
+  html-webpack-plugin: 5.6.8
+  copy-webpack-plugin: 14.0.0
+  terser-webpack-plugin: 5.6.1
+  css-minimizer-webpack-plugin: 8.0.0
+  lightningcss: 1.33.0
   css-loader: 7.1.5
   sass: 1.105.1
   sass-loader: 17.0.1
@@ -81,6 +100,9 @@ catalog:
   # e2e (playwright-config, generated shells)
   '@axe-core/playwright': 4.14.0
   '@playwright/test': 1.64.1
+  # Storybook for @org/ui (dev only: never a dependency of an app, never in an app bundle)
+  storybook: 10.6.2
+  '@storybook/react-webpack5': 10.6.2
   # mf-runtime (manifest validator codegen, dev only)
   ajv: 8.20.0
   # tools/scripts (reads pnpm-workspace.yaml)

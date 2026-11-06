@@ -1,0 +1,92 @@
+@use '../../styles/mixins' as *;
+
+.dialog {
+  width: calc(100% - 2 * var(--space-4));
+  max-height: calc(100% - 2 * var(--space-8));
+  padding: var(--space-6);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow);
+
+  &::backdrop {
+    background: var(--color-overlay);
+  }
+
+  &[open] {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+}
+
+.sm {
+  max-width: 24rem;
+}
+
+.md {
+  max-width: 36rem;
+}
+
+.lg {
+  max-width: 52rem;
+}
+
+.header {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.close {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  margin: calc(-1 * var(--space-2)) calc(-1 * var(--space-2)) 0 0;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--color-text);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--color-border);
+  }
+
+  @include focus-ring(0);
+}
+
+.description {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.body {
+  > :first-child {
+    margin-top: 0;
+  }
+
+  > :last-child {
+    margin-bottom: 0;
+  }
+}
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: flex-end;
+}

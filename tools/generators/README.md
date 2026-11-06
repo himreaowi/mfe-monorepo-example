@@ -1,19 +1,27 @@
 # @org/generators
 
-Creates apps from templates. Run from the repo root:
+Creates apps and code libraries from templates. Run from the repo root:
 
 ```sh
 pnpm gen:shell <zone> [--layout top|side] [--title "<text>"]   # zone: intranet | internet
 pnpm gen:remote <zone> <name> [--private] [--external [--vendor-format esm|web-component|script]] [--title "<text>"]
                                                         # name: kebab-case, e.g. staff-directory
+pnpm gen:package <common|zone> <capability>             # a library, docs/where-code-goes.md
 pnpm install
 pnpm dev:<zone>
 ```
 
-| Generator    | Creates                                                                                | Package              | Federation name | Port                                            |
-| ------------ | -------------------------------------------------------------------------------------- | -------------------- | --------------- | ----------------------------------------------- |
-| `gen:shell`  | `apps/<zone>/shell-<zone>` (incl. the zone's e2e suite in `e2e/`)                      | `@org/shell-<zone>`  | `<zone>_shell`  | first of the zone (3100/3200)                   |
-| `gen:remote` | `apps/<zone>/<name>` + entry in the shell's `remotes.json` and `mfe-manifest.dev.json` | `@org/<zone>-<name>` | `<zone>_<name>` | lowest free in the zone (3101–3189 / 3201–3289) |
+| Generator     | Creates                                                                                                                                                                                                                                                                                                                                      | Package                                                 | Federation name                                          | Port                                            |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- | -------------------------------------------------------- | ----------------------------------------------- |
+| `gen:shell`   | `apps/<zone>/<name>/shell` (name default: the zone; `--base-path`, default `/`; incl. its e2e suite in `e2e/`)                                                                                                                                                                                                                               | `@org/shell-<name>`                                     | `<zone>_shell` (name = zone), else `<zone>_shell_<name>` | lowest free shell port (3101–3109 / 3201–3209)  |
+| `gen:remote`  | `apps/<zone>/<shell>/<name>` (`apps/<zone>/shared/<name>` when `--shell a,b`) + entry in the `remotes.json` of the zone's shell, or of each `--shell` (regenerates their `mfe-manifest.dev.json`)                                                                                                                                            | `@org/<zone>-<name>`                                    | `<zone>_<name>`                                          | lowest free remote port (3110–3189 / 3210–3289) |
+| `gen:package` | `packages/common/<capability>` (`common`) or `apps/<zone>/libs/<capability>` (a zone): package.json (platform configs as `workspace:*`, tags `type:common` / `zone:<zone>` + `type:lib`), tsconfig, eslint/jest configs, README, `src/index.ts`, a sample function + test. Common packages carry the "ships to the internet portals" warning | `@org/common-<capability>` / `@org/<zone>-<capability>` |                                                          |                                                 |
+
+Several shells per zone: `pnpm gen:shell internet citizen --base-path /citizen`, then
+`pnpm gen:shell internet business --base-path /business --layout side`; the first shell below a
+base path (no shell at `/`) becomes the zone's default shell in the root `package.json`
+(`mfe.zones.<zone>.defaultShell`). `pnpm gen:remote` then needs `--shell <name>` (repeatable or
+comma-separated: `--shell citizen,business`).
 
 - **Titles** (nav label, `<h1>`, `APP_TITLE`) are derived from the name in **sentence case**,
   with a short list of acronyms kept in capitals (`TITLE_ACRONYMS` in `src/names.js`: IT, HR,
@@ -25,7 +33,7 @@ pnpm dev:<zone>
 - **`--layout top|side`** (`gen:shell`, default `top`): which **starter layout** is copied into
   the shell as its own code: `templates/shell-layouts/<layout>/` →
   `src/layouts/ShellLayout/{ShellLayout.tsx, ShellLayout.module.scss, ShellLayout.test.tsx}`
-  (`index.ts` comes from the shell template). `top`: remotes nav in the header row; `side`: a
+  `top`: remotes nav in the header row; `side`: a
   sticky top bar and the nav in a sidebar left of the content. On narrow screens both fold the
   nav behind "Menu" (the side starter as a drawer). After generation there is no layout option
   anywhere: the team edits the files (colours in the "HEADER COLOURS" block of
@@ -40,8 +48,15 @@ pnpm dev:<zone>
   wraps its route in `<RequireAuth>` (`@org/auth`): signed-out users get a sign-in prompt and the
   remote is not downloaded before sign-in. Every remote receives host prop `user`.
 - Shells always render `<AuthProvider>`; the client comes from the manifest's `auth` section
-  (`mfe-manifest.dev.json` gets `"auth": { "mock": true }`, the dev-only mock sign-in). See
+  (the shell's `package.json` `mfe.devManifest` has `"auth": { "mock": true }`, the dev-only mock
+  sign-in, and `settings.apiBaseUrl` → the shell's same-origin `<base>/api`, which the dev proxy forwards to
+  the zone's mock API unless `API_UPSTREAM` says otherwise). See
   `docs/auth-contract.md`.
+- `--state` (`gen:remote`, not with `--external`): adds the **feature-state example** from
+  `templates/remote-state/`: `src/features/demo/state/` (`demoReducer.ts` + test,
+  `DemoContext.tsx` with `DemoProvider`, `useDemoState()`, `useDemoDispatch()` + test) and two
+  components that share it on the overview page (`ItemPicker` sets the selected items,
+  `SelectionSummary` shows and clears them). See docs/coding-conventions.md "State management".
 - `--external`: an **adapter remote** for a vendor module (tag `kind:external`, registry
   `"kind": "external"`). `src/features/external/components/ExternalModuleHost/` renders
   `<ExternalModule>` (`@org/mf-runtime/external`) configured from the remote's manifest
@@ -56,14 +71,17 @@ pnpm dev:<zone>
   `docs/external-modules.md`.
 - **Dev tools per zone**: every generated app's `nx.targets.dev.dependsOn` starts the zone's
   mock API (`@org/mock-api`, target `serve:<zone>`; adapters also `@org/mock-vendor`), and the
-  shell's dev manifest gets `settings.apiBaseUrl: http://localhost:<3190|3290>/api`. Tool ports
+  shell's dev manifest gets `settings.apiBaseUrl: <base path>/api` (proxied to
+  `http://localhost:<3190|3290>/api` by default; `.env.example` files are created, see
+  `docs/configuration.md`). Tool ports
   come from the zone's tools range and the root `package.json` `mfe.tools` (`toolPort()` in
   `tools/scripts/src/zones.js`), so `pnpm dev:intranet` and `pnpm dev:internet` run side by side.
 - The remote's demo feature (`src/features/demo`) loads `/items` from that API through
-  `@org/http-client` (api/ → hooks/ → components) and has an "Add item" form with the
+  `useApiClient()` (api/ → hooks/ → the page, which passes data down → display-only components) and has an "Add item" form with the
   validate-on-submit / error-summary pattern (docs/coding-conventions.md).
 - Every generated feature uses **one folder per component** (docs/coding-conventions.md):
-  `features/<feature>/components/<Name>/{<Name>.tsx, <Name>.module.scss, <Name>.test.tsx, index.ts}`,
+  `features/<feature>/components/<Name>/{<Name>.tsx, <Name>.module.scss, <Name>.test.tsx}` (no
+  `index.ts`: imports name the file; a feature's `index.ts` is its public API),
   non-component code in `api/`, `hooks/`, `types/`, `utils/`. Remote: `features/demo`
   (`Demo`, `DemoDetails`, `DemoItems`, `AddItemForm`; `utils/validation.ts`). Shell:
   `features/welcome` (`Welcome`), `features/startup` (`StartupError`) and
@@ -71,13 +89,13 @@ pnpm dev:<zone>
   `features/external` (`ExternalModuleHost`; `utils/vendorConfig.ts`). `pnpm check` keeps it
   that way.
 - Shells get `src/styles/shell.scss`, the shell's own global stylesheet (empty by default, for
-  fonts or a shell-wide token override), imported in `src/bootstrap.tsx` right after
+  fonts or a shell-wide token override), imported in `src/main.tsx` right after
   `@org/design-tokens/global.scss`. The header colours are not there: they are in the copied
   `ShellLayout.module.scss`. Remotes get their own small `src/layouts/StandaloneLayout/`
   (standalone mode only) and must not set page-wide custom properties (`pnpm check` rule
   `remote-global-tokens`).
 - Metadata in the generated `package.json`: `nx.tags` (`zone:`, `type:`, `access:`, `kind:`) and
-  `mfe` (`port`, `federationName`). `rspack.config.js` reads `mfe` from `package.json`.
+  `mfe` (`port`, `federationName`). `webpack.config.js` reads `mfe` from `package.json`.
 - Dependencies: `catalog:` for third-party packages, `workspace:*` for `@org/*`.
 - Shells get the zone's e2e suite: `playwright.config.ts` (`@org/playwright-config`) and
   `e2e/*.spec.ts`, which iterate `remotes.json` (deep links, private guard, external adapters
@@ -91,7 +109,7 @@ pnpm dev:<zone>
 - Generated files are formatted with the repo's Prettier config.
 
 Templates live in `templates/shell`, `templates/shell-layouts/top|side` (an overlay on `shell`:
-the starter layout), `templates/remote` and `templates/external` (an overlay on `remote`). Files end in `.tmpl` (so the repo's tools ignore them) and use `__TOKEN__` placeholders
+the starter layout), `templates/remote`, `templates/remote-state` (an overlay on `remote` for `--state`) and `templates/external` (an overlay on `remote`). Files end in `.tmpl` (so the repo's tools ignore them) and use `__TOKEN__` placeholders
 (`__ZONE__`, `__NAME__`, `__APP_TITLE__`, `__SHELL_LAYOUT__`, `__PACKAGE_NAME__`, `__FEDERATION_NAME__`,
 `__ROUTE_PATH__`, `__PORT__`, `__SHELL_PORT__`, `__ACCESS__`, `__DIR_NAME__`, `__MOCK_API_URL__`,
 `__MOCK_VENDOR_PORT__`, `__MOCK_VENDOR_URL__`, `__MOCK_VENDOR_CONFIG__` (JSON),

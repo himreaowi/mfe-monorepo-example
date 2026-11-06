@@ -1,0 +1,35 @@
+{
+  "remotes": {
+    "internet_services": {
+      "entry": "http://localhost:3210/mf-manifest.json"
+    },
+    "internet_announcements": {
+      "entry": "http://localhost:3211/mf-manifest.json"
+    },
+    "internet_my_profile": {
+      "entry": "http://localhost:3212/mf-manifest.json"
+    },
+    "internet_payments": {
+      "entry": "http://localhost:3213/mf-manifest.json",
+      "props": {
+        "vendor": {
+          "url": "http://localhost:3292/payments/2.3.1/element.js",
+          "format": "web-component",
+          "tagName": "bright-checkout",
+          "config": {
+            "title": "Pay your dog licence",
+            "description": "Dog licence renewal 2027",
+            "amount": 1500,
+            "currency": "SGD"
+          }
+        }
+      }
+    }
+  },
+  "auth": {
+    "mock": true
+  },
+  "settings": {
+    "apiBaseUrl": "/citizen/api"
+  }
+}

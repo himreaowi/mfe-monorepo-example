@@ -1,0 +1,27 @@
+// compact card in the results grid (`ul` raises specificity over the @org/ui Card)
+ul .card {
+  gap: var(--space-1);
+  padding: var(--space-4);
+  overflow-wrap: anywhere;
+
+  p {
+    margin: 0;
+  }
+}
+
+.name {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.muted {
+  color: var(--color-text-muted);
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: auto;
+  padding-top: var(--space-2);
+}

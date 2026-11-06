@@ -1,0 +1,48 @@
+import type { ComponentPropsWithRef, ReactNode } from 'react';
+import { cx } from '../../utils/cx/cx';
+import styles from './Alert.module.scss';
+
+export type AlertVariant = 'info' | 'success' | 'warning' | 'error';
+
+export type AlertProps = Omit<ComponentPropsWithRef<'div'>, 'title'> & {
+  /** Default `info`. */
+  variant?: AlertVariant;
+  /** Short heading (e.g. `There is a problem`). Recommended: colour alone does not say what kind it is. */
+  title?: ReactNode;
+  /** Render `title` as a heading of this level (fits the page outline), e.g. 2 for an error summary. Default: a paragraph. */
+  headingLevel?: 2 | 3 | 4 | 5 | 6;
+  /**
+   * Announce it when it appears (default true): `role="alert"` (assertive) for `error` and
+   * `warning`, `role="status"` (polite) for `info` and `success`. Set `false` for a message
+   * that is part of the page from the start; pass `role` to override.
+   */
+  live?: boolean;
+};
+
+/** Message box for feedback: info, success, warning or error. */
+export function Alert({
+  variant = 'info',
+  title,
+  headingLevel,
+  live = true,
+  className,
+  children,
+  role,
+  ...rest
+}: AlertProps) {
+  const Title = headingLevel ? (`h${headingLevel}` as const) : 'p';
+  const liveRole =
+    variant === 'error' || variant === 'warning' ? 'alert' : 'status';
+  return (
+    <div
+      {...rest}
+      role={role ?? (live ? liveRole : undefined)}
+      className={cx(styles.alert, styles[variant], className)}
+    >
+      {title !== undefined ? (
+        <Title className={styles.title}>{title}</Title>
+      ) : null}
+      <div className={styles.body}>{children}</div>
+    </div>
+  );
+}

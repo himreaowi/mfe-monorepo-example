@@ -1,0 +1,36 @@
+import { Link } from 'react-router';
+import { APP_TITLE } from '@/core/constants/app';
+import type { RemoteEntry } from '@/core/types/remotes';
+import styles from './Welcome.module.scss';
+
+/** Home page content: what this shell hosts (ported from starter-mfe HostWelcome). */
+export function Welcome({ remotes }: { remotes: RemoteEntry[] }) {
+  return (
+    <section className={styles.welcome} data-testid="shell-welcome">
+      <h1 className={styles.title}>{APP_TITLE}</h1>
+      {remotes.length === 0 ? (
+        <p className={styles.copy} data-testid="no-remotes">
+          No remotes yet. Add one with{' '}
+          <code>pnpm gen:remote internet &lt;name&gt;</code>.
+        </p>
+      ) : (
+        <>
+          <p className={styles.copy}>
+            Pick an app. Each one is a separately built and deployed remote,
+            loaded at runtime from <code>/mfe-manifest.json</code>.
+          </p>
+          <ul className={styles.cards}>
+            {remotes.map((remote) => (
+              <li key={remote.name} className={styles.card}>
+                <Link to={remote.path}>{remote.title}</Link>
+                {remote.access === 'private' ? (
+                  <span className={styles.badge}>sign-in required</span>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </section>
+  );
+}

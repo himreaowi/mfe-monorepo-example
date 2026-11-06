@@ -3,8 +3,10 @@
 A small **mock JSON API per zone** for local development and e2e: `node:http`, in-memory data,
 no dependencies. Apps never hard-code its URL: each shell's `mfe-manifest.dev.json` sets
 `settings.apiBaseUrl`, the shell passes `settings` to every remote as a host prop, and the
-remotes build their HTTP client (`@org/http-client`) from it. Production manifests point
-`apiBaseUrl` at the real API (or the BFF route) instead. Never deploy this package.
+remotes build their HTTP client (`@org/http-client`) from it. In dev `apiBaseUrl` is the shell's
+same-origin `<base>/api` on the zone's dev proxy, which forwards it here by default
+(`API_UPSTREAM` in a `.env` points it at another API); production manifests use the same relative
+path and nginx forwards it to the real API. Never deploy this package.
 
 ```sh
 pnpm --filter @org/mock-api serve:intranet   # http://localhost:3190/api
@@ -27,20 +29,20 @@ internet 3290–3299) and the offset `mfe.tools.mockApi` in the root `package.js
 
 Example domain endpoints (below `/api`; `src/intranet.js`, `src/internet.js`):
 
-| Zone     | Method | Path                      | Used by                     |
-| -------- | ------ | ------------------------- | --------------------------- |
-| intranet | GET    | `/staff?q=&department=`   | staff-directory             |
-| intranet | GET    | `/staff/:id`              | staff-directory             |
-| intranet | GET    | `/leave/balance`          | leave-requests              |
-| intranet | GET    | `/leave/requests`         | leave-requests              |
-| intranet | POST   | `/leave/requests`         | leave-requests (422 errors) |
-| intranet | GET    | `/helpdesk/tickets[/:id]` | it-helpdesk vendor module   |
-| intranet | POST   | `/helpdesk/tickets`       | it-helpdesk vendor module   |
-| internet | GET    | `/services?q=&category=`  | services                    |
-| internet | GET    | `/services/:slug`         | services                    |
-| internet | GET    | `/announcements[/:id]`    | announcements               |
-| internet | GET    | `/profile/me`             | my-profile                  |
-| internet | PUT    | `/profile/me/preferences` | my-profile (`X-CSRF-Token`) |
+| Zone     | Method | Path                      | Used by                                         |
+| -------- | ------ | ------------------------- | ----------------------------------------------- |
+| intranet | GET    | `/staff?q=&department=`   | staff-directory                                 |
+| intranet | GET    | `/staff/:id`              | staff-directory                                 |
+| intranet | GET    | `/leave/balance`          | leave-requests                                  |
+| intranet | GET    | `/leave/requests`         | leave-requests                                  |
+| intranet | POST   | `/leave/requests`         | leave-requests (422 errors; optional `coverId`) |
+| intranet | GET    | `/helpdesk/tickets[/:id]` | it-helpdesk vendor module                       |
+| intranet | POST   | `/helpdesk/tickets`       | it-helpdesk vendor module                       |
+| internet | GET    | `/services?q=&category=`  | services                                        |
+| internet | GET    | `/services/:slug`         | services                                        |
+| internet | GET    | `/announcements[/:id]`    | announcements                                   |
+| internet | GET    | `/profile/me`             | my-profile                                      |
+| internet | PUT    | `/profile/me/preferences` | my-profile (`X-CSRF-Token`)                     |
 
 The template's `/items` resource is kept, so the demo feature of a newly generated remote
 works. The mock has no session: `/profile/me` answers for the `@org/auth` dev mock user and

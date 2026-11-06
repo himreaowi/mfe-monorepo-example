@@ -1,0 +1,39 @@
+import { act, renderHook } from '@testing-library/react';
+import type { ReactNode } from 'react';
+import { DemoProvider, useDemoDispatch, useDemoState } from './DemoContext';
+
+function wrapper({ children }: { children: ReactNode }) {
+  return <DemoProvider>{children}</DemoProvider>;
+}
+
+describe('DemoContext', () => {
+  it('shares state and dispatch below the provider', () => {
+    const { result } = renderHook(
+      () => ({ state: useDemoState(), dispatch: useDemoDispatch() }),
+      { wrapper },
+    );
+    expect(result.current.state.selectedIds).toEqual([]);
+    act(() => result.current.dispatch({ type: 'itemToggled', id: 7 }));
+    expect(result.current.state.selectedIds).toEqual([7]);
+  });
+
+  it('starts from initialState', () => {
+    const { result } = renderHook(() => useDemoState(), {
+      wrapper: ({ children }) => (
+        <DemoProvider initialState={{ selectedIds: [1] }}>{children}</DemoProvider>
+      ),
+    });
+    expect(result.current.selectedIds).toEqual([1]);
+  });
+
+  it('throws a clear error outside <DemoProvider>', () => {
+    jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    expect(() => renderHook(() => useDemoState())).toThrow(
+      /useDemoState\(\) must be used inside <DemoProvider>/,
+    );
+    expect(() => renderHook(() => useDemoDispatch())).toThrow(
+      /useDemoDispatch\(\) must be used inside <DemoProvider>/,
+    );
+    jest.mocked(console.error).mockRestore();
+  });
+});

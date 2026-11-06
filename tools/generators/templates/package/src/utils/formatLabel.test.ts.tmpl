@@ -1,0 +1,11 @@
+import { formatLabel } from './formatLabel';
+
+describe('formatLabel', () => {
+  it('trims and collapses white space', () => {
+    expect(formatLabel('  Jane   Doe \n')).toBe('Jane Doe');
+  });
+
+  it('keeps an already clean label', () => {
+    expect(formatLabel('Jane Doe')).toBe('Jane Doe');
+  });
+});

@@ -71,10 +71,11 @@ export function entry(
 /**
  * @param {{
  *   catalog?: Record<string, string>,
- *   apps?: Record<string, object>,          // 'intranet/staff' → package.json
- *   packages?: Record<string, object>,      // 'ui' → package.json
+ *   apps?: Record<string, object>,          // 'intranet/intranet/staff' → package.json
+ *   packages?: Record<string, object>,      // 'ui' / 'common/identity' → package.json
  *   files?: Record<string, string | object>,
  *   exceptions?: unknown,
+ *   rootMfe?: Record<string, unknown>,      // root package.json "mfe" (zones, tools)
  * }} [o]
  */
 export function makeWorkspace(o = {}) {
@@ -94,7 +95,8 @@ export function makeWorkspace(o = {}) {
     [
       'packages:',
       '  - apps/**',
-      '  - packages/*',
+      '  - packages/platform/*',
+      '  - packages/common/*',
       'catalog:',
       ...Object.entries(catalog).map(([k, v]) => `  '${k}': ${v}`),
       '',
@@ -104,17 +106,23 @@ export function makeWorkspace(o = {}) {
     name: '@org/root',
     private: true,
     devDependencies: { typescript: 'catalog:' },
+    ...(o.rootMfe ? { mfe: o.rootMfe } : {}),
   });
   const packages = o.packages ?? {
     ui: {
       name: '@org/ui',
       version: '0.1.0',
+      nx: { tags: ['type:package'] },
       peerDependencies: { react: '^19.0.0' },
       devDependencies: { react: 'catalog:', typescript: 'catalog:' },
     },
   };
   for (const [dir, pkg] of Object.entries(packages)) {
-    write(`packages/${dir}/package.json`, pkg);
+    // 'ui' → packages/platform/ui; 'common/identity' → packages/common/identity
+    write(
+      `packages/${dir.includes('/') ? dir : `platform/${dir}`}/package.json`,
+      pkg,
+    );
   }
   for (const [dir, pkg] of Object.entries(o.apps ?? {})) {
     write(`apps/${dir}/package.json`, pkg);
@@ -146,38 +154,41 @@ export function cleanupWorkspaces() {
 /** A valid workspace: intranet shell + 2 remotes, internet shell + 1 remote. */
 export function validApps() {
   return {
-    'intranet/shell-intranet': app('shell', { type: 'shell', port: 3100 }),
-    'intranet/staff': app('staff', { port: 3101 }),
-    'intranet/leave': app('leave', { port: 3102, access: 'private' }),
-    'internet/shell-internet': app('shell', {
+    'intranet/intranet/shell': app('shell', { type: 'shell', port: 3101 }),
+    'intranet/intranet/staff': app('staff', { port: 3111 }),
+    'intranet/intranet/leave': app('leave', { port: 3112, access: 'private' }),
+    'internet/internet/shell': app('shell', {
       zone: 'internet',
       type: 'shell',
-      port: 3200,
+      port: 3201,
     }),
-    'internet/services': app('services', { zone: 'internet', port: 3201 }),
+    'internet/internet/services': app('services', {
+      zone: 'internet',
+      port: 3211,
+    }),
   };
 }
 
 export function validRegistries() {
   return {
-    'apps/intranet/shell-intranet/remotes.json': {
+    'apps/intranet/intranet/shell/remotes.json': {
       remotes: [
         entry('intranet', 'staff'),
         entry('intranet', 'leave', 'private'),
       ],
     },
-    'apps/intranet/shell-intranet/mfe-manifest.dev.json': {
+    'apps/intranet/intranet/shell/mfe-manifest.dev.json': {
       remotes: {
-        intranet_staff: { entry: 'http://localhost:3101/mf-manifest.json' },
-        intranet_leave: { entry: 'http://localhost:3102/mf-manifest.json' },
+        intranet_staff: { entry: 'http://localhost:3111/mf-manifest.json' },
+        intranet_leave: { entry: 'http://localhost:3112/mf-manifest.json' },
       },
     },
-    'apps/internet/shell-internet/remotes.json': {
+    'apps/internet/internet/shell/remotes.json': {
       remotes: [entry('internet', 'services')],
     },
-    'apps/internet/shell-internet/mfe-manifest.dev.json': {
+    'apps/internet/internet/shell/mfe-manifest.dev.json': {
       remotes: {
-        internet_services: { entry: 'http://localhost:3201/mf-manifest.json' },
+        internet_services: { entry: 'http://localhost:3211/mf-manifest.json' },
       },
     },
   };
@@ -185,3 +196,24 @@ export function validRegistries() {
 
 /** @param {{ rule: string }[]} issues */
 export const rules = (issues) => issues.map((i) => i.rule).sort();
+
+/**
+ * A code library: `common` → @org/common-<capability>, a zone → @org/<zone>-<capability>.
+ * @param {string} target
+ * @param {string} capability
+ * @param {{ deps?: Record<string, string>, extra?: Record<string, unknown> }} [o]
+ */
+export function lib(target, capability, o = {}) {
+  return {
+    name: `@org/${target}-${capability}`,
+    version: '0.0.0',
+    private: true,
+    exports: { '.': './src/index.ts' },
+    nx: {
+      tags:
+        target === 'common' ? ['type:common'] : [`zone:${target}`, 'type:lib'],
+    },
+    dependencies: { ...(o.deps ?? {}) },
+    ...(o.extra ?? {}),
+  };
+}

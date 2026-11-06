@@ -1,8 +1,8 @@
 import type { RouteObject } from 'react-router';
-import { ShellLayout } from '@/layouts/ShellLayout';
-import { HomePage } from '@/pages/HomePage';
-import { NotFoundPage } from '@/pages/NotFoundPage';
-import { RemotePage } from '@/pages/RemotePage';
+import { ShellLayout } from '@/layouts/ShellLayout/ShellLayout';
+import { HomePage } from '@/pages/HomePage/HomePage';
+import { NotFoundPage } from '@/pages/NotFoundPage/NotFoundPage';
+import { RemotePage } from '@/pages/RemotePage/RemotePage';
 import { remoteMountPath } from '@/core/constants/routePaths';
 import type { RemoteEntry } from '@/core/types/remotes';
 

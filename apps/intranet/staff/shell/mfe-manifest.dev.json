@@ -1,0 +1,28 @@
+{
+  "remotes": {
+    "intranet_staff_directory": {
+      "entry": "http://localhost:3110/mf-manifest.json"
+    },
+    "intranet_leave_requests": {
+      "entry": "http://localhost:3111/mf-manifest.json"
+    },
+    "intranet_it_helpdesk": {
+      "entry": "http://localhost:3112/mf-manifest.json",
+      "props": {
+        "vendor": {
+          "url": "http://localhost:3192/helpdesk/1.0.0/mount.js",
+          "format": "esm",
+          "config": {
+            "apiBaseUrl": "http://localhost:3190/api"
+          }
+        }
+      }
+    }
+  },
+  "auth": {
+    "mock": true
+  },
+  "settings": {
+    "apiBaseUrl": "/api"
+  }
+}

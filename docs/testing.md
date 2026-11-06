@@ -1,12 +1,12 @@
 # Testing
 
-| Layer                 | Tool                                                         | Where                                                                  | Run                                                |
-| --------------------- | ------------------------------------------------------------ | ---------------------------------------------------------------------- | -------------------------------------------------- |
-| Unit / component      | Jest 30 + React Testing Library (jsdom)                      | `src/**/*.test.ts(x)` in every app and React package                   | `pnpm test` (all), `pnpm --filter <pkg> test`      |
-| Node / contract tests | `node --test`                                                | `tools/*`, `packages/rspack-config`, `vendor-kit`, `playwright-config` | part of `pnpm test`                                |
-| End-to-end (per zone) | Playwright (Chromium), desktop + 375 px                      | `apps/<zone>/shell-<zone>/e2e/`                                        | `pnpm e2e`, `pnpm e2e:<zone>`                      |
-| Accessibility         | axe-core (`@axe-core/playwright`), WCAG 2.2 AA, light + dark | `e2e/a11y.spec.ts` in each shell                                       | part of `pnpm e2e`                                 |
-| Static checks         | `pnpm check`, ESLint, `tsc`, Prettier                        | everywhere                                                             | `pnpm lint`, `pnpm typecheck`, `pnpm format:check` |
+| Layer                 | Tool                                                         | Where                                                                            | Run                                                |
+| --------------------- | ------------------------------------------------------------ | -------------------------------------------------------------------------------- | -------------------------------------------------- |
+| Unit / component      | Jest 30 + React Testing Library (jsdom)                      | `src/**/*.test.ts(x)` in every app and React package                             | `pnpm test` (all), `pnpm --filter <pkg> test`      |
+| Node / contract tests | `node --test`                                                | `tools/*`, `packages/platform/webpack-config`, `vendor-kit`, `playwright-config` | part of `pnpm test`                                |
+| End-to-end (per zone) | Playwright (Chromium), desktop + 375 px                      | `apps/<zone>/<name>/shell/e2e/`                                                  | `pnpm e2e`, `pnpm e2e:<zone>`                      |
+| Accessibility         | axe-core (`@axe-core/playwright`), WCAG 2.2 AA, light + dark | `e2e/a11y.spec.ts` in each shell                                                 | part of `pnpm e2e`                                 |
+| Static checks         | `pnpm check`, ESLint, `tsc`, Prettier                        | everywhere                                                                       | `pnpm lint`, `pnpm typecheck`, `pnpm format:check` |
 
 ## Unit tests (Jest + React Testing Library)
 
@@ -30,11 +30,11 @@ several tests of a feature goes to `features/<feature>/__fixtures__/`.
 
 What the generated apps test, as examples to follow:
 
-| App              | Tests                                                                                                                                                                                                                 |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Shell            | routes (home, `/<remote>/*` mounts `<RemoteApp>`, 404) with `@org/mf-runtime` mocked; `RemotePage` (private remote not rendered before sign-in, `user` host prop); nav; startup error; http client                    |
-| Remote           | `EmbeddedApp` below a shell-like splat route (host props, links get the mount path) and `StandaloneApp` (mock host props, own chrome); the exposed module's import graph never reaches global styles or `registerPwa` |
-| External adapter | `ExternalModuleHost` with `<ExternalModule>` stubbed (manifest config, sub-path, theme, minimal user, `onNavigate` through the router, vendor events); `utils/vendorConfig` dev fallback                              |
+| App              | Tests                                                                                                                                                                                                                                                    |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Shell            | routes (home, `/<remote>/*` mounts `<RemoteApp>`, 404) with `@org/mf-runtime` mocked; `RemotePage` (private remote not rendered before sign-in, `user` host prop); nav; startup error; http client                                                       |
+| Remote           | `EmbeddedApp` below a shell-like splat route (host props, links get the mount path) and `StandaloneApp` (mock host props, own chrome); the exposed module's (`apps.tsx`) import graph never reaches global styles or `registerPwa` (`scanExposedModule`) |
+| External adapter | `ExternalModuleHost` with `<ExternalModule>` stubbed (manifest config, sub-path, theme, minimal user, `onNavigate` through the router, vendor events); `utils/vendorConfig` dev fallback                                                                 |
 
 Rules:
 
@@ -56,12 +56,12 @@ jsdom implements no Fetch API: in a plain `jest-environment-jsdom`, `fetch`, `He
 
 Recommended split (the generated remote's `features/demo` does exactly this):
 
-| Layer                     | How to test                                                                                                                          |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `features/*/api/` (pure)  | real `@org/http-client` + a fake fetch: `createFakeFetch` from `@org/jest-config/fetch`; assert URLs, bodies, parsed results, errors |
-| `features/*/hooks/`, UI   | `jest.mock('../api')` (or pass a stubbed client): render states (loading, data, empty, error, retry) without HTTP                    |
-| `services/http.ts`        | base URL resolution (`http.url(apiRoutes…)`), no request                                                                             |
-| Real API / mock API flows | e2e (`tools/mock-api` runs with `pnpm dev:<zone>`)                                                                                   |
+| Layer                     | How to test                                                                                                                                 |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `features/*/api/` (pure)  | real `@org/http-client` + a fake fetch: `createFakeFetch` from `@org/jest-config/fetch`; assert URLs, bodies, parsed results, errors        |
+| `features/*/hooks/`       | `jest.mock('../api/itemsApi')` + `renderHook` inside `HostPropsProvider` (`settings.apiBaseUrl`): loading, data, error, retry, unconfigured |
+| feature components        | props only (pages fetch, components display): render each state from props, assert callbacks; no API mock needed                            |
+| Real API / mock API flows | e2e (`tools/mock-api` runs with `pnpm dev:<zone>`)                                                                                          |
 
 ```ts
 import { createFakeFetch } from '@org/jest-config/fetch';
@@ -94,27 +94,41 @@ or a function of the call (`{ url, method, pathname, query, body, init }`); unkn
 response (for `jest.fn().mockResolvedValue(...)`). A file that needs Node's real `fetch` (rare;
 never against a shared server) can start with the docblock `/** @jest-environment node */`.
 
+**After code moves into a library** (`apps/<zone>/libs/<capability>`), an app test cannot
+`jest.mock` the library's internal modules (`'../api/itemsApi'` no longer exists in the app, and
+the library calls its own copy). Mock at the package boundary with a partial mock, or answer the
+HTTP calls with the fake fetch above:
+
+```ts
+jest.mock('@org/intranet-directory', () => ({
+  ...jest.requireActual('@org/intranet-directory'),
+  getDepartments: jest.fn(), // only works for code in the app that calls it
+}));
+// hooks inside the library call their own getDepartments: use createFakeFetch instead
+globalThis.fetch = createFakeFetch({ 'GET /staff': { body: { items: [] } } });
+```
+
 ## Node and contract tests
 
 Code that runs in Node (configs, CLIs, generators) is tested with `node --test`, not Jest
-(`@rspack/core` is ESM-only, see [toolchain.md](toolchain.md)). These also hold the **contract
+(the webpack configs are plain ESM JavaScript, see [toolchain.md](toolchain.md)). These also hold the **contract
 tests** that keep generated or shared artefacts honest:
 
-| Package                      | Covers                                                                                                                                                                                                                                                                      |
-| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `tools/generators`           | generates both zones into a temp workspace (one shell per starter layout, `top` and `side`), checks files, metadata, registry, dev manifest; `check-apps`/`check-versions` pass                                                                                             |
-| `tools/scripts`              | every guardrail rule with fixture workspaces; `list-apps` (incl. `--affected`); the `deploy/` templates; `validate-manifest`                                                                                                                                                |
-| `packages/rspack-config`     | config shape (singletons, publicPath, HTML entry, CSS extraction in dev and prod, dev CSP, history fallback), real builds (CSS module salting, hashed `.css` per chunk in prod, unhashed `.css` + linked `.css.map` in dev with the same class names, absolute script URLs) |
-| `packages/vendor-kit`        | `mount-contract.d.ts` is up to date with `mf-runtime`; the kit builds and zips                                                                                                                                                                                              |
-| `packages/mf-runtime` (Jest) | the generated manifest validator is up to date with `mfe-manifest.schema.json`; remote CSS is left to the chunk loader (`remoteCssPlugin`)                                                                                                                                  |
-| `packages/playwright-config` | zone loading, config (projects, servers, CI), URL waiting, axe report formatting                                                                                                                                                                                            |
-| `packages/jest-config`       | the fake fetch helpers                                                                                                                                                                                                                                                      |
-| `tools/mock-vendor`          | the mock vendor implements the mount contract (esm, web-component, script), styles via a constructable stylesheet                                                                                                                                                           |
-| `tools/mock-api`             | health, items (list/filter/create, 422), reset, CORS for localhost with credentials, per-zone ports                                                                                                                                                                         |
+| Package                               | Covers                                                                                                                                                                                                                                                                                                                    |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tools/generators`                    | generates both zones into a temp workspace (one shell per starter layout, `top` and `side`), checks files, metadata, registry, dev manifest; `check-apps`/`check-versions` pass                                                                                                                                           |
+| `tools/scripts`                       | every guardrail rule with fixture workspaces; `list-apps` (incl. `--affected`); the `deploy/` templates; `validate-manifest`                                                                                                                                                                                              |
+| `packages/platform/webpack-config`    | config shape (singletons, publicPath, HTML entry, CSS extraction in dev and prod, dev CSP, history fallback), real builds (readable `Component_class__hash` CSS module names salted per app, hashed `.css` per chunk in prod, unhashed `.css` + linked `.css.map` in dev with the same class names, absolute script URLs) |
+| `packages/platform/vendor-kit`        | `mount-contract.d.ts` is up to date with `mf-runtime`; the kit builds and zips                                                                                                                                                                                                                                            |
+| `packages/platform/mf-runtime` (Jest) | the generated manifest validator is up to date with `mfe-manifest.schema.json`; remote CSS is left to the chunk loader (`remoteCssPlugin`)                                                                                                                                                                                |
+| `packages/platform/playwright-config` | zone loading, config (projects, servers, CI), URL waiting, axe report formatting                                                                                                                                                                                                                                          |
+| `packages/platform/jest-config`       | the fake fetch helpers                                                                                                                                                                                                                                                                                                    |
+| `tools/mock-vendor`                   | the mock vendor implements the mount contract (esm, web-component, script), styles via a constructable stylesheet                                                                                                                                                                                                         |
+| `tools/mock-api`                      | health, items (list/filter/create, 422), reset, CORS for localhost with credentials, per-zone ports                                                                                                                                                                                                                       |
 
 ## End-to-end tests (Playwright)
 
-One suite per **zone**, in the zone's shell (`apps/<zone>/shell-<zone>/e2e/`), generated by
+One suite per **zone**, in the zone's shell (`apps/<zone>/<name>/shell/e2e/`), generated by
 `pnpm gen:shell`. It tests the zone the way users see it: the shell with every remote loaded at
 runtime from the dev manifest, plus each remote standalone.
 
@@ -122,12 +136,12 @@ runtime from the dev manifest, plus each remote standalone.
 pnpm e2e                    # every zone, one at a time
 pnpm e2e:intranet           # one zone
 pnpm e2e:internet --project=desktop --grep "WCAG"   # Playwright options pass through
-pnpm --filter @org/shell-intranet e2e e2e/remotes.spec.ts   # one spec
-pnpm --filter @org/shell-intranet exec playwright test --ui # debug UI
+pnpm --filter @org/shell-staff e2e e2e/remotes.spec.ts   # one spec
+pnpm --filter @org/shell-staff exec playwright test --ui # debug UI
 ```
 
-First time on a machine: `pnpm --filter @org/shell-intranet exec playwright install chromium`
-(any shell; the browser is shared). Reports: `apps/<zone>/shell-<zone>/playwright-report/`
+First time on a machine: `pnpm --filter @org/shell-staff exec playwright install chromium`
+(any shell; the browser is shared). Reports: `apps/<zone>/<name>/shell/playwright-report/`
 (`pnpm --filter <shell> exec playwright show-report`), traces of failed tests in `test-results/`.
 
 How it runs (`@org/playwright-config`):
@@ -136,7 +150,7 @@ How it runs (`@org/playwright-config`):
    zone's mock API and, for external adapters, the zone's mock vendor. Locally an already running
    `pnpm dev:<zone>` is reused (fast reruns while you work); CI always starts fresh servers.
 2. Global setup waits until every remote in `mfe-manifest.dev.json`, local vendor bundles and
-   the local API's `<settings.apiBaseUrl>/health` (the mock API) answer. More servers:
+   the API's `<settings.apiBaseUrl>/health` (through the zone proxy: the mock API by default) answer. More servers:
    `createZoneConfig({ shellDir, extraHealthUrls: [...] })`.
 3. Every test runs in two projects: `desktop` (1280×720) and `mobile` (375×812).
 4. Afterwards the dev servers are stopped (SIGTERM). `pnpm dev:<zone>` runs through a small
@@ -229,7 +243,8 @@ method? }`, or a RegExp tested against `"<status> <METHOD> <url>"`. `consoleErro
   are reachable with normal locators.
 - Data: the suite runs against dev servers and mocks (mock sign-in, mock API, mock vendor). Use
   `page.route()` to stub error cases; do not depend on shared test environments.
-- A real BFF or vendor in `mfe-manifest.dev.json` turns the mock-specific checks into skips
+- A real BFF or vendor in the dev manifest (the shell's `package.json` `mfe.devManifest`, then
+  `pnpm dev-manifest`) turns the mock-specific checks into skips
   (`zone.authMock`, `remote.mockVendor`), not failures.
 
 ## Accessibility
@@ -242,6 +257,9 @@ Target: **WCAG 2.2 AA** ([contracts/a11y-wcag.md](contracts/a11y-wcag.md)).
   `checkA11y(page)` fails with one line per failing element (rule, impact, selector, fix).
 - Use `checkA11y(page, { include: ['[data-testid="my-dialog"]'] })` after opening dialogs or
   menus in feature tests: axe only sees what is rendered.
+- Components of `@org/ui`: `pnpm test:ui` runs the same axe tags (WCAG 2.2 AA) against every
+  Storybook story in light and dark, plus screenshot comparisons
+  ([packages/platform/ui/README.md](../packages/platform/ui/README.md#storybook-dev-only)).
 - Do not disable rules to get green. If a rule must be skipped (third-party widget you cannot
   fix), use `exclude`/`disableRules` next to a comment with the ticket.
 - axe finds roughly a third of WCAG issues. Keyboard order, focus visibility, screen reader
@@ -259,12 +277,18 @@ pnpm lint
 pnpm typecheck
 pnpm test
 pnpm build
-pnpm --filter @org/shell-<zone> exec playwright install --with-deps chromium
+pnpm --filter @org/shell-<name> exec playwright install --with-deps chromium
 CI=true pnpm e2e:<zone>       # one job per zone (or pnpm e2e for all, sequentially)
+pnpm --filter @org/ui exec playwright install --with-deps chromium
+CI=true pnpm test:ui          # when packages/platform/ui changed: axe + screenshots of every story
 ```
 
+`pnpm test:ui` skips the screenshot comparison on a platform without committed baselines (only
+`darwin` ones are in the repo); generate Linux baselines once in the CI image with
+`pnpm test:ui:update` and commit them to make it a visual gate in CI too.
+
 - `CI=true`: fresh dev servers, 2 retries (a test that passes on retry is reported as flaky),
-  `forbidOnly`, JUnit at `apps/<zone>/shell-<zone>/test-results/junit.xml` (publish it as test
+  `forbidOnly`, JUnit at `apps/<zone>/<name>/shell/test-results/junit.xml` (publish it as test
   results) and the HTML report in `playwright-report/` (publish as an artefact, with
   `test-results/` for traces).
 - Cache the Playwright browser folder (`~/.cache/ms-playwright` on Linux, keyed by the

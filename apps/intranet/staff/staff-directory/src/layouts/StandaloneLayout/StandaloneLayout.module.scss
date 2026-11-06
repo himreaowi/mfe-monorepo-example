@@ -1,0 +1,40 @@
+// Standalone chrome (dev only). The header wraps onto more rows on narrow screens instead of
+// collapsing behind a Menu button: the shell's layout is the real chrome.
+.host {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-4);
+  align-items: center;
+  padding: var(--space-3) var(--space-4);
+  color: var(--color-text);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.brand {
+  flex: 1 1 12rem;
+  font-weight: 700;
+  font-size: 1.125rem;
+}
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.main {
+  flex: 1;
+  padding: var(--space-4);
+
+  /* target of the skip link (tabindex="-1"), not a control: no focus ring around the page */
+  &:focus {
+    outline: none;
+  }
+}

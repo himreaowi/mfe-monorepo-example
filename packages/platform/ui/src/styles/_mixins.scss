@@ -1,0 +1,45 @@
+// Shared Sass mixins of the @org/ui components (no CSS output on their own).
+// `@use '../../styles/mixins' as *;` from a component's .module.scss.
+
+/// Visible keyboard focus (WCAG 2.4.7 / 2.4.11): a 3px accent ring outside the element.
+@mixin focus-ring($offset: 2px) {
+  &:focus-visible {
+    outline: 3px solid var(--color-accent);
+    outline-offset: $offset;
+  }
+}
+
+/// Hidden on screen, still read by screen readers.
+@mixin visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  border: 0;
+  clip-path: inset(50%);
+}
+
+/// Native form control frame (input, select, textarea) shared by the field components.
+@mixin control {
+  min-height: 2.5rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-text-muted);
+  border-radius: var(--radius);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+
+  @include focus-ring;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  &[aria-invalid='true'] {
+    border: 2px solid var(--color-danger);
+  }
+}
