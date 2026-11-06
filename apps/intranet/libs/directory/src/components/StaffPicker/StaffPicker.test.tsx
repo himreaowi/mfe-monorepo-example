@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
 import { renderWithQuery } from '@org/query/test';
@@ -114,6 +114,19 @@ describe('StaffPicker', () => {
       screen.getByRole('textbox', { name: /Covering colleague/ }),
     ).toHaveValue('Ben Tan');
     expect(screen.getByText('Analyst, Technology')).toBeInTheDocument();
+  });
+
+  it('does not list the previous search while the new one loads', async () => {
+    const user = renderPicker({ onSelect: jest.fn() });
+    const input = screen.getByRole('combobox');
+    await user.type(input, 'a');
+    expect(await screen.findAllByRole('option')).toHaveLength(2);
+    // the next search never answers: the kept previous list must not pass for its result
+    jest.mocked(searchStaff).mockReturnValue(new Promise(() => {}));
+    await user.type(input, 'n');
+    await waitFor(() => expect(searchStaff).toHaveBeenCalledTimes(2));
+    expect(screen.queryAllByRole('option')).toHaveLength(0);
+    expect(screen.getByRole('status')).toHaveTextContent('Searching…');
   });
 
   it('chooses with the mouse', async () => {

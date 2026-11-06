@@ -61,12 +61,8 @@ test.describe('My profile: the cache belongs to the signed-in user', () => {
     'needs "auth": { "mock": true } (the shell\'s package.json mfe.devManifest → mfe-manifest.dev.json)',
   );
 
-  // FIXME (template gap, reported): signing out unmounts the private remote, so its
-  // QueryProvider never sees `user` become null; signing in as the SAME user keeps the remote's
-  // module-level cache (fresh for 30 s), so no new request is made. Another user id would clear
-  // it. Needs a sign-out signal that reaches an unmounted remote (e.g. clear in createRemoteApp
-  // when the session ends); enable this test then.
-  test.fixme('signing out drops the cached profile: signing in loads it again', async ({
+  // The remote unmounts on sign-out and its query cache goes with it (QueryClient per mount).
+  test('signing out drops the cached profile: signing in loads it again', async ({
     page,
   }) => {
     let reads = 0;

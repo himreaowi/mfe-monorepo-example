@@ -1,16 +1,8 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from '@org/playwright-config/test';
-import {
-  expectRemoteRendered,
-  openNav,
-  openRemote,
-  remotePage,
-  settle,
-  zone,
-} from './helpers';
+import { openRemote, remotePage, settle, zone } from './helpers';
 
 const remote = zone.remotes.find((r) => r.name === 'leave-requests')!;
-const directory = zone.remotes.find((r) => r.name === 'staff-directory')!;
 
 /** The page's GET requests for the leave data (balance and list), counted as they happen. */
 function countLeaveReads(page: Page): () => number {
@@ -110,7 +102,7 @@ test.describe('Leave requests', () => {
     );
   });
 
-  test('leaving the page and coming back within 30 s loads nothing again', async ({
+  test('moving inside the remote and back within 30 s loads nothing again', async ({
     page,
   }) => {
     const reads = countLeaveReads(page);
@@ -121,21 +113,16 @@ test.describe('Leave requests', () => {
     const readsAfterFirstVisit = reads();
     expect(readsAfterFirstVisit).toBeGreaterThanOrEqual(2);
 
-    // another remote (in the app: no page load), then back to Leave
-    await (
-      await openNav(page)
-    )
-      .getByRole('link', { name: directory.title })
-      .click();
-    await expectRemoteRendered(page, directory);
-    await (
-      await openNav(page)
-    )
-      .getByRole('link', { name: remote.title })
-      .click();
-    await expectRemoteRendered(page, remote);
+    // overview → new request form → back (client-side, the remote stays mounted)
+    await container.getByRole('link', { name: 'Request leave' }).click();
+    await expect(page).toHaveURL(/\/leave-requests\/new$/);
+    await expect(
+      container.getByRole('option', { name: 'No-pay leave' }),
+    ).toBeAttached();
+    await container.getByRole('link', { name: 'Cancel' }).click();
+    await expect(page).toHaveURL(/\/leave-requests$/);
 
-    // shown at once from the cache, no second request for the page's data
+    // shown at once from the cache: no second request for the page's data
     await expect(container.getByTestId('leave-request').first()).toBeVisible();
     await expect(container.getByTestId('leave-balance')).toHaveCount(4);
     await settle(page);
