@@ -69,12 +69,6 @@ describe('useApiClient 401 handling', () => {
       .spyOn(globalThis, 'fetch')
       .mockImplementation(async () => new Response(null, { status: 401 }));
 
-  beforeEach(() => {
-    // jsdom has no fetch of its own (@org/jest-config)
-    globalThis.fetch ??= (() => {
-      throw new Error('not mocked');
-    }) as typeof fetch;
-  });
   afterEach(() => jest.restoreAllMocks());
 
   it('remote: a 401 calls host prop onUnauthorized, the latest one', async () => {
@@ -88,7 +82,7 @@ describe('useApiClient 401 handling', () => {
           value={{
             embedded: true,
             basePath: '/x',
-            settings: { apiBaseUrl: '/api' },
+            settings: { apiBaseUrl: 'http://api.test/api' },
             onUnauthorized,
           }}
         >
@@ -110,7 +104,7 @@ describe('useApiClient 401 handling', () => {
     const onUnauthorized = jest.fn();
     const manifest = {
       remotes: {},
-      settings: { apiBaseUrl: '/api' },
+      settings: { apiBaseUrl: 'http://api.test/api' },
     } as MfeManifest;
     const { result } = renderHook(() => useShellApiClient(), {
       wrapper: ({ children }: { children: ReactNode }) => (

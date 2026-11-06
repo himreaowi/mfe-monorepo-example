@@ -1,4 +1,4 @@
-import axios, { AxiosError, type AxiosResponse } from 'axios';
+import axios, { AxiosError } from 'axios';
 
 /**
  * Ported from starter-mfe services/httpClient.ts, on axios (fetch adapter). axios is private to
@@ -24,6 +24,11 @@ export type HttpRequestOptions = {
   timeout?: number;
 };
 
+export type HttpRequestInit = Pick<
+  RequestInit,
+  'method' | 'headers' | 'signal' | 'credentials'
+> & { body?: string | FormData | URLSearchParams | Blob };
+
 export class HttpClientError extends Error {
   status: number;
   statusText: string;
@@ -33,37 +38,31 @@ export class HttpClientError extends Error {
    * 422 validation error. `undefined` when the body is empty or not JSON.
    */
   body: unknown;
-  /** The request took too long and was cancelled (`status` is 0: there was no response). */
-  timedOut: boolean;
+  /** Set when no response came back; `status` is then 0. */
+  failure?: 'network' | 'timeout';
 
   constructor(
     response: Pick<Response, 'status' | 'statusText' | 'url'>,
     body?: unknown,
-    timeoutMs?: number,
+    failure?: 'network' | 'timeout',
   ) {
     super(
-      timeoutMs === undefined
-        ? `${response.status} ${response.statusText || 'HTTP request failed'}`.trim()
-        : `Request timed out after ${timeoutMs} ms: ${response.url}`,
+      failure
+        ? `Request failed (${failure}): ${response.url}`
+        : `${response.status} ${response.statusText || 'HTTP request failed'}`.trim(),
     );
     this.name = 'HttpClientError';
     this.status = response.status;
     this.statusText = response.statusText;
     this.url = response.url;
     this.body = body;
-    this.timedOut = timeoutMs !== undefined;
+    this.failure = failure;
   }
 }
 
-/**
- * True when no usable response came back: the connection failed (fetch rejects with a
- * `TypeError`) or the request timed out. Aborted requests, HTTP errors and bad bodies are not
- * network errors.
- */
+/** True when no response came back: the connection failed or the request timed out. */
 export function isNetworkError(error: unknown): boolean {
-  if (error instanceof HttpClientError) return error.timedOut;
-  // by name: a TypeError may come from another realm (tests)
-  return (error as Error | null | undefined)?.name === 'TypeError';
+  return error instanceof HttpClientError && error.failure !== undefined;
 }
 
 export type HttpClientConfig = {
@@ -77,9 +76,9 @@ export type HttpClientConfig = {
   credentials?: RequestCredentials;
   /** Headers added to every request. */
   headers?: HeadersInit;
-  /** Custom fetch (tests, instrumentation). Default: global fetch. */
+  /** Custom fetch (tests, instrumentation); it receives a `Request`. Default: global fetch. */
   fetch?: typeof fetch;
-  /** Time a request may take, in ms (0 = none). Default 30 s; then `HttpClientError.timedOut`. */
+  /** Time a request may take, in ms (0 = none). Default 30 s. */
   timeout?: number;
   /**
    * Called on every 401 response, before the `HttpClientError` is thrown. Use it to re-check the
@@ -91,14 +90,9 @@ export type HttpClientConfig = {
 export interface HttpClient {
   /** Resolve an apiRoutes path (or an absolute URL, returned unchanged) against the base URL. */
   url(path: string): string;
-  request(
-    path: string,
-    init?: RequestInit,
-    options?: HttpRequestOptions,
-  ): Promise<Response>;
   requestJson<T>(
     path: string,
-    init?: RequestInit,
+    init?: HttpRequestInit,
     options?: HttpRequestOptions,
   ): Promise<T>;
   getJson<T>(path: string, options?: HttpRequestOptions): Promise<T>;
@@ -129,132 +123,74 @@ export function joinUrl(base: string, path: string): string {
   return `${trimmedBase.replace(/\/+$/, '')}${normalizedPath}`;
 }
 
-/** The error response's body as JSON, or `undefined` (empty, not JSON, or unreadable). */
-async function readErrorBody(response: Response): Promise<unknown> {
+/** Bodies stay text: the helpers below parse them. XSRF is off: our token comes from the session. */
+const transport = axios.create({
+  adapter: 'fetch',
+  responseType: 'text',
+  transformResponse: [(data: string) => data],
+  withXSRFToken: false,
+});
+
+/** Headers axios would add by itself (`false` keeps them out); they could trigger a preflight. */
+const NO_AUTOMATIC_HEADERS = { 'Content-Type': false, 'User-Agent': false };
+
+const WITH_CREDENTIALS = {
+  include: true,
+  omit: false,
+  'same-origin': undefined,
+};
+
+/** The error response's body as JSON, or `undefined` (empty or not JSON). */
+function parseErrorBody(raw: string): unknown {
   try {
-    const raw = await response.text();
     return raw ? (JSON.parse(raw) as unknown) : undefined;
   } catch {
     return undefined;
   }
 }
 
-async function parseJsonBody<T>(response: Response): Promise<T> {
-  if (response.status === 204) {
-    return undefined as T;
-  }
-  const raw = await response.text();
-  if (!raw) {
-    return undefined as T;
-  }
+function parseJsonBody<T>(raw: string, url: string): T {
+  if (!raw) return undefined as T;
   try {
     return JSON.parse(raw) as T;
   } catch {
     const preview = raw.slice(0, 80).replace(/\s+/g, ' ');
-    throw new Error(`Expected JSON from ${response.url}, got: ${preview}`);
+    throw new Error(`Expected JSON from ${url}, got: ${preview}`);
   }
 }
 
-function jsonBody(body: unknown): Pick<RequestInit, 'body' | 'headers'> {
+/** What callers get instead of an AxiosError. An abort stays the AbortError of its signal. */
+function toClientError(
+  error: unknown,
+  url: string,
+  signal?: AbortSignal | null,
+): unknown {
+  if (signal?.aborted) return signal.reason;
+  if (!(error instanceof AxiosError)) return error;
+  const { code, response } = error;
+  if (response) {
+    const { status, statusText, data } = response;
+    return new HttpClientError(
+      { status, statusText, url },
+      parseErrorBody(data as string),
+    );
+  }
+  const noResponse = { status: 0, statusText: '', url };
+  if (code === AxiosError.ETIMEDOUT) {
+    return new HttpClientError(noResponse, undefined, 'timeout');
+  }
+  if (code === AxiosError.ERR_NETWORK) {
+    return new HttpClientError(noResponse, undefined, 'network');
+  }
+  return error;
+}
+
+function jsonBody(body: unknown): HttpRequestInit {
   if (body === undefined) return {};
   return {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   };
-}
-
-type FetchCallInit = RequestInit & { customFetch?: typeof fetch };
-
-/**
- * Stands in for `Request` in axios's fetch adapter, so a request stays a plain
- * `fetch(url, init)` call: a real `Request` rejects root-relative URLs outside a browser
- * (unit tests, `baseUrl: '/api'`) and would hide `init` from a custom fetch. The `credentials`
- * getter matters: the adapter only passes `credentials` on when the class has that property.
- */
-class FetchCall {
-  readonly url: string;
-  readonly init: FetchCallInit;
-
-  constructor(url: string, init: FetchCallInit) {
-    this.url = url;
-    this.init = init;
-  }
-
-  get credentials() {
-    return this.init.credentials;
-  }
-}
-
-function runFetchCall({ url, init: { customFetch, ...init } }: FetchCall) {
-  const doFetch = customFetch ?? fetch;
-  return doFetch(url, { ...init, headers: new Headers(init.headers) });
-}
-
-/**
- * One instance for every client. Request and response bodies pass through untouched (the
- * helpers below do the JSON), every status resolves (`request()` maps it), and axios's XSRF
- * cookie handling is off: the CSRF token comes from the session and is passed as a header.
- * `env` must stay one object with stable members: the adapter caches a factory per member.
- */
-const transport = axios.create({
-  adapter: 'fetch',
-  env: { Request: FetchCall, fetch: runFetchCall } as never,
-  responseType: 'arraybuffer',
-  transformRequest: [],
-  transformResponse: [],
-  validateStatus: () => true,
-  withXSRFToken: false,
-  xsrfCookieName: '',
-  xsrfHeaderName: '',
-});
-
-/**
- * Headers axios would add on its own. `false` keeps them out (an extra User-Agent or Content-Type
- * would change what the browser sends, and may trigger a CORS preflight). The caller's win.
- */
-const NO_AXIOS_HEADERS = {
-  Accept: false,
-  'Content-Type': false,
-  'User-Agent': false,
-};
-
-/** The axios result as a fetch `Response`: the type `request()` has always returned. */
-function toResponse(result: AxiosResponse<ArrayBuffer>, url: string): Response {
-  const response = new Response(
-    // a 204 or 304 must have a null body
-    result.data.byteLength > 0 ? result.data : null,
-    {
-      status: result.status,
-      statusText: result.statusText,
-      headers: result.headers as Record<string, string>,
-    },
-  );
-  Object.defineProperty(response, 'url', { value: url });
-  return response;
-}
-
-/** What callers see instead of an AxiosError: the same errors `fetch` gave them. */
-function toFetchError(
-  error: unknown,
-  url: string,
-  timeoutMs: number,
-  signal?: AbortSignal | null,
-): unknown {
-  if (signal?.aborted) return signal.reason;
-  if (!(error instanceof AxiosError)) return error;
-  if (error.code === AxiosError.ETIMEDOUT) {
-    return new HttpClientError(
-      { status: 0, statusText: 'Timeout', url },
-      undefined,
-      timeoutMs,
-    );
-  }
-  const { cause } = error;
-  if (error.code === AxiosError.ERR_NETWORK && !(cause instanceof TypeError)) {
-    // Node puts the socket error here; browsers have the TypeError of fetch
-    return new TypeError(error.message, { cause });
-  }
-  return cause ?? error;
 }
 
 export function createHttpClient(config: HttpClientConfig): HttpClient {
@@ -265,61 +201,60 @@ export function createHttpClient(config: HttpClientConfig): HttpClient {
 
   const url = (path: string) => joinUrl(getBase(), path);
 
-  const request: HttpClient['request'] = async (
-    path,
-    init = {},
-    options = {},
+  const send = async (
+    path: string,
+    init: HttpRequestInit = {},
+    options: HttpRequestOptions = {},
   ) => {
-    const headers = new Headers(config.headers);
-    new Headers(init.headers).forEach((value, key) => headers.set(key, value));
-    new Headers(options.headers).forEach((value, key) =>
-      headers.set(key, value),
-    );
-    const { body, method, signal, credentials, ...fetchOptions } = init;
     const target = url(path);
-    const abortSignal = options.signal ?? signal;
-    const timeout = options.timeout ?? config.timeout ?? DEFAULT_TIMEOUT_MS;
-    let result: AxiosResponse<ArrayBuffer>;
-    try {
-      result = await transport.request({
-        url: target,
-        method: method ?? 'GET',
-        data: body,
-        headers: { ...NO_AXIOS_HEADERS, ...Object.fromEntries(headers) },
-        signal: abortSignal ?? undefined,
-        timeout,
-        // a string goes to fetch as `credentials`; axios's boolean type does not know that
-        withCredentials: (options.credentials ??
-          credentials ??
-          config.credentials ??
-          'same-origin') as unknown as boolean,
-        fetchOptions: { ...fetchOptions, customFetch: config.fetch } as never,
-      });
-    } catch (error) {
-      throw toFetchError(error, target, timeout, abortSignal);
+    const signal = options.signal ?? init.signal;
+    const headers = new Headers(config.headers);
+    for (const extra of [init.headers, options.headers]) {
+      new Headers(extra).forEach((value, key) => headers.set(key, value));
     }
-    const response = toResponse(result, target);
-    if (response.ok) return response;
-    const error = new HttpClientError(response, await readErrorBody(response));
-    if (error.status === 401) config.onUnauthorized?.(error);
-    throw error;
+    const credentials =
+      options.credentials ??
+      init.credentials ??
+      config.credentials ??
+      'same-origin';
+    try {
+      const response = await transport.request<string>({
+        url: target,
+        method: init.method,
+        data: init.body,
+        headers: { ...NO_AUTOMATIC_HEADERS, ...Object.fromEntries(headers) },
+        signal: signal ?? undefined,
+        timeout: options.timeout ?? config.timeout ?? DEFAULT_TIMEOUT_MS,
+        withCredentials: WITH_CREDENTIALS[credentials],
+        env: config.fetch ? { fetch: config.fetch } : undefined,
+      });
+      return { raw: response.data, url: target };
+    } catch (error) {
+      const failure = toClientError(error, target, signal);
+      if (failure instanceof HttpClientError && failure.status === 401) {
+        config.onUnauthorized?.(failure);
+      }
+      throw failure;
+    }
   };
 
   const requestJson: HttpClient['requestJson'] = async <T>(
     path: string,
-    init?: RequestInit,
+    init?: HttpRequestInit,
     options?: HttpRequestOptions,
-  ) => parseJsonBody<T>(await request(path, init, options));
+  ) => {
+    const { raw, url: target } = await send(path, init, options);
+    return parseJsonBody<T>(raw, target);
+  };
 
   return {
     url,
-    request,
     requestJson,
     getJson: (path, options) => requestJson(path, {}, options),
     postJson: (path, body, options) =>
       requestJson(path, { method: 'POST', ...jsonBody(body) }, options),
     post: async (path, body, options) => {
-      await request(path, { method: 'POST', ...jsonBody(body) }, options);
+      await send(path, { method: 'POST', ...jsonBody(body) }, options);
     },
   };
 }

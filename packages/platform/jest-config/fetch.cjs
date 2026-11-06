@@ -31,6 +31,23 @@ function parseBody(body) {
   }
 }
 
+/** @param {unknown} input @returns {input is Request} */
+function isRequest(input) {
+  return typeof input === 'object' && input !== null && 'method' in input;
+}
+
+/** @param {Request} request @returns {Promise<RequestInit>} */
+async function toInit(request) {
+  const body = await request.clone().text();
+  return {
+    method: request.method,
+    headers: request.headers,
+    body: body || undefined,
+    credentials: request.credentials,
+    signal: request.signal,
+  };
+}
+
 /**
  * A `fetch` that answers from a route table and records every call.
  *
@@ -50,8 +67,10 @@ function createFakeFetch(routes = {}) {
   /** @type {Array<{ url: string, method: string, pathname: string, body: unknown, init: RequestInit }>} */
   const calls = [];
   /** @param {string | URL | Request} input @param {RequestInit} [init] */
-  async function fakeFetch(input, init = {}) {
+  async function fakeFetch(input, requestInit = {}) {
     const url = typeof input === 'string' ? input : String(input.url ?? input);
+    // @org/http-client (axios) calls fetch(request); other code fetch(url, init)
+    const init = isRequest(input) ? await toInit(input) : requestInit;
     const method = String(init.method ?? 'GET').toUpperCase();
     const parsed = new URL(url, 'http://localhost');
     const call = {

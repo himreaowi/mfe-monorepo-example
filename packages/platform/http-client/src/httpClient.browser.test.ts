@@ -12,11 +12,14 @@ describe('createHttpClient in a browser', () => {
     const fetchMock = jest
       .fn()
       .mockResolvedValue(new Response('{"ok":true}', { status: 200 }));
-    const http = createHttpClient({ baseUrl: '/api', fetch: fetchMock });
+    const http = createHttpClient({
+      baseUrl: `${location.origin}/api`, // same origin: where axios would add the header
+      fetch: fetchMock,
+    });
     await expect(
       http.postJson('/x', {}, { headers: { 'X-CSRF-Token': 'from-session' } }),
     ).resolves.toEqual({ ok: true });
-    const headers = fetchMock.mock.calls[0][1].headers as Headers;
+    const { headers } = fetchMock.mock.calls[0][0] as Request;
     expect(headers.has('x-xsrf-token')).toBe(false);
     expect(headers.get('x-csrf-token')).toBe('from-session');
   });
