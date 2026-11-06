@@ -62,3 +62,69 @@ describe('useApiClient (shell)', () => {
     expect(result.current).toBeUndefined();
   });
 });
+
+describe('useApiClient 401 handling', () => {
+  const unauthorized = () =>
+    jest
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async () => new Response(null, { status: 401 }));
+
+  beforeEach(() => {
+    // jsdom has no fetch of its own (@org/jest-config)
+    globalThis.fetch ??= (() => {
+      throw new Error('not mocked');
+    }) as typeof fetch;
+  });
+  afterEach(() => jest.restoreAllMocks());
+
+  it('remote: a 401 calls host prop onUnauthorized, the latest one', async () => {
+    unauthorized();
+    const first = jest.fn();
+    const second = jest.fn();
+    let onUnauthorized = first;
+    const { result, rerender } = renderHook(() => useRemoteApiClient(), {
+      wrapper: ({ children }: { children: ReactNode }) => (
+        <HostPropsProvider
+          value={{
+            embedded: true,
+            basePath: '/x',
+            settings: { apiBaseUrl: '/api' },
+            onUnauthorized,
+          }}
+        >
+          {children}
+        </HostPropsProvider>
+      ),
+    });
+    const client = result.current;
+    onUnauthorized = second;
+    rerender();
+    expect(result.current).toBe(client);
+    await expect(client?.getJson('/me')).rejects.toMatchObject({ status: 401 });
+    expect(first).not.toHaveBeenCalled();
+    expect(second).toHaveBeenCalledTimes(1);
+  });
+
+  it('shell: a 401 calls onUnauthorized of the manifest provider', async () => {
+    unauthorized();
+    const onUnauthorized = jest.fn();
+    const manifest = {
+      remotes: {},
+      settings: { apiBaseUrl: '/api' },
+    } as MfeManifest;
+    const { result } = renderHook(() => useShellApiClient(), {
+      wrapper: ({ children }: { children: ReactNode }) => (
+        <MfeManifestProvider
+          manifest={manifest}
+          onUnauthorized={onUnauthorized}
+        >
+          {children}
+        </MfeManifestProvider>
+      ),
+    });
+    await expect(result.current?.getJson('/me')).rejects.toMatchObject({
+      status: 401,
+    });
+    expect(onUnauthorized).toHaveBeenCalledTimes(1);
+  });
+});

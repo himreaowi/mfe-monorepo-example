@@ -100,7 +100,46 @@ function installedVersion(rootDir, pkg) {
 }
 
 /**
- * MF `shared` config for the tier-1 singletons the app has installed: exact
+ * Like `installedVersion`, also through the app's @org/* packages: a tier-1 library such as axios
+ * is a dependency of @org/http-client only, and the app bundles that package.
+ * @param {string} rootDir
+ * @param {string} pkg
+ * @returns {string | undefined}
+ */
+function reachableVersion(rootDir, pkg) {
+  const seen = new Set([rootDir]);
+  /** @type {string[]} */
+  const queue = [rootDir];
+  while (queue.length > 0) {
+    const dir = /** @type {string} */ (queue.shift());
+    const version = installedVersion(dir, pkg);
+    if (version) return version;
+    const file = path.join(dir, 'package.json');
+    if (!fs.existsSync(file)) continue;
+    const json = JSON.parse(fs.readFileSync(file, 'utf8'));
+    const names = Object.keys({
+      ...json.dependencies,
+      // the app's own tooling is not bundled, but its test fixtures are
+      ...(dir === rootDir ? json.devDependencies : {}),
+    }).filter((name) => name.startsWith('@org/'));
+    const req = createRequire(path.join(dir, 'package.json'));
+    for (const name of names) {
+      let next;
+      try {
+        next = path.dirname(fs.realpathSync(req.resolve(`${name}/package.json`)));
+      } catch {
+        continue;
+      }
+      if (seen.has(next)) continue;
+      seen.add(next);
+      queue.push(next);
+    }
+  }
+  return undefined;
+}
+
+/**
+ * MF `shared` config for the tier-1 singletons the app can reach: exact
  * `requiredVersion`, `singleton`, `strictVersion` (a mismatch fails loudly at load time and the
  * host shows RemoteFallback instead of running two Reacts).
  * @param {string} rootDir
@@ -111,7 +150,7 @@ function createSharedConfig(rootDir, opts = {}) {
   /** @type {SharedConfig} */
   const shared = {};
   for (const pkg of TIER1_SINGLETONS) {
-    const version = installedVersion(rootDir, pkg);
+    const version = reachableVersion(rootDir, pkg);
     if (!version) {
       opts.warn?.(
         `[@org/webpack-config] tier-1 package "${pkg}" is not a dependency of ${rootDir}; it is not shared.`,

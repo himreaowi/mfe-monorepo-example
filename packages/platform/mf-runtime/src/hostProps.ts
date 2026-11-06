@@ -30,6 +30,11 @@ export type HostProps = {
   user?: HostUser | null;
   /** `settings` from mfe-manifest.json (e.g. `apiBaseUrl`). */
   settings?: Record<string, unknown>;
+  /**
+   * An API call answered 401: the shell re-checks the session (`useAuth().refresh`), so an expired
+   * session becomes `user: null`. `useApiClient()` calls it.
+   */
+  onUnauthorized?: () => void;
   /** Per-remote `props` from mfe-manifest.json and props set by the shell. */
   [key: string]: unknown;
 };

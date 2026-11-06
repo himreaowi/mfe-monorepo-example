@@ -10,6 +10,7 @@ import {
   useLocation,
 } from 'react-router';
 import { THEME_OWNER_ATTRIBUTE } from '@org/design-tokens';
+import { useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { ThemeProvider, ThemeToggle, useTheme } from '@org/ui';
 import { createRemoteApp } from './createRemoteApp';
 import { useHostProps, useRemotePath } from './HostPropsContext';
@@ -214,6 +215,80 @@ describe('createRemoteApp', () => {
       window.history.replaceState(null, '', '/');
       render(<single.StandaloneApp />);
       expect(screen.getByTestId('ctx')).toHaveTextContent('inner<none>');
+    });
+  });
+
+  describe('query client', () => {
+    /** Writes to the cache on first sight, shows what the cache holds. */
+    function CachePage({ seed }: { seed?: string }) {
+      const client = useQueryClient();
+      if (seed) client.setQueryData(['k'], seed);
+      return <p data-testid="cached">{String(client.getQueryData(['k']))}</p>;
+    }
+
+    function queryApp(seed?: string) {
+      return createRemoteApp({
+        routes: [{ index: true, element: <CachePage seed={seed} /> }],
+      });
+    }
+
+    function embedded(
+      App: ReturnType<typeof queryApp>['EmbeddedApp'],
+      user: { id: string } | null,
+    ) {
+      return (
+        <MemoryRouter>
+          <App embedded basePath="/" user={user} />
+        </MemoryRouter>
+      );
+    }
+
+    it('embedded: one client per remote, the cache survives leaving and returning', () => {
+      const first = createRemoteApp({
+        routes: [
+          { path: 'seed', element: <CachePage seed="kept" /> },
+          { index: true, element: <CachePage /> },
+        ],
+      });
+      const shell = (path: string) => (
+        <MemoryRouter initialEntries={[path]}>
+          <first.EmbeddedApp embedded basePath="/" user={{ id: 'u1' }} />
+        </MemoryRouter>
+      );
+      const visit = render(shell('/seed'));
+      expect(screen.getByTestId('cached')).toHaveTextContent('kept');
+      visit.unmount();
+      render(shell('/'));
+      expect(screen.getByTestId('cached')).toHaveTextContent('kept');
+    });
+
+    it('two remotes have separate caches', () => {
+      const one = queryApp('one');
+      const other = queryApp();
+      render(embedded(one.EmbeddedApp, null)).unmount();
+      render(embedded(other.EmbeddedApp, null));
+      expect(screen.getByTestId('cached')).toHaveTextContent('undefined');
+    });
+
+    it('clears the cache when the host user changes', () => {
+      let client: QueryClient | undefined;
+      const app = createRemoteApp({
+        routes: [{ index: true, element: <CachePage seed="private" /> }],
+        providers: ({ children }) => {
+          client = useQueryClient();
+          return children;
+        },
+      });
+      const { rerender } = render(embedded(app.EmbeddedApp, { id: 'ada' }));
+      expect(client?.getQueryData(['k'])).toBe('private');
+      rerender(embedded(app.EmbeddedApp, null));
+      expect(client?.getQueryData(['k'])).toBeUndefined();
+    });
+
+    it('standalone: providers and routes have a client too', () => {
+      const app = queryApp('standalone');
+      render(<app.StandaloneApp />);
+      expect(screen.getByTestId('cached')).toHaveTextContent('standalone');
     });
   });
 });

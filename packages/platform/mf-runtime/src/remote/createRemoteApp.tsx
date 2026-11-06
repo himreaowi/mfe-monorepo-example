@@ -5,6 +5,7 @@ import {
   useRoutes,
   type RouteObject,
 } from 'react-router';
+import { createQueryClient, QueryProvider } from '@org/query';
 import { ThemeProvider } from '@org/ui';
 import { normalizeBasePath, type HostProps } from '../hostProps';
 import { HostPropsProvider } from './HostPropsContext';
@@ -62,10 +63,14 @@ export type RemoteAppParts = {
  *   @org/ui) or follows the shell's `<html>` theme. It never takes over the document theme.
  * - provides `HostProps` via `useHostProps()`.
  * - wraps the routes in `providers` (app-level state), inside the router.
+ * - wraps them in one QueryClient for this remote (TanStack Query, inside the host props). It
+ *   lives as long as the module, so the cache survives leaving and returning to the remote;
+ *   `QueryProvider` clears it when host prop `user` changes identity.
  * - does not import global styles and does not register a service worker.
  *
  * Standalone: own `ThemeProvider` (root), own `BrowserRouter`, mock host props
- * (`embedded: false`, `basePath: '/'`), `providers` around the optional `StandaloneLayout`.
+ * (`embedded: false`, `basePath: '/'`), the same QueryClient, `providers` around the optional
+ * `StandaloneLayout`.
  */
 export function createRemoteApp({
   routes,
@@ -74,6 +79,7 @@ export function createRemoteApp({
   providers = [],
 }: CreateRemoteAppOptions): RemoteAppParts {
   const providerList = Array.isArray(providers) ? providers : [providers];
+  const queryClient = createQueryClient();
   function RemoteRoutes() {
     return useRoutes(routes);
   }
@@ -88,7 +94,9 @@ export function createRemoteApp({
     const content = (
       <ThemeProvider>
         <HostPropsProvider value={value}>
-          {withProviders(providerList, <RemoteRoutes />)}
+          <QueryProvider client={queryClient} userId={value.user?.id}>
+            {withProviders(providerList, <RemoteRoutes />)}
+          </QueryProvider>
         </HostPropsProvider>
       </ThemeProvider>
     );
@@ -111,16 +119,18 @@ export function createRemoteApp({
     return (
       <ThemeProvider>
         <HostPropsProvider value={value}>
-          <BrowserRouter>
-            {withProviders(
-              providerList,
-              StandaloneLayout ? (
-                <StandaloneLayout>{routed}</StandaloneLayout>
-              ) : (
-                routed
-              ),
-            )}
-          </BrowserRouter>
+          <QueryProvider client={queryClient} userId={value.user?.id}>
+            <BrowserRouter>
+              {withProviders(
+                providerList,
+                StandaloneLayout ? (
+                  <StandaloneLayout>{routed}</StandaloneLayout>
+                ) : (
+                  routed
+                ),
+              )}
+            </BrowserRouter>
+          </QueryProvider>
         </HostPropsProvider>
       </ThemeProvider>
     );

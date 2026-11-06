@@ -62,10 +62,17 @@ describe('createSharedConfig', () => {
       assert.deepEqual(shared[pkg], {
         singleton: true,
         strictVersion: true,
-        requiredVersion: version(pkg),
-        version: version(pkg),
+        requiredVersion: shared[pkg].version,
+        version: shared[pkg].version,
       });
     }
+    // direct dependencies, and through @org/query → @org/http-client (axios)
+    assert.equal(shared.react.version, version('react'));
+    assert.match(shared.axios.version ?? '', /^\d+\.\d+\.\d+$/);
+    assert.match(
+      shared['@tanstack/react-query'].version ?? '',
+      /^\d+\.\d+\.\d+$/,
+    );
     assert.match(shared.react.version ?? '', /^\d+\.\d+\.\d+$/);
   });
 
