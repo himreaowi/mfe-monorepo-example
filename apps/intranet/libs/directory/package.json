@@ -49,8 +49,9 @@
   "dependencies": {
     "@org/http-client": "workspace:*",
     "@org/mf-runtime": "workspace:*",
+    "@org/query": "workspace:*",
     "@org/ui": "workspace:*",
-    "@org/use-api": "workspace:*",
+    "@tanstack/react-query": "catalog:",
     "react-router": "catalog:"
   }
 }

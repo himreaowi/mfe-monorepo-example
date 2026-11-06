@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
+import { renderWithQuery } from '@org/query/test';
 import { searchStaff } from '../../api/staffApi';
 import type { StaffSummary } from '../../types/staff';
 import { StaffPicker } from './StaffPicker';
@@ -53,7 +54,7 @@ function Harness({
 
 function renderPicker(props: Parameters<typeof Harness>[0]) {
   const user = userEvent.setup();
-  render(
+  renderWithQuery(
     <HostPropsProvider
       value={{
         embedded: true,

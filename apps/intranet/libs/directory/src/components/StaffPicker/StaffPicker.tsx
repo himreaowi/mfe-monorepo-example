@@ -58,8 +58,9 @@ export function StaffPicker({
   const query = useDebouncedValue(text.trim());
   const enabled = open && query !== '' && value === null;
   const search = useStaffSearch({ q: query, department }, { enabled });
-  // `text` ahead of `query` (still typing): the list below belongs to the older text
-  const settled = enabled && text.trim() === query;
+  // `text` ahead of `query` (still typing), or the list on screen is the previous search kept
+  // while this one loads: either way the list belongs to older text
+  const settled = enabled && text.trim() === query && !search.isPlaceholderData;
   const items =
     settled && search.status === 'success'
       ? search.data.items.slice(0, MAX_OPTIONS)
@@ -71,7 +72,7 @@ export function StaffPicker({
   const status =
     text.trim() === '' || !open
       ? ''
-      : !settled || search.status === 'loading'
+      : !settled || search.status === 'pending'
         ? 'Searching…'
         : search.status === 'error'
           ? 'Could not search the staff directory. Try again.'

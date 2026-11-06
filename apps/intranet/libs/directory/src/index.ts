@@ -12,7 +12,11 @@
  */
 export { getDepartments, getStaffMember, searchStaff } from './api/staffApi';
 export { useDebouncedValue } from './hooks/useDebouncedValue';
-export { useStaffSearch } from './hooks/useStaffSearch';
+export {
+  useStaffSearch,
+  type StaffSearchResultQuery,
+} from './hooks/useStaffSearch';
+export { staffKeys } from './queryKeys';
 export type {
   StaffLink,
   StaffMember,

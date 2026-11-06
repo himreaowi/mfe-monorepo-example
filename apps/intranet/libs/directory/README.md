@@ -27,6 +27,10 @@ import { StaffPicker, type StaffSummary } from '@org/intranet-directory';
 - `src/components/<Name>/`: one folder per component, `<Name>.tsx`, `<Name>.module.scss`,
   `<Name>.test.tsx` (stories optional).
 - `src/utils/`, `src/hooks/`, …: plain functions and hooks, each with its test.
+- `src/queryKeys.ts`: `staffKeys` (search with its filters, departments, detail). The hooks use
+  TanStack Query; a component that uses `StaffPicker` or `useStaffSearch` needs a
+  `QueryClientProvider` (remotes get one from `createRemoteApp`, tests from
+  `renderWithQuery` of `@org/query/test`).
 
 Move a component out of an app: `pnpm move-component <app> <Name> --to intranet/libs/directory`.
 
