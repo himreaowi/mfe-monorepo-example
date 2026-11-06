@@ -264,7 +264,7 @@ apps/<zone>/libs/<capability>   code shared by the zone's apps (@org/<zone>-<cap
                                 deployed alone (pnpm gen:package <zone> <capability>)
 packages/common/<capability>    business logic for both zones (@org/common-<capability>); public:
                                 ships to the internet portals (pnpm gen:package common <capability>)
-packages/platform/              plumbing: ui, design-tokens, mf-runtime, auth, http-client, pwa,
+packages/platform/              plumbing: ui, design-tokens, mf-runtime, auth, http-client, query, pwa,
                                 webpack-config, jest-config, playwright-config,
                                 eslint/prettier/tsconfig, vendor-kit
 tools/                   generators, scripts (check, apps, dev, e2e, validate-manifest, preview),
