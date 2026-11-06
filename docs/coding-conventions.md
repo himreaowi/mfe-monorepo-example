@@ -258,7 +258,7 @@ shell's dev manifest entry is generated (`pnpm dev-manifest`).
   requests ([auth-contract.md](auth-contract.md)). A 401 re-checks the session by itself:
   `useApiClient()` calls host prop `onUnauthorized` (the generated shell passes
   `useAuth().refresh`), in a shell the `onUnauthorized` of `MfeManifestProvider`.
-- Requests time out after 30 s (`HttpClientError` with `timedOut: true`, `status` 0).
+- Requests time out after 30 s (`HttpClientError` with `failure: 'timeout'`, `status` 0; a failed connection has `failure: 'network'`).
 - Normalise response shapes in `api/` so hooks and components do not branch on transport details.
 
 ## State management

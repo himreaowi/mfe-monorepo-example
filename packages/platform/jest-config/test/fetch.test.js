@@ -57,4 +57,21 @@ describe('createFakeFetch', () => {
       /** @param {Error} e */ (e) => e.name === 'AbortError',
     );
   });
+
+  it('reads a Request, as @org/http-client sends it', async () => {
+    const fetch = createFakeFetch({
+      'POST /api/items': ({ body }) => ({ status: 201, body }),
+    });
+    const res = await fetch(
+      new Request('http://api.test/api/items', {
+        method: 'POST',
+        body: '{"name":"New"}',
+        credentials: 'include',
+      }),
+    );
+    assert.equal(res.status, 201);
+    assert.deepEqual(await res.json(), { name: 'New' });
+    assert.equal(fetch.calls[0].method, 'POST');
+    assert.equal(fetch.calls[0].init.credentials, 'include');
+  });
 });

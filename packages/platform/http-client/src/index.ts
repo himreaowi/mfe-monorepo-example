@@ -6,6 +6,7 @@ export {
   joinUrl,
   type HttpClient,
   type HttpClientConfig,
+  type HttpRequestInit,
   type HttpRequestOptions,
 } from './httpClient';
 export { defineApiRoutes } from './apiRoutes';

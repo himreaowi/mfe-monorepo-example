@@ -18,6 +18,11 @@ function response(
   return res;
 }
 
+const API = 'https://api.test/api';
+
+/** The `Request` axios gave the fake fetch. */
+const sent = (fetchMock: jest.Mock) => fetchMock.mock.calls[0][0] as Request;
+
 describe('joinUrl', () => {
   it('joins with exactly one slash', () => {
     expect(joinUrl('https://api.test/', '/posts/1')).toBe(
@@ -56,9 +61,9 @@ describe('createHttpClient', () => {
     await expect(http.getJson(apiRoutes.posts.byId(1))).resolves.toEqual({
       id: 1,
     });
-    const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe('https://api.test/posts/1');
-    expect(init.credentials).toBe('same-origin');
+    const request = sent(fetchMock);
+    expect(request.url).toBe('https://api.test/posts/1');
+    expect(request.credentials).toBe('same-origin');
   });
 
   it('reads a lazy base URL on every request (runtime config)', async () => {
@@ -70,7 +75,7 @@ describe('createHttpClient', () => {
     await http.getJson('/a');
     base = 'https://two.test';
     await http.getJson('/a');
-    expect(fetchMock.mock.calls.map((c) => c[0])).toEqual([
+    expect(fetchMock.mock.calls.map(([request]) => request.url)).toEqual([
       'https://one.test/a',
       'https://two.test/a',
     ]);
@@ -81,21 +86,19 @@ describe('createHttpClient', () => {
       .fn()
       .mockResolvedValue(response(null, { status: 204 }));
     const http = createHttpClient({
-      baseUrl: '/api',
+      baseUrl: 'https://api.test/api',
       credentials: 'include',
       headers: { 'X-App': 'shell' },
       fetch: fetchMock,
     });
     await expect(http.postJson('/items', { a: 1 })).resolves.toBeUndefined();
-    const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe('/api/items');
-    expect(init.method).toBe('POST');
-    expect(init.body).toBe('{"a":1}');
-    expect(init.credentials).toBe('include');
-    expect((init.headers as Headers).get('content-type')).toBe(
-      'application/json',
-    );
-    expect((init.headers as Headers).get('x-app')).toBe('shell');
+    const request = sent(fetchMock);
+    expect(request.url).toBe('https://api.test/api/items');
+    expect(request.method).toBe('POST');
+    await expect(request.text()).resolves.toBe('{"a":1}');
+    expect(request.credentials).toBe('include');
+    expect(request.headers.get('content-type')).toBe('application/json');
+    expect(request.headers.get('x-app')).toBe('shell');
   });
 
   it('throws HttpClientError with status on non-2xx', async () => {
@@ -104,7 +107,10 @@ describe('createHttpClient', () => {
       .mockResolvedValue(
         response('nope', { status: 404, statusText: 'Not Found' }),
       );
-    const http = createHttpClient({ baseUrl: '/api', fetch: fetchMock });
+    const http = createHttpClient({
+      baseUrl: 'https://api.test/api',
+      fetch: fetchMock,
+    });
     const error = await http.getJson('/missing').catch((e: unknown) => e);
     expect(error).toBeInstanceOf(HttpClientError);
     expect(error).toMatchObject({ status: 404, statusText: 'Not Found' });
@@ -121,7 +127,10 @@ describe('createHttpClient', () => {
           { status: 422, statusText: 'Unprocessable Entity' },
         ),
       );
-    const http = createHttpClient({ baseUrl: '/api', fetch: fetchMock });
+    const http = createHttpClient({
+      baseUrl: 'https://api.test/api',
+      fetch: fetchMock,
+    });
     const error = await http
       .postJson('/items', { name: '' })
       .catch((e: unknown) => e);
@@ -136,7 +145,10 @@ describe('createHttpClient', () => {
     const fetchMock = jest
       .fn()
       .mockResolvedValue(response(null, { status: 500 }));
-    const http = createHttpClient({ baseUrl: '/api', fetch: fetchMock });
+    const http = createHttpClient({
+      baseUrl: 'https://api.test/api',
+      fetch: fetchMock,
+    });
     const error = await http.post('/x').catch((e: unknown) => e);
     expect(error).toMatchObject({ status: 500, body: undefined });
   });
@@ -145,134 +157,96 @@ describe('createHttpClient', () => {
     const fetchMock = jest
       .fn()
       .mockResolvedValue(response('<html>oops</html>', { status: 200 }));
-    const http = createHttpClient({ baseUrl: '/api', fetch: fetchMock });
+    const http = createHttpClient({
+      baseUrl: 'https://api.test/api',
+      fetch: fetchMock,
+    });
     await expect(http.getJson('/x')).rejects.toThrow(
       /Expected JSON .* <html>oops/,
     );
   });
 
-  it('sends only what the caller set, like a plain fetch', async () => {
+  it('adds no Content-Type or User-Agent of its own', async () => {
     const fetchMock = jest
       .fn()
       .mockResolvedValue(response(null, { status: 204 }));
-    const http = createHttpClient({ baseUrl: '/api', fetch: fetchMock });
+    const http = createHttpClient({ baseUrl: API, fetch: fetchMock });
     await http.post('/ping');
-    const [, init] = fetchMock.mock.calls[0];
-    expect([...(init.headers as Headers).keys()]).toEqual([]);
-    expect(init.body).toBeNull();
+    const { headers } = sent(fetchMock);
+    expect(headers.has('content-type')).toBe(false);
+    expect(headers.has('user-agent')).toBe(false);
   });
 
-  it('lets the caller set Accept and passes other fetch options on', async () => {
+  it('sends a FormData body with the boundary of the browser', async () => {
     const fetchMock = jest
       .fn()
       .mockResolvedValue(response('{}', { status: 200 }));
-    const http = createHttpClient({ baseUrl: '/api', fetch: fetchMock });
-    await http.request(
-      '/x',
-      { cache: 'no-store' },
-      {
-        headers: { Accept: 'text/csv' },
-      },
-    );
-    const [, init] = fetchMock.mock.calls[0];
-    expect((init.headers as Headers).get('accept')).toBe('text/csv');
-    expect(init.cache).toBe('no-store');
-  });
-
-  it('passes a FormData body through untouched', async () => {
-    const fetchMock = jest
-      .fn()
-      .mockResolvedValue(response(null, { status: 204 }));
-    const http = createHttpClient({ baseUrl: '/api', fetch: fetchMock });
+    const http = createHttpClient({ baseUrl: API, fetch: fetchMock });
     const form = new FormData();
     form.set('a', '1');
-    await http.request('/upload', { method: 'POST', body: form });
-    const [, init] = fetchMock.mock.calls[0];
-    expect(init.body).toBe(form);
-    expect((init.headers as Headers).has('content-type')).toBe(false);
-  });
-
-  it('request() returns a fetch Response with status, headers and body', async () => {
-    const fetchMock = jest.fn().mockResolvedValue(
-      response('a,b', {
-        status: 200,
-        headers: { 'Content-Type': 'text/csv' },
-      }),
+    await http.requestJson('/upload', { method: 'POST', body: form });
+    expect(sent(fetchMock).headers.get('content-type')).toMatch(
+      /^multipart\/form-data; boundary=/,
     );
-    const http = createHttpClient({ baseUrl: '/api', fetch: fetchMock });
-    const res = await http.request('/report');
-    expect(res).toBeInstanceOf(Response);
-    expect(res.status).toBe(200);
-    expect(res.url).toBe('/api/report');
-    expect(res.headers.get('content-type')).toBe('text/csv');
-    await expect(res.text()).resolves.toBe('a,b');
   });
 
   it('resolves undefined for an empty 200 body', async () => {
     const fetchMock = jest
       .fn()
       .mockResolvedValue(response('', { status: 200 }));
-    const http = createHttpClient({ baseUrl: '/api', fetch: fetchMock });
+    const http = createHttpClient({ baseUrl: API, fetch: fetchMock });
     await expect(http.getJson('/x')).resolves.toBeUndefined();
   });
 
-  it('honours per-request credentials over the default', async () => {
-    const fetchMock = jest.fn().mockResolvedValue(response('{}'));
-    const http = createHttpClient({
-      baseUrl: '/api',
-      credentials: 'include',
-      fetch: fetchMock,
-    });
-    await http.getJson('/x', { credentials: 'omit' });
-    expect(fetchMock.mock.calls[0][1].credentials).toBe('omit');
-  });
+  it.each(['include', 'omit', 'same-origin'] as const)(
+    'sends credentials: %s',
+    async (credentials) => {
+      const fetchMock = jest.fn().mockResolvedValue(response('{}'));
+      const http = createHttpClient({ baseUrl: API, fetch: fetchMock });
+      await http.getJson('/x', { credentials });
+      expect(sent(fetchMock).credentials).toBe(credentials);
+    },
+  );
 
   it('fills in the error url from the request', async () => {
     const fetchMock = jest
       .fn()
       .mockResolvedValue(response(null, { status: 503 }));
-    const http = createHttpClient({ baseUrl: '/api', fetch: fetchMock });
+    const http = createHttpClient({ baseUrl: API, fetch: fetchMock });
     await expect(http.getJson('/x')).rejects.toMatchObject({
       status: 503,
-      url: '/api/x',
-      timedOut: false,
+      url: `${API}/x`,
+      failure: undefined,
     });
   });
 
-  it('rethrows a failed connection as the TypeError of fetch', async () => {
-    const failure = new TypeError('Failed to fetch');
+  it('maps a failed connection to HttpClientError (network)', async () => {
     const http = createHttpClient({
-      baseUrl: '/api',
-      fetch: jest.fn().mockRejectedValue(failure),
+      baseUrl: API,
+      fetch: jest.fn().mockRejectedValue(new TypeError('Failed to fetch')),
     });
     const error = await http.getJson('/x').catch((e: unknown) => e);
-    expect(error).toBe(failure);
-    expect(isNetworkError(error)).toBe(true);
-  });
-
-  it('rethrows other errors of a custom fetch unchanged', async () => {
-    const failure = new Error('instrumentation broke');
-    const http = createHttpClient({
-      baseUrl: '/api',
-      fetch: jest.fn().mockRejectedValue(failure),
+    expect(error).toBeInstanceOf(HttpClientError);
+    expect(error).toMatchObject({
+      status: 0,
+      failure: 'network',
+      message: 'Could not reach the server.',
     });
-    await expect(http.getJson('/x')).rejects.toBe(failure);
+    expect(isNetworkError(error)).toBe(true);
   });
 
   describe('abort', () => {
     /** A fetch that only ends when its signal aborts, like a server that never answers. */
-    const hangingFetch = jest.fn(
-      (_url: string, init: RequestInit) =>
-        new Promise<Response>((_resolve, reject) => {
-          init.signal?.addEventListener('abort', () =>
-            reject(init.signal?.reason),
-          );
-        }),
-    ) as unknown as typeof fetch;
+    const hangingFetch = ((request: Request) =>
+      new Promise<Response>((_resolve, reject) => {
+        request.signal.addEventListener('abort', () =>
+          reject(request.signal.reason),
+        );
+      })) as typeof fetch;
 
     it('rejects with the AbortError of the signal, never an HttpClientError', async () => {
       const controller = new AbortController();
-      const http = createHttpClient({ baseUrl: '/api', fetch: hangingFetch });
+      const http = createHttpClient({ baseUrl: API, fetch: hangingFetch });
       const pending = http
         .getJson('/x', { signal: controller.signal })
         .catch((e: unknown) => e);
@@ -286,7 +260,7 @@ describe('createHttpClient', () => {
 
     it('does not call fetch for an already aborted signal', async () => {
       const fetchMock = jest.fn();
-      const http = createHttpClient({ baseUrl: '/api', fetch: fetchMock });
+      const http = createHttpClient({ baseUrl: API, fetch: fetchMock });
       await expect(
         http.getJson('/x', { signal: AbortSignal.abort() }),
       ).rejects.toMatchObject({ name: 'AbortError' });
@@ -295,7 +269,7 @@ describe('createHttpClient', () => {
 
     it('times out with a clear HttpClientError', async () => {
       const http = createHttpClient({
-        baseUrl: '/api',
+        baseUrl: API,
         timeout: 5,
         fetch: hangingFetch,
       });
@@ -303,18 +277,18 @@ describe('createHttpClient', () => {
       expect(error).toBeInstanceOf(HttpClientError);
       expect(error).toMatchObject({
         status: 0,
-        timedOut: true,
-        url: '/api/slow',
-        message: 'Request timed out after 5 ms: /api/slow',
+        failure: 'timeout',
+        url: `${API}/slow`,
+        message: 'The server took too long to answer.',
       });
       expect(isNetworkError(error)).toBe(true);
     });
 
-    it('takes a timeout per request, and passes 30 s by default', async () => {
+    it('takes a timeout per request, and defaults to 30 s', async () => {
       expect(DEFAULT_TIMEOUT_MS).toBe(30_000);
-      const http = createHttpClient({ baseUrl: '/api', fetch: hangingFetch });
+      const http = createHttpClient({ baseUrl: API, fetch: hangingFetch });
       await expect(http.getJson('/slow', { timeout: 5 })).rejects.toMatchObject(
-        { timedOut: true },
+        { failure: 'timeout' },
       );
     });
   });
@@ -323,7 +297,7 @@ describe('createHttpClient', () => {
     it('is called on a 401, and the error is still thrown', async () => {
       const onUnauthorized = jest.fn();
       const http = createHttpClient({
-        baseUrl: '/api',
+        baseUrl: API,
         onUnauthorized,
         fetch: jest
           .fn()
@@ -338,7 +312,7 @@ describe('createHttpClient', () => {
     it('is not called for other errors', async () => {
       const onUnauthorized = jest.fn();
       const http = createHttpClient({
-        baseUrl: '/api',
+        baseUrl: API,
         onUnauthorized,
         fetch: jest.fn().mockResolvedValue(response(null, { status: 403 })),
       });
@@ -347,12 +321,13 @@ describe('createHttpClient', () => {
     });
   });
 
-  it('classifies errors: isNetworkError is false for HTTP and parse errors', () => {
+  it('isNetworkError is false for HTTP errors and for bugs', () => {
     expect(
       isNetworkError(
         new HttpClientError({ status: 500, statusText: '', url: '/x' }),
       ),
     ).toBe(false);
+    expect(isNetworkError(new TypeError('x is not a function'))).toBe(false);
     expect(isNetworkError(new Error('Expected JSON'))).toBe(false);
     expect(isNetworkError(undefined)).toBe(false);
   });

@@ -46,7 +46,7 @@ Rules:
   `EmbeddedApp` with props in remote tests.
 - `new Response('', { status: 204 })` throws in Node 24: use a `null` body.
 
-### Testing API code (jsdom has no `fetch`)
+### Testing API code (`fetch` rejects in jsdom)
 
 jsdom implements no Fetch API: in a plain `jest-environment-jsdom`, `fetch`, `Headers`,
 `Request` and `Response` are all undefined. `@org/jest-config`'s jsdom environment adds Node's

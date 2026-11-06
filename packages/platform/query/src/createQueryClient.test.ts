@@ -30,14 +30,10 @@ describe('createQueryClient', () => {
 
 describe('shouldRetryQuery', () => {
   it('retries network errors, timeouts and 5xx once', () => {
-    const timeout = new HttpClientError(
-      { status: 0, statusText: 'Timeout', url: '/x' },
-      undefined,
-      10,
-    );
+    const noResponse = { status: 0, statusText: '', url: '/x' };
     for (const error of [
-      new TypeError('Failed to fetch'),
-      timeout,
+      new HttpClientError(noResponse, undefined, 'network'),
+      new HttpClientError(noResponse, undefined, 'timeout'),
       httpError(500),
       httpError(503),
     ]) {
@@ -46,7 +42,7 @@ describe('shouldRetryQuery', () => {
     }
   });
 
-  it('never retries 4xx, aborts or anything else', () => {
+  it('never retries 4xx, aborts, bugs or anything else', () => {
     for (const error of [
       httpError(400),
       httpError(401),
@@ -54,6 +50,7 @@ describe('shouldRetryQuery', () => {
       httpError(422),
       new DOMException('Aborted', 'AbortError'),
       new Error('Expected JSON from /x, got: <html>'),
+      new TypeError('items.map is not a function'),
       undefined,
     ]) {
       expect(shouldRetryQuery(0, error)).toBe(false);

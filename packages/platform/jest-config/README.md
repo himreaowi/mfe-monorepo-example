@@ -1,7 +1,7 @@
 # @org/jest-config
 
 Shared Jest 30 preset for packages and apps: jsdom (+ Node's `Headers`, `Request`, `Response`;
-`fetch` stays undefined), `@swc/jest` transform (TS/TSX and the ESM-only `react-router`),
+`fetch` rejects), `@swc/jest` transform (TS/TSX and the ESM-only `react-router`),
 `identity-obj-proxy` for (S)CSS, Testing Library `jest-dom` matchers, `TextEncoder` and a
 `matchMedia` stub.
 
@@ -24,7 +24,8 @@ package. See `docs/toolchain.md` for why the transform is set up this way.
 
 jsdom has no Fetch API. The preset's environment (`jsdom-environment.cjs`) copies Node's
 `Headers`, `Request` and `Response` into it, so `@org/http-client` can run in component tests,
-but not `fetch`: unit tests never hit the network. Inject a fake instead:
+and `AbortController`, and a `fetch` that rejects: unit tests never hit the network. Inject a fake
+instead (it reads both `fetch(url, init)` and the `Request` of `@org/http-client`):
 
 ```ts
 import { createFakeFetch, jsonResponse } from '@org/jest-config/fetch';
