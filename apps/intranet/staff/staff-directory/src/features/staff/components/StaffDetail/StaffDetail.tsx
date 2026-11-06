@@ -2,9 +2,9 @@ import { Link } from 'react-router';
 import { maskNric } from '@org/common-identity';
 import { useRemotePath } from '@org/mf-runtime/remote';
 import { RemoteFallback, Spinner } from '@org/ui';
-import type { ApiResult } from '@org/use-api';
 import { routePaths, staffPath } from '@/core/constants/routePaths';
-import type { StaffLink, StaffMember } from '@org/intranet-directory';
+import type { StaffLink } from '@org/intranet-directory';
+import type { StaffMemberQuery } from '../../hooks/useStaffMember';
 import styles from './StaffDetail.module.scss';
 
 function PersonLink({ person }: { person: StaffLink }) {
@@ -16,11 +16,7 @@ function PersonLink({ person }: { person: StaffLink }) {
  * One staff member: contact details, manager, direct reports, skills. Displays only: the page
  * loads the person (`useStaffMember(id)`; `null` = unknown id) and passes the result down.
  */
-export function StaffDetail({
-  member,
-}: {
-  member: ApiResult<StaffMember | null>;
-}) {
+export function StaffDetail({ member }: { member: StaffMemberQuery }) {
   const toPath = useRemotePath();
   const back = (
     <p>
@@ -30,7 +26,7 @@ export function StaffDetail({
     </p>
   );
 
-  if (member.status === 'loading') {
+  if (member.status === 'pending') {
     return (
       <section className={styles.page} data-testid="staff-detail">
         <h1 className={styles.title}>Staff member</h1>
@@ -45,7 +41,7 @@ export function StaffDetail({
         <RemoteFallback
           title="Could not load this staff member"
           reason={member.error.message}
-          onRetry={member.reload}
+          onRetry={() => void member.refetch()}
         />
         {back}
       </section>

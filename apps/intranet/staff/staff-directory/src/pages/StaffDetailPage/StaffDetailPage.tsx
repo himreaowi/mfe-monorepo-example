@@ -3,7 +3,7 @@ import { StaffDetail, useStaffMember } from '@/features/staff';
 
 /**
  * Page-level data fetching: the page loads the person of the URL, `StaffDetail` displays them.
- * Another person starts from a fresh loading state (`useApi` resets when its loader changes).
+ * Another person has its own query key (`staffKeys.detail(id)`), so it starts from a fresh pending state.
  */
 export function StaffDetailPage() {
   const { staffId = '' } = useParams();

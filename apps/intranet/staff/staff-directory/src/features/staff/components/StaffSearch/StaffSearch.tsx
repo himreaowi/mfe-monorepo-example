@@ -1,14 +1,16 @@
-import { StaffCard, type StaffSearchResult } from '@org/intranet-directory';
+import {
+  StaffCard,
+  type StaffSearchResultQuery,
+} from '@org/intranet-directory';
 import { useRemotePath } from '@org/mf-runtime/remote';
 import { RemoteFallback } from '@org/ui';
-import type { ApiResult } from '@org/use-api';
 import { staffPath } from '@/core/constants/routePaths';
 import { StaffFilters } from '../StaffFilters/StaffFilters';
 import styles from './StaffSearch.module.scss';
 
 export type StaffSearchProps = {
   /** From `useStaffSearch()`, called by the page with the current filters. */
-  search: ApiResult<StaffSearchResult>;
+  search: StaffSearchResultQuery;
   /** Department names for the filter (`useDepartments()`, called by the page). */
   departments: string[];
 };
@@ -22,9 +24,9 @@ export type StaffSearchProps = {
 export function StaffSearch({ search, departments }: StaffSearchProps) {
   const toPath = useRemotePath();
   const count =
-    search.status === 'success'
+    search.status === 'success' && !search.isPlaceholderData
       ? `${search.data.total} ${search.data.total === 1 ? 'person' : 'people'} found`
-      : search.status === 'loading'
+      : search.status === 'pending' || search.isPlaceholderData
         ? 'Searching…'
         : '';
 
@@ -42,7 +44,7 @@ export function StaffSearch({ search, departments }: StaffSearchProps) {
         <RemoteFallback
           title="Could not load the staff directory"
           reason={search.error.message}
-          onRetry={search.reload}
+          onRetry={() => void search.refetch()}
         />
       ) : null}
       {search.status === 'success' && search.data.items.length === 0 ? (

@@ -1,6 +1,7 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
+import { renderHookWithQuery } from '@org/query/test';
 import { getDepartments } from '@org/intranet-directory';
 import { useDepartments } from './useDepartments';
 
@@ -27,7 +28,7 @@ function wrapper({ children }: { children: ReactNode }) {
 describe('useDepartments', () => {
   it('loads the department names', async () => {
     jest.mocked(getDepartments).mockResolvedValue(['Finance', 'Legal']);
-    const { result } = renderHook(() => useDepartments(), { wrapper });
+    const { result } = renderHookWithQuery(() => useDepartments(), { wrapper });
     await waitFor(() =>
       expect(result.current).toMatchObject({
         status: 'success',

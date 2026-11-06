@@ -2,19 +2,22 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
-import type { ApiResult } from '@org/use-api';
 import { ann } from '../../__fixtures__/staff';
 import { StaffFiltersProvider } from '../../state/StaffFiltersContext';
-import type { StaffSearchResult } from '@org/intranet-directory';
+import type { StaffSearchResultQuery } from '@org/intranet-directory';
 import { StaffSearch, type StaffSearchProps } from './StaffSearch';
 
-const reload = jest.fn();
+const refetch = jest.fn();
+/** The part of a Query result the component reads (the page passes the real one). */
+const asQuery = (result: object) => result as unknown as StaffSearchResultQuery;
 const departments = ['Finance', 'Technology'];
-const found = (items = [ann]): ApiResult<StaffSearchResult> => ({
-  status: 'success',
-  data: { items, total: items.length, departments: [] },
-  reload,
-});
+const found = (items = [ann]) =>
+  asQuery({
+    status: 'success',
+    isPlaceholderData: false,
+    data: { items, total: items.length, departments: [] },
+    refetch,
+  });
 
 // A display component: the results come in as props (the page loads them); the filter form
 // uses the feature's filter state, so it renders inside the provider (and a router: the URL).
@@ -30,7 +33,7 @@ function renderSearch(props: Partial<StaffSearchProps> = {}, url = '/staff') {
   );
 }
 
-beforeEach(() => reload.mockReset());
+beforeEach(() => refetch.mockReset());
 
 describe('StaffSearch', () => {
   it('lists staff with links below the mount and announces the count', () => {
@@ -58,8 +61,19 @@ describe('StaffSearch', () => {
   });
 
   it('shows "Searching…" while loading', () => {
-    renderSearch({ search: { status: 'loading', reload } });
+    renderSearch({ search: asQuery({ status: 'pending', refetch }) });
     expect(screen.getByTestId('staff-count')).toHaveTextContent('Searching…');
+  });
+
+  it('keeps the previous list while a new search loads', () => {
+    renderSearch({
+      search: asQuery({
+        ...found(),
+        isPlaceholderData: true,
+      }),
+    });
+    expect(screen.getByTestId('staff-count')).toHaveTextContent('Searching…');
+    expect(screen.getByRole('link', { name: 'Ann Lee' })).toBeInTheDocument();
   });
 
   it('says when no one matches', () => {
@@ -72,16 +86,16 @@ describe('StaffSearch', () => {
 
   it('shows an error with a working "Try again"', async () => {
     renderSearch({
-      search: {
+      search: asQuery({
         status: 'error',
         error: new Error('503 Service Unavailable'),
-        reload,
-      },
+        refetch,
+      }),
     });
     expect(screen.getByRole('alert')).toHaveTextContent(
       '503 Service Unavailable',
     );
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
-    expect(reload).toHaveBeenCalledTimes(1);
+    expect(refetch).toHaveBeenCalledTimes(1);
   });
 });

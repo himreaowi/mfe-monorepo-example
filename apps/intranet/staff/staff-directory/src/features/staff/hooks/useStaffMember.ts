@@ -1,14 +1,15 @@
-import { useCallback } from 'react';
-import { requireApiClient, useApi } from '@org/use-api';
+import { useQuery } from '@tanstack/react-query';
+import { getStaffMember, staffKeys } from '@org/intranet-directory';
+import { requireApiClient } from '@org/http-client';
 import { useApiClient } from '@org/mf-runtime/remote';
-import { getStaffMember } from '@org/intranet-directory';
 
+/** One staff member (`null`: unknown id) as a query result; another id loads its own entry. */
 export function useStaffMember(id: string) {
   const http = useApiClient();
-  const load = useCallback(
-    async (signal: AbortSignal) =>
-      getStaffMember(requireApiClient(http), id, signal),
-    [http, id],
-  );
-  return useApi(load);
+  return useQuery({
+    queryKey: staffKeys.detail(id),
+    queryFn: ({ signal }) => getStaffMember(requireApiClient(http), id, signal),
+  });
 }
+
+export type StaffMemberQuery = ReturnType<typeof useStaffMember>;

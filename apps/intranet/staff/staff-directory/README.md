@@ -10,8 +10,10 @@ The intranet shell mounts it at `/staff-directory/*` (entry in the shell's `remo
 
 Staff search (name, job title, department, skill) with a department filter. Each person has a
 page (`/staff-directory/<id>`) with contact details, manager, direct reports and skills. Data:
-`GET /staff`, `GET /staff/:id` of the mock API (`settings.apiBaseUrl`), through `@org/use-api`
-hooks that the pages call (`OverviewPage`, `StaffDetailPage`); the components only display.
+`GET /staff`, `GET /staff/:id` of the mock API (`settings.apiBaseUrl`), through TanStack
+Query hooks that the pages call (`OverviewPage`, `StaffDetailPage`); the components only display.
+The filters are part of the search query key (`staffKeys` from the library), and the previous
+list stays on screen while a new search loads.
 
 The reusable staff search pieces live in the zone library `@org/intranet-directory`
 (`apps/intranet/libs/directory`): the API client and types, `useStaffSearch`, `useDebouncedValue`

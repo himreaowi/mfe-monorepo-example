@@ -1,14 +1,13 @@
-import { useCallback } from 'react';
-import { requireApiClient, useApi } from '@org/use-api';
+import { useQuery } from '@tanstack/react-query';
+import { getDepartments, staffKeys } from '@org/intranet-directory';
+import { requireApiClient } from '@org/http-client';
 import { useApiClient } from '@org/mf-runtime/remote';
-import { getDepartments } from '@org/intranet-directory';
 
+/** The department names for the filter, as a query result. */
 export function useDepartments() {
   const http = useApiClient();
-  const load = useCallback(
-    async (signal: AbortSignal) =>
-      getDepartments(requireApiClient(http), signal),
-    [http],
-  );
-  return useApi(load);
+  return useQuery({
+    queryKey: staffKeys.departments(),
+    queryFn: ({ signal }) => getDepartments(requireApiClient(http), signal),
+  });
 }

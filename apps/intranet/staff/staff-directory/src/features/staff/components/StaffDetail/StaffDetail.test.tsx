@@ -2,8 +2,8 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
-import type { ApiResult } from '@org/use-api';
 import type { StaffMember } from '@org/intranet-directory';
+import type { StaffMemberQuery } from '../../hooks/useStaffMember';
 import { StaffDetail } from './StaffDetail';
 
 const priya: StaffMember = {
@@ -19,14 +19,15 @@ const priya: StaffMember = {
   manager: { id: 's-1', name: 'Oliver Chan' },
   directReports: [],
 };
-const reload = jest.fn();
+const refetch = jest.fn();
 
 // A display component: the page loads the person and passes the result in (no API here).
-function renderDetail(member: ApiResult<StaffMember | null>) {
+/** The part of a Query result the component reads. */
+function renderDetail(member: object) {
   return render(
     <MemoryRouter>
       <HostPropsProvider value={{ embedded: true, basePath: '/staff' }}>
-        <StaffDetail member={member} />
+        <StaffDetail member={member as StaffMemberQuery} />
       </HostPropsProvider>
     </MemoryRouter>,
   );
@@ -34,7 +35,7 @@ function renderDetail(member: ApiResult<StaffMember | null>) {
 
 describe('StaffDetail', () => {
   it('shows contact details, manager and skills', () => {
-    renderDetail({ status: 'success', data: priya, reload });
+    renderDetail({ status: 'success', data: priya, refetch });
     expect(
       screen.getByRole('heading', { level: 1, name: 'Priya Nair' }),
     ).toBeInTheDocument();
@@ -57,7 +58,7 @@ describe('StaffDetail', () => {
     const { container } = renderDetail({
       status: 'success',
       data: { ...priya, nric: 'S1234567D' },
-      reload,
+      refetch,
     });
     expect(screen.getByText('NRIC')).toBeInTheDocument();
     expect(screen.getByTestId('staff-nric')).toHaveTextContent('S****567D');
@@ -69,23 +70,23 @@ describe('StaffDetail', () => {
     renderDetail({
       status: 'success',
       data: { ...priya, nric: 'S****567D' },
-      reload,
+      refetch,
     });
     expect(screen.getByTestId('staff-nric')).toHaveTextContent('S****567D');
   });
 
   it('shows no NRIC row when the API sends none', () => {
-    renderDetail({ status: 'success', data: priya, reload });
+    renderDetail({ status: 'success', data: priya, refetch });
     expect(screen.queryByText('NRIC')).not.toBeInTheDocument();
   });
 
   it('shows loading', () => {
-    renderDetail({ status: 'loading', reload });
+    renderDetail({ status: 'pending', refetch });
     expect(screen.getByRole('status')).toHaveTextContent('Loading');
   });
 
   it('says so when the person does not exist', () => {
-    renderDetail({ status: 'success', data: null, reload });
+    renderDetail({ status: 'success', data: null, refetch });
     expect(
       screen.getByRole('heading', { name: 'Staff member not found' }),
     ).toBeInTheDocument();
@@ -95,12 +96,12 @@ describe('StaffDetail', () => {
     renderDetail({
       status: 'error',
       error: new Error('502 Bad Gateway'),
-      reload,
+      refetch,
     });
     expect(screen.getByRole('alert')).toHaveTextContent(
       'Could not load this staff member',
     );
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
-    expect(reload).toHaveBeenCalledTimes(1);
+    expect(refetch).toHaveBeenCalledTimes(1);
   });
 });

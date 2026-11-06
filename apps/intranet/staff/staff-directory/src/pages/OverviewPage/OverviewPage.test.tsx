@@ -1,8 +1,9 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import { createFakeFetch } from '@org/jest-config/fetch';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
+import { renderWithQuery } from '@org/query/test';
 import { ann } from '@/features/staff/__fixtures__/staff';
 import { OverviewPage } from './OverviewPage';
 
@@ -31,7 +32,7 @@ function Location() {
 }
 
 function renderPage(url = '/staff') {
-  return render(
+  return renderWithQuery(
     <MemoryRouter initialEntries={[url]}>
       <HostPropsProvider
         value={{
