@@ -280,6 +280,11 @@ describe('generators', () => {
       /loadAuthClient\(manifest\.auth\)/,
     );
     assert.match(read(root, `${dir}/src/app/App.tsx`), /<AuthProvider/);
+    // the shell's own query cache, tied to the signed-in user
+    assert.match(
+      read(root, `${dir}/src/app/App.tsx`),
+      /<QueryProvider client=\{queryClient\} userId=\{user\?\.id\}>/,
+    );
     const page = read(root, `${dir}/src/pages/RemotePage/RemotePage.tsx`);
     assert.match(page, /<RequireAuth/);
     assert.match(page, /remote\.access === 'private'/);
