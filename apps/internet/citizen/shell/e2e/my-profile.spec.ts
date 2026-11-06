@@ -54,3 +54,55 @@ test.describe('My profile (private)', () => {
     await expect(page.getByTestId('sign-in-prompt')).toBeVisible();
   });
 });
+
+test.describe('My profile: the cache belongs to the signed-in user', () => {
+  test.skip(
+    !zone.authMock,
+    'needs "auth": { "mock": true } (the shell\'s package.json mfe.devManifest → mfe-manifest.dev.json)',
+  );
+
+  // FIXME (template gap, reported): signing out unmounts the private remote, so its
+  // QueryProvider never sees `user` become null; signing in as the SAME user keeps the remote's
+  // module-level cache (fresh for 30 s), so no new request is made. Another user id would clear
+  // it. Needs a sign-out signal that reaches an unmounted remote (e.g. clear in createRemoteApp
+  // when the session ends); enable this test then.
+  test.fixme('signing out drops the cached profile: signing in loads it again', async ({
+    page,
+  }) => {
+    let reads = 0;
+    let hold: Promise<void> | undefined;
+    await page.route(/\/profile\/me$/, async (route) => {
+      if (route.request().method() === 'GET') {
+        reads += 1;
+        await hold;
+      }
+      await route.continue();
+    });
+
+    await page.goto(remote.path);
+    await signInWithMock(page);
+    const container = remotePage(page, remote);
+    await expect(container.getByTestId('profile-details')).toBeVisible();
+    // (dev builds mount twice under StrictMode: count against this)
+    const readsAfterFirstSignIn = reads;
+    expect(readsAfterFirstSignIn).toBeGreaterThanOrEqual(1);
+
+    // sign out and in again without a page load: the module-level cache would still have it
+    await signOut(page);
+    await expect(page.getByTestId('sign-in-prompt')).toBeVisible();
+    let release: () => void = () => undefined;
+    hold = new Promise<void>((resolve) => (release = resolve));
+    await signInWithMock(page);
+
+    // the profile is requested again, and while that is under way nothing of the old data shows
+    await expect.poll(() => reads).toBeGreaterThan(readsAfterFirstSignIn);
+    await expect(
+      container.getByRole('status').filter({ hasText: 'Loading your profile' }),
+    ).toBeVisible();
+    await expect(container.getByTestId('profile-details')).toHaveCount(0);
+    release();
+    await expect(container.getByTestId('profile-details')).toContainText(
+      'dev.user@example.org',
+    );
+  });
+});

@@ -1,7 +1,30 @@
+import type { Page } from '@playwright/test';
 import { expect, test } from '@org/playwright-config/test';
-import { openRemote, remotePage, settle, zone } from './helpers';
+import {
+  expectRemoteRendered,
+  openNav,
+  openRemote,
+  remotePage,
+  settle,
+  zone,
+} from './helpers';
 
 const remote = zone.remotes.find((r) => r.name === 'leave-requests')!;
+const directory = zone.remotes.find((r) => r.name === 'staff-directory')!;
+
+/** The page's GET requests for the leave data (balance and list), counted as they happen. */
+function countLeaveReads(page: Page): () => number {
+  let reads = 0;
+  page.on('request', (request) => {
+    if (
+      request.method() === 'GET' &&
+      /\/leave\/(balance|requests)$/.test(new URL(request.url()).pathname)
+    ) {
+      reads += 1;
+    }
+  });
+  return () => reads;
+}
 
 function isoDate(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0');
@@ -34,8 +57,11 @@ test.describe('Leave requests', () => {
   test('submit with validation errors, then a valid request', async ({
     page,
   }) => {
+    const reads = countLeaveReads(page);
     await openRemote(page, remote);
     const container = remotePage(page, remote);
+    await expect(container.getByTestId('leave-request').first()).toBeVisible();
+    const readsBeforeSubmit = reads();
     await container.getByRole('link', { name: 'Request leave' }).click();
     await expect(page).toHaveURL(/\/leave-requests\/new$/);
     await settle(page);
@@ -75,9 +101,81 @@ test.describe('Leave requests', () => {
     const confirmation = container.getByTestId('leave-created');
     await expect(confirmation).toContainText(/Request LR-\d{4} sent: 1 day/);
     await expect(confirmation).toBeFocused();
+    // the list was fresh in the cache: it shows the new request because the submit invalidated it
     await expect(
       container.getByTestId('leave-request').filter({ hasText: reason }),
     ).toContainText('Waiting for approval');
+    expect(reads(), 'the overview loaded the list again').toBeGreaterThan(
+      readsBeforeSubmit,
+    );
+  });
+
+  test('leaving the page and coming back within 30 s loads nothing again', async ({
+    page,
+  }) => {
+    const reads = countLeaveReads(page);
+    await openRemote(page, remote);
+    const container = remotePage(page, remote);
+    await expect(container.getByTestId('leave-request').first()).toBeVisible();
+    await expect(container.getByTestId('leave-balance')).toHaveCount(4);
+    const readsAfterFirstVisit = reads();
+    expect(readsAfterFirstVisit).toBeGreaterThanOrEqual(2);
+
+    // another remote (in the app: no page load), then back to Leave
+    await (
+      await openNav(page)
+    )
+      .getByRole('link', { name: directory.title })
+      .click();
+    await expectRemoteRendered(page, directory);
+    await (
+      await openNav(page)
+    )
+      .getByRole('link', { name: remote.title })
+      .click();
+    await expectRemoteRendered(page, remote);
+
+    // shown at once from the cache, no second request for the page's data
+    await expect(container.getByTestId('leave-request').first()).toBeVisible();
+    await expect(container.getByTestId('leave-balance')).toHaveCount(4);
+    await settle(page);
+    expect(reads()).toBe(readsAfterFirstVisit);
+  });
+
+  test('a failed submit (500) is not retried and shows the error', async ({
+    page,
+    consoleErrors,
+  }) => {
+    consoleErrors.allowHttp({ url: /\/api\/leave\/requests$/, status: 500 });
+    let posts = 0;
+    await page.route(/\/leave\/requests$/, async (route) => {
+      if (route.request().method() !== 'POST') return route.continue();
+      posts += 1;
+      return route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({ message: 'Boom' }),
+      });
+    });
+    await openRemote(page, remote, 'new');
+    const container = remotePage(page, remote);
+    const { monday } = futureWeek();
+    await container
+      .getByRole('combobox', { name: 'Leave type' })
+      .selectOption({ label: 'No-pay leave' });
+    await container.getByLabel('First day').fill(monday);
+    await container.getByLabel('Last day').fill(monday);
+    await container.getByRole('button', { name: 'Send request' }).click();
+
+    // a mutation that retried would stay "Sending…" until its retries ran out
+    await expect(container.getByRole('alert')).toContainText(
+      'Your request could not be sent',
+    );
+    await settle(page);
+    expect(posts, 'POST requests for one click').toBe(1);
+    await expect(
+      container.getByRole('button', { name: 'Send request' }),
+    ).toBeEnabled();
   });
 
   test('choose a covering colleague with the keyboard; the overview shows it', async ({
