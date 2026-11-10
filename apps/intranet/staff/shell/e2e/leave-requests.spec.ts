@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { expect, test } from '@org/playwright-config/test';
+import { checkA11y, expect, test } from '@org/playwright-config/test';
 import { openRemote, remotePage, settle, zone } from './helpers';
 
 const remote = zone.remotes.find((r) => r.name === 'leave-requests')!;
@@ -185,9 +185,12 @@ test.describe('Leave requests', () => {
     });
     await picker.click();
     await picker.pressSequentially('chloe');
-    const option = container.getByRole('option', { name: /Chloe Ng/ });
+    // the list is in a portal, outside the remote's container
+    const option = page.getByRole('option', { name: /Chloe Ng/ });
     await expect(option).toBeVisible();
     await expect(picker).toHaveAttribute('aria-expanded', 'true');
+    // axe on the page with the list open
+    await checkA11y(page);
     await picker.press('ArrowDown');
     await expect(picker).toHaveAttribute(
       'aria-activedescendant',
@@ -197,9 +200,7 @@ test.describe('Leave requests', () => {
     await expect(container.getByTestId('staff-picker')).toContainText(
       'Frontend Engineer, Digital Services',
     );
-    await expect(
-      container.getByRole('textbox', { name: /Covering colleague/ }),
-    ).toHaveValue('Chloe Ng');
+    await expect(picker).toHaveValue('Chloe Ng');
 
     await container.getByRole('button', { name: 'Send request' }).click();
     await expect(page).toHaveURL(/\/leave-requests$/);
