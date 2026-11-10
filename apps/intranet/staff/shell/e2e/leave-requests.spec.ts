@@ -185,7 +185,7 @@ test.describe('Leave requests', () => {
     });
     await picker.click();
     await picker.pressSequentially('chloe');
-    // the list is in a portal, outside the remote's container
+    // the list (inline, under the input)
     const option = page.getByRole('option', { name: /Chloe Ng/ });
     await expect(option).toBeVisible();
     await expect(picker).toHaveAttribute('aria-expanded', 'true');

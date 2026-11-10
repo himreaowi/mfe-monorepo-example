@@ -120,4 +120,37 @@ describe('Combobox', () => {
     await user.click(screen.getByRole('button', { name: 'Clear fruit' }));
     expect(onValueChange).toHaveBeenCalledWith(null);
   });
+
+  it('stays non-modal while the list is open: nothing is aria-hidden, the label stays', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <a href="#main">Skip to content</a>
+        <label htmlFor="other">Other field</label>
+        <input id="other" />
+        <Demo />
+      </>,
+    );
+    const input = screen.getByRole('combobox', { name: 'Fruit' });
+    await user.type(input, 'a');
+    expect(await screen.findAllByRole('option')).not.toHaveLength(0);
+    expect(input).toHaveAttribute('aria-expanded', 'true');
+    expect(
+      document.querySelectorAll('[aria-hidden="true"]:not([aria-hidden] *)'),
+    ).toHaveLength(
+      // only the decorative × inside the clear button
+      1,
+    );
+    expect(
+      document.querySelector('[aria-hidden="true"]')?.closest('button'),
+    ).toHaveAccessibleName('Clear');
+    expect(document.querySelectorAll('[inert]')).toHaveLength(0);
+    expect(screen.getByRole('link', { name: 'Skip to content' })).toBeVisible();
+    expect(
+      screen.getByRole('textbox', { name: 'Other field' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Fruit').closest('[aria-hidden]')).toBeNull();
+    expect(input).toHaveAccessibleName('Fruit');
+    expect(screen.getByRole('listbox', { name: 'Fruit' })).toBeVisible();
+  });
 });

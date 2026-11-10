@@ -64,7 +64,11 @@ export function Field({
     .join(' ');
   return (
     <div className={cx(styles.field, className)}>
-      <label htmlFor={controlId} className={styles.label}>
+      <label
+        id={`${controlId}-label`}
+        htmlFor={controlId}
+        className={styles.label}
+      >
         {label}
         {required ? <span className={styles.required}> (required)</span> : null}
       </label>
