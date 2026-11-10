@@ -1,20 +1,17 @@
+import { useState } from 'react';
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Link, MemoryRouter, Route, Routes } from 'react-router';
-import { useMenuDisclosure } from './useMenuDisclosure';
+import { MenuDisclosure } from './MenuDisclosure';
 
-/** A header with a Menu button and a panel (links + a button), like a shell layout. */
-function Header({ withContainer = true }: { withContainer?: boolean }) {
-  const menu = useMenuDisclosure();
+/** A header with a Menu button and a panel (links + buttons), like a shell layout. */
+function Header() {
+  const [open, setOpen] = useState(false);
   return (
-    <header ref={withContainer ? menu.containerRef : undefined}>
+    <MenuDisclosure.Root open={open} onOpenChange={setOpen} render={<header />}>
       <span>Portal</span>
-      <button {...menu.buttonProps}>Menu</button>
-      <div
-        {...menu.panelProps}
-        data-testid="panel"
-        className={menu.open ? 'open' : ''}
-      >
+      <MenuDisclosure.Button>Menu</MenuDisclosure.Button>
+      <MenuDisclosure.Panel data-testid="panel" className={open ? 'open' : ''}>
         <nav aria-label="Main">
           <Link to="/">Home</Link>
           <Link to="/a">Alpha</Link>
@@ -23,15 +20,15 @@ function Header({ withContainer = true }: { withContainer?: boolean }) {
         <button type="button" data-menu-close>
           Sign out
         </button>
-      </div>
-    </header>
+      </MenuDisclosure.Panel>
+    </MenuDisclosure.Root>
   );
 }
 
-function renderHeader(withContainer = true) {
+function renderHeader() {
   return render(
     <MemoryRouter initialEntries={['/']}>
-      <Header withContainer={withContainer} />
+      <Header />
       <Routes>
         <Route index element={<p>home page</p>} />
         <Route path="a" element={<p>alpha page</p>} />
@@ -43,7 +40,7 @@ function renderHeader(withContainer = true) {
 
 const button = () => screen.getByRole('button', { name: 'Menu' });
 
-describe('useMenuDisclosure', () => {
+describe('MenuDisclosure', () => {
   it('button controls the panel (aria-expanded, aria-controls) and toggles it', async () => {
     const user = userEvent.setup();
     renderHeader();
@@ -101,14 +98,15 @@ describe('useMenuDisclosure', () => {
     expect(button()).not.toHaveFocus();
   });
 
-  it('without a container, only button and panel count as inside', async () => {
+  it('keeps the panel mounted and never hidden; no <style> elements', async () => {
     const user = userEvent.setup();
-    renderHeader(false);
+    renderHeader();
+    const panel = screen.getByTestId('panel');
+    expect(panel).not.toHaveAttribute('hidden');
+    expect(screen.getByRole('link', { name: 'Alpha' })).toBeInTheDocument();
     await user.click(button());
-    await user.click(screen.getByRole('button', { name: 'Use dark theme' }));
-    expect(button()).toHaveAttribute('aria-expanded', 'true');
-    await user.click(screen.getByText('Portal'));
-    expect(button()).toHaveAttribute('aria-expanded', 'false');
+    expect(panel).not.toHaveAttribute('hidden');
+    expect(document.querySelector('style')).toBeNull();
   });
 
   it('a control marked data-menu-close closes it, focus back on the button', async () => {

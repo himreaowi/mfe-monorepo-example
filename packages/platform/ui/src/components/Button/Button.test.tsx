@@ -65,4 +65,33 @@ describe('Button', () => {
     expect(onClick).not.toHaveBeenCalled();
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
+
+  it('loading submit button: keeps focus, Enter/click do not submit; disabled is not focusable', async () => {
+    const user = userEvent.setup();
+    const onSubmit = jest.fn((event: SubmitEvent) => event.preventDefault());
+    const { container, rerender } = render(
+      <form>
+        <Button type="submit" loading>
+          Saving…
+        </Button>
+      </form>,
+    );
+    container.querySelector('form')?.addEventListener('submit', onSubmit);
+    await user.tab();
+    const button = screen.getByRole('button', { name: 'Saving…' });
+    expect(button).toHaveFocus();
+    await user.keyboard('{Enter}');
+    await user.click(button);
+    expect(onSubmit).not.toHaveBeenCalled();
+    rerender(
+      <form>
+        <Button type="submit" disabled>
+          Save
+        </Button>
+      </form>,
+    );
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
 });

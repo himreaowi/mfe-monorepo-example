@@ -214,7 +214,7 @@ describe('generators', () => {
       'SkipLink',
       'ThemeToggle',
       'useFitLayout',
-      'useMenuDisclosure',
+      'MenuDisclosure',
     ]) {
       assert.match(layout, new RegExp(`\\b${block}\\b`), block);
     }

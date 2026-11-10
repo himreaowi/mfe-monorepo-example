@@ -1,3 +1,4 @@
+import { Input } from '@base-ui/react/input';
 import type { ComponentPropsWithRef } from 'react';
 import { cx } from '../../utils/cx/cx';
 import { Field, type FieldLabelProps } from '../Field/Field';
@@ -11,7 +12,7 @@ export type TextFieldProps = Omit<ComponentPropsWithRef<'input'>, 'type'> &
     inputClassName?: string;
   };
 
-/** Single-line text input with label, hint and error (see Field). `ref` is the `<input>`. */
+/** Single-line text input (Base UI Input) with label, hint and error (see Field). `ref` is the `<input>`. */
 export function TextField({
   label,
   hint,
@@ -35,7 +36,7 @@ export function TextField({
       className={className}
     >
       {(control) => (
-        <input
+        <Input
           {...rest}
           {...control}
           type={type}

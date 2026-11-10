@@ -44,6 +44,12 @@ export {
   type RouterLinkVariantProps,
 } from './components/Link/Link';
 export {
+  MenuDisclosure,
+  type MenuDisclosureButtonProps,
+  type MenuDisclosurePanelProps,
+  type MenuDisclosureRootProps,
+} from './components/MenuDisclosure/MenuDisclosure';
+export {
   RadioGroup,
   type RadioGroupProps,
   type RadioOption,
@@ -89,12 +95,6 @@ export {
   type FitLayout,
   type FitLayoutOptions,
 } from './hooks/useFitLayout/useFitLayout';
-export {
-  useMenuDisclosure,
-  type MenuButtonProps,
-  type MenuDisclosure,
-  type MenuPanelProps,
-} from './hooks/useMenuDisclosure/useMenuDisclosure';
 export {
   ThemeProvider,
   useTheme,

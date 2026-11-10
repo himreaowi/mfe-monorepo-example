@@ -1,3 +1,4 @@
+import { Input } from '@base-ui/react/input';
 import type { ComponentPropsWithRef } from 'react';
 import { cx } from '../../utils/cx/cx';
 import { Field, type FieldLabelProps } from '../Field/Field';
@@ -9,7 +10,7 @@ export type TextAreaProps = ComponentPropsWithRef<'textarea'> &
     textAreaClassName?: string;
   };
 
-/** Multi-line text input with label, hint and error (see Field). Default 4 rows. */
+/** Multi-line text input (Base UI Input rendering a `<textarea>`) with label, hint and error (see Field). Default 4 rows. */
 export function TextArea({
   label,
   hint,
@@ -33,10 +34,9 @@ export function TextArea({
       className={className}
     >
       {(control) => (
-        <textarea
-          {...rest}
+        <Input
           {...control}
-          rows={rows}
+          render={<textarea {...rest} rows={rows} />}
           className={cx(styles.textArea, textAreaClassName)}
         />
       )}

@@ -9,16 +9,18 @@ owns its layout** (`src/layouts/ShellLayout`, copied from a starter by
 
 Native elements first (`<button>`, `<input>`, `<select>`, `<table>`, `<fieldset>`), which bring
 keyboard and screen-reader behaviour for free. Where the platform falls short, the internals use
-[Base UI](https://base-ui.com) (`@base-ui/react`, headless, catalog version): `Dialog`
-and `Tabs` today. `Combobox` is hand-built (WAI-ARIA combobox pattern): Base UI 1.6.0 hides the
+[Base UI](https://base-ui.com) (`@base-ui/react`, headless, catalog version): `Button`,
+`Field` (and so `TextField`, `TextArea`, `Select`, `DateField`), `Checkbox`, `RadioGroup`,
+`Dialog` and `Tabs`. `Select` and `DateField` keep the native control inside the Base UI Field:
+a Base UI Select cannot keep the `<select>` props (`ref`, `<option>` children, change event). `Combobox` is hand-built (WAI-ARIA combobox pattern): Base UI 1.6.0 hides the
 rest of the page from screen readers while its list is open, which the pattern does not allow. It is an internal detail of `@org/ui` (imported by subpath, e.g.
 `@base-ui/react/dialog`, never from apps), bundled into the `@org/ui` singleton; the public props
 stay ours. The APIs follow common conventions (`variant`, `size`, `label`, `hint`, `error`,
 native props passed through).
 
 **Strict CSP**: production sends `style-src 'self'` (no `'unsafe-inline'`, no nonce). Every
-Base UI part is wrapped in `<CSPProvider disableStyleElements>` so Base UI never renders a
-`<style>` element (only ScrollArea and Select would; any CSS they need goes in our SCSS). The
+Base UI part that could render a `<style>` element (Dialog, Tabs) is wrapped in
+`<CSPProvider disableStyleElements>`, so Base UI never renders one (only ScrollArea and Select would; any CSS they need goes in our SCSS). The
 inline styles Base UI sets from JavaScript (scroll lock, focus guards, `--nested-dialogs`) go
 through the CSSOM and are allowed by the CSP; checked in a production build served with the
 deploy/ policy (no violations with Dialog and Tabs open).
@@ -30,39 +32,39 @@ Every component takes the props of the element it renders (`type`, `name`, `onCh
 and a `className` (added after its own classes; for field components it goes on the wrapper
 and `inputClassName` / `selectClassName` / `textAreaClassName` style the control).
 
-| Export           | Element                                       | Notes                                                                                                                                                                                                                                                                                                                               |
-| ---------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Button`         | `<button>`                                    | `variant` primary / secondary / danger / ghost, `size` sm / md / lg, `loading` (spinner + `aria-disabled`, keeps focus); `type="button"` by default                                                                                                                                                                                 |
-| `Link`           | react-router `<Link>` or `<a>`                | `to` (in-app, needs a router) or `href` (plain); `newTab` adds `target`/`rel` and "(opens in a new tab)" for screen readers                                                                                                                                                                                                         |
-| `TextField`      | `<input>`                                     | `label`, `hint`, `error`, `required`; `type` text / email / password / search / tel / url / number                                                                                                                                                                                                                                  |
-| `TextArea`       | `<textarea>`                                  | as TextField; 4 rows by default, resizes vertically                                                                                                                                                                                                                                                                                 |
-| `Select`         | native `<select>`                             | `options` (`{ value, label, disabled? }`) or `<option>` children, `placeholder` (empty first option)                                                                                                                                                                                                                                |
-| `DateField`      | `<input type="date">`                         | the browser's date picker and keyboard entry; ISO values, `min` / `max`                                                                                                                                                                                                                                                             |
-| `Checkbox`       | `<input type="checkbox">`                     | `label` to the right, `hint`, `error`; several related ones go in a `<fieldset>` + `<legend>`                                                                                                                                                                                                                                       |
-| `RadioGroup`     | `<fieldset>` + `<legend>` + radios            | `label` (legend), `options` (`{ value, label, hint?, disabled? }`), `value` / `defaultValue` + `onChange(value)`, `hint`, `error`, `required`, `inline`                                                                                                                                                                             |
-| `Field`          | label + hint + error                          | wiring for a custom control: `children` is `(control) => <input {...control} />` (`id`, `aria-describedby`, `aria-invalid`, `required`)                                                                                                                                                                                             |
-| `Combobox`       | own code (`combobox` + `listbox`)             | search-as-you-type picker of one item: the caller searches (`onInputValueChange(text)`) and passes `items` (+ `loading`); `value` + `onValueChange` (`null` when cleared), `itemToString`, `itemToKey`, `renderItem`, `loadingText` / `emptyText` / `resultsText` (live regions), `label` / `hint` / `error`; arrows, Enter, Escape |
-| `Dialog`         | Base UI Dialog as `<dialog open>`             | `open` + `onClose`, `title` (`aria-labelledby`), `description` (`aria-describedby`), `footer`, `size`; Escape closes, focus is trapped and returns to the opener, scroll lock; backdrop click does not close                                                                                                                        |
-| `Alert`          | `<div>`                                       | `variant` info / success / warning / error, `title` (+ `headingLevel` for an error summary); `role="alert"` for error/warning, `role="status"` for info/success (`live={false}` for a message that is part of the page from the start)                                                                                              |
-| `Card`           | `<div>` (`as` section / article / li)         | surface with border; optional `title` (+ `headingLevel`) and `footer`                                                                                                                                                                                                                                                               |
-| `Badge`          | `<span>`                                      | `variant` neutral / accent / info / success / warning / danger; the text says the state (colour is never the only signal)                                                                                                                                                                                                           |
-| `Spinner`        | `<span role="status">`                        | `label` (default `Loading…`, read by screen readers; `labelVisible` shows it), `size`; `decorative` inside a busy control; no spinning with `prefers-reduced-motion`                                                                                                                                                                |
-| `Table`          | `<table>`                                     | `caption` (required; `captionHidden`), `columns` (`key`, `header`, `cell`, `sortable`, `sortValue`, `align`, `rowHeader`), `rows`, `getRowKey`; sort buttons with `aria-sort`, scrolls in a region                                                                                                                                  |
-| `Tabs`           | Base UI Tabs (`tablist` / `tab` / `tabpanel`) | WAI-ARIA tabs: roving tabindex, Left/Right/Home/End (disabled tabs skipped); `activation` automatic (default) or manual (arrows only move focus: use it when showing a panel is slow)                                                                                                                                               |
-| `VisuallyHidden` | `<span>`                                      | text for screen readers only                                                                                                                                                                                                                                                                                                        |
+| Export           | Element                                                    | Notes                                                                                                                                                                                                                                                                                                                               |
+| ---------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Button`         | Base UI Button (`<button>`)                                | `variant` primary / secondary / danger / ghost, `size` sm / md / lg, `loading` (spinner + `aria-disabled`, keeps focus); `type="button"` by default                                                                                                                                                                                 |
+| `Link`           | react-router `<Link>` or `<a>`                             | `to` (in-app, needs a router) or `href` (plain); `newTab` adds `target`/`rel` and "(opens in a new tab)" for screen readers                                                                                                                                                                                                         |
+| `TextField`      | Base UI Input (`<input>`)                                  | `label`, `hint`, `error`, `required`; `type` text / email / password / search / tel / url / number                                                                                                                                                                                                                                  |
+| `TextArea`       | Base UI Input as `<textarea>`                              | as TextField; 4 rows by default, resizes vertically                                                                                                                                                                                                                                                                                 |
+| `Select`         | native `<select>` in Base UI Field                         | `options` (`{ value, label, disabled? }`) or `<option>` children, `placeholder` (empty first option)                                                                                                                                                                                                                                |
+| `DateField`      | `<input type="date">` in Base UI Field                     | the browser's date picker and keyboard entry; ISO values, `min` / `max`                                                                                                                                                                                                                                                             |
+| `Checkbox`       | Base UI Checkbox (`<span role="checkbox">` + hidden input) | value in the form via the hidden input (`ref`, `onChange` event target); `label` to the right, `hint`, `error`; several related ones go in a `<fieldset>` + `<legend>`                                                                                                                                                              |
+| `RadioGroup`     | Base UI RadioGroup + Radio (`radiogroup`, legend)          | one tab stop, arrow keys select; hidden native radios carry `name`/value; `label` (legend), `options` (`{ value, label, hint?, disabled? }`), `value` / `defaultValue` + `onChange(value)`, `hint`, `error`, `required`, `inline`                                                                                                   |
+| `Field`          | Base UI Field: label + hint + error                        | wiring for a custom control: `children` is `(control) => <input {...control} />` (`id`, `aria-describedby`, `aria-invalid`, `required`)                                                                                                                                                                                             |
+| `Combobox`       | own code (`combobox` + `listbox`)                          | search-as-you-type picker of one item: the caller searches (`onInputValueChange(text)`) and passes `items` (+ `loading`); `value` + `onValueChange` (`null` when cleared), `itemToString`, `itemToKey`, `renderItem`, `loadingText` / `emptyText` / `resultsText` (live regions), `label` / `hint` / `error`; arrows, Enter, Escape |
+| `Dialog`         | Base UI Dialog as `<dialog open>`                          | `open` + `onClose`, `title` (`aria-labelledby`), `description` (`aria-describedby`), `footer`, `size`; Escape closes, focus is trapped and returns to the opener, scroll lock; backdrop click does not close                                                                                                                        |
+| `Alert`          | `<div>`                                                    | `variant` info / success / warning / error, `title` (+ `headingLevel` for an error summary); `role="alert"` for error/warning, `role="status"` for info/success (`live={false}` for a message that is part of the page from the start)                                                                                              |
+| `Card`           | `<div>` (`as` section / article / li)                      | surface with border; optional `title` (+ `headingLevel`) and `footer`                                                                                                                                                                                                                                                               |
+| `Badge`          | `<span>`                                                   | `variant` neutral / accent / info / success / warning / danger; the text says the state (colour is never the only signal)                                                                                                                                                                                                           |
+| `Spinner`        | `<span role="status">`                                     | `label` (default `Loading…`, read by screen readers; `labelVisible` shows it), `size`; `decorative` inside a busy control; no spinning with `prefers-reduced-motion`                                                                                                                                                                |
+| `Table`          | `<table>`                                                  | `caption` (required; `captionHidden`), `columns` (`key`, `header`, `cell`, `sortable`, `sortValue`, `align`, `rowHeader`), `rows`, `getRowKey`; sort buttons with `aria-sort`, scrolls in a region                                                                                                                                  |
+| `Tabs`           | Base UI Tabs (`tablist` / `tab` / `tabpanel`)              | WAI-ARIA tabs: roving tabindex, Left/Right/Home/End (disabled tabs skipped); `activation` automatic (default) or manual (arrows only move focus: use it when showing a panel is slow)                                                                                                                                               |
+| `VisuallyHidden` | `<span>`                                                   | text for screen readers only                                                                                                                                                                                                                                                                                                        |
 
 Shell building blocks:
 
-| Export                        | Notes                                                                                                                       |
-| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `ThemeToggle`                 | Light / Dark / Use system theme (needs a `ThemeProvider` above)                                                             |
-| `SkipLink`                    | "Skip to main content": first Tab stop, visible on focus, focuses the target without a URL change (`targetId`, `children`)  |
-| `Brand`                       | the app name in a header: one line, ellipsis on screen, full accessible name (any `<div>` props, `className`)               |
-| `useMenuDisclosure()`         | headless Menu button + panel/drawer: state, `buttonProps`, `panelProps`, Escape / outside click / link / back-forward close |
-| `useFitLayout(options)`       | measures whether a row (header) fits: `'wide' \| 'compact'`, so a layout collapses behind "Menu" exactly when needed        |
-| `RemoteFallback`              | `role="alert"` panel; optional `onRetry` adds a "Try again" button                                                          |
-| `ConnectionRequired`          | Offline banner (`visible`; a shell passes `!useOnlineStatus()` from `@org/pwa`)                                             |
-| `ThemeProvider`, `useTheme()` | Light/dark/system theme, sets `data-theme` on `<html>`                                                                      |
+| Export                        | Notes                                                                                                                           |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `ThemeToggle`                 | Light / Dark / Use system theme (needs a `ThemeProvider` above)                                                                 |
+| `SkipLink`                    | "Skip to main content": first Tab stop, visible on focus, focuses the target without a URL change (`targetId`, `children`)      |
+| `Brand`                       | the app name in a header: one line, ellipsis on screen, full accessible name (any `<div>` props, `className`)                   |
+| `MenuDisclosure`              | Menu button + panel/drawer on Base UI Collapsible (`Root`/`Button`/`Panel`): Escape / outside click / link / back-forward close |
+| `useFitLayout(options)`       | measures whether a row (header) fits: `'wide' \| 'compact'`, so a layout collapses behind "Menu" exactly when needed            |
+| `RemoteFallback`              | `role="alert"` panel; optional `onRetry` adds a "Try again" button                                                              |
+| `ConnectionRequired`          | Offline banner (`visible`; a shell passes `!useOnlineStatus()` from `@org/pwa`)                                                 |
+| `ThemeProvider`, `useTheme()` | Light/dark/system theme, sets `data-theme` on `<html>`                                                                          |
 
 ```tsx
 import { Alert, Button, Select, TextField } from '@org/ui';
@@ -163,25 +165,27 @@ at the repo root, `top` and `side`); in short:
 ```tsx
 const mainId = useId();
 const sizerRef = useRef<HTMLDivElement>(null);
-const menu = useMenuDisclosure();
-const { setOpen } = menu;
-const onChange = useCallback((next: FitLayout) => next === 'wide' && setOpen(false), [setOpen]);
+const headerRef = useRef<HTMLElement>(null);
+const buttonRef = useRef<HTMLButtonElement>(null);
+const panelRef = useRef<HTMLDivElement>(null);
+const [open, setOpen] = useState(false);
+const onChange = useCallback((next: FitLayout) => next === 'wide' && setOpen(false), []);
 const layout = useFitLayout({
-  container: menu.containerRef, sizer: sizerRef, panel: menu.panelRef,
-  button: menu.buttonRef, open: menu.open, onChange,
+  container: headerRef, sizer: sizerRef, panel: panelRef, button: buttonRef, open, onChange,
 });
 
 <SkipLink targetId={mainId} />
-<header ref={menu.containerRef} className={styles.header} data-layout={layout}>
+<MenuDisclosure.Root ref={headerRef} open={open} onOpenChange={setOpen}
+  render={<header className={styles.header} data-layout={layout} />}>
   <div ref={sizerRef} className={styles.sizer} aria-hidden="true" />
   <Brand className={styles.brand}>{APP_TITLE}</Brand>
-  <button {...menu.buttonProps} className={styles.menuButton}>Menu</button>
-  <div {...menu.panelProps} className={menu.open ? `${styles.panel} ${styles.open}` : styles.panel}>
+  <MenuDisclosure.Button ref={buttonRef} className={styles.menuButton}>Menu</MenuDisclosure.Button>
+  <MenuDisclosure.Panel ref={panelRef} className={open ? `${styles.panel} ${styles.open}` : styles.panel}>
     <nav aria-label="Main">…</nav>
     <ThemeToggle />
     <UserMenu />
-  </div>
-</header>
+  </MenuDisclosure.Panel>
+</MenuDisclosure.Root>
 <main id={mainId} tabIndex={-1}>…</main>
 ```
 
@@ -230,31 +234,23 @@ always stay fully visible.
   truncates too. A padding/negative-margin pair keeps a focused brand link's focus ring inside the
   clipped box.
 
-### `useMenuDisclosure()`
+### `MenuDisclosure`
 
-The WAI-ARIA disclosure for a "Menu" button and the panel or drawer it shows; markup and styles
-stay in the layout.
+The WAI-ARIA disclosure (non-modal) for a "Menu" button and the panel or drawer it shows, on Base
+UI Collapsible; styles stay in the layout. `Root` (`open` + `onOpenChange`, controlled; `render`
+e.g. `<header />`; `ref`) wraps `Button` and `Panel` (both take `ref` and their element's props).
 
-```ts
-const menu = useMenuDisclosure<TPanel = HTMLDivElement, TContainer = HTMLElement>();
-menu.open; menu.setOpen(v); menu.toggle(); menu.close(restoreFocus?);
-menu.buttonProps  // { ref, type: 'button', 'aria-expanded', 'aria-controls', onClick }
-menu.panelProps   // { ref, id, onClick }
-menu.containerRef // optional: the element around both (e.g. <header>)
-menu.buttonRef; menu.panelRef; menu.panelId;
-```
-
-- the button gets `aria-expanded` and `aria-controls` (the panel's generated `id`); render the
-  panel `display: none` while closed, so it is out of the tab order and the accessibility tree;
+- the button gets `type="button"`, `aria-expanded` and `aria-controls` (the panel's `id`);
+- the panel stays mounted and never gets `hidden`: render it `display: none` while closed (out of
+  the tab order and the accessibility tree), or inline when the layout is wide;
 - **Escape** closes it and returns focus to the button;
-- a **pointer down outside** `containerRef` (or, without it, outside button and panel) closes it
-  and leaves focus where the user put it;
+- a **pointer down outside** `Root` closes it and leaves focus where the user put it;
 - a **followed link inside the panel** (a click on `a[href]`, also Enter on a link) and
   **browser back/forward** (`popstate`) close it;
 - a **click on a control marked `data-menu-close`** inside the panel closes it (Sign in and Sign
   out in `UserMenu` use this);
 - closing while focus is inside the panel moves focus to the button (never lost on `<body>`);
-- listeners are attached only while it is open.
+- listeners are attached only while it is open; no `<style>` elements (strict CSP).
 
 ### `useFitLayout(options)`
 

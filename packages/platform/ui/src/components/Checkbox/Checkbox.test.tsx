@@ -17,11 +17,35 @@ describe('Checkbox', () => {
       />,
     );
     const box = screen.getByRole('checkbox', { name: 'Email me updates' });
-    expect(ref.current).toBe(box);
+    // Base UI: role="checkbox" is a <span>; `ref` is the hidden native input beside it.
+    expect(ref.current).toHaveAttribute('type', 'checkbox');
     expect(box).toHaveAccessibleDescription('About once a month');
     await user.click(screen.getByText('Email me updates'));
     expect(onChange).toHaveBeenCalledWith(true);
     expect(box).toBeChecked();
+    expect(ref.current?.checked).toBe(true);
+  });
+
+  it('toggles with Space and submits name/value with the form', async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <form>
+        <Checkbox label="Updates" name="updates" value="yes" />
+        <Checkbox label="Locked" name="locked" disabled defaultChecked />
+      </form>,
+    );
+    const form = container.querySelector('form') as HTMLFormElement;
+    const box = screen.getByRole('checkbox', { name: 'Updates' });
+    expect(new FormData(form).get('updates')).toBeNull();
+    box.focus();
+    await user.keyboard(' ');
+    expect(box).toBeChecked();
+    expect(new FormData(form).get('updates')).toBe('yes');
+    const locked = screen.getByRole('checkbox', { name: 'Locked' });
+    expect(locked).toHaveAttribute('aria-disabled', 'true');
+    await user.click(screen.getByText('Locked'));
+    expect(locked).toBeChecked();
+    expect(document.querySelectorAll('style')).toHaveLength(0);
   });
 
   it('error sets aria-invalid', () => {

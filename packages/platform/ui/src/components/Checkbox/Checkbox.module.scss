@@ -7,17 +7,54 @@
 }
 
 .input {
+  display: inline-flex;
   flex: none;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
   width: 1.25rem;
   height: 1.25rem;
   // centre the box on the first line of the label (line-height 1.5)
   margin: calc((1.5em - 1.25rem) / 2) 0 0;
-  accent-color: var(--color-accent);
+  border: 2px solid var(--color-text-muted);
+  border-radius: 3px;
+  background: var(--color-bg);
+  color: var(--color-accent-contrast);
+  cursor: pointer;
 
   @include focus-ring;
 
-  &:disabled + .text {
+  &[data-checked] {
+    border-color: var(--color-accent);
+    background: var(--color-accent);
+  }
+
+  &[aria-invalid='true'] {
+    border-color: var(--color-danger);
+  }
+
+  &[data-disabled] {
+    cursor: not-allowed;
+  }
+
+  // the hidden native input sits between the box and the text
+  &[data-disabled],
+  &[data-disabled] ~ .text {
     opacity: 0.6;
+  }
+}
+
+.indicator {
+  display: flex;
+
+  svg {
+    width: 0.875rem;
+    height: 0.875rem;
+    fill: none;
+    stroke: currentcolor;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }
 }
 

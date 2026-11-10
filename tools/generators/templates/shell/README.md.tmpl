@@ -78,8 +78,9 @@ Changing it rebuilds and redeploys only this shell (no remote, no other shell).
 
 It is built from small `@org/ui` building blocks (shared, so every app behaves the same):
 `SkipLink`, `Brand` (one line, ellipsis, full accessible name), `ThemeToggle`,
-`useMenuDisclosure` (the Menu button and its panel or drawer: `aria-expanded`/`aria-controls`,
-Escape returns focus, outside click, closes after a followed link and on back/forward) and
+`MenuDisclosure` (Base UI Collapsible: the Menu button and its panel or drawer, `aria-expanded`/
+`aria-controls`, Escape returns focus, outside click, closes after a followed link, on
+back/forward and on `data-menu-close` controls such as Sign out) and
 `useFitLayout` (measures whether the header row fits and switches between `wide` and
 `compact`, so it collapses behind "Menu" whenever it does not fit, not at a fixed breakpoint),
 plus `UserMenu` from `@org/auth`.

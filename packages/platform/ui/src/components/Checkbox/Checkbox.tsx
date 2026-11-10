@@ -1,4 +1,10 @@
-import { useId, type ComponentPropsWithRef, type ReactNode } from 'react';
+import { Checkbox as BaseCheckbox } from '@base-ui/react/checkbox';
+import {
+  useId,
+  type ComponentPropsWithRef,
+  type FormEventHandler,
+  type ReactNode,
+} from 'react';
 import { cx } from '../../utils/cx/cx';
 import { VisuallyHidden } from '../VisuallyHidden/VisuallyHidden';
 import styles from './Checkbox.module.scss';
@@ -16,8 +22,10 @@ export type CheckboxProps = Omit<ComponentPropsWithRef<'input'>, 'type'> & {
 };
 
 /**
- * Native checkbox with its label to the right. Several related checkboxes: put them in a
- * `<fieldset>` with a `<legend>`.
+ * Base UI Checkbox (`role="checkbox"` on a focusable `<span>`, plus a hidden native
+ * `<input type="checkbox">` that carries `name`/`value` into the form) with its label to the
+ * right. `ref` is that hidden `<input>`; `onChange` gets its change event (`event.target.checked`).
+ * Several related checkboxes: put them in a `<fieldset>` with a `<legend>`.
  */
 export function Checkbox({
   label,
@@ -25,6 +33,16 @@ export function Checkbox({
   error,
   id,
   className,
+  ref,
+  name,
+  value,
+  checked,
+  defaultChecked,
+  disabled,
+  required,
+  readOnly,
+  form,
+  onChange,
   'aria-describedby': describedBy,
   'aria-invalid': ariaInvalid,
   ...rest
@@ -39,15 +57,33 @@ export function Checkbox({
       .filter(Boolean)
       .join(' ') || undefined;
   return (
-    <div className={cx(styles.checkbox, className)}>
-      <input
-        {...rest}
+    // The hidden input's React change event bubbles here: `onChange` keeps its native shape.
+    <div
+      className={cx(styles.checkbox, className)}
+      onChange={onChange as FormEventHandler<HTMLDivElement> | undefined}
+    >
+      <BaseCheckbox.Root
+        {...(rest as BaseCheckbox.Root.Props)}
         id={inputId}
-        type="checkbox"
+        inputRef={ref}
+        name={name}
+        value={value === undefined ? undefined : String(value)}
+        checked={checked}
+        defaultChecked={defaultChecked}
+        disabled={disabled}
+        required={required}
+        readOnly={readOnly}
+        form={form}
         className={styles.input}
         aria-describedby={describedByIds}
         aria-invalid={hasError ? true : ariaInvalid}
-      />
+      >
+        <BaseCheckbox.Indicator className={styles.indicator}>
+          <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            <path d="M3 8.5l3 3 7-7" />
+          </svg>
+        </BaseCheckbox.Indicator>
+      </BaseCheckbox.Root>
       <div className={styles.text}>
         <label htmlFor={inputId} className={styles.label}>
           {label}

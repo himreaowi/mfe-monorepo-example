@@ -46,4 +46,19 @@ describe('Select', () => {
     expect(select).toHaveAttribute('aria-invalid', 'true');
     expect(select).toBeRequired();
   });
+
+  it('submits its value with the form', async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <form>
+        <Select label="Type" name="type" options={options} />
+      </form>,
+    );
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: 'Type' }),
+      'sick',
+    );
+    const form = container.querySelector('form') as HTMLFormElement;
+    expect(new FormData(form).get('type')).toBe('sick');
+  });
 });

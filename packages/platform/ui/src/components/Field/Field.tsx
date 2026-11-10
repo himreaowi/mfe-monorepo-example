@@ -1,3 +1,4 @@
+import { Field as BaseField } from '@base-ui/react/field';
 import { useId, type ReactNode } from 'react';
 import { cx } from '../../utils/cx/cx';
 import { VisuallyHidden } from '../VisuallyHidden/VisuallyHidden';
@@ -35,7 +36,7 @@ export type FieldProps = FieldLabelProps & {
 };
 
 /**
- * Label + hint + error around one form control, wired for screen readers: `<label for>`,
+ * Label + hint + error around one form control (Base UI Field), wired for screen readers: `<label for>`,
  * `aria-describedby` = hint + error, `aria-invalid` when there is an error. TextField,
  * TextArea, Select and DateField are built on it; use it directly for a custom control.
  */
@@ -63,25 +64,33 @@ export function Field({
     .filter(Boolean)
     .join(' ');
   return (
-    <div className={cx(styles.field, className)}>
-      <label
+    <BaseField.Root
+      className={cx(styles.field, className)}
+      invalid={hasError || undefined}
+    >
+      <BaseField.Label
         id={`${controlId}-label`}
         htmlFor={controlId}
         className={styles.label}
       >
         {label}
         {required ? <span className={styles.required}> (required)</span> : null}
-      </label>
+      </BaseField.Label>
       {hint ? (
-        <p id={hintId} className={styles.hint}>
+        <BaseField.Description id={hintId} className={styles.hint}>
           {hint}
-        </p>
+        </BaseField.Description>
       ) : null}
       {hasError ? (
-        <p id={errorId} className={styles.error}>
+        <BaseField.Error
+          id={errorId}
+          match
+          className={styles.error}
+          render={<p />}
+        >
           <VisuallyHidden>Error: </VisuallyHidden>
           {error}
-        </p>
+        </BaseField.Error>
       ) : null}
       {children({
         id: controlId,
@@ -89,6 +98,6 @@ export function Field({
         'aria-invalid': hasError ? true : undefined,
         required: required || undefined,
       })}
-    </div>
+    </BaseField.Root>
   );
 }

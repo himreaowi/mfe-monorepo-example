@@ -15,8 +15,7 @@
   @include focus-ring;
 }
 
-.button:disabled,
-.loading {
+.button[data-disabled] {
   opacity: 0.55;
   cursor: not-allowed;
 }

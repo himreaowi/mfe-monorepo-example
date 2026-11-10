@@ -79,7 +79,7 @@ global styles from their exposed module.
 Each shell owns its layout (`src/layouts/ShellLayout/`: header, nav, colours), copied from a
 starter by `pnpm gen:shell <zone> [--layout top|side]` and then edited like any other code of the
 shell; a remote owns its standalone chrome (`src/layouts/StandaloneLayout/`). `@org/ui` holds
-only building blocks (`SkipLink`, `Brand`, `ThemeToggle`, `useMenuDisclosure`, `useFitLayout`,
+only building blocks (`SkipLink`, `Brand`, `ThemeToggle`, `MenuDisclosure`, `useFitLayout`,
 …). Two reasons:
 
 - **Independence**: shells look and are structured differently (a blue staff portal with a

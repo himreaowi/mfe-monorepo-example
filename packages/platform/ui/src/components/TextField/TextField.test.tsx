@@ -44,4 +44,16 @@ describe('TextField', () => {
     expect(input.getAttribute('aria-describedby')).toMatch(/-error other$/);
     expect(input).toBeRequired();
   });
+
+  it('submits its value with the form', async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <form>
+        <TextField label="Name" name="name" defaultValue="Ada" />
+      </form>,
+    );
+    await user.type(screen.getByRole('textbox', { name: 'Name' }), '!');
+    const form = container.querySelector('form') as HTMLFormElement;
+    expect(new FormData(form).get('name')).toBe('Ada!');
+  });
 });

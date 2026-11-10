@@ -1,36 +1,31 @@
-import type { MouseEvent } from 'react';
+import { Button as BaseButton } from '@base-ui/react/button';
 import { cx } from '../../utils/cx/cx';
 import { Spinner } from '../Spinner/Spinner';
 import styles from './Button.module.scss';
 import type { ButtonProps } from './types';
 
 /**
- * Native `<button>` (default `type="button"`, so it never submits a form by accident).
- * `loading` keeps the button focusable (`aria-disabled`) instead of `disabled`, which would drop
- * keyboard focus to the page.
+ * Native `<button>` via Base UI Button (default `type="button"`, so it never submits a form by
+ * accident). `disabled` is the native attribute (not focusable). `loading` keeps the button
+ * focusable (`aria-disabled`, Base UI `focusableWhenDisabled`) instead, which would otherwise
+ * drop keyboard focus to the page, and ignores clicks and key presses.
  */
 export function Button({
   variant = 'primary',
   size = 'md',
   loading = false,
   type = 'button',
+  disabled,
   className,
   children,
-  onClick,
-  'aria-disabled': ariaDisabled,
   ...rest
 }: ButtonProps) {
-  const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
-    if (loading) {
-      event.preventDefault();
-      return;
-    }
-    onClick?.(event);
-  };
   return (
-    <button
+    <BaseButton
       {...rest}
       type={type}
+      disabled={disabled || loading}
+      focusableWhenDisabled={loading && !disabled}
       className={cx(
         styles.button,
         variant !== 'primary' && styles[variant],
@@ -38,11 +33,9 @@ export function Button({
         loading && styles.loading,
         className,
       )}
-      aria-disabled={loading ? true : ariaDisabled}
-      onClick={handleClick}
     >
       {loading ? <Spinner size="sm" decorative /> : null}
       {children}
-    </button>
+    </BaseButton>
   );
 }

@@ -1,3 +1,6 @@
+import { Fieldset } from '@base-ui/react/fieldset';
+import { Radio } from '@base-ui/react/radio';
+import { RadioGroup as BaseRadioGroup } from '@base-ui/react/radio-group';
 import { useId, type ChangeEvent, type ReactNode } from 'react';
 import { cx } from '../../utils/cx/cx';
 import { VisuallyHidden } from '../VisuallyHidden/VisuallyHidden';
@@ -31,15 +34,16 @@ export type RadioGroupProps = {
   disabled?: boolean;
   /** Options side by side instead of stacked (short labels only). */
   inline?: boolean;
-  /** Class of the `<fieldset>`. */
+  /** Class of the group element. */
   className?: string;
-  /** `id` of the `<fieldset>`. */
+  /** `id` of the group element. */
   id?: string;
 };
 
 /**
- * Native radio buttons in a `<fieldset>` with a `<legend>`: the browser provides the arrow-key
- * behaviour and screen readers announce the group name and position.
+ * Base UI RadioGroup + Radio, named by its legend (Base UI Fieldset): `role="radiogroup"` with
+ * one tab stop and arrow keys that move and select. Each radio is a focusable `<span
+ * role="radio">` with a hidden native radio beside it that carries `name`/`value` into the form.
  */
 export function RadioGroup({
   label,
@@ -65,16 +69,24 @@ export function RadioGroup({
     [hint ? hintId : '', hasError ? errorId : ''].filter(Boolean).join(' ') ||
     undefined;
   return (
-    <fieldset
+    <Fieldset.Root
       id={id}
       className={cx(styles.group, className)}
       aria-describedby={describedBy}
       disabled={disabled}
+      render={
+        <BaseRadioGroup
+          name={groupName}
+          required={required}
+          disabled={disabled}
+          {...(value !== undefined ? { value } : { defaultValue })}
+        />
+      }
     >
-      <legend className={styles.legend}>
+      <Fieldset.Legend className={styles.legend}>
         {label}
         {required ? <span className={styles.required}> (required)</span> : null}
-      </legend>
+      </Fieldset.Legend>
       {hint ? (
         <p id={hintId} className={styles.hint}>
           {hint}
@@ -91,22 +103,27 @@ export function RadioGroup({
           const optionId = `${baseId}-${index}`;
           const optionHintId = `${optionId}-hint`;
           return (
-            <div key={option.value} className={styles.option}>
-              <input
+            // The hidden radio's React change event bubbles here (click, arrow keys, label).
+            <div
+              key={option.value}
+              className={styles.option}
+              onChange={(event) =>
+                onChange?.(
+                  option.value,
+                  event as unknown as ChangeEvent<HTMLInputElement>,
+                )
+              }
+            >
+              <Radio.Root
                 id={optionId}
-                type="radio"
-                className={styles.input}
-                name={groupName}
                 value={option.value}
                 disabled={option.disabled}
-                required={required}
+                className={styles.input}
                 aria-invalid={hasError ? true : undefined}
                 aria-describedby={option.hint ? optionHintId : undefined}
-                {...(value !== undefined
-                  ? { checked: value === option.value }
-                  : { defaultChecked: defaultValue === option.value })}
-                onChange={(event) => onChange?.(option.value, event)}
-              />
+              >
+                <Radio.Indicator className={styles.indicator} />
+              </Radio.Root>
               <div className={styles.text}>
                 <label htmlFor={optionId} className={styles.label}>
                   {option.label}
@@ -121,6 +138,6 @@ export function RadioGroup({
           );
         })}
       </div>
-    </fieldset>
+    </Fieldset.Root>
   );
 }

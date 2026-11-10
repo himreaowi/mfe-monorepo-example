@@ -1,8 +1,8 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useMenuDisclosure } from '../useMenuDisclosure/useMenuDisclosure';
+import { MenuDisclosure } from '../../components/MenuDisclosure/MenuDisclosure';
 import {
   FIT_HYSTERESIS_PX,
   decideFitLayout,
@@ -11,41 +11,45 @@ import {
 } from './useFitLayout';
 import type { FitLayout } from './useFitLayout';
 
-/** A collapsing header built from the hook + useMenuDisclosure, like a shell layout. */
+/** A collapsing header built from the hook + MenuDisclosure, like a shell layout. */
 function Header({
   actions = <button type="button">Sign in</button>,
 }: {
   actions?: ReactNode;
 }) {
-  const menu = useMenuDisclosure();
+  const [open, setOpen] = useState(false);
+  const container = useRef<HTMLElement>(null);
   const sizer = useRef<HTMLDivElement>(null);
-  const { setOpen } = menu;
-  const onChange = useCallback(
-    (next: FitLayout) => {
-      if (next === 'wide') setOpen(false);
-    },
-    [setOpen],
-  );
+  const panel = useRef<HTMLDivElement>(null);
+  const button = useRef<HTMLButtonElement>(null);
+  const onChange = useCallback((next: FitLayout) => {
+    if (next === 'wide') setOpen(false);
+  }, []);
   const layout = useFitLayout({
-    container: menu.containerRef,
+    container,
     sizer,
-    panel: menu.panelRef,
-    button: menu.buttonRef,
-    open: menu.open,
+    panel,
+    button,
+    open,
     onChange,
   });
   return (
-    <header ref={menu.containerRef} data-testid="header" data-layout={layout}>
+    <MenuDisclosure.Root
+      ref={container}
+      open={open}
+      onOpenChange={setOpen}
+      render={<header data-testid="header" data-layout={layout} />}
+    >
       <div ref={sizer} />
       <span>Portal</span>
-      <button {...menu.buttonProps}>Menu</button>
-      <div {...menu.panelProps}>
+      <MenuDisclosure.Button ref={button}>Menu</MenuDisclosure.Button>
+      <MenuDisclosure.Panel ref={panel}>
         <nav aria-label="Main">
           <a href="/a">Alpha</a>
         </nav>
         {actions}
-      </div>
-    </header>
+      </MenuDisclosure.Panel>
+    </MenuDisclosure.Root>
   );
 }
 

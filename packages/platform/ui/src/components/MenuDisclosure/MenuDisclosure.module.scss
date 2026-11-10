@@ -1,0 +1,51 @@
+/*
+ * Example styles for the stories only: MenuDisclosure itself is unstyled, the shell layout
+ * styles its header, button and panel (see ShellLayout.module.scss in a generated shell).
+ */
+.header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.button {
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+
+  &[aria-expanded='true'] {
+    background: var(--color-bg);
+  }
+}
+
+/* Closed: display: none, so the panel is out of the tab order and the accessibility tree. */
+.panel {
+  display: none;
+}
+
+.open {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+
+  a {
+    color: var(--color-accent);
+  }
+}

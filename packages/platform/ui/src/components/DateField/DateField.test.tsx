@@ -31,4 +31,14 @@ describe('DateField', () => {
       'true',
     );
   });
+
+  it('submits its value with the form', () => {
+    const { container } = render(
+      <form>
+        <DateField label="Start" name="start" defaultValue="2026-10-21" />
+      </form>,
+    );
+    const form = container.querySelector('form') as HTMLFormElement;
+    expect(new FormData(form).get('start')).toBe('2026-10-21');
+  });
 });

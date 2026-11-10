@@ -69,7 +69,7 @@ Instructions for AI coding agents (and humans) working in this monorepo. Details
   writing your own; `pnpm check` enforces the `@org/ui` component folder rule and the shared-component rule.
 - Tokens (`var(--…)`) over hardcoded colours/spacing; WCAG 2.2 AA in light and dark; works at
   375 px (the shell's own `src/layouts/ShellLayout` keeps the header one row and collapses it when
-  it does not fit, with `useFitLayout` / `useMenuDisclosure` from `@org/ui`; remotes build no menus).
+  it does not fit, with `useFitLayout` / `MenuDisclosure` from `@org/ui`; remotes build no menus).
 - The shell owns its layout: restyle or restructure it in `src/layouts/ShellLayout/` (colours in
   `ShellLayout.module.scss`), never by adding options to `@org/ui` (a change there rebuilds every
   app). Remotes never set page-wide custom properties (`:root`, `html`, `[data-theme]`).

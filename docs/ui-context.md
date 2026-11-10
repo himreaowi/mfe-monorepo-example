@@ -62,7 +62,7 @@ _TODO: product-specific theme UX (e.g. high-contrast theme), if any._
 Each shell owns its layout: `apps/<zone>/<name>/shell/src/layouts/ShellLayout/` is ordinary
 code of that shell (`ShellLayout.tsx`, `ShellLayout.module.scss`, `ShellLayout.test.tsx`). `pnpm gen:shell <zone> [--layout top|side]` copies a **starter** there once; after
 that there is no layout option anywhere: the team edits the files. `@org/ui` gives building
-blocks only (`SkipLink`, `Brand`, `ThemeToggle`, `useMenuDisclosure`, `useFitLayout`, …), so
+blocks only (`SkipLink`, `Brand`, `ThemeToggle`, `MenuDisclosure`, `useFitLayout`, …), so
 the hard parts (accessibility, the collapsing header) behave the same in every shell while the
 look and structure can differ freely.
 
@@ -134,7 +134,7 @@ and a remote cannot change them. A blue header (the example in the starter's com
 | `SkipLink`                                     | first Tab stop, focuses `<main>` without a router navigation: easy to get subtly wrong        |
 | `Brand`                                        | one-line ellipsis that keeps the full accessible name (no tooltip, no hidden copy)            |
 | `ThemeToggle`, `ThemeProvider`                 | one theme state for the shell and all remotes                                                 |
-| `useMenuDisclosure`                            | the Menu button + panel/drawer behaviour (ARIA, Escape, focus, outside click, link, back)     |
+| `MenuDisclosure`                               | the Menu button + panel/drawer behaviour (ARIA, Escape, focus, outside click, link, back)     |
 | `useFitLayout`                                 | the measured "does the header row fit" switch (no fixed breakpoint, no flicker, no flip-flop) |
 | `UserMenu` (`@org/auth`), `ConnectionRequired` | session and offline state                                                                     |
 
@@ -173,7 +173,7 @@ Rules:
 | `ThemeToggle`               | Light / Dark / Use system theme                                       |
 | `SkipLink`                  | "Skip to main content", first Tab stop                                |
 | `Brand`                     | app name on one line (ellipsis), full accessible name                 |
-| `useMenuDisclosure`         | Menu button + panel/drawer behaviour (headless)                       |
+| `MenuDisclosure`            | Menu button + panel/drawer (Base UI Collapsible)                      |
 | `useFitLayout`              | measures whether the header row fits (`wide` / `compact`)             |
 | `RemoteFallback`            | `role="alert"` panel for failed remotes/modules, optional "Try again" |
 | `ConnectionRequired`        | offline banner                                                        |
