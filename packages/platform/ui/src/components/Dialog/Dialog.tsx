@@ -1,12 +1,12 @@
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useRef,
-  type ComponentPropsWithRef,
-  type ReactNode,
-  type Ref,
+import type {
+  ComponentProps,
+  ComponentPropsWithRef,
+  ReactNode,
+  Ref,
 } from 'react';
+import { CSPProvider } from '@base-ui/react/csp-provider';
+import { Dialog as BaseDialog } from '@base-ui/react/dialog';
+import { mergeProps } from '@base-ui/react/merge-props';
 import { cx } from '../../utils/cx/cx';
 import styles from './Dialog.module.scss';
 
@@ -14,7 +14,7 @@ export type DialogProps = Omit<
   ComponentPropsWithRef<'dialog'>,
   'open' | 'title' | 'onClose' | 'children'
 > & {
-  /** Shown as a modal (`showModal()`) while true. */
+  /** Shown as a modal while true. */
   open: boolean;
   /** Called when the dialog asks to close: Escape, the close button, `<form method="dialog">`. Set `open` to false. */
   onClose: () => void;
@@ -32,10 +32,12 @@ export type DialogProps = Omit<
 };
 
 /**
- * Modal dialog on the native `<dialog>` element: `showModal()` gives the top layer, the
- * backdrop, a focus trap (the rest of the page is inert) and Escape to close. Focus goes to
- * the first focusable element inside (or the one with `autoFocus`) and back to the element
- * that had it when the dialog closes. No inline styles; works under the strict CSP.
+ * Modal dialog on Base UI Dialog, rendered as a `<dialog open>` element in a portal: a backdrop,
+ * a focus trap (the rest of the page is inert), scroll lock and Escape to close; a click on the
+ * backdrop does not close it. Focus goes to the first focusable element inside (or the one with
+ * `autoFocus`) and back to the element that had it when the dialog closes. The element stays
+ * mounted (hidden) while closed. No `<style>` elements (CSPProvider), so it works under the
+ * strict CSP.
  */
 export function Dialog({
   open,
@@ -50,78 +52,60 @@ export function Dialog({
   ref,
   ...rest
 }: DialogProps) {
-  const dialogRef = useRef<HTMLDialogElement | null>(null);
-  const returnFocusRef = useRef<HTMLElement | null>(null);
-  const titleId = useId();
-  const descriptionId = useId();
-
-  const setRef = useCallback(
-    (node: HTMLDialogElement | null) => {
-      dialogRef.current = node;
-      assignRef(ref, node);
-    },
-    [ref],
-  );
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    if (open && !dialog.open) {
-      returnFocusRef.current =
-        document.activeElement instanceof HTMLElement
-          ? document.activeElement
-          : null;
-      dialog.showModal();
-    } else if (!open && dialog.open) {
-      dialog.close();
-    }
-  }, [open]);
-
-  const handleClose = () => {
-    const target = returnFocusRef.current;
-    returnFocusRef.current = null;
-    if (target?.isConnected) target.focus();
-    if (open) onClose();
-  };
-
   return (
-    <dialog
-      {...rest}
-      ref={setRef}
-      className={cx(styles.dialog, styles[size], className)}
-      aria-labelledby={titleId}
-      aria-describedby={description !== undefined ? descriptionId : undefined}
-      onClose={handleClose}
-    >
-      <div className={styles.header}>
-        <h2 id={titleId} className={styles.title}>
-          {title}
-        </h2>
-        <button
-          type="button"
-          className={styles.close}
-          aria-label={closeLabel}
-          onClick={() => dialogRef.current?.close()}
-        >
-          <span aria-hidden="true">×</span>
-        </button>
-      </div>
-      {description !== undefined ? (
-        <p id={descriptionId} className={styles.description}>
-          {description}
-        </p>
-      ) : null}
-      {children !== undefined ? (
-        <div className={styles.body}>{children}</div>
-      ) : null}
-      {footer !== undefined ? (
-        <div className={styles.footer}>{footer}</div>
-      ) : null}
-    </dialog>
+    <CSPProvider disableStyleElements>
+      <BaseDialog.Root
+        open={open}
+        onOpenChange={(next) => {
+          if (!next && open) onClose();
+        }}
+        disablePointerDismissal
+      >
+        <BaseDialog.Portal keepMounted>
+          <BaseDialog.Backdrop className={styles.backdrop} />
+          <BaseDialog.Popup
+            // the rendered element is the <dialog> below
+            ref={ref as Ref<HTMLDivElement>}
+            render={(props, state) => (
+              <dialog
+                {...mergeProps<'dialog'>(
+                  rest,
+                  props as ComponentProps<'dialog'>,
+                )}
+                open={state.open}
+                // `<form method="dialog">` closes the element natively
+                onClose={() => {
+                  if (open) onClose();
+                }}
+                className={cx(styles.dialog, styles[size], className)}
+              />
+            )}
+          >
+            <div className={styles.header}>
+              <BaseDialog.Title className={styles.title}>
+                {title}
+              </BaseDialog.Title>
+              <BaseDialog.Close
+                className={styles.close}
+                aria-label={closeLabel}
+              >
+                <span aria-hidden="true">×</span>
+              </BaseDialog.Close>
+            </div>
+            {description !== undefined ? (
+              <BaseDialog.Description className={styles.description}>
+                {description}
+              </BaseDialog.Description>
+            ) : null}
+            {children !== undefined ? (
+              <div className={styles.body}>{children}</div>
+            ) : null}
+            {footer !== undefined ? (
+              <div className={styles.footer}>{footer}</div>
+            ) : null}
+          </BaseDialog.Popup>
+        </BaseDialog.Portal>
+      </BaseDialog.Root>
+    </CSPProvider>
   );
-}
-
-function assignRef<T>(ref: Ref<T> | undefined, value: T | null) {
-  if (typeof ref === 'function') ref(value);
-  else if (ref) ref.current = value;
 }

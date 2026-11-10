@@ -28,13 +28,13 @@
     border-bottom-color: var(--color-border);
   }
 
-  &[aria-selected='true'] {
+  &[data-active] {
     color: var(--color-text);
     font-weight: 600;
     border-bottom-color: var(--color-accent);
   }
 
-  &:disabled {
+  &[data-disabled] {
     opacity: 0.55;
     cursor: not-allowed;
   }

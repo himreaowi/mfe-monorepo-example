@@ -1,10 +1,6 @@
-import {
-  useId,
-  useRef,
-  useState,
-  type KeyboardEvent,
-  type ReactNode,
-} from 'react';
+import { useState, type KeyboardEvent, type ReactNode } from 'react';
+import { CSPProvider } from '@base-ui/react/csp-provider';
+import { Tabs as BaseTabs } from '@base-ui/react/tabs';
 import { cx } from '../../utils/cx/cx';
 import styles from './Tabs.module.scss';
 
@@ -35,9 +31,12 @@ export type TabsProps = {
 };
 
 /**
- * WAI-ARIA tabs pattern (https://www.w3.org/WAI/ARIA/apg/patterns/tabs/), built by hand:
+ * WAI-ARIA tabs pattern (https://www.w3.org/WAI/ARIA/apg/patterns/tabs/) on Base UI Tabs:
  * `tablist` / `tab` / `tabpanel`, roving tabindex (Tab enters the list on the selected tab and
- * leaves to the panel), Left/Right arrows (wrapping), Home/End; disabled tabs are skipped.
+ * leaves to the panel), Left/Right arrows (wrapping), Home/End; disabled tabs are skipped
+ * (Base UI would focus them; `skipDisabled` keeps the arrow keys on enabled tabs).
+ * Every panel stays mounted (hidden) like before. No `<style>` elements (CSPProvider), so it
+ * works under the strict CSP.
  */
 export function Tabs({
   label,
@@ -48,92 +47,87 @@ export function Tabs({
   activation = 'automatic',
   className,
 }: TabsProps) {
-  const baseId = useId();
   const firstEnabled = tabs.find((t) => !t.disabled)?.id;
   const [ownId, setOwnId] = useState(defaultSelectedId ?? firstEnabled);
-  const selectedId = controlledId ?? ownId;
-  const tabRefs = useRef(new Map<string, HTMLButtonElement>());
+  const selectedId = controlledId ?? ownId ?? null;
 
   const select = (id: string) => {
     if (controlledId === undefined) setOwnId(id);
     onSelect?.(id);
   };
 
-  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    const enabled = tabs.filter((t) => !t.disabled);
-    const current = enabled.findIndex(
-      (t) => tabRefs.current.get(t.id) === document.activeElement,
-    );
-    if (current === -1) return;
-    let next: number;
-    switch (event.key) {
-      case 'ArrowRight':
-        next = (current + 1) % enabled.length;
-        break;
-      case 'ArrowLeft':
-        next = (current - 1 + enabled.length) % enabled.length;
-        break;
-      case 'Home':
-        next = 0;
-        break;
-      case 'End':
-        next = enabled.length - 1;
-        break;
-      default:
-        return;
-    }
-    event.preventDefault();
-    const target = enabled[next];
-    tabRefs.current.get(target.id)?.focus();
-    if (activation === 'automatic') select(target.id);
-  };
-
   return (
-    <div className={cx(styles.tabs, className)}>
-      <div
-        role="tablist"
-        aria-label={label}
-        className={styles.list}
-        onKeyDown={onKeyDown}
+    <CSPProvider disableStyleElements>
+      <BaseTabs.Root
+        value={selectedId}
+        onValueChange={(value) => {
+          if (typeof value === 'string' && value !== selectedId) select(value);
+        }}
+        className={cx(styles.tabs, className)}
       >
-        {tabs.map((tab) => {
-          const selected = tab.id === selectedId;
-          return (
-            <button
+        <BaseTabs.List
+          aria-label={label}
+          activateOnFocus={activation === 'automatic'}
+          onKeyDown={skipDisabled}
+          className={styles.list}
+        >
+          {tabs.map((tab) => (
+            <BaseTabs.Tab
               key={tab.id}
-              ref={(node) => {
-                if (node) tabRefs.current.set(tab.id, node);
-                else tabRefs.current.delete(tab.id);
-              }}
-              type="button"
-              role="tab"
-              id={`${baseId}-tab-${tab.id}`}
-              aria-selected={selected}
-              aria-controls={`${baseId}-panel-${tab.id}`}
-              tabIndex={selected ? 0 : -1}
+              value={tab.id}
               disabled={tab.disabled}
               className={styles.tab}
-              onClick={() => select(tab.id)}
             >
               {tab.label}
-            </button>
-          );
-        })}
-      </div>
-      {tabs.map((tab) => (
-        <div
-          key={tab.id}
-          role="tabpanel"
-          id={`${baseId}-panel-${tab.id}`}
-          aria-labelledby={`${baseId}-tab-${tab.id}`}
-          // the panel is the next Tab stop after the tab list
-          tabIndex={0}
-          hidden={tab.id !== selectedId}
-          className={styles.panel}
-        >
-          {tab.content}
-        </div>
-      ))}
-    </div>
+            </BaseTabs.Tab>
+          ))}
+        </BaseTabs.List>
+        {tabs.map((tab) => (
+          <BaseTabs.Panel
+            key={tab.id}
+            value={tab.id}
+            keepMounted
+            className={styles.panel}
+          >
+            {tab.content}
+          </BaseTabs.Panel>
+        ))}
+      </BaseTabs.Root>
+    </CSPProvider>
   );
+}
+
+const NAV_KEYS = new Set(['ArrowRight', 'ArrowLeft', 'Home', 'End']);
+
+/**
+ * Arrow/Home/End move focus over the enabled tabs only (wrapping). Focusing a tab is enough:
+ * Base UI highlights it and, with `activateOnFocus`, selects it.
+ */
+function skipDisabled(
+  event: KeyboardEvent<HTMLDivElement> & { preventBaseUIHandler?: () => void },
+) {
+  if (!NAV_KEYS.has(event.key)) return;
+  const enabled = Array.from(
+    event.currentTarget.querySelectorAll<HTMLElement>(
+      '[role="tab"]:not([data-disabled])',
+    ),
+  );
+  const current = enabled.indexOf(document.activeElement as HTMLElement);
+  if (current === -1) return;
+  const last = enabled.length - 1;
+  const next =
+    event.key === 'Home'
+      ? 0
+      : event.key === 'End'
+        ? last
+        : event.key === 'ArrowRight'
+          ? current === last
+            ? 0
+            : current + 1
+          : current === 0
+            ? last
+            : current - 1;
+  event.preventDefault();
+  event.preventBaseUIHandler?.();
+  enabled[next].focus();
 }

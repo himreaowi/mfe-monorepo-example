@@ -449,6 +449,50 @@ describe('data layer guardrails', () => {
     );
   });
 
+  it('base-ui-import: Base UI only in @org/ui', async () => {
+    const ui = {
+      name: '@org/ui',
+      version: '0.1.0',
+      nx: { tags: ['type:package'] },
+      dependencies: { '@base-ui/react': 'catalog:' },
+    };
+    const ok = await check(
+      {
+        'packages/platform/ui/src/components/Dialog/Dialog.tsx': `import { Dialog } from '@base-ui/react/dialog';`,
+      },
+      { ui },
+    );
+    assert.deepEqual(rules(ok.errors), []);
+    const r = await check(
+      {
+        [`${remote}/features/demo/components/Demo/Demo.tsx`]: `import { Combobox } from '@base-ui/react/combobox';`,
+        'packages/platform/query/src/x.ts': `const m = await import("@base-ui/react");`,
+      },
+      {
+        ui,
+        query: {
+          name: '@org/query',
+          version: '0.1.0',
+          nx: { tags: ['type:package'] },
+          dependencies: { '@base-ui/react': 'catalog:' },
+        },
+      },
+    );
+    assert.deepEqual(rules(r.errors), [
+      'base-ui-import',
+      'base-ui-import',
+      'base-ui-import',
+    ]);
+    assert.match(
+      r.errors.map((e) => e.message).join('\n'),
+      /depends on @base-ui\/react\. Only @org\/ui/,
+    );
+    assert.match(
+      r.errors.map((e) => e.message).join('\n'),
+      /Demo\.tsx imports "@base-ui\/react\/combobox"\. Base UI is private to @org\/ui/,
+    );
+  });
+
   it('query-hook-import: query hooks in a component or page file', async () => {
     const r = await check({
       [`${remote}/features/demo/components/Demo/Demo.tsx`]: `import { useQuery } from '@tanstack/react-query';`,

@@ -24,6 +24,8 @@
  *   (<Name>.module.scss when it has styles; stories optional)
  * - package-name: every workspace package has its own name
  * - axios-import: axios is a dependency and an import of @org/http-client only
+ * - base-ui-import: @base-ui/* is a dependency and an import of @org/ui only (apps use the
+ *   @org/ui components built on it)
  * - query-hook-import: useQuery & co. are imported in hooks/ folders only (pages call hooks,
  *   components display). ESLint (`importGuards` of @org/eslint-config) reports the same two in
  *   the editor; a test keeps the lists equal
@@ -74,6 +76,10 @@ export const QUERY_HOOKS = [
 ];
 const QUERY_PACKAGE = /['"]@tanstack\/react-query['"]/;
 const AXIOS_SPEC = /^axios(?:\/|$)/;
+/** The one package that may use Base UI (the headless parts under its components). */
+const BASE_UI_OWNER = `${PLATFORM_DIR}/ui`;
+const BASE_UI_SPEC = /^@base-ui\//;
+const UI_README = 'packages/platform/ui/README.md';
 
 /**
  * The side of a workspace package in the import table, from its folder. `undefined` for the
@@ -504,6 +510,16 @@ export async function checkPackages({ root }) {
   // --- data layer: axios and query hooks ------------------------------------------------------
   for (const pkg of packages) {
     for (const field of DEP_FIELDS) {
+      if (pkg.dir === BASE_UI_OWNER) continue;
+      for (const dep of Object.keys(pkg.pkg[field] ?? {})) {
+        if (!BASE_UI_SPEC.test(dep)) continue;
+        err(
+          'base-ui-import',
+          `${pkg.name} (${pkg.file} ${field}) depends on ${dep}. Only @org/ui (${BASE_UI_OWNER}) uses Base UI: remove "${dep}" from ${field} and use the @org/ui component, see ${UI_README}.`,
+        );
+      }
+    }
+    for (const field of DEP_FIELDS) {
       if (pkg.dir === AXIOS_OWNER || !pkg.pkg[field]?.axios) continue;
       err(
         'axios-import',
@@ -519,6 +535,15 @@ export async function checkPackages({ root }) {
           err(
             'axios-import',
             `${rel} imports "${match[1]}". axios is private to @org/http-client (${AXIOS_OWNER}): add a request function to the feature's api/ folder that takes the client from useApiClient(), see ${DATA_DOC}.`,
+          );
+        }
+      }
+      if (pkg.dir !== BASE_UI_OWNER) {
+        for (const match of code.matchAll(IMPORT_RE)) {
+          if (!BASE_UI_SPEC.test(match[1])) continue;
+          err(
+            'base-ui-import',
+            `${rel} imports "${match[1]}". Base UI is private to @org/ui (${BASE_UI_OWNER}): use the @org/ui component, or add one there, see ${UI_README}.`,
           );
         }
       }

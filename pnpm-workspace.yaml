@@ -106,6 +106,8 @@ catalog:
   # Storybook for @org/ui (dev only: never a dependency of an app, never in an app bundle)
   storybook: 10.6.2
   '@storybook/react-webpack5': 10.6.2
+  # @org/ui internals: headless primitives behind Dialog and Tabs (bundled into the @org/ui singleton)
+  '@base-ui/react': 1.6.0
   # mf-runtime (manifest validator codegen, dev only)
   ajv: 8.20.0
   # tools/scripts (reads pnpm-workspace.yaml)

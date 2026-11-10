@@ -25,6 +25,7 @@ export {
 } from './components/Badge/Badge';
 export { Card, type CardProps } from './components/Card/Card';
 export { Checkbox, type CheckboxProps } from './components/Checkbox/Checkbox';
+export { Combobox, type ComboboxProps } from './components/Combobox/Combobox';
 export {
   DateField,
   type DateFieldProps,
