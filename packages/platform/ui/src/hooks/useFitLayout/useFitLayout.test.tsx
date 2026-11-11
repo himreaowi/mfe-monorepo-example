@@ -75,15 +75,20 @@ describe('useFitLayout', () => {
     }
   }
 
-  /** The viewport (available width) changed: notify like the browser would. */
+  /** The viewport (available width) changed: notify like the browser would, then run the next
+   *  frame (the hook applies the layout there, never inside the observer callback). */
   function resizeTo(available: number) {
     size.available = available;
     act(() => {
       for (const o of observers) if (o.targets.length > 0) o.callback();
     });
+    act(() => {
+      jest.runOnlyPendingTimers();
+    });
   }
 
   beforeEach(() => {
+    jest.useFakeTimers();
     observers.length = 0;
     size.available = 1280;
     size.required = 900;
@@ -111,6 +116,7 @@ describe('useFitLayout', () => {
   });
 
   afterEach(() => {
+    jest.useRealTimers();
     rectSpy.mockRestore();
     delete (globalThis as { ResizeObserver?: unknown }).ResizeObserver;
   });
@@ -160,7 +166,7 @@ describe('useFitLayout', () => {
   });
 
   it('does not re-measure an open panel; closes it when the layout becomes wide', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     size.required = 1400;
     render(<Header />);
     const button = screen.getByRole('button', { name: 'Menu' });
@@ -210,6 +216,18 @@ describe('useFitLayout', () => {
     resizeTo(1280);
     expect(onChange).toHaveBeenLastCalledWith('compact');
     expect(onChange).toHaveBeenCalledTimes(2);
+
+    // never inside the observer callback (that resizes the sizer in the same frame and the
+    // browser reports a ResizeObserver loop): only on the next frame
+    size.required = 900;
+    act(() => {
+      for (const o of observers) if (o.targets.length > 0) o.callback();
+    });
+    expect(onChange).toHaveBeenCalledTimes(2);
+    act(() => {
+      jest.runOnlyPendingTimers();
+    });
+    expect(onChange).toHaveBeenLastCalledWith('wide');
   });
 });
 

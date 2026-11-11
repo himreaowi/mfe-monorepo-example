@@ -128,8 +128,15 @@ export function useFitLayout(options: FitLayoutOptions): FitLayout | undefined {
     if (!container || typeof ResizeObserver === 'undefined') return undefined;
     update(false);
     let active = true;
+    // apply on the next frame, not inside the observer callback: changing the layout there
+    // resizes the observed sizer in the same frame, which the browser reports as
+    // "ResizeObserver loop completed with undelivered notifications"
+    let frame = 0;
     const resize = new ResizeObserver(() => {
-      if (active) update(true);
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        if (active) update(true);
+      });
     });
     if (sizer) resize.observe(sizer);
     const mutation = new MutationObserver(() => {
@@ -145,6 +152,7 @@ export function useFitLayout(options: FitLayoutOptions): FitLayout | undefined {
     });
     return () => {
       active = false;
+      cancelAnimationFrame(frame);
       resize.disconnect();
       mutation.disconnect();
     };
