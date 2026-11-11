@@ -1,5 +1,7 @@
 import { expect, test } from '@org/playwright-config/test';
-import { openRemote, remotePage, zone } from './helpers';
+import { openRemote, remotePage, zone, signInIfRequired } from './helpers';
+
+test.beforeEach(signInIfRequired);
 
 const remote = zone.remotes.find((r) => r.name === 'announcements')!;
 

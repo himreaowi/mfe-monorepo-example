@@ -1,5 +1,12 @@
 import { expect, test } from '@org/playwright-config/test';
-import { expectRemoteRendered, remotePage, zone } from './helpers';
+import {
+  expectRemoteRendered,
+  remotePage,
+  zone,
+  signInIfRequired,
+} from './helpers';
+
+test.beforeEach(signInIfRequired);
 
 // The internet zone has two shells on one origin (the zone's dev proxy, like the production
 // reverse proxy): this one at /citizen (Singpass, top layout), the business shell at /business.

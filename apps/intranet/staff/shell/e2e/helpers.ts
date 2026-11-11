@@ -6,6 +6,9 @@ import {
   test,
   type ZoneRemote,
 } from '@org/playwright-config/test';
+import { SIGN_IN_MODE, SIGN_IN_REQUIRED } from '../src/core/constants/signIn';
+
+export { SIGN_IN_MODE, SIGN_IN_REQUIRED };
 
 /*
  * Layout contract. The header tests follow the shell's own layout (src/layouts/ShellLayout,
@@ -19,6 +22,10 @@ import {
  *   visible only when compact) and `"header-panel"` (what the Menu button shows);
  * - a `<nav>` named "Main" holding the "Apps" list (RemoteNav); one `<main>`;
  * - a "Skip to main content" link as the first Tab stop.
+ *
+ * Signed out of a shell with SIGN_IN_REQUIRED (src/core/constants/signIn.ts), the header is
+ * SignedOutLayout: `data-layout="signed-out"`, the brand only, and `<main>` holds
+ * `data-testid="landing-page"` (button `landing-sign-in`) or the spinner `sign-in-gate-busy`.
  */
 
 /**
@@ -285,6 +292,29 @@ export async function signInWithMock(page: Page): Promise<void> {
   await expect(page.getByTestId('user-name')).toBeAttached();
 }
 
+/**
+ * SIGN_IN_REQUIRED shells: every spec starts signed in (`test.beforeEach(signInIfRequired)` at
+ * the top of each spec file), so the specs written for an open portal keep working. The dev
+ * mock keeps the session in sessionStorage: it survives the test's later `page.goto`s.
+ * sign-in-required.spec.ts checks the signed-out view itself. No-op for an open portal.
+ */
+export async function signInIfRequired({
+  page,
+}: {
+  page: Page;
+}): Promise<void> {
+  if (!SIGN_IN_REQUIRED) return;
+  test.skip(
+    !zone.authMock,
+    'SIGN_IN_REQUIRED: needs "auth": { "mock": true } (the shell\'s package.json mfe.devManifest → mfe-manifest.dev.json)',
+  );
+  await page.goto(zone.home);
+  // redirect mode: the dev mock signs in without leaving the page
+  if (SIGN_IN_MODE === 'landing')
+    await page.getByTestId('landing-sign-in').click();
+  await expect(page.getByTestId('user-name')).toBeAttached();
+}
+
 /** Sign out through the user menu (opens the header panel first on phones). */
 export async function signOut(page: Page): Promise<void> {
   const panel = await openHeaderMenu(page);
@@ -342,7 +372,8 @@ export async function openRemote(
     );
   }
   await page.goto(subPath ? `${remote.path}/${subPath}` : remote.path);
-  if (remote.access === 'private') {
+  // SIGN_IN_REQUIRED: already signed in (signInIfRequired), no per-route prompt
+  if (remote.access === 'private' && !SIGN_IN_REQUIRED) {
     await signInWithMock(page);
   }
   await expectRemoteRendered(page, remote);

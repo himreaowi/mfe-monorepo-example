@@ -1,6 +1,14 @@
 import type { Page } from '@playwright/test';
 import { checkA11y, expect, test, useTheme } from '@org/playwright-config/test';
-import { openRemote, remotePage, settle, zone } from './helpers';
+import {
+  openRemote,
+  remotePage,
+  settle,
+  zone,
+  signInIfRequired,
+} from './helpers';
+
+test.beforeEach(signInIfRequired);
 
 /**
  * axe (WCAG 2.2 AA) on feature states the generated a11y spec does not reach: detail pages,

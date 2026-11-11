@@ -5,7 +5,10 @@ import {
   openRemote,
   remotePage,
   zone,
+  signInIfRequired,
 } from './helpers';
+
+test.beforeEach(signInIfRequired);
 
 const remote = zone.remotes.find((r) => r.name === 'it-helpdesk')!;
 

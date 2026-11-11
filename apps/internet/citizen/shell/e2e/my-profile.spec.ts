@@ -1,5 +1,7 @@
 import { expect, test } from '@org/playwright-config/test';
-import { remotePage, signInWithMock, signOut, zone } from './helpers';
+import { remotePage, signOut, zone, signInIfRequired } from './helpers';
+
+test.beforeEach(signInIfRequired);
 
 const remote = zone.remotes.find((r) => r.name === 'my-profile')!;
 
@@ -12,11 +14,8 @@ test.describe('My profile (private)', () => {
   test('sign in → my profile → save notification choices (CSRF)', async ({
     page,
   }) => {
+    // signed in by beforeEach (the portal needs sign-in, landing page otherwise)
     await page.goto(remote.path);
-    await expect(page.getByTestId('sign-in-prompt')).toBeVisible();
-    await expect(page.getByTestId('profile-details')).toHaveCount(0);
-
-    await signInWithMock(page);
     const container = remotePage(page, remote);
     await expect(
       container.getByRole('heading', { level: 1, name: 'My profile' }),
@@ -51,7 +50,8 @@ test.describe('My profile (private)', () => {
     );
     await signOut(page); // user menu: in the header panel (behind "Menu" at 375 px)
     await page.goto(remote.path);
-    await expect(page.getByTestId('sign-in-prompt')).toBeVisible();
+    await expect(page.getByTestId('landing-page')).toBeVisible();
+    await expect(page.getByTestId('profile-details')).toHaveCount(0);
   });
 });
 
@@ -78,7 +78,6 @@ test.describe('My profile: the cache belongs to the signed-in user', () => {
     });
 
     await page.goto(remote.path);
-    await signInWithMock(page);
     const container = remotePage(page, remote);
     await expect(container.getByTestId('profile-details')).toBeVisible();
     // (dev builds mount twice under StrictMode: count against this)
@@ -87,14 +86,9 @@ test.describe('My profile: the cache belongs to the signed-in user', () => {
 
     // sign out and in again without a page load: a surviving cache would still have it
     await signOut(page);
-    await expect(page.getByTestId('sign-in-prompt')).toBeVisible();
-    // on phones the header panel closes, so it does not cover the prompt
-    const menu = page.getByRole('button', { name: 'Menu' });
-    if (await menu.isVisible()) {
-      await expect(menu).toHaveAttribute('aria-expanded', 'false');
-    }
+    await expect(page.getByTestId('landing-page')).toBeVisible();
     holding = true;
-    await signInWithMock(page);
+    await page.getByTestId('landing-sign-in').click();
 
     // the profile is requested again, and while that is under way nothing of the old data shows
     await expect.poll(() => reads).toBeGreaterThan(readsAfterFirstSignIn);

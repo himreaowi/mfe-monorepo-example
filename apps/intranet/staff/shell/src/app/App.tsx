@@ -1,10 +1,13 @@
 import type { ReactNode } from 'react';
 import { BrowserRouter, useRoutes } from 'react-router';
-import { AuthProvider, useAuth, type AuthClient } from '@org/auth';
+import { AuthProvider, SignInGate, useAuth, type AuthClient } from '@org/auth';
 import { MfeManifestProvider, type MfeManifest } from '@org/mf-runtime';
 import { createQueryClient, QueryProvider } from '@org/query';
 import { ThemeProvider } from '@org/ui';
 import { BASE_PATH } from '@/core/constants/app';
+import { SIGN_IN_MODE, SIGN_IN_REQUIRED } from '@/core/constants/signIn';
+import { SignedOutLayout } from '@/layouts/ShellLayout/ShellLayout';
+import { LandingPage } from '@/pages/LandingPage/LandingPage';
 import { remotes } from './registry';
 import { createRoutes } from './routes';
 
@@ -58,7 +61,15 @@ export function App({ manifest, authClient }: AppProps) {
         <SessionData manifest={manifest}>
           {/* below a base path (/citizen) every route and link is relative to it */}
           <BrowserRouter basename={BASE_PATH}>
-            <AppRoutes />
+            {/* SIGN_IN_REQUIRED: nothing of the portal before sign-in (signIn.ts) */}
+            <SignInGate
+              required={SIGN_IN_REQUIRED}
+              mode={SIGN_IN_MODE}
+              landing={<LandingPage />}
+              layout={SignedOutLayout}
+            >
+              <AppRoutes />
+            </SignInGate>
           </BrowserRouter>
         </SessionData>
       </AuthProvider>

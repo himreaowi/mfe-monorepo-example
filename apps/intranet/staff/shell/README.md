@@ -56,6 +56,19 @@ Production builds do not contain the mock client (a `"mock": true` manifest disa
 there). The BFF contract (endpoints, cookies, CSRF, CORS) is in `docs/auth-contract.md` at the
 repo root. The header shows `UserMenu` (Sign in / name + Sign out).
 
+### Sign-in for the whole portal
+
+`src/core/constants/signIn.ts` (generated: required `true`, mode
+`landing`; `pnpm gen:shell --sign-in-required [--sign-in-mode landing|redirect]`):
+with `SIGN_IN_REQUIRED = true`, `SignInGate` from `@org/auth` (in `src/app/App.tsx`) hides the whole portal until the
+user is signed in: a spinner while the session is checked, then a brand-only header
+(`SignedOutLayout` in `src/layouts/ShellLayout`; its "SIGNED-OUT HEADER" comment says how to
+re-enable the theme toggle) and `src/pages/LandingPage` (`landing`) or the sign-in page
+(`redirect`), back to the address first requested. No remote is rendered or downloaded before
+sign-in. Without `auth` in the manifest it fails closed. Landing texts: `LANDING_*` in the same
+file. The e2e helpers sign in first; `e2e/sign-in-required.spec.ts` checks the signed-out view.
+Details: "Sign-in required for the whole portal" in `docs/auth-contract.md`.
+
 The shell never imports a remote's code (no dependency on remote packages). The guardrails
 (`pnpm check`, ESLint module boundaries) fail if it does.
 

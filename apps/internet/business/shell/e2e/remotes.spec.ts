@@ -11,8 +11,12 @@ import {
   settle,
   signInWithMock,
   signOut,
+  SIGN_IN_REQUIRED,
+  signInIfRequired,
   zone,
 } from './helpers';
+
+test.beforeEach(signInIfRequired);
 
 // One block per remote in remotes.json.
 for (const remote of zone.remotes) {
@@ -54,7 +58,8 @@ for (const remote of zone.remotes) {
       });
     }
 
-    if (remote.access === 'private') {
+    // SIGN_IN_REQUIRED: the whole portal is signed out instead (sign-in-required.spec.ts)
+    if (remote.access === 'private' && !SIGN_IN_REQUIRED) {
       test('signed out: sign-in guard, nothing downloaded before sign-in', async ({
         page,
       }) => {

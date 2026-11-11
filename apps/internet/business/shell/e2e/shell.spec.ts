@@ -10,8 +10,12 @@ import {
   openHeaderMenu,
   openNav,
   resizeHeader,
+  SIGN_IN_REQUIRED,
+  signInIfRequired,
   zone,
 } from './helpers';
+
+test.beforeEach(signInIfRequired);
 
 /**
  * Widths the header must stay one row at: 320 (WCAG 1.4.10 reflow, = 1280 px at 400 % zoom),
@@ -51,7 +55,7 @@ test.describe('Business Portal', () => {
       const nav = await openNav(page);
       await nav.getByRole('link', { name: remote.title, exact: true }).click();
       await expect(page).toHaveURL(new RegExp(`${escapeRegExp(remote.path)}$`));
-      if (remote.access === 'private') {
+      if (remote.access === 'private' && !SIGN_IN_REQUIRED) {
         await expect(page.getByTestId('sign-in-prompt')).toBeVisible();
       } else {
         await expectRemoteRendered(page, remote);
@@ -260,9 +264,14 @@ test.describe('Business Portal', () => {
         signedIn && !zone.authMock,
         'signs in with the dev mock: needs "auth": { "mock": true }',
       );
+      test.skip(
+        !signedIn && SIGN_IN_REQUIRED,
+        'SIGN_IN_REQUIRED: signed out there is no portal header (sign-in-required.spec.ts)',
+      );
       await page.goto(zone.home);
       await expect(page.getByTestId('shell-welcome')).toBeVisible();
-      if (signedIn) {
+      // SIGN_IN_REQUIRED: signed in already (signInIfRequired)
+      if (signedIn && !SIGN_IN_REQUIRED) {
         await (
           await openHeaderMenu(page)
         )

@@ -1,5 +1,7 @@
 import { expect, test } from '@org/playwright-config/test';
-import { openRemote, zone } from './helpers';
+import { openRemote, zone, signInIfRequired } from './helpers';
+
+test.beforeEach(signInIfRequired);
 
 // Same-origin API: the browser only calls <base path>/api on the zone's dev proxy origin
 // (`/citizen/api`), which forwards to API_UPSTREAM (the zone's mock API by default), like nginx in

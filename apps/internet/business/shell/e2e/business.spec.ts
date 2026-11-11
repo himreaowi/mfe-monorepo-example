@@ -3,9 +3,11 @@ import {
   expectRemoteRendered,
   openHeaderMenu,
   remotePage,
-  signInWithMock,
   zone,
+  signInIfRequired,
 } from './helpers';
+
+test.beforeEach(signInIfRequired);
 
 // The business shell of the internet zone: /business on the same origin as /citizen (zone dev
 // proxy), side layout, Corppass-style mock sign-in (mfe.devManifest.auth.mockUser), its own
@@ -52,18 +54,14 @@ test.describe('Business Portal under /business', () => {
     page,
   }) => {
     await page.goto(licences.path);
-    await signInWithMock(page);
     await expectRemoteRendered(page, licences);
     const panel = await openHeaderMenu(page);
     await expect(panel.getByTestId('user-name')).toHaveText(BUSINESS_USER);
 
     // same origin, other shell: its mock user has its own session (like a cookie with
-    // Path=/business), so the citizen shell is still signed out
+    // Path=/business), so the citizen shell is still signed out: its landing page
     await page.goto('/citizen/');
-    const citizenPanel = await openHeaderMenu(page);
-    await expect(
-      citizenPanel.getByRole('button', { name: 'Sign in' }),
-    ).toBeVisible();
+    await expect(page.getByTestId('landing-page')).toBeVisible();
     await expect(page.getByTestId('user-name')).toHaveCount(0);
   });
 
@@ -71,7 +69,6 @@ test.describe('Business Portal under /business', () => {
     page,
   }) => {
     await page.goto(licences.path);
-    await signInWithMock(page);
     await expectRemoteRendered(page, licences);
     const container = remotePage(page, licences);
     const name = `e2e shop ${test.info().project.name} ${Date.now()}`;

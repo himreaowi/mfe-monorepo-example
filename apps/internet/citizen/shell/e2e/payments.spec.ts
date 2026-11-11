@@ -5,7 +5,10 @@ import {
   openRemote,
   remotePage,
   zone,
+  signInIfRequired,
 } from './helpers';
+
+test.beforeEach(signInIfRequired);
 
 const remote = zone.remotes.find((r) => r.name === 'payments')!;
 
@@ -63,7 +66,6 @@ test.describe('Payments (vendor web component, no React)', () => {
     const header = await openHeaderMenu(page);
     await header.getByRole('button', { name: 'Use dark theme' }).click();
     await expect(element).toHaveAttribute('data-theme', 'dark');
-    await header.getByRole('button', { name: 'Sign in' }).click();
     await expect(element.getByTestId('bright-checkout')).toContainText(
       'Paying as Dev User (mock)',
     );

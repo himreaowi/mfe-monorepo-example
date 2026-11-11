@@ -7,7 +7,7 @@ import { useOnlineStatus } from '@org/pwa';
 import { ThemeProvider } from '@org/ui';
 import { APP_TITLE } from '@/core/constants/app';
 import type { RemoteEntry } from '@/core/types/remotes';
-import { ShellLayout } from './ShellLayout';
+import { ShellLayout, SignedOutLayout } from './ShellLayout';
 
 jest.mock('@org/pwa', () => ({ useOnlineStatus: jest.fn(() => true) }));
 // the user menu needs an AuthProvider; a stand-in keeps these tests about the layout
@@ -192,5 +192,23 @@ describe('ShellLayout', () => {
     }
     expect(scss).toMatch(/^ {2}--color-surface: var\(--header-bg\);$/m);
     expect(scss).toMatch(/^ {2}--color-bg: var\(--header-hover\);$/m);
+  });
+});
+
+describe('SignedOutLayout', () => {
+  it('header shows only the brand: no nav, Menu, theme toggle or sign-in', () => {
+    render(
+      <ThemeProvider>
+        <SignedOutLayout>
+          <p>landing</p>
+        </SignedOutLayout>
+      </ThemeProvider>,
+    );
+    const banner = screen.getByRole('banner');
+    expect(screen.getByTestId('header-brand')).toHaveTextContent(APP_TITLE);
+    expect(banner.querySelectorAll('button, a, input')).toHaveLength(0);
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Use dark theme')).not.toBeInTheDocument();
+    expect(screen.getByRole('main')).toHaveTextContent('landing');
   });
 });
