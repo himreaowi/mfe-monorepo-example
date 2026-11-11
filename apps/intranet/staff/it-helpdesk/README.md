@@ -38,7 +38,7 @@ in the build):
 
 In development the shell's generated `mfe-manifest.dev.json` (from `mfe.devManifest` in the
 shell's `package.json`) points at the **example vendor**
-(`tools/example-vendors`, http://localhost:3192/helpdesk/1.0.0/mount.js), and `src/features/external/utils/vendorConfig.ts`
+(`tools/example-vendors`, http://localhost:3192/helpdesk/1.0.0/mount.js), and `src/utils/vendorConfig.ts`
 falls back to it when no config is set (standalone mode). Production builds contain neither.
 
 ## Commands
@@ -72,9 +72,8 @@ Loading/mount errors, timeouts, an incompatible `contractVersion` or a fatal `on
 src/
   main.tsx                   standalone entry
   app/                       apps (exposed ./App), routes (one splat route)
-  features/external/
-    components/ExternalModuleHost/   the adapter (component, CSS module, test)
-    utils/                           vendorConfig (dev fallback), activity (vendor event helpers)
+  components/ExternalModuleHost/   the adapter (component, CSS module, test)
+  utils/                     vendorConfig (dev fallback), activity (vendor event helpers)
   layouts/                   StandaloneLayout
   pages/OverviewPage         renders the adapter
 ```

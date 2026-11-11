@@ -3,15 +3,12 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
 import { renderWithQuery } from '@org/query/test';
-import { dogLicence } from '@/features/catalogue/__fixtures__/services';
-import {
-  getCategories,
-  listServices,
-} from '@/features/catalogue/api/catalogueApi';
+import { dogLicence } from '@/__fixtures__/services';
+import { getCategories, listServices } from '@/api/catalogueApi';
 import { OverviewPage } from './OverviewPage';
 
 // The page fetches: mock the feature's api/ module (no HTTP).
-jest.mock('@/features/catalogue/api/catalogueApi');
+jest.mock('@/api/catalogueApi');
 const listMock = jest.mocked(listServices);
 
 function Location() {

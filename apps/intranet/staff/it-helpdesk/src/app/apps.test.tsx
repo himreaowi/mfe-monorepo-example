@@ -59,11 +59,9 @@ describe('IT Helpdesk external adapter remote', () => {
       path.join(__dirname, 'apps.tsx'),
     );
     expect(violations).toEqual([]);
-    // the walk reached the feature components (features/<name>/components/<Name>/<Name>.tsx)
+    // the walk reached the app components (src/components/<Name>/<Name>.tsx)
     expect(
-      files.some((file) =>
-        /[\\/]features[\\/][^\\/]+[\\/]components[\\/]/.test(file),
-      ),
+      files.some((file) => /[\\/]src[\\/]components[\\/]/.test(file)),
     ).toBe(true);
   });
 });

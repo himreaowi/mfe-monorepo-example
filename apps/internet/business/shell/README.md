@@ -135,9 +135,8 @@ src/
   styles/shell.scss   shell-wide global styles (empty by default)
   app/                App (providers + router), routes, registry typing
   components/         RemoteNav/
-  features/           welcome/components/Welcome/ (home page content),
-                      startup/components/StartupError/ (manifest/connection errors);
-                      one folder per component (docs/coding-conventions.md)
+  components/         Welcome/ (home page content), StartupError/ (manifest/connection errors),
+                      RemoteNav/; one folder per component (docs/coding-conventions.md)
   layouts/            ShellLayout/ (this shell's own layout: structure, colours, tests)
   pages/              HomePage, RemotePage, NotFoundPage
   core/               constants, types

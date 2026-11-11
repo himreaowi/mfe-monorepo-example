@@ -3,15 +3,11 @@ import { render, screen } from '@testing-library/react';
 import { scanExposedModule } from '@org/jest-config/exposed-module';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { ThemeProvider } from '@org/ui';
-import {
-  getCategories,
-  getService,
-  listServices,
-} from '@/features/catalogue/api/catalogueApi';
-import { dogLicence } from '@/features/catalogue/__fixtures__/services';
+import { getCategories, getService, listServices } from '@/api/catalogueApi';
+import { dogLicence } from '@/__fixtures__/services';
 import EmbeddedApp, { StandaloneApp } from './apps';
 
-jest.mock('@/features/catalogue/api/catalogueApi');
+jest.mock('@/api/catalogueApi');
 
 beforeEach(() => {
   jest.mocked(getCategories).mockResolvedValue([]);
@@ -84,11 +80,9 @@ describe('Services remote', () => {
       path.join(__dirname, 'apps.tsx'),
     );
     expect(violations).toEqual([]);
-    // the walk reached the feature components (features/<name>/components/<Name>/<Name>.tsx)
+    // the walk reached the app components (src/components/<Name>/<Name>.tsx)
     expect(
-      files.some((file) =>
-        /[\\/]features[\\/][^\\/]+[\\/]components[\\/]/.test(file),
-      ),
+      files.some((file) => /[\\/]src[\\/]components[\\/]/.test(file)),
     ).toBe(true);
   });
 });

@@ -30,8 +30,7 @@ A 401 from the API calls `useAuth().refresh()`. Standalone there is no session, 
   holds the standalone mock host props). Nothing it reaches may import global styles
   (`@org/design-tokens/global.scss`) or register a service worker: the shell owns the page. Only
   `src/main.tsx` (standalone) does that; `apps.test.tsx` checks it.
-- Pages fetch, components display: a page calls the feature's data hooks (exported from the
-  feature's `index.ts`; the client is `useApiClient()` from `@org/mf-runtime/remote`) and passes
+- Pages fetch, components display: a page calls the data hooks (`src/hooks/`; the client is `useApiClient()` from `@org/mf-runtime/remote`) and passes
   data and callbacks down (`docs/coding-conventions.md` "Data fetching").
 - Routes in `src/app/routes.tsx` are relative. Link between pages with `useRemotePath()` from
   `@org/mf-runtime/remote` (gives `/my-profile/details` in the shell, `/details` standalone).
@@ -44,7 +43,7 @@ A 401 from the API calls `useAuth().refresh()`. Standalone there is no session, 
 src/
   main.tsx            standalone entry only: global styles + <StandaloneApp />
   app/                apps (exposed ./App: createRemoteApp + standalone props), routes
-  features/profile/   api/, hooks/, queryKeys.ts, types/, __fixtures__/, components/ (one folder per
+  api/ hooks/ types/ __fixtures__/ (queryKeys.ts in hooks/), __fixtures__/, components/ (one folder per
                       component: MyProfile/, ProfileDetails/, PreferencesForm/)
   layouts/            StandaloneLayout/ (own simple chrome, standalone only)
   pages/              OverviewPage, NotFoundPage (they call the data hooks)

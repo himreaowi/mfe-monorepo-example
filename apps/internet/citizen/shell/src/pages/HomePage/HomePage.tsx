@@ -1,4 +1,4 @@
-import { Welcome } from '@/features/welcome';
+import { Welcome } from '@/components/Welcome/Welcome';
 import type { RemoteEntry } from '@/core/types/remotes';
 
 export function HomePage({ remotes }: { remotes: RemoteEntry[] }) {

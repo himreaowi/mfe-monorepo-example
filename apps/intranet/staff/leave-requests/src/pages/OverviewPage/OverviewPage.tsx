@@ -1,8 +1,6 @@
-import {
-  LeaveOverview,
-  useLeaveBalance,
-  useLeaveRequests,
-} from '@/features/leave';
+import { LeaveOverview } from '@/components/LeaveOverview/LeaveOverview';
+import { useLeaveBalance } from '@/hooks/useLeaveBalance';
+import { useLeaveRequests } from '@/hooks/useLeaveRequests';
 
 /**
  * Page-level data fetching: the page loads the balance and the requests, `LeaveOverview`

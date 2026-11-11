@@ -1,11 +1,8 @@
 import { useSearchParams } from 'react-router';
-import {
-  Catalogue,
-  useCategories,
-  useDebouncedValue,
-  useServices,
-  type CatalogueQuery,
-} from '@/features/catalogue';
+import { Catalogue } from '@/components/Catalogue/Catalogue';
+import { useCategories, useServices } from '@/hooks/useCatalogue';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { type CatalogueQuery } from '@/types/service';
 
 /**
  * Page-level data fetching: the page reads the query from the URL (`?q=&category=`, so results

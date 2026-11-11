@@ -1,10 +1,10 @@
 import { useDebouncedValue, useStaffSearch } from '@org/intranet-directory';
 import {
   StaffFiltersProvider,
-  StaffSearch,
-  useDepartments,
   useStaffFilters,
-} from '@/features/staff';
+} from '@/state/StaffFiltersContext';
+import { StaffSearch } from '@/components/StaffSearch/StaffSearch';
+import { useDepartments } from '@/hooks/useDepartments';
 
 /**
  * The staff directory. `<StaffFiltersProvider>` holds the search text and department (feature

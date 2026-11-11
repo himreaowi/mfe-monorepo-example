@@ -22,7 +22,7 @@ and `StaffCard`. The remote keeps what only it needs: the pages, `StaffSearch`, 
 full) and the filters state below.
 
 The filters are the example of the state pattern (`docs/coding-conventions.md` "State
-management"): `features/staff/state/` holds a pure reducer (`staffFiltersReducer.ts`, search
+management"): `src/state/` holds a pure reducer (`staffFiltersReducer.ts`, search
 text + department) and `StaffFiltersContext.tsx` (`<StaffFiltersProvider>`, separate state and
 dispatch contexts, hooks that throw outside the provider). The filters are shareable, so their
 store is the URL (`?q=&department=`): a pasted link, a reload and the back button show the same
@@ -44,8 +44,7 @@ list. `StaffFilters` (the search form) reads and changes them, `OverviewPage` se
   holds the standalone mock host props). Nothing it reaches may import global styles
   (`@org/design-tokens/global.scss`) or register a service worker: the shell owns the page. Only
   `src/main.tsx` (standalone) does that; `apps.test.tsx` checks it.
-- Pages fetch, components display: a page calls the feature's data hooks (exported from the
-  feature's `index.ts`; the client is `useApiClient()` from `@org/mf-runtime/remote`) and passes
+- Pages fetch, components display: a page calls the data hooks (`src/hooks/`; the client is `useApiClient()` from `@org/mf-runtime/remote`) and passes
   data and callbacks down (`docs/coding-conventions.md` "Data fetching").
 - Routes in `src/app/routes.tsx` are relative. Link between pages with `useRemotePath()` from
   `@org/mf-runtime/remote` (gives `/staff-directory/details` in the shell, `/details` standalone).
@@ -58,9 +57,8 @@ list. `StaffFilters` (the search form) reads and changes them, `OverviewPage` se
 src/
   main.tsx            standalone entry only: global styles + <StandaloneApp />
   app/                apps (exposed ./App: createRemoteApp + standalone props), routes
-  features/staff/     hooks/ (useStaffMember, useDepartments), __fixtures__/, state/
-                      (filters: reducer + Context), components/ (one folder per component,
-                      no index.ts: StaffSearch/, StaffFilters/, StaffDetail/), index.ts
+  hooks/ (useStaffMember, useDepartments), __fixtures__/, state/ (filters: reducer + Context),
+  components/         one folder per component, no index.ts: StaffSearch/, StaffFilters/, StaffDetail/
                       (API client, types, useStaffSearch, StaffCard: @org/intranet-directory)
   layouts/            StandaloneLayout/ (own simple chrome, standalone only)
   pages/              OverviewPage, StaffDetailPage, NotFoundPage (they call the data hooks)

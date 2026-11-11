@@ -1,8 +1,6 @@
-import {
-  LeaveRequestForm,
-  useLeaveBalance,
-  useSubmitLeaveRequest,
-} from '@/features/leave';
+import { LeaveRequestForm } from '@/components/LeaveRequestForm/LeaveRequestForm';
+import { useLeaveBalance } from '@/hooks/useLeaveBalance';
+import { useSubmitLeaveRequest } from '@/hooks/useSubmitLeaveRequest';
 import styles from './NewLeavePage.module.scss';
 
 /**

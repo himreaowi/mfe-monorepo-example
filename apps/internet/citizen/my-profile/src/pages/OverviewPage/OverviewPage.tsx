@@ -1,4 +1,5 @@
-import { MyProfile, useProfile, useSavePreferences } from '@/features/profile';
+import { MyProfile } from '@/components/MyProfile/MyProfile';
+import { useProfile, useSavePreferences } from '@/hooks/useProfile';
 
 /**
  * Page-level data fetching: the page loads the profile and owns the "save preferences"

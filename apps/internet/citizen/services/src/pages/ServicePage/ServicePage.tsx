@@ -1,5 +1,6 @@
 import { useParams } from 'react-router';
-import { ServiceDetail, useService } from '@/features/catalogue';
+import { ServiceDetail } from '@/components/ServiceDetail/ServiceDetail';
+import { useService } from '@/hooks/useCatalogue';
 
 /**
  * Page-level data fetching: the page loads the service of the URL, `ServiceDetail` displays

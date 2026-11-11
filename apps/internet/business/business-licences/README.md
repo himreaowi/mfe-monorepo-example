@@ -42,14 +42,14 @@ and a real backend must enforce the same rules. The error uses the form's error 
 (`tools/mock-api`, `http://localhost:3290/api`). The demo feature shows the whole chain, copy it for real
 features:
 
-| Layer                                    | File                                                                                                                   |
-| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| paths                                    | `src/core/constants/apiRoutes.ts`                                                                                      |
-| client                                   | `useApiClient()` from `@org/mf-runtime/remote` (base URL from `settings.apiBaseUrl`, `credentials: 'include'`)         |
-| requests, response validation            | `src/features/demo/api/itemsApi.ts` (+ test with a fake fetch)                                                         |
-| queries and mutations (TanStack Query)   | `src/features/demo/hooks/useItems.ts`, `useCreateItem.ts`, `queryKeys.ts` (+ tests with the api mocked)                |
-| page (calls the hooks, passes data down) | `src/pages/OverviewPage/OverviewPage.tsx`                                                                              |
-| UI (display only, props in)              | `src/features/demo/components/DemoItems/`, `AddItemForm/` (validate on submit, error summary, server 422 field errors) |
+| Layer                                    | File                                                                                                           |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| paths                                    | `src/core/constants/apiRoutes.ts`                                                                              |
+| client                                   | `useApiClient()` from `@org/mf-runtime/remote` (base URL from `settings.apiBaseUrl`, `credentials: 'include'`) |
+| requests, response validation            | `src/api/itemsApi.ts` (+ test with a fake fetch)                                                               |
+| queries and mutations (TanStack Query)   | `src/hooks/useItems.ts`, `useCreateItem.ts`, `queryKeys.ts` (+ tests with the api mocked)                      |
+| page (calls the hooks, passes data down) | `src/pages/OverviewPage/OverviewPage.tsx`                                                                      |
+| UI (display only, props in)              | `src/components/DemoItems/`, `AddItemForm/` (validate on submit, error summary, server 422 field errors)       |
 
 Pages fetch, components display: a feature component never calls a data hook itself, so every
 API call of a page is in the page file (`docs/coding-conventions.md` "Data fetching").
@@ -60,18 +60,15 @@ API call of a page is in the page file (`docs/coding-conventions.md` "Data fetch
 src/
   main.tsx            standalone entry only: global styles + <StandaloneApp />
   app/                apps (exposed ./App: createRemoteApp + standalone props), routes
-  components/         ModeBadge/
-  features/demo/      sample feature (host props, counter, links, items from the API + form)
-    api/ hooks/ types/ utils/ queryKeys.ts
-    state/            only with `gen:remote --state`: feature state (reducer + Context)
-    components/       one folder per component: Demo/, DemoDetails/, DemoItems/, AddItemForm/
+  components/         one folder per component: Demo/, DemoDetails/, DemoItems/, AddItemForm/, ModeBadge/
                       (<Name>.tsx, <Name>.module.scss, <Name>.test.tsx; no index.ts)
-    index.ts          public API (components and data hooks for the pages)
+  api/ hooks/ types/ utils/ __fixtures__/   data layer (hooks/ holds queryKeys.ts)
+  state/              only with `gen:remote --state`: app state (reducer + Context)
   layouts/            StandaloneLayout/ (own simple chrome, standalone only)
   pages/              OverviewPage, DetailsPage, NotFoundPage
   core/constants/     app, routePaths, apiRoutes
 ```
 
 One folder per component, its own CSS module (never shared), a test for every component, shared
-test data in `features/<feature>/__fixtures__/`: see the repo's `docs/coding-conventions.md`
+test data in `src/__fixtures__/`: see the repo's `docs/coding-conventions.md`
 ("One folder per component"); `pnpm check` reports violations.

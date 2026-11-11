@@ -3,11 +3,11 @@ import { render, screen } from '@testing-library/react';
 import { scanExposedModule } from '@org/jest-config/exposed-module';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { ThemeProvider } from '@org/ui';
-import { getProfile } from '@/features/profile/api/profileApi';
-import { profile } from '@/features/profile/__fixtures__/profile';
+import { getProfile } from '@/api/profileApi';
+import { profile } from '@/__fixtures__/profile';
 import EmbeddedApp, { StandaloneApp } from './apps';
 
-jest.mock('@/features/profile/api/profileApi');
+jest.mock('@/api/profileApi');
 
 beforeEach(() => {
   jest.mocked(getProfile).mockResolvedValue(profile);
@@ -55,11 +55,9 @@ describe('My Profile remote', () => {
       path.join(__dirname, 'apps.tsx'),
     );
     expect(violations).toEqual([]);
-    // the walk reached the feature components (features/<name>/components/<Name>/<Name>.tsx)
+    // the walk reached the app components (src/components/<Name>/<Name>.tsx)
     expect(
-      files.some((file) =>
-        /[\\/]features[\\/][^\\/]+[\\/]components[\\/]/.test(file),
-      ),
+      files.some((file) => /[\\/]src[\\/]components[\\/]/.test(file)),
     ).toBe(true);
   });
 });

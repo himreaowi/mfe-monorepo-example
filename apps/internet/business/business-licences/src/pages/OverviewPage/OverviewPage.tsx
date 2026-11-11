@@ -1,4 +1,7 @@
-import { Demo, DemoItems, useCreateItem, useItems } from '@/features/demo';
+import { Demo } from '@/components/Demo/Demo';
+import { DemoItems } from '@/components/DemoItems/DemoItems';
+import { useCreateItem } from '@/hooks/useCreateItem';
+import { useItems } from '@/hooks/useItems';
 
 /**
  * Page-level data fetching: the page calls the feature's data hooks and passes their results

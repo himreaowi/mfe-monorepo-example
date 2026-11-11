@@ -4,7 +4,7 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import { createFakeFetch } from '@org/jest-config/fetch';
 import { HostPropsProvider } from '@org/mf-runtime/remote';
 import { renderWithQuery } from '@org/query/test';
-import { ann } from '@/features/staff/__fixtures__/staff';
+import { ann } from '@/__fixtures__/staff';
 import { OverviewPage } from './OverviewPage';
 
 // The page fetches through @org/intranet-directory: answer the HTTP calls with a fake fetch.

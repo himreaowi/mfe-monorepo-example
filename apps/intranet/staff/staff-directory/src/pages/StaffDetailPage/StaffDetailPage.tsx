@@ -1,5 +1,6 @@
 import { useParams } from 'react-router';
-import { StaffDetail, useStaffMember } from '@/features/staff';
+import { StaffDetail } from '@/components/StaffDetail/StaffDetail';
+import { useStaffMember } from '@/hooks/useStaffMember';
 
 /**
  * Page-level data fetching: the page loads the person of the URL, `StaffDetail` displays them.

@@ -1,5 +1,6 @@
 import { useParams } from 'react-router';
-import { AnnouncementDetail, useAnnouncement } from '@/features/announcements';
+import { AnnouncementDetail } from '@/components/AnnouncementDetail/AnnouncementDetail';
+import { useAnnouncement } from '@/hooks/useAnnouncements';
 
 /**
  * Page-level data fetching: the page loads the announcement of the URL, `AnnouncementDetail`

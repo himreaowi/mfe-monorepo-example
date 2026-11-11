@@ -3,14 +3,11 @@ import { render, screen } from '@testing-library/react';
 import { scanExposedModule } from '@org/jest-config/exposed-module';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { ThemeProvider } from '@org/ui';
-import {
-  getAnnouncement,
-  listAnnouncements,
-} from '@/features/announcements/api/announcementsApi';
-import { maintenance } from '@/features/announcements/__fixtures__/announcements';
+import { getAnnouncement, listAnnouncements } from '@/api/announcementsApi';
+import { maintenance } from '@/__fixtures__/announcements';
 import EmbeddedApp, { StandaloneApp } from './apps';
 
-jest.mock('@/features/announcements/api/announcementsApi');
+jest.mock('@/api/announcementsApi');
 
 beforeEach(() => {
   jest.mocked(listAnnouncements).mockResolvedValue([maintenance]);
@@ -72,11 +69,9 @@ describe('Announcements remote', () => {
       path.join(__dirname, 'apps.tsx'),
     );
     expect(violations).toEqual([]);
-    // the walk reached the feature components (features/<name>/components/<Name>/<Name>.tsx)
+    // the walk reached the app components (src/components/<Name>/<Name>.tsx)
     expect(
-      files.some((file) =>
-        /[\\/]features[\\/][^\\/]+[\\/]components[\\/]/.test(file),
-      ),
+      files.some((file) => /[\\/]src[\\/]components[\\/]/.test(file)),
     ).toBe(true);
   });
 });

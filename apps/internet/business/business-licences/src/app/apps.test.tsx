@@ -3,12 +3,12 @@ import { render, screen } from '@testing-library/react';
 import { scanExposedModule } from '@org/jest-config/exposed-module';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { ThemeProvider } from '@org/ui';
-import { listItems } from '@/features/demo/api/itemsApi';
+import { listItems } from '@/api/itemsApi';
 import EmbeddedApp, { StandaloneApp } from './apps';
 
 // the demo feature loads items from the API: no HTTP in unit tests
-jest.mock('@/features/demo/api/itemsApi', () => ({
-  ...jest.requireActual('@/features/demo/api/itemsApi'),
+jest.mock('@/api/itemsApi', () => ({
+  ...jest.requireActual('@/api/itemsApi'),
   listItems: jest.fn().mockResolvedValue([]),
 }));
 
@@ -60,11 +60,9 @@ describe('Business licences remote', () => {
       path.join(__dirname, 'apps.tsx'),
     );
     expect(violations).toEqual([]);
-    // the walk reached the feature components (features/<name>/components/<Name>/<Name>.tsx)
+    // the walk reached the app components (src/components/<Name>/<Name>.tsx)
     expect(
-      files.some((file) =>
-        /[\\/]features[\\/][^\\/]+[\\/]components[\\/]/.test(file),
-      ),
+      files.some((file) => /[\\/]src[\\/]components[\\/]/.test(file)),
     ).toBe(true);
   });
 });

@@ -3,14 +3,11 @@ import { render, screen } from '@testing-library/react';
 import { scanExposedModule } from '@org/jest-config/exposed-module';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { ThemeProvider } from '@org/ui';
-import {
-  getLeaveBalance,
-  getLeaveRequests,
-} from '@/features/leave/api/leaveApi';
-import { balances, request } from '@/features/leave/__fixtures__/leave';
+import { getLeaveBalance, getLeaveRequests } from '@/api/leaveApi';
+import { balances, request } from '@/__fixtures__/leave';
 import EmbeddedApp, { StandaloneApp } from './apps';
 
-jest.mock('@/features/leave/api/leaveApi');
+jest.mock('@/api/leaveApi');
 
 beforeEach(() => {
   jest.mocked(getLeaveBalance).mockResolvedValue(balances);
@@ -75,11 +72,9 @@ describe('Leave Requests remote', () => {
       path.join(__dirname, 'apps.tsx'),
     );
     expect(violations).toEqual([]);
-    // the walk reached the feature components (features/<name>/components/<Name>/<Name>.tsx)
+    // the walk reached the app components (src/components/<Name>/<Name>.tsx)
     expect(
-      files.some((file) =>
-        /[\\/]features[\\/][^\\/]+[\\/]components[\\/]/.test(file),
-      ),
+      files.some((file) => /[\\/]src[\\/]components[\\/]/.test(file)),
     ).toBe(true);
   });
 });

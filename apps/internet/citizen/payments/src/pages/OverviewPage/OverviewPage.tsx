@@ -1,4 +1,4 @@
-import { ExternalModuleHost } from '@/features/external';
+import { ExternalModuleHost } from '@/components/ExternalModuleHost/ExternalModuleHost';
 
 export function OverviewPage() {
   return (

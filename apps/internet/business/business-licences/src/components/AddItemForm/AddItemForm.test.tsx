@@ -1,0 +1,118 @@
+import { act, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { HttpClientError } from '@org/http-client';
+import type { CreateItemMutation } from '@/hooks/useCreateItem';
+import { AddItemForm } from './AddItemForm';
+
+// A form that only displays and validates: sending is the page's mutation (useCreateItem).
+function renderForm(mutate = jest.fn()) {
+  const form = (isPending: boolean) => (
+    <AddItemForm
+      createItem={{ mutate, isPending } as unknown as CreateItemMutation}
+    />
+  );
+  const { rerender } = render(form(false));
+  return {
+    mutate,
+    user: userEvent.setup(),
+    setPending: (isPending: boolean) => rerender(form(isPending)),
+  };
+}
+
+/** A `mutate` that fails like the API. */
+function failingWith(error: unknown) {
+  return jest.fn((_draft, { onError }) => onError(error));
+}
+
+describe('AddItemForm', () => {
+  it('validates on submit: error summary (focused) + field error, nothing sent', async () => {
+    const { user, mutate } = renderForm();
+    const submit = screen.getByRole('button', { name: 'Add item' });
+    expect(submit).toBeEnabled(); // never disabled because the form is invalid
+    await user.click(submit);
+    const summary = screen.getByTestId('error-summary');
+    expect(summary).toHaveFocus();
+    expect(summary).toHaveTextContent('There is a problem');
+    const input = screen.getByLabelText('Name');
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+    expect(input).toHaveAccessibleDescription('Error: Enter a name.');
+    expect(mutate).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('link', { name: 'Enter a name.' }));
+    expect(input).toHaveFocus();
+  });
+
+  it('requires a valid UEN: summary link and field error, nothing sent', async () => {
+    const { user, mutate } = renderForm();
+    await user.type(screen.getByLabelText('Name'), 'Corner Cafe');
+    await user.type(screen.getByLabelText(/^UEN/), '12345');
+    await user.click(screen.getByRole('button', { name: 'Add item' }));
+    const summary = screen.getByTestId('error-summary');
+    expect(summary).toHaveFocus();
+    expect(summary).toHaveTextContent('Enter a valid UEN');
+    const field = screen.getByLabelText(/^UEN/);
+    expect(field).toBeRequired();
+    expect(field).toHaveAttribute('aria-invalid', 'true');
+    expect(mutate).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('link', { name: /Enter a valid UEN/ }));
+    expect(field).toHaveFocus();
+  });
+
+  it('submit shows loading only while sending, then reports success', async () => {
+    const { user, mutate, setPending } = renderForm();
+    await user.type(screen.getByLabelText('Name'), 'New item');
+    await user.type(screen.getByLabelText(/^UEN/), ' 201912345K ');
+    await user.click(screen.getByRole('button', { name: 'Add item' }));
+    expect(mutate.mock.calls[0][0]).toEqual({
+      name: 'New item',
+      uen: '201912345K',
+    });
+    setPending(true);
+    expect(screen.getByRole('button', { name: 'Adding…' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+    setPending(false);
+    act(() =>
+      mutate.mock.calls[0][1].onSuccess({
+        id: 9,
+        name: 'New item',
+        description: '',
+      }),
+    );
+    expect(await screen.findByText('Added “New item”.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add item' })).toBeEnabled();
+    expect(screen.getByLabelText('Name')).toHaveValue('');
+    expect(screen.getByLabelText(/^UEN/)).toHaveValue('');
+  });
+
+  it('shows server 422 field errors in the same summary and field', async () => {
+    const { user } = renderForm(
+      failingWith(
+        new HttpClientError(
+          { status: 422, statusText: '', url: '/items' },
+          { errors: { name: 'An item with this name already exists.' } },
+        ),
+      ),
+    );
+    await user.type(screen.getByLabelText('Name'), 'Getting started');
+    await user.type(screen.getByLabelText(/^UEN/), '201912345K');
+    await user.click(screen.getByRole('button', { name: 'Add item' }));
+    expect(await screen.findByTestId('error-summary')).toHaveTextContent(
+      'An item with this name already exists.',
+    );
+    expect(screen.getByLabelText('Name')).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
+  });
+
+  it('shows other failures as a form error', async () => {
+    const { user } = renderForm(failingWith(new TypeError('Failed to fetch')));
+    await user.type(screen.getByLabelText('Name'), 'x');
+    await user.type(screen.getByLabelText(/^UEN/), '201912345K');
+    await user.click(screen.getByRole('button', { name: 'Add item' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /Could not add the item/,
+    );
+  });
+});
