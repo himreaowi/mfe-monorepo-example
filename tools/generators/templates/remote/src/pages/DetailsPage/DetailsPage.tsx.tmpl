@@ -1,4 +1,4 @@
-import { DemoDetails } from '@/features/demo';
+import { DemoDetails } from '@/components/DemoDetails/DemoDetails';
 
 export function DetailsPage() {
   return (

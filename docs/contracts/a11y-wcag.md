@@ -18,7 +18,7 @@ External (vendor) modules must meet the same level (vendor kit checklist).
 | Failure mode | any violation fails `pnpm e2e:<zone>` and the pipeline                                                                          |
 | Exceptions   | only with `exclude`/`disableRules` next to a comment linking a ticket with an owner and a date                                  |
 
-New pages and states (dialogs, menus, error states) get a `checkA11y` call in the feature's
+New pages and states (dialogs, menus, error states) get a `checkA11y` call in the app's
 e2e spec after the state is shown.
 
 ## Manual (before release of a new flow)

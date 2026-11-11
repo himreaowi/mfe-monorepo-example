@@ -99,7 +99,15 @@ const SHELL_DEV_DEPENDENCIES = {
 
 /** Files of the `remote` layer that an `--external` adapter does not need (the vendor renders the pages). */
 const EXTERNAL_OMIT = [
-  'src/features/demo/',
+  'src/api/',
+  'src/hooks/',
+  'src/types/',
+  'src/utils/validation',
+  'src/utils/itemErrors',
+  'src/components/Demo/',
+  'src/components/DemoDetails/',
+  'src/components/DemoItems/',
+  'src/components/AddItemForm/',
   'src/pages/DetailsPage/',
   'src/pages/NotFoundPage/',
   'src/core/constants/routePaths.ts',
@@ -470,7 +478,7 @@ export function shellUrl(zone, basePath) {
  *   external?: boolean, vendorFormat?: string, title?: string, state?: boolean,
  * }} options `vendorFormat` (only with `external`): format of the dev mock vendor config
  * (`esm` default, `web-component`, `script`); `title`: overrides the title derived from the name;
- * `state`: add the feature-state example (`features/demo/state/`: reducer + Context, used by
+ * `state`: add the app-state example (`src/state/`: reducer + Context, used by
  * ItemPicker and SelectionSummary on the overview page; templates/remote-state)
  * @returns {Promise<{ dir: string, port: number, packageName: string, federationName: string, entry: RegistryEntry, shells: { name: string, url: string }[] }>}
  */
@@ -489,7 +497,7 @@ export async function generateRemote({
   assertRemoteName(name);
   if (state && external) {
     throw new UsageError(
-      '--state adds feature state to the demo feature of a React remote; an --external adapter has none (the vendor owns its state).',
+      '--state adds app state (src/state/) to the demo of a React remote; an --external adapter has none (the vendor owns its state).',
     );
   }
   if (vendorFormat !== undefined && !external) {

@@ -19,17 +19,15 @@
  * - the dev tool servers declared in the root package.json (`mfe.tools`) have unique offsets
  *   inside the zones' tools range and name existing workspace packages
  * - component layout (docs/coding-conventions.md "One folder per component"): components live in
- *   `features/<feature>/components/<Name>/`, `src/components/<Name>/` or `src/layouts/<Name>/`
- *   with `<Name>.tsx` and `<Name>.test.tsx`; a CSS module is imported only from its own folder
- * - state folders (`src/features/<feature>/state/`, app-level `src/state/`) hold a tested
- *   reducer: at least one `<name>Reducer.test.ts`
- * - no barrel files: the only `index.ts` in an app is a feature's public API
- *   (`src/features/<feature>/index.ts`); everything else is imported from its file
+ *   `src/components/<Name>/` or `src/layouts/<Name>/` with `<Name>.tsx` and
+ *   `<Name>.test.tsx`; a CSS module is imported only from its own folder; apps have no
+ *   `src/features/` folder (flat layout)
+ * - `src/state/` holds a tested reducer: at least one `<name>Reducer.test.ts`
+ * - no barrel files: apps have no `index.ts` at all; everything is imported from its file
  *   (`@/components/Card/Card`)
  * - @org/ui component library (packages/platform/ui/src/components/<Name>/): every component folder has
  *   <Name>.tsx, <Name>.module.scss, <Name>.test.tsx and <Name>.stories.tsx
- * - shared components belong in @org/ui: a component folder name (src/components/<Name>,
- *   features/<feature>/components/<Name>) found in two or more apps is an error, unless the
+ * - shared components belong in @org/ui: a component folder name (src/components/<Name>) found in two or more apps is an error, unless the
  *   root package.json lists it in `mfe.componentDuplicatesAllowed` ({ "<Name>": "<reason>" })
  * - remotes never set CSS custom properties page-wide (`:root`, `html`, `body`, `[data-theme]`,
  *   `document.documentElement.style.setProperty('--…')`): that would restyle the shell's layout
@@ -645,8 +643,7 @@ function entries(dir) {
 /**
  * One folder per component: `components/<Name>/{<Name>.tsx, <Name>.test.tsx}` inside
  * `src/components/`, `src/layouts/` (the shell's ShellLayout, a remote's StandaloneLayout) and
- * every `src/features/<feature>/components/`; no component or style files
- * loose in a feature root or a components/ folder; a CSS module is private to its folder (no
+ * no component or style files loose in a components/ folder; no `src/features/` folder; a CSS module is private to its folder (no
  * styles shared between components through one .module.scss).
  * @param {string} root
  * @param {string} appDir absolute
@@ -661,23 +658,11 @@ function checkComponentLayout(root, appDir, err) {
     path.join(src, 'components'),
     path.join(src, 'layouts'),
   ];
-  for (const feature of entries(path.join(src, 'features'))) {
-    if (!feature.isDirectory()) continue;
-    const featureDir = path.join(src, 'features', feature.name);
-    componentDirs.push(path.join(featureDir, 'components'));
-    for (const file of entries(featureDir)) {
-      if (
-        file.isFile() &&
-        /\.(tsx|s?css)$/.test(file.name) &&
-        !/^index\.tsx$/.test(file.name)
-      ) {
-        const base = file.name.replace(/\.(test\.)?tsx$|\.module\.s?css$/, '');
-        err(
-          'component-folder',
-          `${rel(path.join(featureDir, file.name))}: components and their styles live in features/${feature.name}/components/<Name>/ (move it to components/${base}/${file.name}). The feature root keeps only api/, hooks/, state/, types/, utils/, components/, queryKeys.ts and index.ts. See ${LAYOUT_DOC}.`,
-        );
-      }
-    }
+  if (fs.existsSync(path.join(src, 'features'))) {
+    err(
+      'component-folder',
+      `${rel(path.join(src, 'features'))}/: apps have no features/ folder. Flat layout: components/<Name>/, hooks/ (+ queryKeys.ts), api/, state/, types/, utils/, __fixtures__/ directly under src/. See ${LAYOUT_DOC}.`,
+    );
   }
   for (const dir of componentDirs) {
     for (const item of entries(dir)) {
@@ -690,7 +675,7 @@ function checkComponentLayout(root, appDir, err) {
         );
         err(
           'component-folder',
-          `${where}: one folder per component; move it to ${rel(dir)}/${base}/${item.name} (with ${base}.test.tsx). Shared test data goes to the feature's __fixtures__/. See ${LAYOUT_DOC}.`,
+          `${where}: one folder per component; move it to ${rel(dir)}/${base}/${item.name} (with ${base}.test.tsx). Shared test data goes to src/__fixtures__/. See ${LAYOUT_DOC}.`,
         );
         continue;
       }
@@ -700,7 +685,7 @@ function checkComponentLayout(root, appDir, err) {
       if (name.startsWith('__')) {
         err(
           'component-folder',
-          `${where}/: test data and helpers shared by several components go to the feature's __fixtures__/ (or utils/), not inside components/. See ${LAYOUT_DOC}.`,
+          `${where}/: test data and helpers shared by several components go to src/__fixtures__/ (or utils/), not inside components/. See ${LAYOUT_DOC}.`,
         );
         continue;
       }
@@ -723,12 +708,9 @@ function checkComponentLayout(root, appDir, err) {
   }
 
   // state folders hold a reducer with its test (docs/coding-conventions.md "State management")
-  const stateDirs = [
-    path.join(src, 'state'),
-    ...entries(path.join(src, 'features'))
-      .filter((feature) => feature.isDirectory())
-      .map((feature) => path.join(src, 'features', feature.name, 'state')),
-  ].filter((dir) => fs.existsSync(dir));
+  const stateDirs = [path.join(src, 'state')].filter((dir) =>
+    fs.existsSync(dir),
+  );
   for (const dir of stateDirs) {
     const files = entries(dir)
       .filter((f) => f.isFile())
@@ -741,17 +723,12 @@ function checkComponentLayout(root, appDir, err) {
     );
   }
 
-  // no barrel files: index.ts only as a feature's public API (src/features/<feature>/index.ts)
+  // no barrel files at all: imports name the file
   for (const file of sourceFiles(appDir)) {
     if (!/^index\.tsx?$/.test(path.basename(file))) continue;
-    const parent = path.dirname(file);
-    const isFeatureApi =
-      path.dirname(parent) === path.join(src, 'features') &&
-      path.basename(file) === 'index.ts';
-    if (isFeatureApi) continue;
     err(
       'barrel-file',
-      `${rel(file)}: no index.ts barrels. Import from the file itself (e.g. '@/components/Card/Card', '../api/itemsApi'); the only index.ts in an app is a feature's public API, src/features/<feature>/index.ts. See ${LAYOUT_DOC}.`,
+      `${rel(file)}: no index.ts barrels in apps. Import from the file itself (e.g. '@/components/Card/Card', '@/hooks/useItems'). See ${LAYOUT_DOC}.`,
     );
   }
 
@@ -1008,8 +985,7 @@ function checkUiLibrary(root, err) {
 }
 
 /**
- * Component folders of an app (`src/components/<Name>/` and
- * `src/features/<feature>/components/<Name>/` with `<Name>.tsx`). Layouts (`src/layouts/`) are
+ * Component folders of an app (`src/components/<Name>/` with `<Name>.tsx`). Layouts (`src/layouts/`) are
  * per app by design (each shell owns its ShellLayout) and are not counted.
  * @param {string} appDir absolute
  * @returns {string[]}
@@ -1017,11 +993,6 @@ function checkUiLibrary(root, err) {
 function appComponentNames(appDir) {
   const src = path.join(appDir, 'src');
   const dirs = [path.join(src, 'components')];
-  for (const feature of entries(path.join(src, 'features'))) {
-    if (feature.isDirectory()) {
-      dirs.push(path.join(src, 'features', feature.name, 'components'));
-    }
-  }
   return dirs.flatMap((dir) =>
     entries(dir)
       .filter(

@@ -47,7 +47,7 @@ Options:
                           afterwards): top (default, nav in the header row) or side (nav in a
                           sidebar left of the content); phones: Menu button
   --private               remote needs a signed-in user (tag access:private, marked in the shell registry)
-  --state                 add the feature-state example: features/demo/state/ (reducer + test,
+  --state                 add the app-state example: src/state/ (reducer + test,
                           Context with Provider and hooks), used by two components on the
                           overview page (docs/coding-conventions.md "State management")
   --external              adapter remote for an external/vendor module (tag kind:external)

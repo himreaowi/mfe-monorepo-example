@@ -59,9 +59,8 @@ It runs `git mv` (history is kept), rewrites path references to the old folder, 
 apps/<zone>/<shell>/<name>/         new remote (package @org/<zone>-<name>); apps/<zone>/shared/<name>/ with --shell a,b
   package.json                      nx.tags zone/type/access(/kind), mfe.port, mfe.federationName
   webpack.config.js                  createRemoteConfig (reads mfe from package.json)
-  src/                              app/, features/demo, pages/, layouts/, components/, core/
-    features/demo/                  api/, hooks/, types/, utils/, components/<Name>/ (one folder per component), queryKeys.ts, index.ts (public API)
-    features/demo/state/            only with --state: demoReducer.ts (+ test), DemoContext.tsx (+ test), used by ItemPicker + SelectionSummary
+  src/                              app/, pages/, components/<Name>/ (one folder per component), hooks/ (+ queryKeys.ts), api/, types/, utils/, layouts/, core/
+    state/                          only with --state: demoReducer.ts (+ test), DemoContext.tsx (+ test), used by ItemPicker + SelectionSummary
 apps/<zone>/<shell>/shell/
   remotes.json                      + { name, title, path, federationName, package, access, kind }
   mfe-manifest.dev.json             regenerated: + "<federationName>": { "entry": "http://localhost:<port>/mf-manifest.json" }
@@ -83,13 +82,13 @@ standalone mode and the axe scans cover it with no test changes.
 ## After generating
 
 1. `pnpm install`, then `pnpm dev:<zone>` and open the shell; the new remote is in the nav.
-2. Replace the demo: build your feature in `src/features/<name>/` (types → api → hooks → UI,
+2. Replace the demo: build it in `src/` (types → api → hooks → components,
    one folder per component under `components/`, see
    [coding-conventions.md](coding-conventions.md#one-folder-per-component)), compose it in `src/pages/`, route it in `src/app/routes.tsx` with `routePaths`
    ([coding-conventions.md](coding-conventions.md)). The demo's items list and "Add item" form
    (data from the zone's mock API, `tools/mock-api`) show the API and form patterns; add your
    mock endpoints to `tools/mock-api` while the real API is not there yet. Delete
-   `features/demo` and its tests when you no longer need them.
+   the `Demo*` components, `api/`, `hooks/` and their tests when you no longer need them.
 3. Adjust `remotes.json` (`title`, `path`) if the defaults do not fit. Keep `name`,
    `federationName`, `package` and `access` in sync with the remote (`pnpm check` verifies).
 4. Mock host props for standalone mode: `standaloneProps` in `src/app/apps.tsx`.

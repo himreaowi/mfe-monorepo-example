@@ -12,7 +12,7 @@ import { registerPwa } from '@org/pwa';
 import { ThemeProvider } from '@org/ui';
 import { App } from './app/App';
 import { BASE_PATH } from './core/constants/app';
-import { StartupError } from './features/startup';
+import { StartupError } from '@/components/StartupError/StartupError';
 
 async function start() {
   const container = document.getElementById('root');

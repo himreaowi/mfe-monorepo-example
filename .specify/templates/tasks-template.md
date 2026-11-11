@@ -20,8 +20,8 @@ description: 'Task list template for feature implementation'
 
 ## Path Conventions
 
-- Apps: `apps/<zone>/<portal>/<app>/src/` (canonical layout: `app/`, `features/`,
-  `pages/`, `layouts/`, `components/`, `core/`, `services/`,
+- Apps: `apps/<zone>/<portal>/<app>/src/` (canonical layout: `app/`, `pages/`, `components/`,
+  `hooks/`, `api/`, `types/`, `utils/`, `layouts/`, `core/`, `services/`,
   `main.tsx`); shared code (docs/where-code-goes.md): one zone
   `apps/<zone>/libs/<capability>/src/`, both zones (public) `packages/common/<capability>/src/`,
   plumbing `packages/platform/<name>/src/`; new library: `pnpm gen:package <common|zone> <capability>`
@@ -33,7 +33,7 @@ description: 'Task list template for feature implementation'
   production URLs are per-environment manifest changes for DevOps (list them)
 - Remotes: tasks cover standalone and embedded behaviour; no imports of other
   remotes or shells
-- Domain work belongs under `features/<name>/` with a public `index.ts`
+- Flat layout: no `features/` folder, no `index.ts` barrels (import the file)
 - Tests: unit tests beside the source (`*.test.tsx`), feature e2e flows in
   `apps/<zone>/<zone>/shell/e2e/<feature>.spec.ts`; a11y via the zone suite
 - Dependencies: tasks name the tier and the command (`pnpm --filter <app> add …`,
@@ -104,9 +104,9 @@ Examples of foundational tasks (adjust based on your project):
 
 ### Implementation for User Story 1
 
-- [ ] T012 [P] [US1] Create [Entity1] model in apps/[zone]/[app]/src/features/[feature]/types/[entity1].ts
-- [ ] T013 [P] [US1] Create [Entity2] model in apps/[zone]/[app]/src/features/[feature]/types/[entity2].ts
-- [ ] T014 [US1] Implement [Service] in apps/[zone]/[app]/src/features/[feature]/api/[service].ts (depends on T012, T013)
+- [ ] T012 [P] [US1] Create [Entity1] model in apps/[zone]/[app]/src/types/[entity1].ts
+- [ ] T013 [P] [US1] Create [Entity2] model in apps/[zone]/[app]/src/types/[entity2].ts
+- [ ] T014 [US1] Implement [Service] in apps/[zone]/[app]/src/api/[service].ts (depends on T012, T013)
 - [ ] T015 [US1] Implement [endpoint/feature] in apps/[zone]/[app]/src/[location]/[file].tsx
 - [ ] T016 [US1] Add validation and error handling
 - [ ] T017 [US1] Add logging for user story 1 operations
@@ -128,8 +128,8 @@ Examples of foundational tasks (adjust based on your project):
 
 ### Implementation for User Story 2
 
-- [ ] T020 [P] [US2] Create [Entity] model in apps/[zone]/[app]/src/features/[feature]/types/[entity].ts
-- [ ] T021 [US2] Implement [Service] in apps/[zone]/[app]/src/features/[feature]/api/[service].ts
+- [ ] T020 [P] [US2] Create [Entity] model in apps/[zone]/[app]/src/types/[entity].ts
+- [ ] T021 [US2] Implement [Service] in apps/[zone]/[app]/src/api/[service].ts
 - [ ] T022 [US2] Implement [endpoint/feature] in apps/[zone]/[app]/src/[location]/[file].tsx
 - [ ] T023 [US2] Integrate with User Story 1 components (if needed)
 
@@ -150,8 +150,8 @@ Examples of foundational tasks (adjust based on your project):
 
 ### Implementation for User Story 3
 
-- [ ] T026 [P] [US3] Create [Entity] model in apps/[zone]/[app]/src/features/[feature]/types/[entity].ts
-- [ ] T027 [US3] Implement [Service] in apps/[zone]/[app]/src/features/[feature]/api/[service].ts
+- [ ] T026 [P] [US3] Create [Entity] model in apps/[zone]/[app]/src/types/[entity].ts
+- [ ] T027 [US3] Implement [Service] in apps/[zone]/[app]/src/api/[service].ts
 - [ ] T028 [US3] Implement [endpoint/feature] in apps/[zone]/[app]/src/[location]/[file].tsx
 
 **Checkpoint**: All user stories should now be independently functional
@@ -221,8 +221,8 @@ Task: "Contract test for [endpoint] in packages/[pkg]/src/[name].test.ts"
 Task: "Integration test for [user journey] in apps/[zone]/[shell]/shell/e2e/[name].spec.ts"
 
 # Launch all models for User Story 1 together:
-Task: "Create [Entity1] model in apps/[zone]/[app]/src/features/[feature]/types/[entity1].ts"
-Task: "Create [Entity2] model in apps/[zone]/[app]/src/features/[feature]/types/[entity2].ts"
+Task: "Create [Entity1] model in apps/[zone]/[app]/src/types/[entity1].ts"
+Task: "Create [Entity2] model in apps/[zone]/[app]/src/types/[entity2].ts"
 ```
 
 ---

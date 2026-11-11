@@ -110,16 +110,13 @@ apps/
     │   └── [remote]/              # remote listed only by this shell (or --external adapter)
     │       └── src/
             ├── app/               # apps (exposed ./App), routes
-            ├── features/[feature]/
-            │   ├── api/
-            │   ├── hooks/
-            │   ├── types/
-            │   ├── utils/
-            │   ├── components/[Component]/  # [Component].tsx, .module.scss, .test.tsx (no index.ts)
-            │   ├── __fixtures__/            # shared test data
-            │   └── index.ts       # the feature's public API (the only barrel)
+            ├── api/
+            ├── hooks/             # TanStack Query hooks + queryKeys.ts
+            ├── types/
+            ├── utils/
+            ├── __fixtures__/      # shared test data
             ├── pages/
-            ├── components/[Component]/
+            ├── components/[Component]/  # [Component].tsx, .module.scss, .test.tsx (no index.ts)
             ├── core/constants/    # routePaths, apiRoutes
             └── services/          # optional (API client: useApiClient() from @org/mf-runtime)
 apps/[zone]/libs/

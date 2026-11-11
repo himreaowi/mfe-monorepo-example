@@ -77,7 +77,7 @@ mfe-manifest.json (per environment, DevOps):
 
 - The adapter remote is a normal remote: own route (`/payments/*`), registry entry, access tag
   (`--private` works too, so a vendor module can sit behind `<RequireAuth>`), error boundary.
-- `src/features/external/components/ExternalModuleHost/ExternalModuleHost.tsx` passes `basePath`, the splat sub-path as `path`,
+- `src/components/ExternalModuleHost/ExternalModuleHost.tsx` passes `basePath`, the splat sub-path as `path`,
   the shell theme, the user (reduced to `{ id, name, roles }`) and wires `onNavigate` to the
   shell router. `onEvent`/`onError` go to a demo panel: replace with real handling.
 - **The vendor URL is never in a build**: it comes from the manifest. Development: the shell's

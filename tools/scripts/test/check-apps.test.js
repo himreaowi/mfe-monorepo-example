@@ -474,7 +474,7 @@ describe('check-apps', () => {
     const r = await run(validApps(), {
       ...validRegistries(),
       'apps/intranet/intranet/leave/src/a.ts':
-        "import { Demo } from '@org/intranet-staff/src/features/demo';\nexport { Demo };\n",
+        "import { Demo } from '@org/intranet-staff/src/components/Demo/Demo';\nexport { Demo };\n",
     });
     assert.deepEqual(rules(r.errors), ['app-import']);
     assert.match(
@@ -521,24 +521,20 @@ describe('check-apps', () => {
       [`${dir}/${name}/${name}.test.tsx`]: '',
     });
 
-    it('passes on folder-per-component features and app components', async () => {
+    it('passes on the flat layout with folder-per-component', async () => {
       const r = await run(validApps(), {
         ...validRegistries(),
-        ...ok(`${staff}/features/staff/components`, 'StaffCard'),
-        ...ok(`${staff}/features/staff/components`, 'StaffSearch'),
+        ...ok(`${staff}/components`, 'StaffCard'),
+        ...ok(`${staff}/components`, 'StaffSearch'),
         ...ok(`${staff}/components`, 'Badge'),
         // layouts follow the same rule (a remote's StandaloneLayout, the shell's ShellLayout)
         ...ok(`${staff}/layouts`, 'StandaloneLayout'),
         ...ok('apps/intranet/intranet/shell/src/layouts', 'ShellLayout'),
         // a private sub-part may use its component's styles (same folder)
-        [`${staff}/features/staff/components/StaffSearch/SearchField.tsx`]:
+        [`${staff}/components/StaffSearch/SearchField.tsx`]:
           "import styles from './StaffSearch.module.scss';\nexport const F = () => styles;\n",
-        // the feature's public API is the only index.ts
-        [`${staff}/features/staff/index.ts`]:
-          "export { StaffSearch } from './components/StaffSearch/StaffSearch';\n",
-        [`${staff}/features/staff/__fixtures__/staff.ts`]:
-          'export const a = 1;\n',
-        [`${staff}/features/staff/utils/format.ts`]: 'export const b = 1;\n',
+        [`${staff}/__fixtures__/staff.ts`]: 'export const a = 1;\n',
+        [`${staff}/utils/format.ts`]: 'export const b = 1;\n',
         [`${staff}/pages/HomePage/HomePage.tsx`]:
           "import styles from './HomePage.module.scss';\nexport const P = () => styles;\n",
       });
@@ -548,13 +544,13 @@ describe('check-apps', () => {
     it('fails on loose component files, misnamed folders and missing tests', async () => {
       const r = await run(validApps(), {
         ...validRegistries(),
-        [`${staff}/features/staff/StaffCard.tsx`]: '',
-        [`${staff}/features/staff/components/StaffList.tsx`]: '',
-        [`${staff}/features/staff/components/Staff.module.scss`]: '',
-        [`${staff}/features/staff/components/testData.ts`]: '',
-        [`${staff}/features/staff/components/__fixtures__/a.ts`]: '',
-        [`${staff}/features/staff/components/card/Card.tsx`]: '',
-        [`${staff}/features/staff/components/Detail/Detail.tsx`]: '',
+        [`${staff}/features/x/components/X/X.tsx`]: '',
+        [`${staff}/components/StaffList.tsx`]: '',
+        [`${staff}/components/Staff.module.scss`]: '',
+        [`${staff}/components/testData.ts`]: '',
+        [`${staff}/components/__fixtures__/a.ts`]: '',
+        [`${staff}/components/card/Card.tsx`]: '',
+        [`${staff}/components/Detail/Detail.tsx`]: '',
         [`${staff}/components/Badge.tsx`]: '',
         [`${staff}/layouts/StandaloneLayout.tsx`]: '',
         'apps/intranet/intranet/shell/src/layouts/ShellLayout/ShellLayout.tsx':
@@ -566,12 +562,12 @@ describe('check-apps', () => {
         'component-test',
       ]);
       const text = r.errors.map((e) => e.message).join('\n');
-      assert.match(text, /move it to components\/StaffCard\/StaffCard\.tsx/);
+      assert.match(text, /apps have no features\/ folder/);
       assert.match(
         text,
-        /apps\/intranet\/intranet\/staff\/src\/features\/staff\/components\/StaffList\/StaffList\.tsx/,
+        /apps\/intranet\/intranet\/staff\/src\/components\/StaffList\/StaffList\.tsx/,
       );
-      assert.match(text, /__fixtures__\/ \(or utils\/\)/);
+      assert.match(text, /src\/__fixtures__\/ \(or utils\/\)/);
       assert.match(text, /components\/Detail\/: missing Detail\.test\.tsx/);
       assert.match(text, /src\/components\/Badge\/Badge\.tsx/);
       assert.match(
@@ -588,61 +584,58 @@ describe('check-apps', () => {
       const shell = 'apps/intranet/intranet/shell/src';
       const r = await run(validApps(), {
         ...validRegistries(),
-        // ok: feature state and app-level state with their reducer tests
-        [`${staff}/features/staff/state/staffReducer.ts`]: '',
-        [`${staff}/features/staff/state/staffReducer.test.ts`]: '',
-        [`${staff}/features/staff/state/StaffContext.tsx`]: '',
+        // ok: state with its reducer tests with their reducer tests
+        [`${staff}/state/staffReducer.ts`]: '',
+        [`${staff}/state/staffReducer.test.ts`]: '',
+        [`${staff}/state/StaffContext.tsx`]: '',
         [`${staff}/state/appReducer.ts`]: '',
         [`${staff}/state/appReducer.test.ts`]: '',
         // missing tests
-        [`${staff}/features/leave/state/leaveReducer.ts`]: '',
-        [`${staff}/features/leave/state/LeaveContext.tsx`]: '',
+        'apps/intranet/intranet/leave/src/state/leaveReducer.ts': '',
+        'apps/intranet/intranet/leave/src/state/LeaveContext.tsx': '',
         [`${shell}/state/ShellContext.tsx`]: '',
       });
       assert.deepEqual(rules(r.errors), ['state-test', 'state-test']);
       const text = r.errors.map((e) => e.message).join('\n');
-      assert.match(
-        text,
-        /features\/leave\/state\/: .*\(leaveReducer\.test\.ts\)/,
-      );
+      assert.match(text, /leave\/src\/state\/: .*\(leaveReducer\.test\.ts\)/);
       assert.match(
         text,
         /intranet\/shell\/src\/state\/: .*<name>Reducer\.ts \+ <name>Reducer\.test\.ts/,
       );
     });
 
-    it('fails on index.ts barrels outside a feature root', async () => {
+    it('fails on any index.ts barrel', async () => {
       const r = await run(validApps(), {
         ...validRegistries(),
-        ...ok(`${staff}/features/staff/components`, 'StaffCard'),
+        ...ok(`${staff}/components`, 'StaffCard'),
         ...ok(`${staff}/components`, 'Badge'),
         ...ok('apps/intranet/intranet/shell/src/layouts', 'ShellLayout'),
-        [`${staff}/features/staff/index.ts`]:
+        [`${staff}/index.ts`]:
           "export { StaffCard } from './components/StaffCard/StaffCard';\n",
-        [`${staff}/features/staff/components/StaffCard/index.ts`]: '',
-        [`${staff}/features/staff/components/index.ts`]: '',
-        [`${staff}/features/staff/api/index.ts`]: '',
+        [`${staff}/components/StaffCard/index.ts`]: '',
+        [`${staff}/components/index.ts`]: '',
+        [`${staff}/api/index.ts`]: '',
         [`${staff}/components/Badge/index.tsx`]: '',
         [`${staff}/pages/HomePage/index.ts`]: '',
         'apps/intranet/intranet/shell/src/layouts/ShellLayout/index.ts': '',
         [`${staff}/providers/index.ts`]: '',
       });
-      assert.deepEqual(rules(r.errors), Array(7).fill('barrel-file'));
+      assert.deepEqual(rules(r.errors), Array(8).fill('barrel-file'));
       assert.match(
         r.errors[0].message,
-        /no index\.ts barrels\. Import from the file itself/,
+        /no index\.ts barrels in apps\. Import from the file itself/,
       );
     });
 
     it('fails when a CSS module is imported from another folder (shared styles)', async () => {
       const r = await run(validApps(), {
         ...validRegistries(),
-        ...ok(`${staff}/features/staff/components`, 'StaffCard'),
-        ...ok(`${staff}/features/staff/components`, 'StaffDetail'),
-        [`${staff}/features/staff/components/StaffDetail/StaffDetail.tsx`]:
+        ...ok(`${staff}/components`, 'StaffCard'),
+        ...ok(`${staff}/components`, 'StaffDetail'),
+        [`${staff}/components/StaffDetail/StaffDetail.tsx`]:
           "import styles from '../StaffCard/StaffCard.module.scss';\nexport const D = () => styles;\n",
         [`${staff}/pages/HomePage/HomePage.tsx`]:
-          "import s from '@/features/staff/components/StaffCard/StaffCard.module.scss';\nexport const P = () => s;\n",
+          "import s from '@/components/StaffCard/StaffCard.module.scss';\nexport const P = () => s;\n",
       });
       assert.deepEqual(rules(r.errors), ['component-style', 'component-style']);
       const text = r.errors.map((e) => e.message).join('\n');
@@ -650,14 +643,14 @@ describe('check-apps', () => {
         text,
         /StaffDetail\.module\.scss with only the rules it uses/,
       );
-      assert.match(text, /HomePage\.tsx imports "@\/features\/staff/);
+      assert.match(text, /HomePage\.tsx imports "@\/components\/StaffCard/);
     });
 
     it('fails when a remote sets custom properties for the whole page', async () => {
       const r = await run(validApps(), {
         ...validRegistries(),
         ...ok('apps/intranet/intranet/shell/src/layouts', 'ShellLayout'),
-        ...ok(`${staff}/features/x/components`, 'X'),
+        ...ok(`${staff}/components`, 'X'),
         // the shell may set page tokens (src/styles/shell.scss) and its layout's own values
         'apps/intranet/intranet/shell/src/styles/shell.scss':
           ':root { --color-accent: #1d4ed8; }\n',
@@ -672,7 +665,7 @@ describe('check-apps', () => {
           "document.documentElement.style.setProperty('--color-bg', 'red');\n",
         // page-wide: :root / html / body / [data-theme], also nested or in @media, or from script
         [`${staff}/styles/global.scss`]: ':root { --color-surface: red; }\n',
-        [`${staff}/features/x/components/X/X.module.scss`]:
+        [`${staff}/components/X/X.module.scss`]:
           "@media (min-width: 1px) {\n  :global(html[data-theme='dark']) {\n    --color-accent: red;\n  }\n}\n",
         [`${staff}/main.tsx`]:
           "document.documentElement.style.setProperty('--color-bg', 'red');\n",
@@ -842,7 +835,7 @@ describe('check-apps', () => {
           'StatusPill',
         ),
         ...component(
-          'apps/intranet/intranet/leave/src/features/leave/components',
+          'apps/intranet/intranet/leave/src/components',
           'StatusPill',
         ),
         ...component(

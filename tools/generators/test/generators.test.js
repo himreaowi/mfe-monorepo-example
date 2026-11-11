@@ -183,9 +183,9 @@ describe('generators', () => {
       'src/app/App.tsx',
       'src/app/routes.tsx',
       'src/components/RemoteNav/RemoteNav.tsx',
-      'src/features/welcome/components/Welcome/Welcome.tsx',
-      'src/features/welcome/components/Welcome/Welcome.test.tsx',
-      'src/features/startup/components/StartupError/StartupError.tsx',
+      'src/components/Welcome/Welcome.tsx',
+      'src/components/Welcome/Welcome.test.tsx',
+      'src/components/StartupError/StartupError.tsx',
       'src/layouts/ShellLayout/ShellLayout.tsx',
       'src/pages/HomePage/HomePage.tsx',
       'src/pages/RemotePage/RemotePage.tsx',
@@ -410,7 +410,7 @@ describe('generators', () => {
     );
   });
 
-  it('--state: feature state example (reducer + Context) used by two components', async () => {
+  it('--state: app state example (reducer + Context) used by two components', async () => {
     await assert.rejects(
       generateRemote({
         root,
@@ -419,7 +419,7 @@ describe('generators', () => {
         external: true,
         state: true,
       }),
-      /--state adds feature state to the demo feature of a React remote/,
+      /--state adds app state \(src\/state\/\) to the demo of a React remote/,
     );
     await generateRemote({
       root,
@@ -430,21 +430,18 @@ describe('generators', () => {
     const dir = 'apps/intranet/intranet/team-board';
     const files = listFiles(path.join(root, dir));
     for (const f of [
-      'src/features/demo/state/demoReducer.ts',
-      'src/features/demo/state/demoReducer.test.ts',
-      'src/features/demo/state/DemoContext.tsx',
-      'src/features/demo/state/DemoContext.test.tsx',
-      'src/features/demo/components/ItemPicker/ItemPicker.tsx',
-      'src/features/demo/components/ItemPicker/ItemPicker.test.tsx',
-      'src/features/demo/components/SelectionSummary/SelectionSummary.tsx',
-      'src/features/demo/components/SelectionSummary/SelectionSummary.test.tsx',
+      'src/state/demoReducer.ts',
+      'src/state/demoReducer.test.ts',
+      'src/state/DemoContext.tsx',
+      'src/state/DemoContext.test.tsx',
+      'src/components/ItemPicker/ItemPicker.tsx',
+      'src/components/ItemPicker/ItemPicker.test.tsx',
+      'src/components/SelectionSummary/SelectionSummary.tsx',
+      'src/components/SelectionSummary/SelectionSummary.test.tsx',
     ]) {
       assert.ok(files.includes(f), `missing ${f}`);
     }
-    const context = read(
-      root,
-      `${dir}/src/features/demo/state/DemoContext.tsx`,
-    );
+    const context = read(root, `${dir}/src/state/DemoContext.tsx`);
     // separate state and dispatch contexts; hooks throw outside the provider
     assert.match(context, /const DemoStateContext = createContext/);
     assert.match(context, /const DemoDispatchContext = createContext/);
@@ -454,8 +451,8 @@ describe('generators', () => {
       /<DemoProvider>/,
     );
     assert.match(
-      read(root, `${dir}/src/features/demo/index.ts`),
-      /export \{ DemoProvider \}/,
+      read(root, `${dir}/src/pages/OverviewPage/OverviewPage.tsx`),
+      /from '@\/state\/DemoContext'/,
     );
     // without --state there is no state/ folder
     assert.ok(
@@ -474,21 +471,20 @@ describe('generators', () => {
       'src/app/routes.tsx',
       'src/components/ModeBadge/ModeBadge.tsx',
       'src/components/ModeBadge/ModeBadge.test.tsx',
-      'src/features/demo/index.ts',
-      'src/features/demo/components/Demo/Demo.tsx',
-      'src/features/demo/components/Demo/Demo.module.scss',
-      'src/features/demo/components/Demo/Demo.test.tsx',
-      'src/features/demo/components/DemoDetails/DemoDetails.tsx',
-      'src/features/demo/components/DemoDetails/DemoDetails.test.tsx',
-      'src/features/demo/utils/validation.ts',
-      'src/features/demo/api/itemsApi.ts',
-      'src/features/demo/api/itemsApi.test.ts',
-      'src/features/demo/hooks/useItems.ts',
-      'src/features/demo/components/DemoItems/DemoItems.tsx',
-      'src/features/demo/components/DemoItems/DemoItems.module.scss',
-      'src/features/demo/components/AddItemForm/AddItemForm.tsx',
-      'src/features/demo/components/AddItemForm/AddItemForm.module.scss',
-      'src/features/demo/components/AddItemForm/AddItemForm.test.tsx',
+      'src/components/Demo/Demo.tsx',
+      'src/components/Demo/Demo.module.scss',
+      'src/components/Demo/Demo.test.tsx',
+      'src/components/DemoDetails/DemoDetails.tsx',
+      'src/components/DemoDetails/DemoDetails.test.tsx',
+      'src/utils/validation.ts',
+      'src/api/itemsApi.ts',
+      'src/api/itemsApi.test.ts',
+      'src/hooks/useItems.ts',
+      'src/components/DemoItems/DemoItems.tsx',
+      'src/components/DemoItems/DemoItems.module.scss',
+      'src/components/AddItemForm/AddItemForm.tsx',
+      'src/components/AddItemForm/AddItemForm.module.scss',
+      'src/components/AddItemForm/AddItemForm.test.tsx',
       'src/layouts/StandaloneLayout/StandaloneLayout.tsx',
       'src/layouts/StandaloneLayout/StandaloneLayout.module.scss',
       'src/layouts/StandaloneLayout/StandaloneLayout.test.tsx',
@@ -510,12 +506,12 @@ describe('generators', () => {
     assert.match(overview, /useCreateItem\(\)/);
     for (const c of ['Demo', 'DemoItems', 'AddItemForm', 'DemoDetails']) {
       assert.doesNotMatch(
-        read(root, `${dir}/src/features/demo/components/${c}/${c}.tsx`),
+        read(root, `${dir}/src/components/${c}/${c}.tsx`),
         /=\s*use(Items|CreateItem|ApiClient)\(/,
         c,
       );
     }
-    const useItems = read(root, `${dir}/src/features/demo/hooks/useItems.ts`);
+    const useItems = read(root, `${dir}/src/hooks/useItems.ts`);
     assert.match(
       useItems,
       /import \{ useApiClient \} from '@org\/mf-runtime\/remote';/,
@@ -523,10 +519,10 @@ describe('generators', () => {
     assert.match(useItems, /useQuery\(\{/);
     assert.match(useItems, /demoKeys\.items\(\)/);
     assert.match(
-      read(root, `${dir}/src/features/demo/hooks/useCreateItem.ts`),
+      read(root, `${dir}/src/hooks/useCreateItem.ts`),
       /useMutation\(\{/,
     );
-    assert.ok(files.includes('src/features/demo/queryKeys.ts'));
+    assert.ok(files.includes('src/hooks/queryKeys.ts'));
     // the exposed module is src/app/apps.tsx (no RemoteApp.tsx / standaloneProps.ts)
     for (const f of ['src/app/RemoteApp.tsx', 'src/app/standaloneProps.ts']) {
       assert.ok(!files.includes(f), `${f} should not exist`);
@@ -542,7 +538,7 @@ describe('generators', () => {
     );
   });
 
-  it('no index.ts barrels except a feature root (the feature public API)', () => {
+  it('no index.ts barrels in apps', () => {
     for (const app of [
       'shell-intranet',
       'staff-directory',
@@ -559,10 +555,7 @@ describe('generators', () => {
       const barrels = listFiles(dir).filter((f) =>
         /(^|\/)index\.tsx?$/.test(f),
       );
-      for (const f of barrels) {
-        assert.match(f, /^src\/features\/[^/]+\/index\.ts$/, `${app}/${f}`);
-      }
-      assert.ok(barrels.length > 0, `${app} has a feature public API`);
+      assert.deepEqual(barrels, [], app);
     }
   });
 
@@ -667,7 +660,7 @@ describe('generators', () => {
     ]);
     const adapter = read(
       root,
-      'apps/internet/internet/payments/src/features/external/components/ExternalModuleHost/ExternalModuleHost.tsx',
+      'apps/internet/internet/payments/src/components/ExternalModuleHost/ExternalModuleHost.tsx',
     );
     assert.match(adapter, /<ExternalModule/);
     assert.match(adapter, /@org\/mf-runtime\/external/);
@@ -679,17 +672,17 @@ describe('generators', () => {
       ),
       /ExternalModuleHost/,
     );
-    // the vendor renders the pages: no demo feature / details page in an adapter
+    // the vendor renders the pages: no demo / details page in an adapter
     const files = listFiles(path.join(root, 'apps/internet/internet/payments'));
-    assert.ok(!files.some((f) => f.startsWith('src/features/demo/')));
+    assert.ok(!files.some((f) => /^src\/(api|hooks|components\/Demo)/.test(f)));
     assert.ok(!files.includes('src/pages/DetailsPage/DetailsPage.tsx'));
-    assert.ok(files.includes('src/features/external/utils/vendorConfig.ts'));
+    assert.ok(files.includes('src/utils/vendorConfig.ts'));
     assert.ok(
       files.includes(
-        'src/features/external/components/ExternalModuleHost/ExternalModuleHost.test.tsx',
+        'src/components/ExternalModuleHost/ExternalModuleHost.test.tsx',
       ),
     );
-    assert.ok(!files.includes('src/features/external/ExternalModuleHost.tsx'));
+    assert.ok(!files.includes('src/components/ExternalModuleHost.tsx'));
     // dev: the zone's mock API + mock vendor start with the adapter; the dev manifest points
     // at the internet mock vendor (tools range 3290-3299), generic config
     assert.deepEqual(pkg.nx.targets, {
@@ -724,7 +717,7 @@ describe('generators', () => {
     assert.equal(dev.settings.apiBaseUrl, '/api');
     const fallback = read(
       root,
-      'apps/internet/internet/payments/src/features/external/utils/vendorConfig.ts',
+      'apps/internet/internet/payments/src/utils/vendorConfig.ts',
     );
     assert.match(fallback, /http:\/\/localhost:3291\/mount\.js/);
     assert.doesNotMatch(fallback, /amount|merchant/i);
@@ -749,10 +742,7 @@ describe('generators', () => {
       config: { title: 'Widgets (mock vendor)' },
     });
     assert.match(
-      read(
-        root,
-        'apps/internet/internet/widgets/src/features/external/utils/vendorConfig.ts',
-      ),
+      read(root, 'apps/internet/internet/widgets/src/utils/vendorConfig.ts'),
       /tagName: 'mock-vendor-widget'/,
     );
     assert.deepEqual(mockVendorConfig('intranet', 'script', 'X'), {

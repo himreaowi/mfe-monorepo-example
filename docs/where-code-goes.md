@@ -32,8 +32,8 @@ that several apps import. `shared` and `libs` are reserved: no portal or remote 
 
 Ask in this order and stop at the first "yes":
 
-1. **Used by one remote only?** Keep it in that remote (`src/features/<feature>/` or
-   `src/components/<Name>/`). Most code stays here.
+1. **Used by one remote only?** Keep it in that remote (`src/components/<Name>/`, `src/hooks/`,
+   `src/api/`, …). Most code stays here. A second, unrelated area means another remote, not a subfolder.
 2. **Generic UI with no business rules** (a button, a table, a dialog)? → `@org/ui`
    (`packages/platform/ui`, [README](../packages/platform/ui/README.md)).
 3. **Shared by apps of one zone?** → `apps/<zone>/libs/<capability>`

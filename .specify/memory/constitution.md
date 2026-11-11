@@ -129,8 +129,7 @@ single faulty or compromised module from reaching user sessions.
 - Prefer composition (children, slots, small hooks) over boolean-prop sprawl. No Atomic Design
   folder taxonomy; one folder per component (`<Component>.tsx`, own `.module.scss`, test;
   no `index.ts` barrel, imports name the file; CSS Modules class names are readable,
-  `Component_class__hash`): shared components at `components/<Component>/`, feature UI under
-  `features/<name>/components/<Component>/`.
+  `Component_class__hash`): every app component at `src/components/<Component>/` (no `features/` folder).
 - The shell owns the document (global styles, theme attribute, service worker). Remotes never
   import global styles or register a service worker from their exposed module.
 
@@ -175,14 +174,13 @@ apps/<zone>/<group>/<app>/src/
 ├── main.tsx          # entry (MF async startup): shell: global styles, PWA, manifest, render;
 │                     #   remote: standalone only
 ├── app/              # providers, routes, registry (shell) / apps (exposed ./App), routes (remote)
-├── features/<name>/  # domain modules; index.ts = the feature's public API (the only barrel)
-│                     #   (api/, hooks/, state/, types/, utils/,
-│                     #   components/<Component>/ one folder per component, __fixtures__/)
-├── pages/            # route-level screens: fetch data (page-level), compose features
+├── pages/            # route-level screens: fetch data (page-level), compose components
+├── hooks/            # TanStack Query hooks + queryKeys.ts
+├── api/  types/  utils/  __fixtures__/   # requests, types, pure helpers, shared test data
 ├── layouts/          # chrome
 ├── state/            # optional app-level Context + reducer (createRemoteApp providers);
 │                     #   shareable filters live in the URL, not in state
-├── components/       # shared UI of this app, one folder per component
+├── components/       # every component of this app, one folder per component (no index.ts)
 ├── core/             # constants (routePaths, apiRoutes), types, utils (no parallel lib/)
 └── services/         # optional app-wide infra; the API client is useApiClient() (@org/mf-runtime)
 ```

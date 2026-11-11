@@ -2,7 +2,7 @@ import axios, { AxiosError } from 'axios';
 
 /**
  * Ported from starter-mfe services/httpClient.ts, on axios (fetch adapter). axios is private to
- * this package: features only see the API below (lint and `pnpm check` keep it that way).
+ * this package: callers only see the API below (lint and `pnpm check` keep it that way).
  *
  * Differences:
  * - The base URL is injected at runtime (`createHttpClient({ baseUrl })`), typically from

@@ -413,7 +413,7 @@ describe('data layer guardrails', () => {
   it('allows axios in @org/http-client and query hooks in hooks/ folders', async () => {
     const r = await check({
       'packages/platform/http-client/src/httpClient.ts': `import axios from 'axios';`,
-      [`${remote}/features/demo/hooks/useItems.ts`]: `import { useQuery } from '@tanstack/react-query';`,
+      [`${remote}/hooks/useItems.ts`]: `import { useQuery } from '@tanstack/react-query';`,
       'packages/platform/http-client/src/hooks/useThing.ts': `import { useMutation } from '@tanstack/react-query';`,
     });
     assert.deepEqual(rules(r.errors), []);
@@ -422,7 +422,7 @@ describe('data layer guardrails', () => {
   it('axios-import: any other import, or dependency, of axios', async () => {
     const r = await check(
       {
-        [`${remote}/features/demo/api/itemsApi.ts`]: `import axios from 'axios';`,
+        [`${remote}/api/itemsApi.ts`]: `import axios from 'axios';`,
         'packages/platform/ui/src/x.ts': `import { create } from "axios/lib";`,
       },
       {
@@ -465,7 +465,7 @@ describe('data layer guardrails', () => {
     assert.deepEqual(rules(ok.errors), []);
     const r = await check(
       {
-        [`${remote}/features/demo/components/Demo/Demo.tsx`]: `import { Combobox } from '@base-ui/react/combobox';`,
+        [`${remote}/components/Demo/Demo.tsx`]: `import { Combobox } from '@base-ui/react/combobox';`,
         'packages/platform/query/src/x.ts': `const m = await import("@base-ui/react");`,
       },
       {
@@ -495,7 +495,7 @@ describe('data layer guardrails', () => {
 
   it('query-hook-import: query hooks in a component or page file', async () => {
     const r = await check({
-      [`${remote}/features/demo/components/Demo/Demo.tsx`]: `import { useQuery } from '@tanstack/react-query';`,
+      [`${remote}/components/Demo/Demo.tsx`]: `import { useQuery } from '@tanstack/react-query';`,
       [`${remote}/pages/OverviewPage/OverviewPage.tsx`]: `import {\n  useMutation as send,\n  useQueryClient,\n} from '@tanstack/react-query';`,
     });
     assert.deepEqual(rules(r.errors), [
@@ -548,18 +548,12 @@ describe('data layer guardrails', () => {
         .map((m) => m.message);
 
     it('reports axios anywhere', () => {
-      const [message] = lint(
-        `import axios from 'axios';`,
-        'src/features/a/api/aApi.js',
-      );
+      const [message] = lint(`import axios from 'axios';`, 'src/api/aApi.js');
       assert.match(message, /axios is private to @org\/http-client/);
     });
 
     it('reports query hooks outside hooks/ folders, with the reason', () => {
-      for (const file of [
-        'src/features/a/components/A/A.js',
-        'src/pages/P/P.js',
-      ]) {
+      for (const file of ['src/components/A/A.js', 'src/pages/P/P.js']) {
         const [message] = lint(
           `import { useQuery } from '@tanstack/react-query';`,
           file,
@@ -572,7 +566,7 @@ describe('data layer guardrails', () => {
       assert.deepEqual(
         lint(
           `import { useMutation, useQuery } from '@tanstack/react-query';`,
-          'src/features/a/hooks/useA.js',
+          'src/hooks/useA.js',
         ),
         [],
       );

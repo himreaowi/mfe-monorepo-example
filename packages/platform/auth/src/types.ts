@@ -8,7 +8,7 @@
 /**
  * The signed-in user as the frontend sees it. Deliberately minimal (PDPA data minimisation):
  * an opaque id, a display name and coarse roles. No NRIC/FIN, email, phone, date of birth or
- * address: features that need such data fetch it from their own API, server-side authorised.
+ * address: code that needs such data fetch it from their own API, server-side authorised.
  * Fields the BFF sends beyond these are dropped by the session client.
  */
 export type AuthUser = {

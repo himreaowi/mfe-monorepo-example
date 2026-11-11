@@ -7,7 +7,7 @@
   component decisions.
 
   RELATED DOCS (do not duplicate their jobs)
-  - docs/coding-conventions.md        → code structure, data fetching, features
+  - docs/coding-conventions.md        → code structure, data fetching, layout
   - docs/project-overview.md          → product what/who/flows/scope
   - docs/contracts/theming.md         → normative theme/token requirements
   - docs/contracts/a11y-wcag.md       → WCAG 2.2 AA requirements and CI
@@ -156,7 +156,7 @@ Rules:
 - Shared components: `packages/platform/ui/src/components/<Component>/` (`Component.tsx`,
   `Component.module.scss`, `types.ts`, `Component.test.tsx`; no `index.ts`: the package's
   `src/index.ts` exports each component from its file). App-only components:
-  the app's `src/components/<Component>/`. Feature UI: `src/features/<name>/components/<Component>/`,
+  the app's `src/components/<Component>/`. All app components live there,
   same files (one folder per component, its own `.module.scss`, never shared; see
   [coding-conventions.md](coding-conventions.md#one-folder-per-component)).
 - Composition first: `children` / slots and small hooks over boolean-prop sprawl.

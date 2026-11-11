@@ -1,8 +1,11 @@
-import { Demo, DemoItems, useCreateItem, useItems } from '@/features/demo';
+import { Demo } from '@/components/Demo/Demo';
+import { DemoItems } from '@/components/DemoItems/DemoItems';
+import { useCreateItem } from '@/hooks/useCreateItem';
+import { useItems } from '@/hooks/useItems';
 
 /**
- * Page-level data fetching: the page calls the feature's data hooks and passes their results
- * down; the feature components only display. Every API call of this page is visible
+ * Page-level data fetching: the page calls the data hooks and passes their results
+ * down; the components only display. Every API call of this page is visible
  * here, so a duplicate call (two components loading the same list) cannot hide in the tree
  * (docs/coding-conventions.md "Data fetching").
  */

@@ -51,18 +51,18 @@ Instructions for AI coding agents (and humans) working in this monorepo. Details
   the exposed `src/app/apps.tsx` (and what it imports) must not import global styles or register a
   service worker; links use `useRemotePath()`; keep standalone mode working.
 - No hardcoded API or app paths in components (`apiRoutes`, `routePaths`); no API calls in
-  component `useEffect` (use `features/*/api` + `features/*/hooks`). Data hooks use TanStack Query
-  (`useQuery` / `useMutation`, imported only in `hooks/` folders; keys in
-  `features/*/queryKeys.ts`); `axios` is imported only in `@org/http-client`. Fetching is
-  page-level: pages call the data hooks and pass the results down; feature components only
+  component `useEffect` (use `src/api` + `src/hooks`). Data hooks use TanStack Query
+  (`useQuery` / `useMutation`, imported only in `src/hooks/`; keys in
+  `src/hooks/queryKeys.ts`); `axios` is imported only in `@org/http-client`. Fetching is
+  page-level: pages call the data hooks and pass the results down; components only
   display. Shared UI state: React
   Context + reducer in `state/`, shareable filters in the URL
   ([docs/coding-conventions.md](docs/coding-conventions.md#data-fetching)).
-- One folder per component: `features/<feature>/components/<Name>/` (and `src/components/<Name>/`)
+- One folder per component: `src/components/<Name>/`
   with `<Name>.tsx`, its own `<Name>.module.scss` (never shared between components),
-  `<Name>.test.tsx`, no `index.ts` (import the file: `@/components/Card/Card`; the only barrel is
-  a feature's public `features/<feature>/index.ts`); private sub-parts in the same folder; shared test data in
-  `features/<feature>/__fixtures__/`; helpers in `utils/`
+  `<Name>.test.tsx`, no `index.ts` (import the file: `@/components/Card/Card`; no barrels in apps, no
+  `features/` folder); private sub-parts in the same folder; shared test data in
+  `src/__fixtures__/`; helpers in `utils/`
   ([docs/coding-conventions.md](docs/coding-conventions.md#one-folder-per-component)).
   `pnpm check` reports violations.
 - Use `@org/ui` components (Storybook: `pnpm storybook`; `pnpm test:ui` = axe + screenshots) before

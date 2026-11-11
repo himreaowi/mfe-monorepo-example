@@ -52,13 +52,13 @@ comma-separated: `--shell citizen,business`).
   sign-in, and `settings.apiBaseUrl` → the shell's same-origin `<base>/api`, which the dev proxy forwards to
   the zone's mock API unless `API_UPSTREAM` says otherwise). See
   `docs/auth-contract.md`.
-- `--state` (`gen:remote`, not with `--external`): adds the **feature-state example** from
-  `templates/remote-state/`: `src/features/demo/state/` (`demoReducer.ts` + test,
+- `--state` (`gen:remote`, not with `--external`): adds the **app-state example** from
+  `templates/remote-state/`: `src/state/` (`demoReducer.ts` + test,
   `DemoContext.tsx` with `DemoProvider`, `useDemoState()`, `useDemoDispatch()` + test) and two
   components that share it on the overview page (`ItemPicker` sets the selected items,
   `SelectionSummary` shows and clears them). See docs/coding-conventions.md "State management".
 - `--external`: an **adapter remote** for a vendor module (tag `kind:external`, registry
-  `"kind": "external"`). `src/features/external/components/ExternalModuleHost/` renders
+  `"kind": "external"`). `src/components/ExternalModuleHost/` renders
   `<ExternalModule>` (`@org/mf-runtime/external`) configured from the remote's manifest
   `props.vendor` (URL per environment); one splat route, so the vendor routes on `props.path`.
   The dev manifest entry points at the zone's mock vendor (`tools/mock-vendor`, intranet :3191,
@@ -67,7 +67,7 @@ comma-separated: `--shell citizen,business`).
   `pnpm dev:<zone>`. `--vendor-format` picks the mock vendor's delivery format: `esm`
   (default, `/mount.js`), `web-component` (`/element.js`, `tagName`), `script` (`/script.js`,
   `global`); `mf` is refused (the mock cannot serve an MF remote: generate `esm` and edit
-  `props.vendor`). The demo feature and details page are not generated. See
+  `props.vendor`). The demo and details page are not generated. See
   `docs/external-modules.md`.
 - **Dev tools per zone**: every generated app's `nx.targets.dev.dependsOn` starts the zone's
   mock API (`@org/mock-api`, target `serve:<zone>`; adapters also `@org/mock-vendor`), and the
@@ -76,18 +76,16 @@ comma-separated: `--shell citizen,business`).
   `docs/configuration.md`). Tool ports
   come from the zone's tools range and the root `package.json` `mfe.tools` (`toolPort()` in
   `tools/scripts/src/zones.js`), so `pnpm dev:intranet` and `pnpm dev:internet` run side by side.
-- The remote's demo feature (`src/features/demo`) loads `/items` from that API through
+- The remote's demo (`src/api`, `src/hooks`, `src/components/Demo*`) loads `/items` from that API through
   `useApiClient()` (api/ → hooks/ with TanStack Query and `queryKeys.ts` → the page, which passes the results down → display-only components) and has an "Add item" form with the
   validate-on-submit / error-summary pattern (docs/coding-conventions.md).
-- Every generated feature uses **one folder per component** (docs/coding-conventions.md):
-  `features/<feature>/components/<Name>/{<Name>.tsx, <Name>.module.scss, <Name>.test.tsx}` (no
-  `index.ts`: imports name the file; a feature's `index.ts` is its public API),
-  non-component code in `api/`, `hooks/`, `types/`, `utils/`. Remote: `features/demo`
-  (`Demo`, `DemoDetails`, `DemoItems`, `AddItemForm`; `utils/validation.ts`). Shell:
-  `features/welcome` (`Welcome`), `features/startup` (`StartupError`) and
-  `layouts/ShellLayout`; remotes `layouts/StandaloneLayout`. Adapter:
-  `features/external` (`ExternalModuleHost`; `utils/vendorConfig.ts`). `pnpm check` keeps it
-  that way.
+- Every generated app uses the **flat layout** with **one folder per component** (docs/coding-conventions.md):
+  `src/components/<Name>/{<Name>.tsx, <Name>.module.scss, <Name>.test.tsx}` (no `index.ts`: imports
+  name the file, e.g. `@/hooks/useItems`), non-component code in `src/api`, `src/hooks` (TanStack
+  Query + `queryKeys.ts`), `src/state` (only `--state`), `src/types`, `src/utils`. Remote: `Demo`,
+  `DemoDetails`, `DemoItems`, `AddItemForm`; `utils/validation.ts`. Shell: `Welcome`,
+  `StartupError`, `RemoteNav` and `layouts/ShellLayout`; remotes `layouts/StandaloneLayout`.
+  Adapter: `ExternalModuleHost`; `utils/vendorConfig.ts`. `pnpm check` keeps it that way.
 - Shells get `src/styles/shell.scss`, the shell's own global stylesheet (empty by default, for
   fonts or a shell-wide token override), imported in `src/main.tsx` right after
   `@org/design-tokens/global.scss`. The header colours are not there: they are in the copied

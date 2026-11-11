@@ -15,7 +15,7 @@ import { app, cleanupWorkspaces, lib, makeWorkspace } from './fixture.js';
 after(cleanupWorkspaces);
 
 const STAFF = 'apps/intranet/intranet/staff';
-const CARD = `${STAFF}/src/features/people/components/PersonCard`;
+const CARD = `${STAFF}/src/components/PersonCard`;
 
 /**
  * A git repo: intranet remote `staff` with the component PersonCard (imports @org/ui, its own
@@ -56,10 +56,10 @@ function repo(files = {}) {
       [`${CARD}/PersonCard.test.tsx`]:
         "import { PersonCard } from './PersonCard';\n",
       [`${STAFF}/src/pages/StaffPage/StaffPage.tsx`]:
-        "import { PersonCard } from '@/features/people/components/PersonCard/PersonCard';\nexport const x = PersonCard;\n",
-      [`${STAFF}/src/features/people/components/PersonList/PersonList.tsx`]:
+        "import { PersonCard } from '@/components/PersonCard/PersonCard';\nexport const x = PersonCard;\n",
+      [`${STAFF}/src/components/PersonList/PersonList.tsx`]:
         'import { PersonCard } from "../PersonCard/PersonCard";\njest.mock(\'../PersonCard/PersonCard\');\n',
-      [`${STAFF}/src/features/people/components/PersonList/PersonList.test.tsx`]:
+      [`${STAFF}/src/components/PersonList/PersonList.test.tsx`]:
         "import { PersonList } from './PersonList';\n",
       ...files,
     },
@@ -111,7 +111,7 @@ describe('move-component', () => {
     const text = lines.join('\n');
     assert.match(
       text,
-      /git mv apps\/intranet\/intranet\/staff\/src\/features\/people\/components\/PersonCard apps\/intranet\/libs\/people\/src\/components\/PersonCard/,
+      /git mv apps\/intranet\/intranet\/staff\/src\/components\/PersonCard apps\/intranet\/libs\/people\/src\/components\/PersonCard/,
     );
     assert.match(text, /dependency @org\/intranet-people: workspace:\*/);
     assert.match(text, /dependency @org\/ui: workspace:\*/);
@@ -162,11 +162,7 @@ describe('move-component', () => {
       /from '@org\/intranet-people'/,
     );
     const list = fs.readFileSync(
-      path.join(
-        root,
-        STAFF,
-        'src/features/people/components/PersonList/PersonList.tsx',
-      ),
+      path.join(root, STAFF, 'src/components/PersonList/PersonList.tsx'),
       'utf8',
     );
     assert.match(list, /from "@org\/intranet-people"/);

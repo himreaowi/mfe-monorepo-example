@@ -135,10 +135,8 @@ src/
   main.tsx            entry: global styles, PWA, load + validate /mfe-manifest.json, render
   styles/shell.scss   shell-wide global styles (empty by default)
   app/                App (providers + router), routes, registry typing
-  components/         RemoteNav/
-  features/           welcome/components/Welcome/ (home page content),
-                      startup/components/StartupError/ (manifest/connection errors);
-                      one folder per component (docs/coding-conventions.md)
+  components/         one folder per component (docs/coding-conventions.md): RemoteNav/,
+                      Welcome/ (home page content), StartupError/ (manifest/connection errors)
   layouts/            ShellLayout/ (this shell's own layout: structure, colours, tests)
   pages/              HomePage, RemotePage, NotFoundPage
   core/               constants, types

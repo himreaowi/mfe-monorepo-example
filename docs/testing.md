@@ -26,7 +26,7 @@ export default createJestConfig({ rootDir: import.meta.dirname });
 (`pnpm check` rule `component-test`, [coding-conventions.md](coding-conventions.md#one-folder-per-component)):
 what it renders from its data, its empty / loading / error states where it has them, and the
 accessible names users and assistive technology rely on; no snapshot tests. Test data shared by
-several tests of a feature goes to `features/<feature>/__fixtures__/`.
+several tests goes to `src/__fixtures__/`.
 
 What the generated apps test, as examples to follow:
 
@@ -54,14 +54,14 @@ jsdom implements no Fetch API: in a plain `jest-environment-jsdom`, `fetch`, `He
 **`fetch` undefined on purpose**: a test that forgets to inject one fails with
 `fetch is not defined` instead of calling a real server.
 
-Recommended split (the generated remote's `features/demo` does exactly this):
+Recommended split (the generated remote does exactly this):
 
-| Layer                     | How to test                                                                                                                                                                                 |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `features/*/api/` (pure)  | real `@org/http-client` + a fake fetch: `createFakeFetch` from `@org/jest-config/fetch`; assert URLs, bodies, parsed results, errors                                                        |
-| `features/*/hooks/`       | `jest.mock('../api/itemsApi')` + `renderHookWithQuery` from `@org/query/test` inside `HostPropsProvider` (`settings.apiBaseUrl`): pending, data, error, refetch, invalidation, unconfigured |
-| feature components        | props only (pages fetch, components display): render each state from props, assert callbacks; no API mock needed                                                                            |
-| Real API / mock API flows | e2e (`tools/mock-api` runs with `pnpm dev:<zone>`)                                                                                                                                          |
+| Layer                     | How to test                                                                                                                                                                                |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/api/` (pure)         | real `@org/http-client` + a fake fetch: `createFakeFetch` from `@org/jest-config/fetch`; assert URLs, bodies, parsed results, errors                                                       |
+| `src/hooks/`              | `jest.mock('@/api/itemsApi')` + `renderHookWithQuery` from `@org/query/test` inside `HostPropsProvider` (`settings.apiBaseUrl`): pending, data, error, refetch, invalidation, unconfigured |
+| components                | props only (pages fetch, components display): render each state from props, assert callbacks; no API mock needed                                                                           |
+| Real API / mock API flows | e2e (`tools/mock-api` runs with `pnpm dev:<zone>`)                                                                                                                                         |
 
 ```ts
 import { createFakeFetch } from '@org/jest-config/fetch';
@@ -261,7 +261,7 @@ Target: **WCAG 2.2 AA** ([contracts/a11y-wcag.md](contracts/a11y-wcag.md)).
   sign-in prompt and every remote standalone, each in light and dark, on desktop and 375 px.
   `checkA11y(page)` fails with one line per failing element (rule, impact, selector, fix).
 - Use `checkA11y(page, { include: ['[data-testid="my-dialog"]'] })` after opening dialogs or
-  menus in feature tests: axe only sees what is rendered.
+  menus in component tests: axe only sees what is rendered.
 - Components of `@org/ui`: `pnpm test:ui` runs the same axe tags (WCAG 2.2 AA) against every
   Storybook story in light and dark, plus screenshot comparisons
   ([packages/platform/ui/README.md](../packages/platform/ui/README.md#storybook-dev-only)).

@@ -534,7 +534,7 @@ export async function checkPackages({ root }) {
           if (!AXIOS_SPEC.test(match[1])) continue;
           err(
             'axios-import',
-            `${rel} imports "${match[1]}". axios is private to @org/http-client (${AXIOS_OWNER}): add a request function to the feature's api/ folder that takes the client from useApiClient(), see ${DATA_DOC}.`,
+            `${rel} imports "${match[1]}". axios is private to @org/http-client (${AXIOS_OWNER}): add a request function to src/api/ that takes the client from useApiClient(), see ${DATA_DOC}.`,
           );
         }
       }
@@ -551,7 +551,7 @@ export async function checkPackages({ root }) {
       for (const name of importedQueryHooks(code)) {
         err(
           'query-hook-import',
-          `${rel} imports ${name === '*' ? 'all of @tanstack/react-query' : `${name} from @tanstack/react-query`} outside a hooks/ folder. Queries and mutations live in a data hook (src/features/<feature>/hooks/): the page calls the hook and passes the result down, components only display. See ${DATA_DOC}.`,
+          `${rel} imports ${name === '*' ? 'all of @tanstack/react-query' : `${name} from @tanstack/react-query`} outside a hooks/ folder. Queries and mutations live in a data hook (src/hooks/): the page calls the hook and passes the result down, components only display. See ${DATA_DOC}.`,
         );
       }
     }

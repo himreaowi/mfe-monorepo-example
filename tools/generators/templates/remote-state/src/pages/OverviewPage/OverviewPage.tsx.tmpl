@@ -1,19 +1,17 @@
-import {
-  Demo,
-  DemoItems,
-  DemoProvider,
-  ItemPicker,
-  SelectionSummary,
-  useCreateItem,
-  useItems,
-} from '@/features/demo';
+import { Demo } from '@/components/Demo/Demo';
+import { DemoItems } from '@/components/DemoItems/DemoItems';
+import { ItemPicker } from '@/components/ItemPicker/ItemPicker';
+import { SelectionSummary } from '@/components/SelectionSummary/SelectionSummary';
+import { useCreateItem } from '@/hooks/useCreateItem';
+import { useItems } from '@/hooks/useItems';
+import { DemoProvider } from '@/state/DemoContext';
 
 /**
- * Page-level data fetching: the page calls the feature's data hooks and passes their results
- * down; the feature components only display. Every API call of this page is visible
+ * Page-level data fetching: the page calls the data hooks and passes their results
+ * down; the components only display. Every API call of this page is visible
  * here (docs/coding-conventions.md "Data fetching").
  *
- * `<DemoProvider>` holds the feature's UI state shared by several components (the selection:
+ * `<DemoProvider>` holds the UI state shared by several components (the selection:
  * ItemPicker changes it, SelectionSummary shows it); the items themselves stay API data from
  * `useItems()` (docs/coding-conventions.md "State management").
  */

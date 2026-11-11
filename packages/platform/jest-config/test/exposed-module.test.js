@@ -26,13 +26,13 @@ describe('scanExposedModule', () => {
   it('walks relative and @/ imports (styles too) and reports forbidden imports', () => {
     write({
       'src/app/apps.tsx':
-        "import { routes } from './routes';\nimport { X } from '@/features/x/components/X/X';\n",
+        "import { routes } from './routes';\nimport { X } from '@/components/X/X';\n",
       'src/app/routes.tsx': "import { Page } from '@/pages/Page/Page';\n",
       'src/pages/Page/Page.tsx': "import '@org/design-tokens/global.scss';\n",
-      'src/features/x/components/X/X.tsx':
+      'src/components/X/X.tsx':
         "import styles from './X.module.scss';\nimport { a } from '../../utils';\n",
-      'src/features/x/components/X/X.module.scss': '.x { color: red; }\n',
-      'src/features/x/utils/index.ts': 'registerPwa();\n',
+      'src/components/X/X.module.scss': '.x { color: red; }\n',
+      'src/utils/index.ts': 'registerPwa();\n',
     });
     const { files, violations } = scanExposedModule(
       path.join(root, 'src/app/apps.tsx'),
@@ -42,14 +42,14 @@ describe('scanExposedModule', () => {
     assert.deepEqual(files.map(rel).sort(), [
       'src/app/apps.tsx',
       'src/app/routes.tsx',
-      'src/features/x/components/X/X.module.scss',
-      'src/features/x/components/X/X.tsx',
-      'src/features/x/utils/index.ts',
+      'src/components/X/X.module.scss',
+      'src/components/X/X.tsx',
       'src/pages/Page/Page.tsx',
+      'src/utils/index.ts',
     ]);
     assert.deepEqual(violations.map((v) => rel(v.file)).sort(), [
-      'src/features/x/utils/index.ts',
       'src/pages/Page/Page.tsx',
+      'src/utils/index.ts',
     ]);
   });
 });

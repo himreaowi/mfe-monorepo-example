@@ -57,33 +57,35 @@ both themes and pass axe (WCAG 2.2 AA) in every state.
 
 ## Layers inside an app
 
-| Layer                  | Role                                                                                              |
-| ---------------------- | ------------------------------------------------------------------------------------------------- |
-| `src/main.tsx`         | Entry. Shell: global styles, PWA, manifest, auth client, render. Remote: standalone entry only    |
-| `src/app/`             | Wiring: providers, routes, registry (shell); `apps` (exposed `./App`), routes (remote)            |
-| `src/features/<name>/` | Domain UI (`components/<Name>/`) + `api/` / `hooks/` / `types/` / `utils/`, public `index.ts`     |
-| `src/pages/`           | Route containers: call the features' data hooks, pass data down, compose feature components       |
-| `src/components/`      | UI primitives of this app, one folder per component (shared ones go to `@org/ui`)                 |
-| `src/layouts/`         | Chrome, owned by the app: `ShellLayout` (shell), `StandaloneLayout` (remote), one folder each     |
-| `src/core/`            | Constants (`routePaths`, `apiRoutes`, `app`), types, small utils (no parallel `lib/`)             |
-| `src/styles/`          | Shell only: `shell.scss`, shell-wide global styles (empty by default)                             |
-| `src/services/`        | Optional app-wide infra. Not generated: the API client is `useApiClient()` from `@org/mf-runtime` |
+| Layer                                           | Role                                                                                              |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `src/main.tsx`                                  | Entry. Shell: global styles, PWA, manifest, auth client, render. Remote: standalone entry only    |
+| `src/app/`                                      | Wiring: providers, routes, registry (shell); `apps` (exposed `./App`), routes (remote)            |
+| `src/pages/`                                    | Route containers: call the data hooks, pass data down, compose components                         |
+| `src/components/`                               | Every component of this app, one folder per component (shared ones go to `@org/ui`)               |
+| `src/hooks/`                                    | Data hooks (TanStack Query: `useQuery` / `useMutation`) + `queryKeys.ts`                          |
+| `src/api/`                                      | Pure request functions (through `useApiClient()`), response validation                            |
+| `src/state/`                                    | Only with `--state`: reducer + Context for UI state shared by several components                  |
+| `src/types/`, `src/utils/`, `src/__fixtures__/` | Types, pure helpers, test data shared by several tests                                            |
+| `src/layouts/`                                  | Chrome, owned by the app: `ShellLayout` (shell), `StandaloneLayout` (remote), one folder each     |
+| `src/core/`                                     | Constants (`routePaths`, `apiRoutes`, `app`), types, small utils (no parallel `lib/`)             |
+| `src/styles/`                                   | Shell only: `shell.scss`, shell-wide global styles (empty by default)                             |
+| `src/services/`                                 | Optional app-wide infra. Not generated: the API client is `useApiClient()` from `@org/mf-runtime` |
 
-**Rule of thumb:** pages fetch and compose, features own domain logic and data hooks, components
-stay presentational,
+**Rule of thumb:** pages fetch and compose, hooks own the queries, components stay presentational,
 core holds constants, `api/` modules own the requests (through `useApiClient()`).
 
-New capability: `features/<name>/` (types → api → hooks → UI) → thin `pages/` entry → route in
-`app/routes.tsx` using `routePaths`.
+New capability: `types/` → `api/` → `hooks/` → `components/` → thin `pages/` entry → route in
+`app/routes.tsx` using `routePaths`. There is no `features/` folder: a remote that grows a second,
+unrelated area is split into another remote (or a zone lib), not nested.
 
 ## One folder per component
 
-Every component of a feature gets its own folder under `components/`, in every app (shells,
-remotes, external adapters). The app's own `src/components/` follows the same rule and naming.
+Every component gets its own folder under `src/components/`, in every app (shells, remotes,
+external adapters).
 
 ```
-src/features/<feature>/
-  api/  hooks/  types/  utils/          request functions, state hooks, types, pure helpers
+src/
   components/
     <ComponentName>/
       <ComponentName>.tsx
@@ -91,8 +93,9 @@ src/features/<feature>/
       <ComponentName>.test.tsx          every component has a test (no index.ts: import the file)
       types.ts                          optional: props types, if non-trivial
       <SubComponent>.tsx                optional: private parts used only by this component
+  hooks/                               TanStack Query hooks + queryKeys.ts
+  api/  types/  utils/  state/          requests, types, pure helpers, shared UI state (--state)
   __fixtures__/                         test data shared by several tests (or utils/testData.ts)
-  index.ts                              the feature's public API (the only barrel)
 ```
 
 Why:
@@ -103,23 +106,20 @@ Why:
 - **Missing tests are visible**: a folder without `<Name>.test.tsx` stands out in review (and
   `pnpm check` reports it, rule `component-test`).
 - **Scales with sub-components**: when a component grows, its private parts (`<SubComponent>.tsx`)
-  go into its folder instead of crowding `components/`; other features see only the feature's
-  `index.ts`.
+  go into its folder instead of crowding `components/`.
 
 Rules:
 
 - **No barrel files.** Import a component from its file (`'../StaffCard/StaffCard'`,
-  `'@/components/ModeBadge/ModeBadge'`, `'../api/itemsApi'`); component, layout, page and
-  provider folders have no `index.ts`. The one exception is the feature's public API,
-  `features/<feature>/index.ts`: other features, pages and `app/` import a feature through it
-  only. Why: one name per thing (the editor's "go to definition" and search land on the
+  `'@/components/ModeBadge/ModeBadge'`, `'@/hooks/useItems'`, `'@/api/itemsApi'`); an app has no
+  `index.ts` at all. Why: one name per thing (the editor's "go to definition" and search land on the
   component, not on a re-export), no file that only forwards, no accidental import cycles
-  through a barrel. `pnpm check` reports other `index.ts` files (rule `barrel-file`).
+  through a barrel. `pnpm check` reports every `index.ts` in an app (rule `barrel-file`).
 - A `.module.scss` is imported only from its own folder (the component and its private
   sub-parts). Shared values come from tokens (`var(--…)` from `@org/design-tokens`). When two
   components really share a style, decide case by case: duplicate a few declarations (simplest,
   usually right), extract a small shared component that owns the style (a reused card, a
-  status message), or put a mixin in a Sass partial (`_<name>.scss` next to the feature's
+  status message), or put a mixin in a Sass partial (`_<name>.scss` next to the
   components, `@use`d by each module). Never let a component's styles reach into a child
   component's markup (`.panel a { … }` styles the children too and depends on CSS order).
 - `layouts/` follows the same rule as `components/`: `ShellLayout/{ShellLayout.tsx,
@@ -129,22 +129,22 @@ ShellLayout.module.scss, ShellLayout.test.tsx}` (small private parts of the layo
   `@/pages/HomePage/HomePage`)
   without a test requirement of their own (routes and app tests cover them).
 - **Where test data goes**: data used by one test stays in that test file. Data shared by several
-  tests of a feature goes to `features/<feature>/__fixtures__/<name>.ts` (or
+  tests goes to `src/__fixtures__/<name>.ts` (or
   `utils/testData.ts`), never inside `components/` (a file there is not a component). Jest only
   runs `*.test.ts(x)`, so fixtures are never collected as tests; production code never imports
   them.
-- Non-component modules of a feature go to `api/` (requests, response normalisation), `hooks/`,
+- Non-component modules go to `api/` (requests, response normalisation), `hooks/`,
   `types/` or `utils/` (pure helpers such as validation or formatting), with their tests next to
   them.
 
 `pnpm check` enforces the layout (rules `component-folder`, `component-test`, `component-style`,
-[guardrails.md](guardrails.md)). The generated apps follow it: the remote's `features/demo`, the
-shell's `features/welcome` and `features/startup` and its `layouts/ShellLayout`, the remote's
-`layouts/StandaloneLayout`, the adapter's `features/external`.
+[guardrails.md](guardrails.md)). The generated apps follow it (and `pnpm check` reports a `src/features/` folder): the remote's
+`Demo*` components, the shell's `Welcome` and `StartupError` and its `layouts/ShellLayout`, the
+remote's `layouts/StandaloneLayout`, the adapter's `ExternalModuleHost`.
 
 ## Remotes
 
-A remote's wiring is five files; everything else is features, pages and layouts:
+A remote's wiring is five files; everything else is components, hooks, pages and layouts:
 
 | File                 | Role                                                                                     |
 | -------------------- | ---------------------------------------------------------------------------------------- |
@@ -188,21 +188,21 @@ shell's dev manifest entry is generated (`pnpm dev-manifest`).
   `@org/http-client` (`credentials: 'include'`) and return `undefined` when no API is
   configured. No per-app `services/http.ts`.
 - Do **not** hardcode app paths: use `routePaths` / `useRemotePath()`.
-- Do **not** call APIs in a component's `useEffect`. Use `features/<feature>/api/` (pure request
-  functions) + `features/<feature>/hooks/` (TanStack Query: `useQuery` / `useMutation`).
+- Do **not** call APIs in a component's `useEffect`. Use `src/api/` (pure request
+  functions) + `src/hooks/` (TanStack Query: `useQuery` / `useMutation`).
 - **Data hooks use TanStack Query.** Reading is `useQuery`, changing is `useMutation`, and both
   are imported only in `hooks/` folders (lint and `pnpm check` rule `query-hook-import`). `axios`
   stays inside `@org/http-client`; hooks and `api/` files never see it (rule `axios-import`).
 
   ```ts
-  // features/items/queryKeys.ts: general to specific, one place per feature
+  // hooks/queryKeys.ts: general to specific, one place per app
   export const itemKeys = {
     all: ['items'] as const,
     list: () => [...itemKeys.all, 'list'] as const,
     detail: (id: number) => [...itemKeys.all, 'detail', id] as const,
   };
 
-  // features/items/hooks/useItems.ts
+  // hooks/useItems.ts
   export function useItems() {
     const http = useApiClient();
     return useQuery({
@@ -212,7 +212,7 @@ shell's dev manifest entry is generated (`pnpm dev-manifest`).
     });
   }
 
-  // features/items/hooks/useCreateItem.ts
+  // hooks/useCreateItem.ts
   export function useCreateItem() {
     const http = useApiClient();
     const queryClient = useQueryClient();
@@ -226,7 +226,7 @@ shell's dev manifest entry is generated (`pnpm dev-manifest`).
   ```
 
   - **Query keys**: everything a request depends on is in its key (`itemKeys.detail(id)`), so a
-    new id loads new data. Keys live in `features/<feature>/queryKeys.ts`, never as inline arrays.
+    new id loads new data. Keys live in `src/hooks/queryKeys.ts`, never as inline arrays.
   - **Invalidation**: a mutation invalidates the keys it makes stale, and returns that promise so
     `isPending` lasts until the fresh data is there. No copying server data into `useState`.
   - **Defaults** (`createQueryClient` in `@org/query`): data is fresh for 30 s, a window focus does
@@ -239,19 +239,19 @@ shell's dev manifest entry is generated (`pnpm dev-manifest`).
     and an unmounted remote cannot notice a sign-out. Coming back loads again.
   - **Sign-out**: the cache belongs to the user. `QueryProvider` calls `queryClient.clear()` when
     the user's id changes while it is mounted (the shell, or a remote that stays open), and a
-    remote's cache is gone anyway once it unmounts; nothing to do in a feature.
+    remote's cache is gone anyway once it unmounts; nothing to do in a hook.
 
-- **Page-level data fetching.** Pages (`src/pages/<Name>Page/`) call the feature's data hooks
-  (exported from the feature's `index.ts`) and pass the query and mutation results down as props.
-  Feature components only display: they branch on `status === 'pending'`, call `refetch()` or
+- **Page-level data fetching.** Pages (`src/pages/<Name>Page/`) call the data hooks
+  (`@/hooks/useItems`) and pass the query and mutation results down as props.
+  Components only display: they branch on `status === 'pending'`, call `refetch()` or
   `mutate()` from those props, and never call a data hook or `useApiClient()` themselves (a form
   keeps its own UI state: field values, errors).
   Why: every API call of a page is visible in one file, so two components quietly loading the
   same list, or a list loaded again on every navigation inside the page, show up in review;
   components are easy to test (props in, markup out, no API mocks) and to reuse with other
   data. A component deep in the tree gets its data through props or `children` composition
-  (`<Demo><DemoItems items={…} /></Demo>`); UI state shared by many components of a feature may live in a
-  feature Context, but API data is still loaded by the page. When two pages need the same data,
+  (`<Demo><DemoItems items={…} /></Demo>`); UI state shared by many components may live in a
+  Context (`src/state/`), but API data is still loaded by the page. When two pages need the same data,
   each page calls the same hook, and the query cache makes that one request.
   Generated example: `pages/OverviewPage` calls `useItems()` and `useCreateItem()`, `DemoItems`
   and `AddItemForm` only display.
@@ -269,19 +269,19 @@ React only: `useState`, `useReducer` and Context. No Redux, Zustand, MobX or oth
 library (none is in the catalog; adding one is a platform decision, not a feature decision).
 Pick the smallest place that works:
 
-| The state is…                                                         | Put it in                                                                                                      | Example                                                         |
-| --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| used by one component                                                 | `useState` (or `useReducer`) in that component                                                                 | a form's field values, an open/closed toggle                    |
-| data from the API                                                     | the feature's data hook, called by the page ([Data fetching](#data-fetching)); **never copied into a Context** | `useItems()` in `OverviewPage`                                  |
-| UI state shared by several components of one feature                  | a **feature Context** in `features/<name>/state/` (below)                                                      | selected items: a picker sets them, a summary shows them        |
-| needed by every page of the remote                                    | an **app-level Context** in `src/state/` (same shape), passed to `createRemoteApp({ providers })`              | a remote-wide preference, a draft kept across pages             |
-| owned by the shell (user, theme, settings)                            | host props (`useHostProps()`), `useAuth()`, `useTheme()`: never one remote reading another remote's state      | `useHostProps().user`                                           |
-| shareable or bookmarkable (filters, search, sort, page, selected tab) | URL search params (`useSearchParams()` from `react-router`)                                                    | `?q=ada&dept=hr`: back button, reload and a pasted link keep it |
+| The state is…                                                         | Put it in                                                                                                 | Example                                                         |
+| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| used by one component                                                 | `useState` (or `useReducer`) in that component                                                            | a form's field values, an open/closed toggle                    |
+| data from the API                                                     | the data hook, called by the page ([Data fetching](#data-fetching)); **never copied into a Context**      | `useItems()` in `OverviewPage`                                  |
+| UI state shared by several components of one app                      | a **Context** in `src/state/` (below)                                                                     | selected items: a picker sets them, a summary shows them        |
+| needed by every page of the remote                                    | an **app-level Context** in `src/state/` (same shape), passed to `createRemoteApp({ providers })`         | a remote-wide preference, a draft kept across pages             |
+| owned by the shell (user, theme, settings)                            | host props (`useHostProps()`), `useAuth()`, `useTheme()`: never one remote reading another remote's state | `useHostProps().user`                                           |
+| shareable or bookmarkable (filters, search, sort, page, selected tab) | URL search params (`useSearchParams()` from `react-router`)                                               | `?q=ada&dept=hr`: back button, reload and a pasted link keep it |
 
-Feature (or app-level) state is a pure reducer plus a Context, one folder:
+App state is a pure reducer plus a Context, in `src/state/`:
 
 ```
-features/<name>/state/
+src/state/
   <name>Reducer.ts         state type, action union, initial state, pure reducer (no React, no API)
   <name>Reducer.test.ts    required (pnpm check rule state-test)
   <Name>Context.tsx        <NameProvider> (useReducer) + useNameState() + useNameDispatch()
@@ -299,9 +299,9 @@ features/<name>/state/
   `createRemoteApp({ routes, providers: [AppProvider] })` (`@org/mf-runtime/remote`), which
   wraps the routes in both modes (embedded and standalone, inside the router and the host
   props).
-- Everything a component needs from outside comes in through props, hooks of the feature or
+- Everything a component needs from outside comes in through props, hooks or
   the host; never `window` globals, never another remote's modules.
-- Generated example: `pnpm gen:remote <zone> <name> --state` adds `features/demo/state/`
+- Generated example: `pnpm gen:remote <zone> <name> --state` adds `src/state/`
   (`demoReducer.ts`, `DemoContext.tsx` and their tests) with `ItemPicker` (sets the selection)
   and `SelectionSummary` (shows and clears it) on the overview page.
 
@@ -356,7 +356,7 @@ features/<name>/state/
   from a 422) onto the same field errors and summary; show other failures as a form-level error
   with a retry.
 - Build forms from the `@org/ui` field components and `Alert` ([Use @org/ui first](#use-orgui-first)).
-- The generated remote's `features/demo` "Add item" form shows this pattern.
+- The generated remote's "Add item" form shows this pattern.
 
 ## Imports and naming
 
@@ -372,7 +372,7 @@ handle formatting.
 | Types        | under `types/`                       | `types/leave.ts`                             |
 | Helpers      | camelCase, under `utils/`            | `utils/validateLeave.ts`                     |
 | Unit test    | co-located                           | `components/LeaveForm/LeaveForm.test.tsx`    |
-| Test data    | feature `__fixtures__/`              | `__fixtures__/leave.ts`                      |
+| Test data    | `src/__fixtures__/`                  | `__fixtures__/leave.ts`                      |
 | e2e spec     | shell `e2e/`                         | `e2e/leave-requests.spec.ts`                 |
 
 Package names: apps `@org/<zone>-<name>` / `@org/shell-<name>` (generated); shared packages
@@ -397,8 +397,8 @@ Package names: apps `@org/<zone>-<name>` / `@org/shell-<name>` (generated); shar
 
 - Unit: Jest + Testing Library, co-located; every component has `<Name>.test.tsx`; assert
   user-visible behaviour (data, empty/loading/error states, accessible names), not snapshots;
-  mock boundaries (`api/`, `@org/mf-runtime`), not DOM internals. Shared test data in the
-  feature's `__fixtures__/`.
+  mock boundaries (`api/`, `@org/mf-runtime`), not DOM internals. Shared test data in
+  `src/__fixtures__/`.
 - e2e: the zone suite in the shell; feature flows as new specs there.
 - Details and commands: [testing.md](testing.md).
 
@@ -417,8 +417,7 @@ Package names: apps `@org/<zone>-<name>` / `@org/shell-<name>` (generated); shar
 - `dangerouslySetInnerHTML` with untrusted content; `eval`/`new Function`.
 - Broad `console.log` in production paths.
 - Undocumented globals for host/embed detection (use `useHostProps().embedded`).
-- One `.module.scss` shared by several components, component files loose in `components/` or a
-  feature root, a component without a test.
+- One `.module.scss` shared by several components, component files loose in `components/`, a `features/` folder, a component without a test.
 - A global store library (Redux, …), API data copied into a Context, filters kept in state
   when they belong in the URL, a Context hook that silently works without its provider.
 - Expanding scope beyond the requested change; prefer small, incremental changes.

@@ -34,7 +34,7 @@ in the build):
 
 In development the shell's generated `mfe-manifest.dev.json` points at the zone's **mock vendor**
 (`tools/mock-vendor`, `__MOCK_VENDOR_URL__`, format `__VENDOR_FORMAT__`: a neutral demo widget),
-and `src/features/external/utils/vendorConfig.ts` falls back to it when no config is set (standalone
+and `src/utils/vendorConfig.ts` falls back to it when no config is set (standalone
 mode). Production builds contain neither. Generated with another format:
 `pnpm gen:remote __ZONE__ <name> --external --vendor-format esm|web-component|script`.
 When the real vendor delivers, replace `props.vendor` (URL, format, `config`) in the shell's
@@ -73,10 +73,8 @@ Loading/mount errors, timeouts, an incompatible `contractVersion` or a fatal `on
 src/
   main.tsx                   standalone entry
   app/                       apps (exposed ./App), routes (one splat route)
-  features/external/
-    components/ExternalModuleHost/   the adapter (ExternalModuleHost.tsx, .module.scss, .test.tsx)
-    utils/vendorConfig.ts            dev fallback to the mock vendor (+ test)
-    index.ts                         public API
+  components/ExternalModuleHost/   the adapter (ExternalModuleHost.tsx, .module.scss, .test.tsx)
+  utils/vendorConfig.ts      dev fallback to the mock vendor (+ test)
   layouts/                   StandaloneLayout
   pages/OverviewPage         renders the adapter
 ```

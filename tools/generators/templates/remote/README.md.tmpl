@@ -32,19 +32,19 @@ The __ZONE__ shell mounts it at `__ROUTE_PATH__/*` (entry in the shell's `remote
 
 `settings.apiBaseUrl` (host prop from the shell's `mfe-manifest.json`; in standalone dev the
 `standaloneProps` in `src/app/apps.tsx`) is the API base URL; in development it is the zone's mock API
-(`tools/mock-api`, `__MOCK_API_URL__`). The demo feature shows the whole chain, copy it for real
-features:
+(`tools/mock-api`, `__MOCK_API_URL__`). The demo shows the whole chain, copy it for real
+data:
 
 | Layer                                  | File                                                       |
 | -------------------------------------- | ---------------------------------------------------------- |
 | paths                                  | `src/core/constants/apiRoutes.ts`                          |
 | client                                 | `useApiClient()` from `@org/mf-runtime/remote` (base URL from `settings.apiBaseUrl`, `credentials: 'include'`) |
-| requests, response validation, errors  | `src/features/demo/api/itemsApi.ts` (+ test with a fake fetch) |
-| queries and mutations (TanStack Query) | `src/features/demo/hooks/useItems.ts`, `useCreateItem.ts`, `queryKeys.ts` (+ tests with the api mocked) |
+| requests, response validation, errors  | `src/api/itemsApi.ts` (+ test with a fake fetch) |
+| queries and mutations (TanStack Query) | `src/hooks/useItems.ts`, `useCreateItem.ts`, `queryKeys.ts` (+ tests with the api mocked) |
 | page (calls the hooks, passes data down) | `src/pages/OverviewPage/OverviewPage.tsx`              |
-| UI (display only, props in)            | `src/features/demo/components/DemoItems/`, `AddItemForm/` (validate on submit, error summary, server 422 field errors) |
+| UI (display only, props in)            | `src/components/DemoItems/`, `AddItemForm/` (validate on submit, error summary, server 422 field errors) |
 
-Pages fetch, components display: a feature component never calls a data hook itself, so every
+Pages fetch, components display: a component never calls a data hook itself, so every
 API call of a page is in the page file (`docs/coding-conventions.md` "Data fetching").
 
 ## Layout
@@ -53,18 +53,17 @@ API call of a page is in the page file (`docs/coding-conventions.md` "Data fetch
 src/
   main.tsx            standalone entry only: global styles + <StandaloneApp />
   app/                apps (exposed ./App: createRemoteApp + standalone props), routes
-  components/         ModeBadge/
-  features/demo/      sample feature (host props, counter, links, items from the API + form)
-    api/ hooks/ types/ utils/ queryKeys.ts
-    state/            only with `gen:remote --state`: feature state (reducer + Context)
-    components/       one folder per component: Demo/, DemoDetails/, DemoItems/, AddItemForm/
+  components/         one folder per component: Demo/, DemoDetails/, DemoItems/, AddItemForm/, ModeBadge/
                       (<Name>.tsx, <Name>.module.scss, <Name>.test.tsx; no index.ts)
-    index.ts          public API (components and data hooks for the pages)
+  hooks/              TanStack Query hooks + queryKeys.ts
+  api/ types/ utils/  requests, types, pure helpers
+  state/              only with `gen:remote --state`: app state (reducer + Context)
+  __fixtures__/       shared test data (when needed)
   layouts/            StandaloneLayout/ (own simple chrome, standalone only)
   pages/              OverviewPage, DetailsPage, NotFoundPage
   core/constants/     app, routePaths, apiRoutes
 ```
 
 One folder per component, its own CSS module (never shared), a test for every component, shared
-test data in `features/<feature>/__fixtures__/`: see the repo's `docs/coding-conventions.md`
+test data in `src/__fixtures__/`: see the repo's `docs/coding-conventions.md`
 ("One folder per component"); `pnpm check` reports violations.
