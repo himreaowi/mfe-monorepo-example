@@ -21,7 +21,7 @@ test.describe('Payments (vendor web component, no React)', () => {
     // <bright-checkout> renders in an open shadow root: normal locators reach it
     const checkout = container.getByTestId('bright-checkout');
     await expect(checkout.getByTestId('bright-amount')).toHaveText('SGD 15.00');
-    await expect(checkout).toContainText('Paying as a guest');
+    await expect(checkout).toContainText('Paying as Dev User (mock)');
 
     await checkout.getByRole('button', { name: 'Pay SGD 15.00' }).click();
     await expect(checkout.getByRole('alert')).toHaveText(
