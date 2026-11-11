@@ -619,14 +619,9 @@ function createBaseConfig(options, mode) {
           : {}),
       },
       client: {
-        overlay: {
-          errors: true,
-          warnings: false,
-          // the browser's "ResizeObserver loop …" notice is not an error (the spec delivers the
-          // notifications on the next frame); keep it off the full-screen overlay
-          runtimeErrors: (error) =>
-            !/ResizeObserver loop/.test(String(error && error.message)),
-        },
+        // no function-valued overlay options (e.g. runtimeErrors: (e) => …): the client
+        // evaluates them from a string, which the strict dev CSP (no 'unsafe-eval') blocks
+        overlay: { errors: true, warnings: false },
         // below a base path the HMR socket is too (`/citizen/ws`), so the zone's dev proxy
         // routes it to this shell; host and port follow the page (proxy or direct)
         ...(basePath === '/'

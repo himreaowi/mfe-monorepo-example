@@ -98,6 +98,11 @@ describe('createShellConfig', () => {
     assert.equal(devServer.port, 3100);
     assert.equal(devServer.headers['Access-Control-Allow-Origin'], '*');
     assert.equal(typeof devServer.setupMiddlewares, 'function');
+    // the browser client evaluates function-valued overlay options from a string, which the
+    // strict dev CSP (no 'unsafe-eval') blocks: the page would never start
+    for (const value of Object.values(devServer.client.overlay)) {
+      assert.notEqual(typeof value, 'function');
+    }
     // missing .json/.js files stay 404 (HMR falls back to a reload after a failed build)
     assert.deepEqual(devServer.historyApiFallback.htmlAcceptHeaders, [
       'text/html',
