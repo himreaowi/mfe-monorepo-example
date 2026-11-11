@@ -7,6 +7,7 @@ export {
   SignInPrompt,
   type RequireAuthProps,
 } from './RequireAuth';
+export { SignInGate, type SignInGateProps } from './SignInGate';
 export { UserMenu } from './UserMenu';
 export {
   createAuthClient,

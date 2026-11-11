@@ -5,6 +5,7 @@ set the metadata the guardrails check, and register remotes with their zone's sh
 
 ```sh
 pnpm gen:shell <zone> [<name>] [--base-path /<path>] [--layout top|side] [--title "<text>"]   # zone: intranet | internet
+               [--sign-in-required [--sign-in-mode landing|redirect]]   # whole portal behind sign-in
 pnpm gen:remote <zone> <name> [--shell <shell>[,<shell>]] [--private] [--state] [--external [--vendor-format esm|web-component|script]] [--title "<text>"]
                                                         # name: kebab-case, e.g. leave-requests
 pnpm install                                            # links the new app
@@ -18,6 +19,7 @@ The generators never overwrite: an existing folder, package name or registry ent
 | -------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
 | The zone's host app                                            | `pnpm gen:shell intranet` (`--layout side`: start from the sidebar layout)           |
 | Another host app in the zone (own path, layout, sign-in)       | `pnpm gen:shell internet business --base-path /business --layout side`               |
+| A host app whose whole portal needs sign-in (landing page)     | `pnpm gen:shell internet business --base-path /business --sign-in-required`          |
 | A feature area everyone can open                               | `pnpm gen:remote intranet staff-directory`                                           |
 | A feature area for signed-in users only                        | `pnpm gen:remote internet my-profile --private`                                      |
 | UI built by a vendor / another framework / another React major | `pnpm gen:remote internet payments --external` (add `--private` if it needs sign-in) |

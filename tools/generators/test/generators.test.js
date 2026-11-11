@@ -927,7 +927,11 @@ describe('generators', () => {
     for (const [args, message] of /** @type {[string[], RegExp][]} */ ([
       [
         ['remote', 'internet', 'x2', '--layout', 'side'],
-        /^error: --layout and --base-path apply to gen:shell only/,
+        /^error: --layout, --base-path and --sign-in-\* apply to gen:shell only/,
+      ],
+      [
+        ['remote', 'internet', 'x3', '--sign-in-required'],
+        /^error: --layout, --base-path and --sign-in-\* apply to gen:shell only/,
       ],
       [
         ['shell', 'intranet', '--layout', 'left'],
@@ -1184,6 +1188,105 @@ describe('generators: layout with arbitrary shell names (nothing hardcoded)', ()
     await assert.rejects(
       generateShell({ root, zone: 'internet', name: 'shared' }),
       /"shared" is reserved/,
+    );
+  });
+});
+
+describe('gen:shell --sign-in-required', () => {
+  const SIGN_IN = 'src/core/constants/signIn.ts';
+
+  it('default: open portal; the flag writes SIGN_IN_REQUIRED and SIGN_IN_MODE', async () => {
+    const root = tempWorkspace();
+    const open = await generateShell({ root, zone: 'intranet' });
+    assert.equal(open.signInRequired, false);
+    const openFile = read(root, `apps/intranet/intranet/shell/${SIGN_IN}`);
+    assert.match(
+      openFile,
+      /^export const SIGN_IN_REQUIRED = false as boolean;$/m,
+    );
+    assert.match(
+      openFile,
+      /^export const SIGN_IN_MODE = 'landing' as SignInMode;$/m,
+    );
+
+    const r = await generateShell({
+      root,
+      zone: 'intranet',
+      name: 'staff',
+      basePath: '/staff',
+      signInRequired: true,
+    });
+    assert.equal(r.signInMode, 'landing');
+    const dir = 'apps/intranet/staff/shell';
+    const file = read(root, `${dir}/${SIGN_IN}`);
+    assert.match(file, /^export const SIGN_IN_REQUIRED = true as boolean;$/m);
+    assert.match(file, /^export const LANDING_SIGN_IN_LABEL = 'Sign in';$/m);
+    // the gate wraps the routes; landing page, layout and e2e follow the constants
+    assert.match(
+      read(root, `${dir}/src/app/App.tsx`),
+      /<SignInGate\s+required=\{SIGN_IN_REQUIRED\}\s+mode=\{SIGN_IN_MODE\}\s+landing=\{<LandingPage \/>\}\s+layout=\{SignedOutLayout\}\s*>/,
+    );
+    for (const f of [
+      'src/pages/LandingPage/LandingPage.tsx',
+      'e2e/sign-in-required.spec.ts',
+    ]) {
+      assert.ok(fs.existsSync(path.join(root, dir, f)), `missing ${f}`);
+    }
+    // the gate's logic is one copy in @org/auth, not in each shell
+    assert.ok(
+      !fs.existsSync(path.join(root, dir, 'src/components/SignInGate')),
+    );
+    assert.match(
+      read(root, `${dir}/src/layouts/ShellLayout/ShellLayout.tsx`),
+      /export function SignedOutLayout[\s\S]*SIGNED-OUT HEADER: brand only/,
+    );
+  });
+
+  it('CLI: --sign-in-mode redirect; bad values refused', () => {
+    const root = tempWorkspace();
+    const out = execFileSync(
+      process.execPath,
+      [
+        BIN,
+        'shell',
+        'internet',
+        '--sign-in-required',
+        '--sign-in-mode',
+        'redirect',
+        '--root',
+        root,
+      ],
+      { encoding: 'utf8' },
+    );
+    assert.match(out, /sign-in required \(redirect\)/);
+    assert.match(
+      read(root, `apps/internet/internet/shell/${SIGN_IN}`),
+      /^export const SIGN_IN_MODE = 'redirect' as SignInMode;$/m,
+    );
+    for (const [args, message] of /** @type {[string[], RegExp][]} */ ([
+      [
+        ['shell', 'intranet', '--sign-in-required', '--sign-in-mode', 'popup'],
+        /^error: Unknown --sign-in-mode "popup". Use one of: landing, redirect/,
+      ],
+      [
+        ['shell', 'intranet', '--sign-in-mode', 'landing'],
+        /^error: --sign-in-mode needs --sign-in-required/,
+      ],
+    ])) {
+      try {
+        execFileSync(process.execPath, [BIN, ...args, '--root', root], {
+          encoding: 'utf8',
+          stdio: 'pipe',
+        });
+        assert.fail('should exit non-zero');
+      } catch (e) {
+        assert.equal(/** @type {any} */ (e).status, 1);
+        assert.match(/** @type {any} */ (e).stderr, message);
+      }
+    }
+    assert.ok(
+      !fs.existsSync(path.join(root, 'apps/intranet')),
+      'nothing written',
     );
   });
 });

@@ -4,6 +4,7 @@ Creates apps and code libraries from templates. Run from the repo root:
 
 ```sh
 pnpm gen:shell <zone> [--layout top|side] [--title "<text>"]   # zone: intranet | internet
+              [--sign-in-required [--sign-in-mode landing|redirect]]
 pnpm gen:remote <zone> <name> [--private] [--external [--vendor-format esm|web-component|script]] [--title "<text>"]
                                                         # name: kebab-case, e.g. staff-directory
 pnpm gen:package <common|zone> <capability>             # a library, docs/where-code-goes.md
@@ -42,6 +43,14 @@ comma-separated: `--shell citizen,business`).
   `data-nav-placement`, `header-brand`, `header-menu-button`, `header-panel`; listed at the top
   of `e2e/helpers.ts`), so the same suite checks either layout. See `docs/ui-context.md`
   "Layout: the shell owns it". `gen:remote --layout` is an error (the shell owns the layout).
+- **`--sign-in-required [--sign-in-mode landing|redirect]`** (`gen:shell`, default off = open
+  portal): writes `SIGN_IN_REQUIRED` / `SIGN_IN_MODE` to the shell's
+  `src/core/constants/signIn.ts` (with the landing texts). Required: `SignInGate` from `@org/auth` (in `src/app/App.tsx`)
+  shows a spinner, then a brand-only header (`SignedOutLayout`) with `src/pages/LandingPage`
+  (`landing`) or goes straight to sign-in (`redirect`); no nav, remote or remote code before
+  sign-in. `--sign-in-mode` without `--sign-in-required` or with another value is an error; on
+  `gen:remote` both are errors. See "Sign-in required for the whole portal" in
+  `docs/auth-contract.md`.
 - Non-interactive. Never overwrites: an existing folder, package name or registry entry is an
   error. `gen:remote` needs the zone's shell (`pnpm gen:shell <zone>` first).
 - `--private`: tag `access:private` and `"access": "private"` in the shell registry. The shell

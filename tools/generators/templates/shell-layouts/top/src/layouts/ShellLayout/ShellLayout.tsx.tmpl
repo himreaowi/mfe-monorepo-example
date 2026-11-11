@@ -1,4 +1,4 @@
-import { useCallback, useId, useRef, useState } from 'react';
+import { useCallback, useId, useRef, useState, type ReactNode } from 'react';
 import { Outlet } from 'react-router';
 import { UserMenu } from '@org/auth';
 import { useOnlineStatus } from '@org/pwa';
@@ -100,6 +100,42 @@ export function ShellLayout({ remotes }: { remotes: RemoteEntry[] }) {
       <ConnectionRequired visible={!online} />
       <main id={mainId} tabIndex={-1} className={styles.main}>
         <Outlet />
+      </main>
+    </div>
+  );
+}
+
+/**
+ * The chrome while signed out of a shell that requires sign-in (SIGN_IN_REQUIRED,
+ * src/core/constants/signIn.ts; passed to `SignInGate` from @org/auth in src/app/App.tsx): skip link, a header with
+ * the brand only, offline banner and `<main>` with the spinner or the landing page. No nav and
+ * no remotes. The saved theme still applies (ThemeProvider is above this).
+ */
+export function SignedOutLayout({ children }: { children: ReactNode }) {
+  const online = useOnlineStatus();
+  const mainId = useId();
+  return (
+    <div className={styles.host}>
+      <SkipLink targetId={mainId} />
+      <header
+        className={styles.header}
+        data-layout="signed-out"
+        data-nav-placement="top"
+        data-testid="main-header"
+      >
+        <Brand className={styles.brand} data-testid="header-brand">
+          {APP_TITLE}
+        </Brand>
+        {/*
+         * SIGNED-OUT HEADER: brand only. No Menu button, nav, sign-in button or user menu (the
+         * landing page has the one sign-in button) and no theme toggle. To offer the theme toggle
+         * before sign-in, add it here:
+         *   <div className={styles.actions}><ThemeToggle /></div>
+         */}
+      </header>
+      <ConnectionRequired visible={!online} />
+      <main id={mainId} tabIndex={-1} className={styles.main}>
+        {children}
       </main>
     </div>
   );

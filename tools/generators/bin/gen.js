@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // @ts-check
 /**
- * CLI:  gen.js shell <zone> [<name>] [--base-path /<path>] [--layout top|side] [--title "<text>"]
+ * CLI:  gen.js shell <zone> [<name>] [--base-path /<path>] [--layout top|side] [--title "<text>"] [--sign-in-required [--sign-in-mode landing|redirect]]
  *       gen.js remote <zone> <name> [--shell <shell>[,<shell>]] [--private] [--state] [--external [--vendor-format <f>]] [--title "<text>"]
  *       gen.js package <common|zone> <capability>
  * Root scripts: `pnpm gen:shell <zone> [<name>]`, `pnpm gen:remote <zone> <name> [flags]`,
@@ -23,6 +23,7 @@ const listShellCount = (root, zone) => listShells(root, zone).length;
 
 const USAGE = `Usage:
   pnpm gen:shell <zone> [<name>] [--base-path /<path>] [--layout top|side] [--title "<text>"]
+                [--sign-in-required [--sign-in-mode landing|redirect]]
   pnpm gen:remote <zone> <name> [--shell <shell>] [--private] [--state] [--external [--vendor-format <format>]] [--title "<text>"]
   pnpm gen:package <common|zone> <capability>
   zone: intranet | internet
@@ -46,6 +47,11 @@ Options:
   --layout top|side       gen:shell: the starter layout copied into the shell (its own code
                           afterwards): top (default, nav in the header row) or side (nav in a
                           sidebar left of the content); phones: Menu button
+  --sign-in-required      gen:shell: the whole portal needs sign-in: before it, the header shows
+                          only the brand and no nav or remote is shown or downloaded
+                          (src/core/constants/signIn.ts). Default: open portal
+  --sign-in-mode <m>      with --sign-in-required: landing (default: the shell's landing page
+                          with a "Sign in" button) | redirect (straight to the sign-in page)
   --private               remote needs a signed-in user (tag access:private, marked in the shell registry)
   --state                 add the app-state example: src/state/ (reducer + test,
                           Context with Provider and hooks), used by two components on the
@@ -65,6 +71,8 @@ async function main() {
     allowPositionals: true,
     options: {
       private: { type: 'boolean', default: false },
+      'sign-in-required': { type: 'boolean', default: false },
+      'sign-in-mode': { type: 'string' },
       external: { type: 'boolean', default: false },
       state: { type: 'boolean', default: false },
       'vendor-format': { type: 'string' },
@@ -95,7 +103,7 @@ async function main() {
       values['vendor-format'] !== undefined
     ) {
       throw new UsageError(
-        `gen:shell takes a zone and an optional name (and --base-path, --layout, --title).\n\n${USAGE}`,
+        `gen:shell takes a zone and an optional name (and --base-path, --layout, --title, --sign-in-required, --sign-in-mode).\n\n${USAGE}`,
       );
     }
     const z = /** @type {import('../src/index.js').Zone} */ (zone);
@@ -106,9 +114,11 @@ async function main() {
       basePath: values['base-path'],
       title: values.title,
       layout: values.layout,
+      signInRequired: values['sign-in-required'],
+      signInMode: values['sign-in-mode'],
     });
     console.log(
-      `Created ${path.relative(root, r.dir)} (${r.packageName}, "${r.title}", federation name ${r.federationName}, base path ${r.basePath}, port ${r.port}, ${r.layout} starter layout in src/layouts/ShellLayout).`,
+      `Created ${path.relative(root, r.dir)} (${r.packageName}, "${r.title}", federation name ${r.federationName}, base path ${r.basePath}, port ${r.port}, ${r.layout} starter layout in src/layouts/ShellLayout${r.signInRequired ? `, sign-in required (${r.signInMode})` : ''}).`,
     );
     if (r.defaultShell) {
       console.log(
@@ -121,9 +131,14 @@ async function main() {
     return;
   }
   if (kind === 'remote') {
-    if (values.layout !== undefined || values['base-path'] !== undefined) {
+    if (
+      values.layout !== undefined ||
+      values['base-path'] !== undefined ||
+      values['sign-in-required'] ||
+      values['sign-in-mode'] !== undefined
+    ) {
       throw new UsageError(
-        `--layout and --base-path apply to gen:shell only (the shell owns its layout and path).\n\n${USAGE}`,
+        `--layout, --base-path and --sign-in-* apply to gen:shell only (the shell owns its layout, path and sign-in).\n\n${USAGE}`,
       );
     }
     if (extra.length > 0) {

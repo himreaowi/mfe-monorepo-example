@@ -2,7 +2,7 @@
 /**
  * App generators.
  *
- *   pnpm gen:shell <zone> [<name>] [--base-path /<path>] [--layout top|side] [--title "<text>"]
+ *   pnpm gen:shell <zone> [<name>] [--base-path /<path>] [--layout top|side] [--title "<text>"] [--sign-in-required [--sign-in-mode landing|redirect]]
  *   pnpm gen:remote <zone> <name> [--shell <shell>[,<shell>]] [--private] [--state] [--external [--vendor-format <format>]] [--title "<text>"]
  *
  * Apps live in apps/<zone>/<name>. Every app gets its own package.json (deps via `catalog:` /
@@ -148,6 +148,41 @@ function assertShellLayout(layout) {
       `Unknown --layout "${String(layout)}". Use one of: ${SHELL_LAYOUTS.join(', ')}.`,
     );
   }
+}
+
+/**
+ * `gen:shell --sign-in-mode` values (with `--sign-in-required`): what a signed-out user sees
+ * when the whole portal needs sign-in. `landing` (default): the shell's landing page with one
+ * "Sign in" button; `redirect`: straight to the sign-in page. Written to the shell's
+ * src/core/constants/signIn.ts (SIGN_IN_REQUIRED, SIGN_IN_MODE); the team edits it there later.
+ */
+export const SIGN_IN_MODES = /** @type {const} */ (['landing', 'redirect']);
+
+/** @typedef {(typeof SIGN_IN_MODES)[number]} SignInMode */
+
+/**
+ * @param {unknown} required
+ * @param {unknown} mode
+ * @returns {SignInMode}
+ */
+function resolveSignIn(required, mode) {
+  if (typeof required !== 'boolean') {
+    throw new UsageError(
+      `Invalid signInRequired "${String(required)}": use true or false.`,
+    );
+  }
+  if (mode === undefined) return 'landing';
+  if (!required) {
+    throw new UsageError(
+      '--sign-in-mode needs --sign-in-required (without it the portal is open).',
+    );
+  }
+  if (!SIGN_IN_MODES.includes(/** @type {SignInMode} */ (mode))) {
+    throw new UsageError(
+      `Unknown --sign-in-mode "${String(mode)}". Use one of: ${SIGN_IN_MODES.join(', ')}.`,
+    );
+  }
+  return /** @type {SignInMode} */ (mode);
 }
 
 /** `settings.apiBaseUrl` of a zone's dev manifest: the zone's mock API. */
@@ -343,11 +378,13 @@ function assertFree(root, dir, packageName) {
 
 /**
  * Generate apps/<zone>/<name>/shell (default name: the zone).
- * @param {{ root: string, zone: string, name?: string, basePath?: string, title?: string, layout?: string }} options
+ * @param {{ root: string, zone: string, name?: string, basePath?: string, title?: string, layout?: string, signInRequired?: boolean, signInMode?: string }} options
  *   `basePath`: where the shell is served (`/` default, e.g. `/citizen`; every shell of a zone
  *   needs its own, none inside another); `layout`: the starter layout copied into
- *   src/layouts/ShellLayout (`top` default, `side`)
- * @returns {Promise<{ dir: string, port: number, packageName: string, federationName: string, title: string, layout: ShellLayout, basePath: string, defaultShell: boolean }>}
+ *   src/layouts/ShellLayout (`top` default, `side`); `signInRequired` (default false): the
+ *   whole portal needs sign-in, `signInMode` (`landing` default, `redirect`) what a signed-out
+ *   user sees (src/core/constants/signIn.ts)
+ * @returns {Promise<{ dir: string, port: number, packageName: string, federationName: string, title: string, layout: ShellLayout, basePath: string, defaultShell: boolean, signInRequired: boolean, signInMode: SignInMode }>}
  *   `defaultShell`: the root package.json now redirects the zone's `/` to this shell
  */
 export async function generateShell({
@@ -357,9 +394,12 @@ export async function generateShell({
   basePath: rawBasePath,
   title,
   layout = 'top',
+  signInRequired = false,
+  signInMode: rawSignInMode,
 }) {
   assertZone(zone);
   assertShellLayout(layout);
+  const signInMode = resolveSignIn(signInRequired, rawSignInMode);
   const names = shellNames(zone, { name, title });
   const basePath = shellBasePath(rawBasePath);
   if (!BASE_PATH.test(basePath)) {
@@ -391,6 +431,8 @@ export async function generateShell({
     BASE_PREFIX: basePath === '/' ? '' : `${basePath}/`,
     API_PATH: shellApiBaseUrl(basePath),
     SHELL_LAYOUT: layout,
+    SIGN_IN_REQUIRED: String(signInRequired),
+    SIGN_IN_MODE: signInMode,
   });
   writeFiles(dir, files);
   await writeJson(
@@ -457,6 +499,8 @@ export async function generateShell({
     layout,
     basePath,
     defaultShell,
+    signInRequired,
+    signInMode,
   };
 }
 

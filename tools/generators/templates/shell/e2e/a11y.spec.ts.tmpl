@@ -5,8 +5,13 @@ import {
   openRemote,
   openStandalone,
   settle,
+  SIGN_IN_REQUIRED,
+  signInIfRequired,
   zone,
 } from './helpers';
+
+// SIGN_IN_REQUIRED: scans the signed-in portal; the landing page: sign-in-required.spec.ts
+test.beforeEach(signInIfRequired);
 
 /**
  * axe-core, WCAG 2.2 A + AA, on every page of the zone in the light AND the dark theme (colour
@@ -43,9 +48,11 @@ const targets: Target[] = [
       );
       await page.goto(zone.home);
       await expect(page.getByTestId('shell-welcome')).toBeVisible();
-      const panel = await openHeaderMenu(page);
-      await panel.getByRole('button', { name: 'Sign in' }).click();
-      await expect(page.getByTestId('user-name')).toBeAttached();
+      if (!SIGN_IN_REQUIRED) {
+        const panel = await openHeaderMenu(page);
+        await panel.getByRole('button', { name: 'Sign in' }).click();
+        await expect(page.getByTestId('user-name')).toBeAttached();
+      }
       await openHeaderMenu(page);
       await expect(page.getByTestId('user-name')).toBeVisible();
     },
@@ -62,7 +69,7 @@ const targets: Target[] = [
     open: (page: Page) => openRemote(page, remote),
   })),
   ...zone.remotes
-    .filter((remote) => remote.access === 'private')
+    .filter((remote) => remote.access === 'private' && !SIGN_IN_REQUIRED)
     .map((remote) => ({
       name: `${remote.title} (sign-in prompt)`,
       open: async (page: Page) => {

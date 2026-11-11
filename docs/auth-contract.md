@@ -204,6 +204,35 @@ bodies become "signed out" with an error message and a "Try again" button. Prote
 never shown on error (fail closed). `<RequireAuth mode="redirect">` does not redirect while the
 BFF is failing (no redirect loop).
 
+## Sign-in required for the whole portal
+
+A shell generated with `pnpm gen:shell <zone> [<name>] --sign-in-required [--sign-in-mode
+landing|redirect]` (or with `SIGN_IN_REQUIRED = true` in its `src/core/constants/signIn.ts`,
+fixed at build time) shows nothing of the portal before sign-in. `src/app/App.tsx` wraps the
+routes in `<SignInGate required mode landing={<LandingPage />} layout={SignedOutLayout}>` from
+`@org/auth` (the logic, one copy for every shell; landing page and signed-out layout are the
+shell's own):
+
+- While the session is checked (and while the browser goes to `loginUrl`): a spinner, never
+  the portal.
+- Signed out: a header with the brand only (no nav, theme toggle, Sign in or Menu button; the
+  saved theme still applies) and no remote rendered, so no remote's `mf-manifest.json` or code
+  is downloaded (`main.tsx` only registers the remotes' URLs). Then:
+  - `landing` (default): the shell's `src/pages/LandingPage` (title, short text, one "Sign in"
+    button, the same `signIn()` as the header);
+  - `redirect`: straight to `loginUrl`. Falls back to the landing page while the BFF fails (no
+    redirect loop) and after a sign-out in the page (no bounce back into single sign-on).
+    Either way `returnTo` is the address first requested (the signed-out view never changes the
+    URL).
+- Signed in: the normal portal. When the session ends (sign-out, expiry, a 401) the portal is
+  replaced by the signed-out view again.
+- No `auth` in the manifest: fails closed like `<RequireAuth>`: the landing page says sign-in
+  is unavailable, the portal stays hidden.
+
+Remote `access` is unchanged (every remote of such a shell is effectively private). Which
+identity provider the BFF uses (SSO, Singpass, Corppass, …) is the backend's choice: the
+frontend only sends the browser to `loginUrl` and shows text buttons, no provider logos.
+
 ## What the private-route guard does and does not do
 
 `<RequireAuth>` does not render a private remote, so its `mf-manifest.json` and code are not
