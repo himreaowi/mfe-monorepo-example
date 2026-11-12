@@ -47,14 +47,11 @@
 .indicator {
   display: flex;
 
-  svg {
+  // CheckIcon (24×24 grid) at the size and weight of the old 16×16 tick
+  .tick {
     width: 0.875rem;
     height: 0.875rem;
-    fill: none;
-    stroke: currentcolor;
-    stroke-width: 2.5;
-    stroke-linecap: round;
-    stroke-linejoin: round;
+    stroke-width: 3.75;
   }
 }
 

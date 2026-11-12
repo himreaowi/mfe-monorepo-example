@@ -234,8 +234,24 @@ the page reserves 5.5rem at the top when it scrolls to a focused element (WCAG 2
 
 ## Typography & iconography
 
-_TODO: fonts (self-hosted from the shell origin keeps the CSP simple), type scale, icon approach
-(inline SVG components with `aria-hidden` + visible or `aria-label` text)._
+_TODO: fonts (self-hosted from the shell origin keeps the CSP simple), type scale._
+
+**Icons** (details: [packages/platform/ui/README.md](../packages/platform/ui/README.md#icons)):
+
+- Use the `@org/ui` icons (`CloseIcon`, `CheckIcon`, `SearchIcon`, …): inline SVG React
+  components on a 24×24 grid, built on `Icon`. No `<img src="*.svg">` for UI icons, no icon
+  fonts, no third-party icon packages without approval.
+- Colour is `currentColor`: the icon follows the text around it. For a semantic colour use the
+  `tone` prop (`muted`, `accent`, `danger`, `success`), never a colour value.
+- Size is 1em by default (scales with the text); `size` `sm` / `md` / `lg` = 1 / 1.25 / 1.5rem.
+- Decorative (next to text that says the same): no `label`, the icon is `aria-hidden`.
+  Meaningful on its own: `label="…"` gives `role="img"` + `aria-label`.
+- An icon-only button gets its name on the button (`aria-label="Close"`), the icon stays
+  decorative.
+- A new icon from a designer's SVG: keep only the shapes (`<path>`, `<circle>`, …) on a
+  24×24 `viewBox`; strip fixed colours (`fill="#…"`, `stroke="#…"`, `style`), `width`/`height`,
+  ids and `<title>`; outlines use the default stroke, filled shapes `fill="currentColor"
+stroke="none"`. One `src/icons/<Name>Icon.tsx` per icon (`pnpm check` rule `icon-files`).
 
 ## Motion
 

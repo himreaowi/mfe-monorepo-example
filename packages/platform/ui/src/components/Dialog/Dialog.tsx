@@ -8,6 +8,7 @@ import { CSPProvider } from '@base-ui/react/csp-provider';
 import { Dialog as BaseDialog } from '@base-ui/react/dialog';
 import { mergeProps } from '@base-ui/react/merge-props';
 import { cx } from '../../utils/cx/cx';
+import { CloseIcon } from '../../icons/CloseIcon';
 import styles from './Dialog.module.scss';
 
 export type DialogProps = Omit<
@@ -89,7 +90,7 @@ export function Dialog({
                 className={styles.close}
                 aria-label={closeLabel}
               >
-                <span aria-hidden="true">×</span>
+                <CloseIcon size="md" />
               </BaseDialog.Close>
             </div>
             {description !== undefined ? (

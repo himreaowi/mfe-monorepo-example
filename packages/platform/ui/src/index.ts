@@ -38,6 +38,25 @@ export {
   type FieldProps,
 } from './components/Field/Field';
 export {
+  Icon,
+  type IconProps,
+  type IconSize,
+  type IconTone,
+} from './components/Icon/Icon';
+// Icons: one component per file in src/icons (see README.md "Icons").
+export { CheckIcon } from './icons/CheckIcon';
+export { ChevronDownIcon } from './icons/ChevronDownIcon';
+export { ChevronUpIcon } from './icons/ChevronUpIcon';
+export { ChevronUpDownIcon } from './icons/ChevronUpDownIcon';
+export { CloseIcon } from './icons/CloseIcon';
+export { ErrorIcon } from './icons/ErrorIcon';
+export { ExternalLinkIcon } from './icons/ExternalLinkIcon';
+export { InfoIcon } from './icons/InfoIcon';
+export { MenuIcon } from './icons/MenuIcon';
+export { SearchIcon } from './icons/SearchIcon';
+export { SuccessIcon } from './icons/SuccessIcon';
+export { WarningIcon } from './icons/WarningIcon';
+export {
   Link,
   type AnchorLinkVariantProps,
   type LinkProps,

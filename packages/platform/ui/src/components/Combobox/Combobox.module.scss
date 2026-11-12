@@ -1,6 +1,6 @@
 @use '../../styles/mixins' as *;
 
-// The input with the × (clear) button inside its right edge.
+// The input with the clear (CloseIcon) button inside its right edge.
 .group {
   position: relative;
   display: flex;
@@ -27,8 +27,6 @@
   border-radius: var(--radius);
   background: transparent;
   color: var(--color-text);
-  font-size: 1.25rem;
-  line-height: 1;
   cursor: pointer;
 
   @include focus-ring(-3px);

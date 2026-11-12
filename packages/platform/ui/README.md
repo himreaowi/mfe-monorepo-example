@@ -84,6 +84,38 @@ import { Alert, Button, Select, TextField } from '@org/ui';
 </form>;
 ```
 
+## Icons
+
+`Icon` is the SVG wrapper; each icon is a component in `src/icons/<Name>Icon.tsx` built on it:
+`CheckIcon`, `ChevronDownIcon`, `ChevronUpIcon`, `ChevronUpDownIcon`, `CloseIcon`, `ErrorIcon`,
+`ExternalLinkIcon`, `InfoIcon`, `MenuIcon`, `SearchIcon`, `SuccessIcon`, `WarningIcon`
+(Storybook: Components/Icons). Drawn here on a 24×24 grid, no third-party icon set.
+
+| Prop        | Values                                                     | Default                             |
+| ----------- | ---------------------------------------------------------- | ----------------------------------- |
+| `size`      | `sm` 1rem, `md` 1.25rem, `lg` 1.5rem                       | 1em (scales with the text)          |
+| `tone`      | `default`, `muted`, `accent`, `danger`, `success` (tokens) | none: `currentColor` (inherits)     |
+| `label`     | text                                                       | none: `aria-hidden="true"`          |
+| other props | any SVG prop (`className`, `data-testid`, `fill`, …)       | `fill="none" stroke="currentColor"` |
+
+With `label` the icon is `role="img"` with that `aria-label`; without it, it is decorative. An
+icon-only button names the button, not the icon:
+
+```tsx
+<button type="button" aria-label="Close" onClick={close}>
+  <CloseIcon size="md" />
+</button>
+<p><WarningIcon tone="danger" label="Warning" /> The file is too large.</p>
+```
+
+**Adding an icon:** `src/icons/<Name>Icon.tsx` exporting only
+`export function <Name>Icon(props: Omit<IconProps, 'children'>)` that returns
+`<Icon {...props}>…shapes…</Icon>`. From a designer's SVG keep only the shapes on a 24×24
+`viewBox`; remove colours, `width`/`height`, ids and `<title>`; filled shapes get
+`fill="currentColor" stroke="none"`. Export it from `src/index.ts`, add it to the `ICONS` list in
+`src/components/Icon/Icon.stories.tsx`, then `pnpm test:ui:update`. `pnpm check` (`icon-files`)
+enforces one icon per file and `currentColor` only.
+
 ## Storybook (dev only)
 
 | Command                | What                                                                                                      |

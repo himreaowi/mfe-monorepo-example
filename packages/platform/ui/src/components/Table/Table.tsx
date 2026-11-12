@@ -7,6 +7,9 @@ import {
 } from 'react';
 import { cx } from '../../utils/cx/cx';
 import { VisuallyHidden } from '../VisuallyHidden/VisuallyHidden';
+import { ChevronDownIcon } from '../../icons/ChevronDownIcon';
+import { ChevronUpDownIcon } from '../../icons/ChevronUpDownIcon';
+import { ChevronUpIcon } from '../../icons/ChevronUpIcon';
 import styles from './Table.module.scss';
 
 export type SortDirection = 'ascending' | 'descending';
@@ -134,13 +137,13 @@ export function Table<Row>({
                       onClick={() => toggleSort(column.key)}
                     >
                       {column.header}
-                      <span className={styles.sortIcon} aria-hidden="true">
-                        {ariaSort === 'ascending'
-                          ? '▲'
-                          : ariaSort === 'descending'
-                            ? '▼'
-                            : '↕'}
-                      </span>
+                      {ariaSort === 'ascending' ? (
+                        <ChevronUpIcon className={styles.sortIcon} />
+                      ) : ariaSort === 'descending' ? (
+                        <ChevronDownIcon className={styles.sortIcon} />
+                      ) : (
+                        <ChevronUpDownIcon className={styles.sortIcon} />
+                      )}
                     </button>
                   ) : (
                     column.header

@@ -1,0 +1,43 @@
+// Sizes in rem (no size = 1em, follows the font size); tones map to design tokens only.
+.icon {
+  display: inline-block;
+  flex: none;
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.125em;
+}
+
+.sm {
+  width: 1rem;
+  height: 1rem;
+}
+
+.md {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.lg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.default {
+  color: var(--color-text);
+}
+
+.muted {
+  color: var(--color-text-muted);
+}
+
+.accent {
+  color: var(--color-accent);
+}
+
+.danger {
+  color: var(--color-danger);
+}
+
+.success {
+  color: var(--color-success);
+}

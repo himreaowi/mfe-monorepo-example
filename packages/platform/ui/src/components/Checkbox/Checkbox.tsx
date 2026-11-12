@@ -7,6 +7,7 @@ import {
 } from 'react';
 import { cx } from '../../utils/cx/cx';
 import { VisuallyHidden } from '../VisuallyHidden/VisuallyHidden';
+import { CheckIcon } from '../../icons/CheckIcon';
 import styles from './Checkbox.module.scss';
 
 export type CheckboxProps = Omit<ComponentPropsWithRef<'input'>, 'type'> & {
@@ -79,9 +80,7 @@ export function Checkbox({
         aria-invalid={hasError ? true : ariaInvalid}
       >
         <BaseCheckbox.Indicator className={styles.indicator}>
-          <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-            <path d="M3 8.5l3 3 7-7" />
-          </svg>
+          <CheckIcon className={styles.tick} />
         </BaseCheckbox.Indicator>
       </BaseCheckbox.Root>
       <div className={styles.text}>

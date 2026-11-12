@@ -827,6 +827,46 @@ describe('check-apps', () => {
       assert.match(text, /Tabs\/: .*\(missing: Tabs\.module\.scss\)/);
     });
 
+    it('icon-files: one <Name>Icon per <Name>Icon.tsx, currentColor only', async () => {
+      const iconDir = 'packages/platform/ui/src/icons';
+      const icon = (
+        /** @type {string} */ name,
+        body = '<path d="M6 6l12 12" />',
+      ) =>
+        `import { Icon, type IconProps } from '../components/Icon/Icon';\nexport function ${name}(props: IconProps) {\n  return <Icon {...props}>${body}</Icon>;\n}\n`;
+      let r = await run(validApps(), {
+        ...validRegistries(),
+        [`${iconDir}/CloseIcon.tsx`]: icon('CloseIcon'),
+        [`${iconDir}/DotIcon.tsx`]: icon(
+          'DotIcon',
+          '<circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" />',
+        ),
+      });
+      assert.deepEqual(r.errors, []);
+      r = await run(validApps(), {
+        ...validRegistries(),
+        [`${iconDir}/close.tsx`]: icon('close'),
+        [`${iconDir}/Plus.tsx`]: icon('Plus'),
+        [`${iconDir}/WrongIcon.tsx`]: icon('OtherIcon'),
+        [`${iconDir}/TwoIcon.tsx`]: `${icon('TwoIcon')}export const ThreeIcon = TwoIcon;\n`,
+        [`${iconDir}/HexIcon.tsx`]: icon(
+          'HexIcon',
+          '<path d="M1 1" stroke="#ff0000" />',
+        ),
+        [`${iconDir}/RgbIcon.tsx`]: icon(
+          'RgbIcon',
+          '<path style={{ color: "rgb(1, 2, 3)" }} />',
+        ),
+        [`${iconDir}/RedIcon.tsx`]: icon('RedIcon', '<path fill="red" />'),
+      });
+      assert.deepEqual(rules(r.errors), Array(7).fill('icon-files'));
+      const text = r.errors.map((e) => e.message).join('\n');
+      assert.match(text, /WrongIcon\.tsx: .*found OtherIcon/);
+      assert.match(text, /TwoIcon\.tsx: .*found TwoIcon, ThreeIcon/);
+      assert.match(text, /HexIcon\.tsx: icons draw with currentColor only/);
+      assert.match(text, /RedIcon\.tsx: icons draw with currentColor only/);
+    });
+
     it('fails on the same component name in two apps, unless allowed', async () => {
       const files = {
         ...validRegistries(),

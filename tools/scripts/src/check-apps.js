@@ -982,6 +982,61 @@ function checkUiLibrary(root, err) {
       );
     }
   }
+  checkUiIcons(root, ui.dir, err);
+}
+
+const ICON_DOC = 'packages/platform/ui/README.md ("Icons")';
+const ICON_FILE = /^([A-Z][A-Za-z0-9]*Icon)\.tsx$/;
+/** `#abc`/`#aabbcc`/`#aabbccdd`, `rgb(`, `rgba(`, `hsl(`, `hsla(`. */
+const HARD_COLOUR = /#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?)\(/;
+/** `fill`/`stroke`/`color` set to anything but currentColor or none (attribute or style). */
+const PAINT = /\b(fill|stroke|color)\s*[=:]\s*\{?\s*["'`]([^"'`]*)["'`]/g;
+
+/**
+ * @org/ui icons: `src/icons/<Name>Icon.tsx`, one exported `<Name>Icon` per file (built on
+ * `Icon`), drawn with currentColor only.
+ * @param {string} root
+ * @param {string} uiDir
+ * @param {(rule: string, message: string) => void} err
+ */
+function checkUiIcons(root, uiDir, err) {
+  const dir = path.join(root, uiDir, 'src', 'icons');
+  for (const item of entries(dir)) {
+    const where = path
+      .relative(root, path.join(dir, item.name))
+      .split(path.sep)
+      .join('/');
+    const match = item.isFile() ? ICON_FILE.exec(item.name) : null;
+    if (!match) {
+      err(
+        'icon-files',
+        `${where}: src/icons holds only <Name>Icon.tsx files (PascalCase, one icon each). See ${ICON_DOC}.`,
+      );
+      continue;
+    }
+    const name = match[1];
+    const source = fs.readFileSync(path.join(dir, item.name), 'utf8');
+    const exported = [
+      ...source.matchAll(
+        /\bexport\s+(?:default\s+)?(?:function|const|let|class|type|interface)\s+([A-Za-z0-9_$]+)|\bexport\s*\{|\bexport\s+default\b/g,
+      ),
+    ].map((m) => m[1] ?? '?');
+    if (exported.length !== 1 || exported[0] !== name) {
+      err(
+        'icon-files',
+        `${where}: an icon file exports exactly one component named after the file (\`export function ${name}\`); found ${exported.length > 0 ? exported.join(', ') : 'no export'}. See ${ICON_DOC}.`,
+      );
+    }
+    const paints = [...source.matchAll(PAINT)]
+      .map((m) => m[2])
+      .filter((v) => !/^(currentColor|none)$/i.test(v.trim()));
+    if (HARD_COLOUR.test(source) || paints.length > 0) {
+      err(
+        'icon-files',
+        `${where}: icons draw with currentColor only (no #hex, rgb(), hsl() or fill/stroke other than currentColor/none); colour comes from the text or the \`tone\` prop. See ${ICON_DOC}.`,
+      );
+    }
+  }
 }
 
 /**

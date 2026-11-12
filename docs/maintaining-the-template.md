@@ -92,6 +92,15 @@ Each recipe ends with "verify" = the checklist in section 6.
 3. Run `pnpm test:ui`; if screenshots change on purpose, `pnpm test:ui:update` and check them.
 4. Update `packages/platform/<name>/README.md`. Verify, then copy to the example.
 
+### Adding an icon (`@org/ui`)
+
+1. Ask the designer for a 24×24 SVG. Keep only the shapes; strip fixed colours, `width`/`height`,
+   ids and `<title>` (filled shapes: `fill="currentColor" stroke="none"`).
+2. `packages/platform/ui/src/icons/<Name>Icon.tsx`, one `export function <Name>Icon` built on
+   `Icon` (copy `CloseIcon.tsx`). `pnpm check` rule `icon-files` checks name, export and colours.
+3. Export it from `src/index.ts`, add it to `ICONS` in `src/components/Icon/Icon.stories.tsx`,
+   `pnpm test:ui:update`, review the Components/Icons screenshots. Verify, copy to the example.
+
 ### What new apps look like (generators)
 
 1. Edit the files under `tools/generators/templates/...` (`.tmpl` files; tokens like `__PACKAGE_NAME__`

@@ -7,6 +7,7 @@ import {
 } from 'react';
 import { Field, type FieldLabelProps } from '../Field/Field';
 import { VisuallyHidden } from '../VisuallyHidden/VisuallyHidden';
+import { CloseIcon } from '../../icons/CloseIcon';
 import styles from './Combobox.module.scss';
 
 export type ComboboxProps<Item> = FieldLabelProps & {
@@ -205,7 +206,7 @@ export function Combobox<Item>({
               onMouseDown={(event) => event.preventDefault()}
               onClick={clear}
             >
-              <span aria-hidden="true">×</span>
+              <CloseIcon size="sm" />
             </button>
           ) : null}
           <div
