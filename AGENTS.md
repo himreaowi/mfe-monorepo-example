@@ -105,3 +105,5 @@ Instructions for AI coding agents (and humans) working in this monorepo. Details
 | Versions / gotchas            | [docs/toolchain.md](docs/toolchain.md)                                                                                                              |
 | Deploy                        | `deploy/`, [docs/devops-handoff.md](docs/devops-handoff.md)                                                                                         |
 | Spec Kit                      | `.specify/`, `.cursor/skills/speckit-*`, feature specs in `specs/`                                                                                  |
+
+Changing the boilerplate itself (packages, generators, check rules, layout, versions): follow [docs/maintaining-the-template.md](docs/maintaining-the-template.md).
