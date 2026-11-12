@@ -8,7 +8,7 @@ those versions were chosen.
 
 | Tool                                                                | Version                  | Where pinned                  | Notes                                                                             |
 | ------------------------------------------------------------------- | ------------------------ | ----------------------------- | --------------------------------------------------------------------------------- |
-| Node.js                                                             | 24 LTS (tested 24.21.0)  | `.nvmrc`, `engines.node >=24` | Corepack ships with Node 24                                                       |
+| Node.js                                                             | 24 LTS (pinned 24.22.3)  | `.nvmrc`, `engines.node >=24` | Corepack ships with Node 24                                                       |
 | pnpm                                                                | 12.14.0                  | `packageManager` (Corepack)   | `corepack enable` once, or run `corepack pnpm`                                    |
 | react / react-dom                                                   | 19.3.1                   | catalog (tier 1)              | MF singleton                                                                      |
 | react-router                                                        | 8.4.0                    | catalog (tier 1)              | MF singleton. Package is ESM-only                                                 |

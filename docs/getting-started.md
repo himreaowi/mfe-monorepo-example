@@ -5,7 +5,7 @@ noted. Takes about ten minutes, most of it downloads.
 
 ## 1. Prerequisites
 
-- **Node.js 24** (the version is in `.nvmrc`). With nvm: `nvm install 24` once.
+- **Node.js 24** (the version is in `.nvmrc`). With nvm: `nvm install` once (reads `.nvmrc`).
 - **Corepack** (ships with Node 24) provides the exact pnpm version from `package.json`
   (`packageManager`). Do not install pnpm globally with npm.
 - Git. macOS, Linux or WSL2.

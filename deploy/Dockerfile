@@ -15,7 +15,7 @@
 # nginx forwards <base path>/api to API_UPSTREAM and <base path>/auth to AUTH_UPSTREAM, so the
 # browser only talks to its own origin. Same image for every environment.
 
-ARG NODE_IMAGE=node:24-bookworm-slim
+ARG NODE_IMAGE=node:24.22.3-bookworm-slim
 ARG NGINX_IMAGE=nginxinc/nginx-unprivileged:1.29-alpine
 
 # ---------------------------------------------------------------------------------------------
