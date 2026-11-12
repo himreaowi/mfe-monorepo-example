@@ -6,6 +6,7 @@ import {
   Brand,
   ConnectionRequired,
   MenuDisclosure,
+  MenuIcon,
   SkipLink,
   ThemeToggle,
   useFitLayout,
@@ -80,7 +81,7 @@ export function ShellLayout({ remotes }: { remotes: RemoteEntry[] }) {
           className={styles.menuButton}
           data-testid="header-menu-button"
         >
-          <span aria-hidden="true" className={styles.menuIcon} />
+          <MenuIcon size="sm" />
           Menu
         </MenuDisclosure.Button>
         <MenuDisclosure.Panel
