@@ -125,7 +125,8 @@ and tests, `move-component`, [coding-conventions.md](coding-conventions.md),
 - A new loaded-once (tier 1) library: add it to **both** `tiers.js` and `tier1.js`, restart dev
   servers.
 - **Node:** change `.nvmrc` and `ARG NODE_IMAGE` in `deploy/Dockerfile` together, and the
-  version in [toolchain.md](toolchain.md). `nvm install` on each laptop.
+  version in [toolchain.md](toolchain.md). On each laptop: `nvm install`, `nvm use`, then
+  **`corepack enable`** again (each Node version has its own `pnpm` shim).
 - **webpack stays at 5.111.1** until `@module-federation/enhanced` supports 5.112 (see
   [toolchain.md](toolchain.md)).
 
@@ -183,16 +184,17 @@ Expect no output except `packages/platform/ui/README.md` (the example's Storyboo
 
 ## 8. Pitfalls we hit (so you don't)
 
-| Pitfall                                                                                                                                                                           | Rule                                                                                          |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| A **function** in webpack-dev-server options (e.g. `client.overlay.runtimeErrors`) is run from a string in the browser; the strict dev CSP blocks it and **every page is blank**. | Plain values only. A test in `webpack-config/src/config.test.js` checks this.                 |
-| Base UI **Combobox** and **Select** hide the rest of the page from screen readers while open.                                                                                     | Combobox is hand-built; Select stays native. Always run axe with popups open.                 |
-| Changing layout inside a `ResizeObserver` callback → "ResizeObserver loop" error.                                                                                                 | Apply the change on the next animation frame (see `useFitLayout`).                            |
-| webpack 5.112 breaks Module Federation 2.9.2.                                                                                                                                     | Keep 5.111.1 (section 5).                                                                     |
-| Node 20 breaks the tools (`util.parseEnv`, `fs.globSync`).                                                                                                                        | `nvm use` inside the repo.                                                                    |
-| zsh does not split `$FILES` into words in scripts.                                                                                                                                | Use arrays or list paths one by one.                                                          |
-| `git push` fails with "unexpected disconnect" on large pushes.                                                                                                                    | `git -c http.postBuffer=524288000 -c http.version=HTTP/1.1 push`.                             |
-| Remote bundles are public files.                                                                                                                                                  | `access: 'private'` and sign-in-required are UX, not security; the backend checks every call. |
+| Pitfall                                                                                                                                                                           | Rule                                                                                                           |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| A **function** in webpack-dev-server options (e.g. `client.overlay.runtimeErrors`) is run from a string in the browser; the strict dev CSP blocks it and **every page is blank**. | Plain values only. A test in `webpack-config/src/config.test.js` checks this.                                  |
+| Base UI **Combobox** and **Select** hide the rest of the page from screen readers while open.                                                                                     | Combobox is hand-built; Select stays native. Always run axe with popups open.                                  |
+| Changing layout inside a `ResizeObserver` callback → "ResizeObserver loop" error.                                                                                                 | Apply the change on the next animation frame (see `useFitLayout`).                                             |
+| webpack 5.112 breaks Module Federation 2.9.2.                                                                                                                                     | Keep 5.111.1 (section 5).                                                                                      |
+| Node 20 breaks the tools (`util.parseEnv`, `fs.globSync`).                                                                                                                        | `nvm use` inside the repo.                                                                                     |
+| After a Node upgrade: `Cannot find module …/corepack/pnpm/<version>/bin/pnpm.cjs`.                                                                                                | The new Node has no `pnpm` shim yet, so an old one is used: `nvm use`, `corepack enable`, open a new terminal. |
+| zsh does not split `$FILES` into words in scripts.                                                                                                                                | Use arrays or list paths one by one.                                                                           |
+| `git push` fails with "unexpected disconnect" on large pushes.                                                                                                                    | `git -c http.postBuffer=524288000 -c http.version=HTTP/1.1 push`.                                              |
+| Remote bundles are public files.                                                                                                                                                  | `access: 'private'` and sign-in-required are UX, not security; the backend checks every call.                  |
 
 ## 9. Open items and ideas (not done)
 
